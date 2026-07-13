@@ -244,6 +244,47 @@ export interface ReturnDto {
   lineItems: ReturnLineItemDto[];
 }
 
+export interface ReportSummaryDto {
+  revenue: number;
+  profit: number;
+  orderCount: number;
+  avgOrderValue: number;
+  revenueDeltaPct: number | null;
+  profitDeltaPct: number | null;
+  orderCountDeltaPct: number | null;
+  avgOrderValueDeltaPct: number | null;
+}
+
+export interface SalesTrendPointDto {
+  date: string;
+  revenue: number;
+  orderCount: number;
+}
+
+export interface TopProductReportDto {
+  productId: string;
+  name: string;
+  quantitySold: number;
+  revenue: number;
+}
+
+export interface LowStockReportItemDto {
+  id: string;
+  storeId: string;
+  productId: string;
+  product: ProductDto;
+  quantity: number;
+  reorderLevel: number;
+}
+
+export interface StoreComparisonDto {
+  storeId: string;
+  storeName: string;
+  revenue: number;
+  profit: number;
+  orderCount: number;
+}
+
 export interface SaleDto {
   id: string;
   storeId: string;

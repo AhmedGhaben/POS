@@ -24,6 +24,20 @@
     --input: 240 6% 90%;
     --ring: 240 6% 10%;
     --radius: 0.625rem;
+
+    /* Dataviz tokens (validated reference palette — see dataviz skill) */
+    --chart-series-1: #2a78d6;
+    --chart-ink-primary: #0b0b0b;
+    --chart-ink-secondary: #52514e;
+    --chart-ink-muted: #898781;
+    --chart-grid: #e1e0d9;
+    --chart-axis: #c3c2b7;
+    --chart-surface: #fcfcfb;
+    --chart-good: #0ca30c;
+    --chart-warning: #fab219;
+    --chart-critical: #d03b3b;
+    --chart-delta-good: #006300;
+    --chart-delta-bad: #b3261e;
   }
 
   .dark {
@@ -46,6 +60,20 @@
     --border: 240 5% 18%;
     --input: 240 5% 18%;
     --ring: 240 5% 84%;
+
+    /* Dataviz tokens — dark-mode steps, selected against the dark surface */
+    --chart-series-1: #3987e5;
+    --chart-ink-primary: #ffffff;
+    --chart-ink-secondary: #c3c2b7;
+    --chart-ink-muted: #898781;
+    --chart-grid: #2c2c2a;
+    --chart-axis: #383835;
+    --chart-surface: #1a1a19;
+    --chart-good: #0ca30c;
+    --chart-warning: #fab219;
+    --chart-critical: #d03b3b;
+    --chart-delta-good: #0ca30c;
+    --chart-delta-bad: #e66767;
   }
 
   * {

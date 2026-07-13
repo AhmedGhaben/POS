@@ -16,6 +16,7 @@ import { EmployeesModule } from "./employees/employees.module";
 import { PurchasesModule } from "./purchases/purchases.module";
 import { ExpensesModule } from "./expenses/expenses.module";
 import { ReturnsModule } from "./returns/returns.module";
+import { ReportsModule } from "./reports/reports.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
 
@@ -37,6 +38,7 @@ import { RolesGuard } from "./common/guards/roles.guard";
     PurchasesModule,
     ExpensesModule,
     ReturnsModule,
+    ReportsModule,
   ],
   providers: [
     // Global order matters: authenticate first, then check @Roles() metadata.
