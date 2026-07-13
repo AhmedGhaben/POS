@@ -46,6 +46,16 @@ enum ExpenseCategory {
   OTHER
 }
 
+/// Fine-grained grants layered on top of the 3 fixed roles. Each has a
+/// default per Role (see common/permissions/default-permissions.ts) that a
+/// UserPermission row can override for an individual user, in either
+/// direction (grant something their role wouldn't normally have, or revoke
+/// something it would).
+enum Permission {
+  VIEW_COST_PRICE
+  PROCESS_RETURN
+}
+
 model Business {
   id        String   @id @default(cuid())
   name      String
@@ -110,9 +120,24 @@ model User {
   refreshTokens       RefreshToken[]
   passwordResetTokens PasswordResetToken[]
   auditLogs           AuditLog[]
+  permissionOverrides UserPermission[]
 
   @@index([businessId])
   @@map("users")
+}
+
+/// An explicit override of a permission for one user, in either direction.
+/// Absence of a row means "use the role default" (see Permission enum doc).
+model UserPermission {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id])
+  permission Permission
+  granted    Boolean
+  createdAt  DateTime   @default(now())
+
+  @@unique([userId, permission])
+  @@map("user_permissions")
 }
 
 /// Opaque, DB-backed refresh tokens (replacing stateless JWT refresh tokens)

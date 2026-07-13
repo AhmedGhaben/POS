@@ -1,4 +1,12 @@
-import type { Plan, Role, SaleStatus, PaymentMethod, PurchaseStatus, ExpenseCategory } from "./enums";
+import type {
+  Plan,
+  Role,
+  SaleStatus,
+  PaymentMethod,
+  PurchaseStatus,
+  ExpenseCategory,
+  Permission,
+} from "./enums";
 
 export interface BusinessDto {
   id: string;
@@ -24,6 +32,13 @@ export interface UserDto {
   role: Role;
   isActive: boolean;
   accessibleStoreIds: string[];
+}
+
+export type EffectivePermissionsDto = Record<Permission, boolean>;
+
+export interface UpdateUserPermissionDto {
+  permission: Permission;
+  granted?: boolean | null;
 }
 
 export interface LoginRequestDto {

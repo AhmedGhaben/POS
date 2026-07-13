@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+import { Permission } from "@prisma/client";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
+import { RequiresPermission } from "../common/decorators/requires-permission.decorator";
 import { StoreAccessGuard } from "../common/guards/store-access.guard";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { CreateReturnDto } from "./dto/create-return.dto";
@@ -17,6 +19,7 @@ export class ReturnsController {
 
   @Post()
   @UseGuards(StoreAccessGuard)
+  @RequiresPermission(Permission.PROCESS_RETURN)
   create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateReturnDto) {
     return this.returnsService.create(user.userId, dto);
   }

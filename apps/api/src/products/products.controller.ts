@@ -1,29 +1,53 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
-import { Role } from "@prisma/client";
+import { Permission, Role } from "@prisma/client";
 import { Roles } from "../common/decorators/roles.decorator";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { RolesGuard } from "../common/guards/roles.guard";
+import { PermissionsService } from "../common/permissions/permissions.service";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { ProductsService } from "./products.service";
 
+/** Strips costPrice for callers without VIEW_COST_PRICE — margin data is
+ * sensitive even though the product listing itself is open to every role
+ * (a Cashier needs to browse/search products at checkout). */
+function redactCostPrice<T extends { costPrice: unknown }>(product: T): Omit<T, "costPrice"> {
+  const { costPrice: _costPrice, ...rest } = product;
+  return rest;
+}
+
 @Controller("products")
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly permissionsService: PermissionsService,
+  ) {}
 
   @Get()
-  findAll(
+  async findAll(
     @CurrentUser() user: AuthenticatedUser,
     @Query("search") search?: string,
     @Query("categoryId") categoryId?: string,
   ) {
-    return this.productsService.findAll(user.businessId, search, categoryId);
+    const products = await this.productsService.findAll(user.businessId, search, categoryId);
+    const canViewCostPrice = await this.permissionsService.hasPermission(
+      user.userId,
+      user.role,
+      Permission.VIEW_COST_PRICE,
+    );
+    return canViewCostPrice ? products : products.map(redactCostPrice);
   }
 
   @Get("barcode/:barcode")
-  findByBarcode(@CurrentUser() user: AuthenticatedUser, @Param("barcode") barcode: string) {
-    return this.productsService.findByBarcode(user.businessId, barcode);
+  async findByBarcode(@CurrentUser() user: AuthenticatedUser, @Param("barcode") barcode: string) {
+    const product = await this.productsService.findByBarcode(user.businessId, barcode);
+    const canViewCostPrice = await this.permissionsService.hasPermission(
+      user.userId,
+      user.role,
+      Permission.VIEW_COST_PRICE,
+    );
+    return canViewCostPrice ? product : redactCostPrice(product);
   }
 
   @Post()

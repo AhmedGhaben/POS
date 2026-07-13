@@ -36,3 +36,8 @@ export enum ExpenseCategory {
   MAINTENANCE = "MAINTENANCE",
   OTHER = "OTHER",
 }
+
+export enum Permission {
+  VIEW_COST_PRICE = "VIEW_COST_PRICE",
+  PROCESS_RETURN = "PROCESS_RETURN",
+}

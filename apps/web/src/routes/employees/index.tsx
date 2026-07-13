@@ -14,12 +14,17 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createEmployee, fetchEmployees } from "@/features/employees/api";
+import { PermissionsDialog } from "@/features/users/components/PermissionsDialog";
 import { useAuthStore } from "@/features/auth/store";
 
 export function EmployeesPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [permissionsUser, setPermissionsUser] = React.useState<{ id: string; email: string } | null>(
+    null,
+  );
   const queryClient = useQueryClient();
   const stores = useAuthStore((s) => s.stores);
+  const isOwner = useAuthStore((s) => s.user?.role) === "OWNER";
   const employeesQuery = useQuery({ queryKey: ["employees"], queryFn: fetchEmployees });
 
   const [form, setForm] = React.useState({
@@ -137,6 +142,7 @@ export function EmployeesPage() {
                 <th className="p-3 font-medium">Position</th>
                 <th className="p-3 font-medium">Store</th>
                 <th className="p-3 font-medium">Login account</th>
+                {isOwner && <th className="p-3 font-medium">Permissions</th>}
               </tr>
             </thead>
             <tbody>
@@ -148,11 +154,26 @@ export function EmployeesPage() {
                   <td className="p-3 text-muted-foreground">{employee.position ?? "—"}</td>
                   <td className="p-3 text-muted-foreground">{employee.store?.name ?? "All stores"}</td>
                   <td className="p-3 text-muted-foreground">{employee.user?.email ?? "None"}</td>
+                  {isOwner && (
+                    <td className="p-3">
+                      {employee.user && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setPermissionsUser({ id: employee.user!.id, email: employee.user!.email })
+                          }
+                        >
+                          Manage
+                        </Button>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
               {employeesQuery.data?.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="p-6 text-center text-muted-foreground">
+                  <td colSpan={isOwner ? 5 : 4} className="p-6 text-center text-muted-foreground">
                     No employees yet.
                   </td>
                 </tr>
@@ -161,6 +182,14 @@ export function EmployeesPage() {
           </table>
         </CardContent>
       </Card>
+
+      {isOwner && (
+        <PermissionsDialog
+          userId={permissionsUser?.id ?? null}
+          userEmail={permissionsUser?.email ?? ""}
+          onClose={() => setPermissionsUser(null)}
+        />
+      )}
     </div>
   );
 }

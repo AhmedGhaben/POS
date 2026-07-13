@@ -37,34 +37,43 @@ deliver a premium experience for businesses of any size.
   interceptor recording who-did-what for every mutating request, baseline
   unit tests (auth/sales/guards) + GitHub Actions CI, and multi-stage
   Dockerfiles for `apps/api`/`apps/web` with a verified `docker-compose.prod.yml`
-  stack. Fine-grained permissions were carved out into their own phase
-  below rather than bundled in — see Phase 6.
+  stack. Fine-grained permissions were carved out into their own phase —
+  see Phase 6.
+- **Phase 6 — Fine-grained permissions**: a `Permission` enum
+  (`VIEW_COST_PRICE`, `PROCESS_RETURN`) with per-role defaults plus a
+  `UserPermission` override table for per-user exceptions in either
+  direction, enforced via a global `PermissionsGuard`/`@RequiresPermission()`
+  (mirrors the existing `RolesGuard` pattern). Applied to the two real gaps
+  a codebase audit found: cost price was visible to every role via the raw
+  API (now redacted unless permitted — the Products admin page was already
+  Owner/Manager-only in the UI, so this closes the API-level hole), and
+  returns/refunds had no approval gate (Cashier is now default-denied,
+  overridable per-user). Owner-only management UI lives on the Employees
+  page (`Manage` button per employee with a login account). "Void a sale"
+  — one of the two motivating examples for this phase — doesn't exist as a
+  feature (the `VOIDED` status is a dead enum value) and was deliberately
+  left out rather than building new business logic inside a permissions
+  phase; build it as its own feature first if it's still wanted, then gate
+  it the same way.
 
 ## Phase order
 
-1. **Phase 6 — Fine-grained permissions**: a real permission model beyond
-   the 3 fixed roles (Owner/Manager/Cashier) — e.g. per-action grants like
-   "can void a sale" or "can see cost prices" — plus whatever admin UI is
-   needed to manage them. Deferred out of Phase 5 because it's a bigger,
-   separate architectural decision (data model for permissions, how they
-   compose with the existing `RolesGuard`/`StoreAccessGuard`) rather than a
-   mechanical addition.
-2. **Phase 7 — Multi-store operations**: stock transfers between stores,
+1. **Phase 7 — Multi-store operations**: stock transfers between stores,
    cross-store inventory movement history. `stores`/`StoreUser` already
    support multiple stores but there's no way to move inventory between them.
-3. **Phase 8 — UI/UX refinement & responsiveness**: expand the shadcn
+2. **Phase 8 — UI/UX refinement & responsiveness**: expand the shadcn
    component set (table, dropdown-menu, tabs, toast, sheet, form — command/
    popover already added in Phase 4), real mobile/tablet layouts, command
    palette + keyboard shortcuts to minimize clicks per the original vision.
-4. **Phase 9 — Notifications & data export**: low-stock email alerts,
+3. **Phase 9 — Notifications & data export**: low-stock email alerts,
    emailed receipts, CSV/PDF export for reports and product/inventory lists.
    Also where the Phase 5 console-log mail stub gets replaced with a real
    provider (e.g. Resend/SES).
-5. **Phase 10 — Offline-first POS**: service worker + IndexedDB sale queue +
+4. **Phase 10 — Offline-first POS**: service worker + IndexedDB sale queue +
    sync-on-reconnect, so checkout keeps working through a connectivity drop.
    Sequenced late since it's the most architecturally invasive remaining
    phase and benefits from the hardening already in place (Phase 5).
-6. **Phase 11 — AI-powered business insights**: natural-language summaries
+5. **Phase 11 — AI-powered business insights**: natural-language summaries
    of the Phase 3 reports data, anomaly detection (e.g. unusual revenue
    dip), restocking suggestions. Built last — depends on solid reports data
    (Phase 3, done) and a stable, tested backend (Phase 5) underneath it.

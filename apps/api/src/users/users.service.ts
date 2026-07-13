@@ -1,13 +1,42 @@
-import { ConflictException, Injectable } from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { Permission } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import { PrismaService } from "../prisma/prisma.service";
+import { PermissionsService } from "../common/permissions/permissions.service";
 import { CreateUserDto } from "./dto/create-user.dto";
 
 const SALT_ROUNDS = 12;
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly permissionsService: PermissionsService,
+  ) {}
+
+  private async findInBusiness(businessId: string, userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.businessId !== businessId) {
+      throw new NotFoundException("User not found");
+    }
+    return user;
+  }
+
+  async getEffectivePermissions(businessId: string, userId: string) {
+    const user = await this.findInBusiness(businessId, userId);
+    return this.permissionsService.getEffectivePermissions(user.id, user.role);
+  }
+
+  async setPermissionOverride(
+    businessId: string,
+    userId: string,
+    permission: Permission,
+    granted: boolean | null | undefined,
+  ) {
+    await this.findInBusiness(businessId, userId);
+    await this.permissionsService.setOverride(userId, permission, granted ?? null);
+    return this.getEffectivePermissions(businessId, userId);
+  }
 
   findAll(businessId: string) {
     return this.prisma.user.findMany({

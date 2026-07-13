@@ -19,12 +19,15 @@ import { ReturnsModule } from "./returns/returns.module";
 import { ReportsModule } from "./reports/reports.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
+import { PermissionsGuard } from "./common/guards/permissions.guard";
 import { AuditLogInterceptor } from "./common/interceptors/audit-log.interceptor";
+import { PermissionsModule } from "./common/permissions/permissions.module";
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    PermissionsModule,
     AuthModule,
     BusinessesModule,
     StoresModule,
@@ -42,9 +45,11 @@ import { AuditLogInterceptor } from "./common/interceptors/audit-log.interceptor
     ReportsModule,
   ],
   providers: [
-    // Global order matters: authenticate first, then check @Roles() metadata.
+    // Global order matters: authenticate first, then check @Roles() metadata,
+    // then any @RequiresPermission() fine-grained check.
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: PermissionsGuard },
     { provide: APP_INTERCEPTOR, useClass: AuditLogInterceptor },
   ],
 })
