@@ -30,6 +30,22 @@ enum PaymentMethod {
   OTHER
 }
 
+enum PurchaseStatus {
+  PENDING
+  RECEIVED
+  CANCELLED
+}
+
+enum ExpenseCategory {
+  RENT
+  UTILITIES
+  SUPPLIES
+  PAYROLL
+  MARKETING
+  MAINTENANCE
+  OTHER
+}
+
 model Business {
   id        String   @id @default(cuid())
   name      String
@@ -42,6 +58,8 @@ model Business {
   categories Category[]
   products   Product[]
   customers  Customer[]
+  suppliers  Supplier[]
+  employees  Employee[]
 
   @@map("businesses")
 }
@@ -60,6 +78,10 @@ model Store {
   storeUsers     StoreUser[]
   inventoryItems InventoryItem[]
   sales          Sale[]
+  purchases      Purchase[]
+  expenses       Expense[]
+  returns        Return[]
+  employees      Employee[]
 
   @@index([businessId])
   @@map("stores")
@@ -78,8 +100,12 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  storeUsers   StoreUser[]
-  salesCreated Sale[]      @relation("SaleCashier")
+  storeUsers       StoreUser[]
+  salesCreated     Sale[]      @relation("SaleCashier")
+  purchasesCreated Purchase[]  @relation("PurchaseCreatedBy")
+  expensesLogged   Expense[]   @relation("ExpenseCreatedBy")
+  returnsProcessed Return[]    @relation("ReturnProcessedBy")
+  employeeProfile  Employee?
 
   @@index([businessId])
   @@map("users")
@@ -129,8 +155,10 @@ model Product {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  inventoryItems InventoryItem[]
-  saleLineItems  SaleLineItem[]
+  inventoryItems    InventoryItem[]
+  saleLineItems     SaleLineItem[]
+  purchaseLineItems PurchaseLineItem[]
+  returnLineItems   ReturnLineItem[]
 
   @@unique([businessId, sku])
   @@index([businessId, barcode])
@@ -185,6 +213,7 @@ model Sale {
   createdAt     DateTime      @default(now())
 
   lineItems SaleLineItem[]
+  returns   Return[]
 
   @@index([storeId, createdAt])
   @@map("sales")
@@ -204,4 +233,134 @@ model SaleLineItem {
 
   @@index([saleId])
   @@map("sale_line_items")
+}
+
+model Supplier {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  name        String
+  contactName String?
+  phone       String?
+  email       String?
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  purchases Purchase[]
+
+  @@index([businessId])
+  @@map("suppliers")
+}
+
+/// HR profile — distinct from User (login credentials). Optionally linked to
+/// a User when the employee also has system access (e.g. a cashier), and
+/// optionally scoped to one store.
+model Employee {
+  id         String    @id @default(cuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id])
+  userId     String?   @unique
+  user       User?     @relation(fields: [userId], references: [id])
+  storeId    String?
+  store      Store?    @relation(fields: [storeId], references: [id])
+  firstName  String
+  lastName   String
+  position   String?
+  phone      String?
+  email      String?
+  hireDate   DateTime?
+  wage       Decimal?  @db.Decimal(10, 2)
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([businessId])
+  @@map("employees")
+}
+
+model Purchase {
+  id             String         @id @default(cuid())
+  storeId        String
+  store          Store          @relation(fields: [storeId], references: [id])
+  supplierId     String
+  supplier       Supplier       @relation(fields: [supplierId], references: [id])
+  createdById    String
+  createdBy      User           @relation("PurchaseCreatedBy", fields: [createdById], references: [id])
+  purchaseNumber String         @unique
+  subtotal       Decimal        @db.Decimal(10, 2)
+  taxTotal       Decimal        @db.Decimal(10, 2)
+  total          Decimal        @db.Decimal(10, 2)
+  status         PurchaseStatus @default(RECEIVED)
+  createdAt      DateTime       @default(now())
+
+  lineItems PurchaseLineItem[]
+
+  @@index([storeId, createdAt])
+  @@map("purchases")
+}
+
+model PurchaseLineItem {
+  id         String   @id @default(cuid())
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id])
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Int
+  unitCost   Decimal  @db.Decimal(10, 2)
+  lineTotal  Decimal  @db.Decimal(10, 2)
+
+  @@index([purchaseId])
+  @@map("purchase_line_items")
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  storeId     String
+  store       Store           @relation(fields: [storeId], references: [id])
+  createdById String
+  createdBy   User            @relation("ExpenseCreatedBy", fields: [createdById], references: [id])
+  category    ExpenseCategory
+  description String?
+  amount      Decimal         @db.Decimal(10, 2)
+  incurredAt  DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+
+  @@index([storeId, incurredAt])
+  @@map("expenses")
+}
+
+/// Reverses a prior Sale's stock and totals. Line items reference the
+/// original product directly (not the SaleLineItem) so a partial return of a
+/// multi-item sale is straightforward to validate and total.
+model Return {
+  id            String   @id @default(cuid())
+  saleId        String
+  sale          Sale     @relation(fields: [saleId], references: [id])
+  storeId       String
+  store         Store    @relation(fields: [storeId], references: [id])
+  processedById String
+  processedBy   User     @relation("ReturnProcessedBy", fields: [processedById], references: [id])
+  reason        String?
+  totalRefund   Decimal  @db.Decimal(10, 2)
+  createdAt     DateTime @default(now())
+
+  lineItems ReturnLineItem[]
+
+  @@index([storeId, createdAt])
+  @@map("returns")
+}
+
+model ReturnLineItem {
+  id        String  @id @default(cuid())
+  returnId  String
+  return    Return  @relation(fields: [returnId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  lineTotal Decimal @db.Decimal(10, 2)
+
+  @@index([returnId])
+  @@map("return_line_items")
 }

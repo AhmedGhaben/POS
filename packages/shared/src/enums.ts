@@ -20,3 +20,19 @@ export enum PaymentMethod {
   MOBILE_MONEY = "MOBILE_MONEY",
   OTHER = "OTHER",
 }
+
+export enum PurchaseStatus {
+  PENDING = "PENDING",
+  RECEIVED = "RECEIVED",
+  CANCELLED = "CANCELLED",
+}
+
+export enum ExpenseCategory {
+  RENT = "RENT",
+  UTILITIES = "UTILITIES",
+  SUPPLIES = "SUPPLIES",
+  PAYROLL = "PAYROLL",
+  MARKETING = "MARKETING",
+  MAINTENANCE = "MAINTENANCE",
+  OTHER = "OTHER",
+}

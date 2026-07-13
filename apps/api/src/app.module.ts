@@ -11,6 +11,11 @@ import { ProductsModule } from "./products/products.module";
 import { InventoryModule } from "./inventory/inventory.module";
 import { CustomersModule } from "./customers/customers.module";
 import { SalesModule } from "./sales/sales.module";
+import { SuppliersModule } from "./suppliers/suppliers.module";
+import { EmployeesModule } from "./employees/employees.module";
+import { PurchasesModule } from "./purchases/purchases.module";
+import { ExpensesModule } from "./expenses/expenses.module";
+import { ReturnsModule } from "./returns/returns.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
 
@@ -27,6 +32,11 @@ import { RolesGuard } from "./common/guards/roles.guard";
     InventoryModule,
     CustomersModule,
     SalesModule,
+    SuppliersModule,
+    EmployeesModule,
+    PurchasesModule,
+    ExpensesModule,
+    ReturnsModule,
   ],
   providers: [
     // Global order matters: authenticate first, then check @Roles() metadata.

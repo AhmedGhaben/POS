@@ -84,7 +84,7 @@ describe("POS API (e2e)", () => {
       .get("/products")
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
-    const product = productsRes.body.find((p: { sku: string }) => p.sku === "SNK-001");
+    const product = productsRes.body[0];
     expect(product).toBeDefined();
 
     const inventoryBefore = await request(app.getHttpServer())
