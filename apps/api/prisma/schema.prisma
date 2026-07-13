@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  SIMPLE
+  PRO
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  CASHIER
+}
+
+enum SaleStatus {
+  COMPLETED
+  VOIDED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  MOBILE_MONEY
+  OTHER
+}
+
+model Business {
+  id        String   @id @default(cuid())
+  name      String
+  plan      Plan     @default(SIMPLE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stores     Store[]
+  users      User[]
+  categories Category[]
+  products   Product[]
+  customers  Customer[]
+
+  @@map("businesses")
+}
+
+model Store {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  name       String
+  address    String?
+  timezone   String   @default("UTC")
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  storeUsers     StoreUser[]
+  inventoryItems InventoryItem[]
+  sales          Sale[]
+
+  @@index([businessId])
+  @@map("stores")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id])
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         Role
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  storeUsers   StoreUser[]
+  salesCreated Sale[]      @relation("SaleCashier")
+
+  @@index([businessId])
+  @@map("users")
+}
+
+/// Store-scoping join: which stores a MANAGER/CASHIER may access.
+/// OWNER rows are not needed here — app logic treats Role.OWNER as all-stores-in-business.
+model StoreUser {
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id])
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  @@unique([userId, storeId])
+  @@index([storeId])
+  @@map("store_users")
+}
+
+model Category {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  name       String
+  createdAt  DateTime @default(now())
+
+  products Product[]
+
+  @@unique([businessId, name])
+  @@map("categories")
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id])
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  sku         String
+  barcode     String?
+  name        String
+  description String?
+  costPrice   Decimal   @db.Decimal(10, 2)
+  sellPrice   Decimal   @db.Decimal(10, 2)
+  taxRate     Decimal   @default(0) @db.Decimal(5, 2)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  inventoryItems InventoryItem[]
+  saleLineItems  SaleLineItem[]
+
+  @@unique([businessId, sku])
+  @@index([businessId, barcode])
+  @@map("products")
+}
+
+/// Product catalog is business-wide; stock is tracked per-store.
+model InventoryItem {
+  id           String   @id @default(cuid())
+  storeId      String
+  store        Store    @relation(fields: [storeId], references: [id])
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  quantity     Int      @default(0)
+  reorderLevel Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  @@unique([storeId, productId])
+  @@map("inventory_items")
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  name       String
+  phone      String?
+  email      String?
+  createdAt  DateTime @default(now())
+
+  sales Sale[]
+
+  @@index([businessId])
+  @@map("customers")
+}
+
+model Sale {
+  id            String        @id @default(cuid())
+  storeId       String
+  store         Store         @relation(fields: [storeId], references: [id])
+  cashierId     String
+  cashier       User          @relation("SaleCashier", fields: [cashierId], references: [id])
+  customerId    String?
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  receiptNumber String        @unique
+  subtotal      Decimal       @db.Decimal(10, 2)
+  taxTotal      Decimal       @db.Decimal(10, 2)
+  discountTotal Decimal       @default(0) @db.Decimal(10, 2)
+  total         Decimal       @db.Decimal(10, 2)
+  paymentMethod PaymentMethod
+  status        SaleStatus    @default(COMPLETED)
+  createdAt     DateTime      @default(now())
+
+  lineItems SaleLineItem[]
+
+  @@index([storeId, createdAt])
+  @@map("sales")
+}
+
+model SaleLineItem {
+  id             String  @id @default(cuid())
+  saleId         String
+  sale           Sale    @relation(fields: [saleId], references: [id])
+  productId      String
+  product        Product @relation(fields: [productId], references: [id])
+  quantity       Int
+  unitPrice      Decimal @db.Decimal(10, 2)
+  taxAmount      Decimal @default(0) @db.Decimal(10, 2)
+  discountAmount Decimal @default(0) @db.Decimal(10, 2)
+  lineTotal      Decimal @db.Decimal(10, 2)
+
+  @@index([saleId])
+  @@map("sale_line_items")
+}
