@@ -7,11 +7,12 @@ import { UpdateProductDto } from "./dto/update-product.dto";
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(businessId: string, search?: string) {
+  findAll(businessId: string, search?: string, categoryId?: string) {
     return this.prisma.product.findMany({
       where: {
         businessId,
         isActive: true,
+        ...(categoryId ? { categoryId } : {}),
         ...(search
           ? {
               OR: [

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProductSearchInput } from "@/features/pos/components/ProductSearchInput";
+import { CategoryFilter } from "@/features/pos/components/CategoryFilter";
+import { ProductGrid } from "@/features/pos/components/ProductGrid";
 import { Cart } from "@/features/pos/components/Cart";
 import { Receipt } from "@/features/pos/components/Receipt";
 import { useCart } from "@/features/pos/hooks/useCart";
@@ -25,6 +27,7 @@ export function PosPage() {
   const stores = useAuthStore((s) => s.stores);
   const storeName = stores.find((s) => s.id === currentStoreId)?.name ?? "Store";
   const { lines, addProduct, setQuantity, removeLine, clear, totals } = useCart();
+  const [selectedCategoryId, setSelectedCategoryId] = React.useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>(PaymentMethod.CASH);
   const [completedSale, setCompletedSale] = React.useState<SaleDto | null>(null);
   const queryClient = useQueryClient();
@@ -51,6 +54,8 @@ export function PosPage() {
     <div className="flex h-[calc(100vh-3.5rem)]">
       <div className="flex flex-1 flex-col border-r p-4">
         <ProductSearchInput onSelect={addProduct} />
+        <CategoryFilter selectedCategoryId={selectedCategoryId} onSelect={setSelectedCategoryId} />
+        <ProductGrid categoryId={selectedCategoryId} onSelect={addProduct} />
         <Cart lines={lines} onSetQuantity={setQuantity} onRemove={removeLine} />
       </div>
 

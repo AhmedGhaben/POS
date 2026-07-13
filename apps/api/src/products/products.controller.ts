@@ -13,8 +13,12 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
-  findAll(@CurrentUser() user: AuthenticatedUser, @Query("search") search?: string) {
-    return this.productsService.findAll(user.businessId, search);
+  findAll(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query("search") search?: string,
+    @Query("categoryId") categoryId?: string,
+  ) {
+    return this.productsService.findAll(user.businessId, search, categoryId);
   }
 
   @Get("barcode/:barcode")
