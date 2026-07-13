@@ -7,6 +7,10 @@ import { findByBarcode } from "@/features/pos/api";
 
 interface ProductSearchInputProps {
   onSelect: (product: ProductDto) => void;
+  /** Blur targets inside this element (e.g. the customer/payment sidebar)
+   * are left alone instead of refocusing the scanner input, so the cashier
+   * can type into those controls without focus being stolen back. */
+  suppressRefocusRef?: React.RefObject<HTMLElement>;
 }
 
 /**
@@ -15,7 +19,7 @@ interface ProductSearchInputProps {
  * an exact barcode match resolves immediately; otherwise falls back to
  * fuzzy search results the cashier can click.
  */
-export function ProductSearchInput({ onSelect }: ProductSearchInputProps) {
+export function ProductSearchInput({ onSelect, suppressRefocusRef }: ProductSearchInputProps) {
   const [query, setQuery] = React.useState("");
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -68,7 +72,10 @@ export function ProductSearchInput({ onSelect }: ProductSearchInputProps) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
-        onBlur={refocus}
+        onBlur={(e) => {
+          if (suppressRefocusRef?.current?.contains(e.relatedTarget as Node | null)) return;
+          refocus();
+        }}
       />
       {query.trim().length > 0 && results.length > 0 && (
         <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-md border bg-popover shadow-md">

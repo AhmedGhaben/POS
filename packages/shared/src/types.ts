@@ -82,6 +82,12 @@ export interface AdjustStockDto {
   reorderLevel?: number;
 }
 
+export interface CreateCustomerDto {
+  name: string;
+  phone?: string;
+  email?: string;
+}
+
 export interface CustomerDto {
   id: string;
   businessId: string;
@@ -95,11 +101,26 @@ export interface SaleLineItemInputDto {
   quantity: number;
 }
 
+export interface SalePaymentInputDto {
+  method: PaymentMethod;
+  amount: number;
+  /** Only meaningful for a CASH leg; omitted means "exact cash, no change". */
+  tendered?: number;
+}
+
 export interface CreateSaleDto {
   storeId: string;
   customerId?: string | null;
-  paymentMethod: PaymentMethod;
+  payments: SalePaymentInputDto[];
   lineItems: SaleLineItemInputDto[];
+}
+
+export interface SalePaymentDto {
+  id: string;
+  method: PaymentMethod;
+  amount: string;
+  tendered: string | null;
+  change: string | null;
 }
 
 export interface SaleLineItemDto {
@@ -296,7 +317,10 @@ export interface SaleDto {
   discountTotal: string;
   total: string;
   paymentMethod: PaymentMethod;
+  amountTendered: string | null;
+  changeDue: string | null;
   status: SaleStatus;
   createdAt: string;
   lineItems: SaleLineItemDto[];
+  payments: SalePaymentDto[];
 }

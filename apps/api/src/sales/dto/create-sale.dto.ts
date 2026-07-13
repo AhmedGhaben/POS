@@ -3,6 +3,7 @@ import {
   ArrayMinSize,
   IsEnum,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Min,
@@ -19,6 +20,20 @@ export class SaleLineItemInputDto {
   quantity!: number;
 }
 
+export class SalePaymentInputDto {
+  @IsEnum(PaymentMethod)
+  method!: PaymentMethod;
+
+  @IsNumber()
+  @Min(0.01)
+  amount!: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  tendered?: number;
+}
+
 export class CreateSaleDto {
   @IsString()
   storeId!: string;
@@ -27,8 +42,10 @@ export class CreateSaleDto {
   @IsString()
   customerId?: string;
 
-  @IsEnum(PaymentMethod)
-  paymentMethod!: PaymentMethod;
+  @ValidateNested({ each: true })
+  @Type(() => SalePaymentInputDto)
+  @ArrayMinSize(1)
+  payments!: SalePaymentInputDto[];
 
   @ValidateNested({ each: true })
   @Type(() => SaleLineItemInputDto)

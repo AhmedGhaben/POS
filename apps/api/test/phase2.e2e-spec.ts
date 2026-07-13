@@ -118,10 +118,18 @@ describe("POS API Phase 2 (e2e)", () => {
         .expect(200)
     ).body.find((i: { productId: string }) => i.productId === product.id).quantity;
 
+    const quantity = 6;
+    const lineSubtotal = Number(product.sellPrice) * quantity;
+    const total = lineSubtotal + (lineSubtotal * Number(product.taxRate ?? 0)) / 100;
+
     const saleRes = await request(app.getHttpServer())
       .post("/sales")
       .set("Authorization", `Bearer ${token}`)
-      .send({ storeId: STORE_ID, paymentMethod: "CASH", lineItems: [{ productId: product.id, quantity: 6 }] })
+      .send({
+        storeId: STORE_ID,
+        payments: [{ method: "CASH", amount: total }],
+        lineItems: [{ productId: product.id, quantity }],
+      })
       .expect(201);
     const saleId = saleRes.body.id;
 

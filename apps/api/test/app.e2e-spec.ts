@@ -96,13 +96,17 @@ describe("POS API (e2e)", () => {
     );
     expect(before).toBeDefined();
 
+    const quantity = 2;
+    const lineSubtotal = Number(product.sellPrice) * quantity;
+    const total = lineSubtotal + (lineSubtotal * Number(product.taxRate ?? 0)) / 100;
+
     const saleRes = await request(app.getHttpServer())
       .post("/sales")
       .set("Authorization", `Bearer ${token}`)
       .send({
         storeId: STORE_ID,
-        paymentMethod: "CASH",
-        lineItems: [{ productId: product.id, quantity: 2 }],
+        payments: [{ method: "CASH", amount: total }],
+        lineItems: [{ productId: product.id, quantity }],
       })
       .expect(201);
     expect(saleRes.body.receiptNumber).toBeDefined();
@@ -136,7 +140,7 @@ describe("POS API (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({
         storeId: STORE_ID,
-        paymentMethod: "CASH",
+        payments: [{ method: "CASH", amount: 1 }],
         lineItems: [{ productId: product.id, quantity: 999999 }],
       })
       .expect(400);

@@ -1,7 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { Prisma, PaymentMethod } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateSaleDto } from "./dto/create-sale.dto";
+
+const SALE_INCLUDE = {
+  lineItems: { include: { product: true } },
+  payments: true,
+} satisfies Prisma.SaleInclude;
 
 @Injectable()
 export class SalesService {
@@ -10,7 +15,7 @@ export class SalesService {
   findByStore(storeId: string) {
     return this.prisma.sale.findMany({
       where: { storeId },
-      include: { lineItems: { include: { product: true } } },
+      include: SALE_INCLUDE,
       orderBy: { createdAt: "desc" },
       take: 50,
     });
@@ -50,6 +55,31 @@ export class SalesService {
     const total = subtotal.add(taxTotal);
     const receiptNumber = `${dto.storeId.slice(-4).toUpperCase()}-${Date.now()}`;
 
+    const paymentsTotal = dto.payments.reduce(
+      (sum, p) => sum.add(new Prisma.Decimal(p.amount)),
+      new Prisma.Decimal(0),
+    );
+    if (paymentsTotal.sub(total).abs().gt(0.01)) {
+      throw new BadRequestException("Payment amounts do not cover the total");
+    }
+
+    let amountTendered: Prisma.Decimal | null = null;
+    let changeDue: Prisma.Decimal | null = null;
+    const paymentsData = dto.payments.map((p) => {
+      const amount = new Prisma.Decimal(p.amount);
+      if (p.method !== PaymentMethod.CASH) {
+        return { method: p.method, amount, tendered: null, change: null };
+      }
+      const tendered = p.tendered !== undefined ? new Prisma.Decimal(p.tendered) : amount;
+      const change = tendered.sub(amount);
+      if (change.lt(0)) {
+        throw new BadRequestException("Tendered amount is less than the payment amount");
+      }
+      amountTendered = (amountTendered ?? new Prisma.Decimal(0)).add(tendered);
+      changeDue = (changeDue ?? new Prisma.Decimal(0)).add(change);
+      return { method: p.method, amount, tendered, change };
+    });
+
     return this.prisma.$transaction(async (tx) => {
       for (const li of dto.lineItems) {
         const inventoryItem = await tx.inventoryItem.findUnique({
@@ -78,10 +108,13 @@ export class SalesService {
           taxTotal,
           discountTotal: new Prisma.Decimal(0),
           total,
-          paymentMethod: dto.paymentMethod,
+          paymentMethod: dto.payments[0].method,
+          amountTendered,
+          changeDue,
           lineItems: { create: lineItemsData },
+          payments: { create: paymentsData },
         },
-        include: { lineItems: { include: { product: true } } },
+        include: SALE_INCLUDE,
       });
     });
   }

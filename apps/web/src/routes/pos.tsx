@@ -1,26 +1,19 @@
 import * as React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { PaymentMethod } from "@pos/shared";
-import type { SaleDto } from "@pos/shared";
+import type { CustomerDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProductSearchInput } from "@/features/pos/components/ProductSearchInput";
 import { CategoryFilter } from "@/features/pos/components/CategoryFilter";
 import { ProductGrid } from "@/features/pos/components/ProductGrid";
 import { Cart } from "@/features/pos/components/Cart";
 import { Receipt } from "@/features/pos/components/Receipt";
+import { PaymentPanel } from "@/features/pos/components/PaymentPanel";
+import { CustomerSearchCombobox } from "@/features/pos/components/CustomerSearchCombobox";
 import { useCart } from "@/features/pos/hooks/useCart";
 import { createSale } from "@/features/pos/api";
 import { useAuthStore } from "@/features/auth/store";
 import { ApiError } from "@/lib/api-client";
-
-const PAYMENT_LABELS: Record<PaymentMethod, string> = {
-  [PaymentMethod.CASH]: "Cash",
-  [PaymentMethod.CARD]: "Card",
-  [PaymentMethod.MOBILE_MONEY]: "Mobile money",
-  [PaymentMethod.OTHER]: "Other",
-};
 
 export function PosPage() {
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
@@ -28,20 +21,29 @@ export function PosPage() {
   const storeName = stores.find((s) => s.id === currentStoreId)?.name ?? "Store";
   const { lines, addProduct, setQuantity, removeLine, clear, totals } = useCart();
   const [selectedCategoryId, setSelectedCategoryId] = React.useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>(PaymentMethod.CASH);
+  const [payments, setPayments] = React.useState<SalePaymentInputDto[]>([]);
+  const [paymentsValid, setPaymentsValid] = React.useState(true);
+  const [customer, setCustomer] = React.useState<CustomerDto | null>(null);
   const [completedSale, setCompletedSale] = React.useState<SaleDto | null>(null);
+  const [completedCustomer, setCompletedCustomer] = React.useState<CustomerDto | null>(null);
+  const [paymentPanelKey, setPaymentPanelKey] = React.useState(0);
   const queryClient = useQueryClient();
+  const checkoutAreaRef = React.useRef<HTMLDivElement>(null);
 
   const saleMutation = useMutation({
     mutationFn: () =>
       createSale({
         storeId: currentStoreId!,
-        paymentMethod,
+        customerId: customer?.id ?? null,
+        payments,
         lineItems: lines.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
       }),
     onSuccess: (sale) => {
       setCompletedSale(sale);
+      setCompletedCustomer(customer);
       clear();
+      setCustomer(null);
+      setPaymentPanelKey((k) => k + 1);
       queryClient.invalidateQueries({ queryKey: ["inventory", currentStoreId] });
     },
   });
@@ -53,7 +55,7 @@ export function PosPage() {
   return (
     <div className="flex h-[calc(100vh-3.5rem)]">
       <div className="flex flex-1 flex-col border-r p-4">
-        <ProductSearchInput onSelect={addProduct} />
+        <ProductSearchInput onSelect={addProduct} suppressRefocusRef={checkoutAreaRef} />
         <CategoryFilter selectedCategoryId={selectedCategoryId} onSelect={setSelectedCategoryId} />
         <ProductGrid categoryId={selectedCategoryId} onSelect={addProduct} />
         <Cart lines={lines} onSetQuantity={setQuantity} onRemove={removeLine} />
@@ -75,19 +77,16 @@ export function PosPage() {
           </div>
         </div>
 
-        <div className="space-y-3">
-          <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(PaymentMethod).map((method) => (
-                <SelectItem key={method} value={method}>
-                  {PAYMENT_LABELS[method]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="space-y-3" ref={checkoutAreaRef}>
+          <CustomerSearchCombobox selected={customer} onSelect={setCustomer} />
+          <PaymentPanel
+            key={paymentPanelKey}
+            total={totals.total}
+            onChange={(p, valid) => {
+              setPayments(p);
+              setPaymentsValid(valid);
+            }}
+          />
 
           {saleMutation.isError && (
             <p className="text-sm text-destructive">
@@ -100,7 +99,7 @@ export function PosPage() {
           <Button
             size="lg"
             className="w-full"
-            disabled={lines.length === 0 || saleMutation.isPending}
+            disabled={lines.length === 0 || !paymentsValid || saleMutation.isPending}
             onClick={() => saleMutation.mutate()}
           >
             {saleMutation.isPending ? "Processing..." : `Charge $${totals.total.toFixed(2)}`}
@@ -121,7 +120,9 @@ export function PosPage() {
           <DialogHeader>
             <DialogTitle>Sale complete</DialogTitle>
           </DialogHeader>
-          {completedSale && <Receipt sale={completedSale} storeName={storeName} />}
+          {completedSale && (
+            <Receipt sale={completedSale} storeName={storeName} customer={completedCustomer} />
+          )}
           <Button onClick={() => window.print()}>Print receipt</Button>
         </DialogContent>
       </Dialog>

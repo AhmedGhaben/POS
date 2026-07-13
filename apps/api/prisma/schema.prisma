@@ -208,11 +208,16 @@ model Sale {
   taxTotal      Decimal       @db.Decimal(10, 2)
   discountTotal Decimal       @default(0) @db.Decimal(10, 2)
   total         Decimal       @db.Decimal(10, 2)
-  paymentMethod PaymentMethod
-  status        SaleStatus    @default(COMPLETED)
-  createdAt     DateTime      @default(now())
+  /// Denormalized "first payment leg" — kept for back-compat with existing
+  /// reports; payments[] is the authoritative source for tender details.
+  paymentMethod  PaymentMethod
+  amountTendered Decimal?      @db.Decimal(10, 2)
+  changeDue      Decimal?      @db.Decimal(10, 2)
+  status         SaleStatus    @default(COMPLETED)
+  createdAt      DateTime      @default(now())
 
   lineItems SaleLineItem[]
+  payments  SalePayment[]
   returns   Return[]
 
   @@index([storeId, createdAt])
@@ -233,6 +238,22 @@ model SaleLineItem {
 
   @@index([saleId])
   @@map("sale_line_items")
+}
+
+/// One row per tender leg. Single-payment sales still get exactly one row —
+/// keeps the write path uniform between "simple" and "split" sales.
+model SalePayment {
+  id        String        @id @default(cuid())
+  saleId    String
+  sale      Sale          @relation(fields: [saleId], references: [id])
+  method    PaymentMethod
+  amount    Decimal       @db.Decimal(10, 2)
+  tendered  Decimal?      @db.Decimal(10, 2)
+  change    Decimal?      @db.Decimal(10, 2)
+  createdAt DateTime      @default(now())
+
+  @@index([saleId])
+  @@map("sale_payments")
 }
 
 model Supplier {
