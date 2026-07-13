@@ -24,3 +24,6 @@ build/
 
 # Prisma
 apps/api/prisma/dev.db
+
+# TypeScript build cache
+*.tsbuildinfo
