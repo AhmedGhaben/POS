@@ -306,21 +306,15 @@ async function main() {
     });
   }
 
-  // eslint-disable-next-line no-console
   console.log("Seed complete.");
-  // eslint-disable-next-line no-console
   console.log(`  Categories: ${Object.keys(CATALOG).length}, Products: ${totalProducts}`);
-  // eslint-disable-next-line no-console
   console.log(`  Suppliers: ${suppliers.length}`);
-  // eslint-disable-next-line no-console
   console.log(`  Owner login:   ${SEED_OWNER_EMAIL} / ${SEED_OWNER_PASSWORD}`);
-  // eslint-disable-next-line no-console
   console.log(`  Cashier login: ${SEED_CASHIER_EMAIL} / ${SEED_CASHIER_PASSWORD}`);
 }
 
 main()
   .catch((e) => {
-    // eslint-disable-next-line no-console
     console.error(e);
     process.exit(1);
   })

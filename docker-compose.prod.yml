@@ -1,0 +1,43 @@
+name: pos-prod
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pos
+      POSTGRES_PASSWORD: pos
+      POSTGRES_DB: pos
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: "postgresql://pos:pos@postgres:5432/pos?schema=public"
+      # Override these before any real deployment — defaults are for local
+      # docker-compose smoke testing only.
+      JWT_ACCESS_SECRET: "change-me-access-secret"
+      JWT_REFRESH_SECRET: "change-me-refresh-secret"
+      JWT_ACCESS_TTL: "30m"
+      JWT_REFRESH_TTL: "30d"
+      PORT: 3000
+      CORS_ORIGIN: "http://localhost:8080"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+volumes:
+  postgres_prod_data:

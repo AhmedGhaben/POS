@@ -60,6 +60,7 @@ model Business {
   customers  Customer[]
   suppliers  Supplier[]
   employees  Employee[]
+  auditLogs  AuditLog[]
 
   @@map("businesses")
 }
@@ -100,15 +101,71 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  storeUsers       StoreUser[]
-  salesCreated     Sale[]      @relation("SaleCashier")
-  purchasesCreated Purchase[]  @relation("PurchaseCreatedBy")
-  expensesLogged   Expense[]   @relation("ExpenseCreatedBy")
-  returnsProcessed Return[]    @relation("ReturnProcessedBy")
-  employeeProfile  Employee?
+  storeUsers          StoreUser[]
+  salesCreated        Sale[]                @relation("SaleCashier")
+  purchasesCreated    Purchase[]            @relation("PurchaseCreatedBy")
+  expensesLogged      Expense[]             @relation("ExpenseCreatedBy")
+  returnsProcessed    Return[]              @relation("ReturnProcessedBy")
+  employeeProfile     Employee?
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  auditLogs           AuditLog[]
 
   @@index([businessId])
   @@map("users")
+}
+
+/// Opaque, DB-backed refresh tokens (replacing stateless JWT refresh tokens)
+/// so a token can be individually revoked and rotation can be enforced.
+/// Only the sha256 hash is stored — the raw token lives only in the client's
+/// httpOnly cookie.
+model RefreshToken {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+  tokenHash         String    @unique
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  /// Id of the token this one was rotated into, for traceability only — not
+  /// a Prisma relation, just a plain reference to keep rotation lightweight.
+  replacedByTokenId String?
+  createdAt         DateTime  @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+/// Records who did what, when — one row per mutating (POST/PUT/PATCH/DELETE)
+/// request. Written by a global interceptor rather than per-service calls,
+/// so new mutating endpoints are covered automatically.
+model AuditLog {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, createdAt])
+  @@map("audit_logs")
 }
 
 /// Store-scoping join: which stores a MANAGER/CASHIER may access.
