@@ -14,6 +14,7 @@ import { EmployeesPage } from "@/routes/employees";
 import { PurchasesPage } from "@/routes/purchases";
 import { ExpensesPage } from "@/routes/expenses";
 import { ReturnsPage } from "@/routes/returns";
+import { TransfersPage } from "@/routes/transfers";
 
 /** Owner/Manager default to the back office; Cashier defaults straight to POS. */
 function DefaultLanding() {
@@ -34,6 +35,7 @@ export function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/transfers" element={<TransfersPage />} />
             <Route path="/purchases" element={<PurchasesPage />} />
             <Route path="/returns" element={<ReturnsPage />} />
             <Route path="/expenses" element={<ExpensesPage />} />

@@ -63,14 +63,15 @@ model Business {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  stores     Store[]
-  users      User[]
-  categories Category[]
-  products   Product[]
-  customers  Customer[]
-  suppliers  Supplier[]
-  employees  Employee[]
-  auditLogs  AuditLog[]
+  stores         Store[]
+  users          User[]
+  categories     Category[]
+  products       Product[]
+  customers      Customer[]
+  suppliers      Supplier[]
+  employees      Employee[]
+  auditLogs      AuditLog[]
+  stockTransfers StockTransfer[]
 
   @@map("businesses")
 }
@@ -86,13 +87,15 @@ model Store {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  storeUsers     StoreUser[]
-  inventoryItems InventoryItem[]
-  sales          Sale[]
-  purchases      Purchase[]
-  expenses       Expense[]
-  returns        Return[]
-  employees      Employee[]
+  storeUsers      StoreUser[]
+  inventoryItems  InventoryItem[]
+  sales           Sale[]
+  purchases       Purchase[]
+  expenses        Expense[]
+  returns         Return[]
+  employees       Employee[]
+  transfersOut    StockTransfer[] @relation("TransferFrom")
+  transfersIn     StockTransfer[] @relation("TransferTo")
 
   @@index([businessId])
   @@map("stores")
@@ -121,6 +124,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   auditLogs           AuditLog[]
   permissionOverrides UserPermission[]
+  transfersCreated    StockTransfer[]      @relation("TransferCreatedBy")
 
   @@index([businessId])
   @@map("users")
@@ -237,10 +241,11 @@ model Product {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  inventoryItems    InventoryItem[]
-  saleLineItems     SaleLineItem[]
-  purchaseLineItems PurchaseLineItem[]
-  returnLineItems   ReturnLineItem[]
+  inventoryItems       InventoryItem[]
+  saleLineItems        SaleLineItem[]
+  purchaseLineItems    PurchaseLineItem[]
+  returnLineItems      ReturnLineItem[]
+  transferLineItems    StockTransferLineItem[]
 
   @@unique([businessId, sku])
   @@index([businessId, barcode])
@@ -466,4 +471,39 @@ model ReturnLineItem {
 
   @@index([returnId])
   @@map("return_line_items")
+}
+
+/// Moves stock from one store to another within the same business. Always
+/// applied atomically and immediately — there is no pending/approval state.
+model StockTransfer {
+  id              String   @id @default(cuid())
+  businessId      String
+  business        Business @relation(fields: [businessId], references: [id])
+  fromStoreId     String
+  fromStore       Store    @relation("TransferFrom", fields: [fromStoreId], references: [id])
+  toStoreId       String
+  toStore         Store    @relation("TransferTo", fields: [toStoreId], references: [id])
+  transferredById String
+  transferredBy   User     @relation("TransferCreatedBy", fields: [transferredById], references: [id])
+  note            String?
+  createdAt       DateTime @default(now())
+
+  lineItems StockTransferLineItem[]
+
+  @@index([businessId, createdAt])
+  @@index([fromStoreId])
+  @@index([toStoreId])
+  @@map("stock_transfers")
+}
+
+model StockTransferLineItem {
+  id         String        @id @default(cuid())
+  transferId String
+  transfer   StockTransfer @relation(fields: [transferId], references: [id])
+  productId  String
+  product    Product       @relation(fields: [productId], references: [id])
+  quantity   Int
+
+  @@index([transferId])
+  @@map("stock_transfer_line_items")
 }

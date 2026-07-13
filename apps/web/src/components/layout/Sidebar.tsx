@@ -9,6 +9,7 @@ import {
   ShoppingBag,
   Receipt,
   Undo2,
+  ArrowLeftRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/products", label: "Products", icon: Package },
   { to: "/inventory", label: "Inventory", icon: Boxes },
+  { to: "/transfers", label: "Transfers", icon: ArrowLeftRight },
   { to: "/purchases", label: "Purchases", icon: ShoppingBag },
   { to: "/returns", label: "Returns", icon: Undo2 },
   { to: "/expenses", label: "Expenses", icon: Receipt },

@@ -231,6 +231,42 @@ export interface PurchaseDto {
   lineItems: PurchaseLineItemDto[];
 }
 
+export interface TransferLineItemInputDto {
+  productId: string;
+  quantity: number;
+}
+
+export interface CreateTransferDto {
+  fromStoreId: string;
+  toStoreId: string;
+  note?: string;
+  lineItems: TransferLineItemInputDto[];
+}
+
+export interface TransferLineItemDto {
+  id: string;
+  productId: string;
+  product: ProductDto;
+  quantity: number;
+}
+
+export interface TransferStoreSummaryDto {
+  id: string;
+  name: string;
+}
+
+export interface StockTransferDto {
+  id: string;
+  fromStoreId: string;
+  fromStore: TransferStoreSummaryDto;
+  toStoreId: string;
+  toStore: TransferStoreSummaryDto;
+  transferredById: string;
+  note: string | null;
+  createdAt: string;
+  lineItems: TransferLineItemDto[];
+}
+
 export interface CreateExpenseDto {
   storeId: string;
   category: ExpenseCategory;
