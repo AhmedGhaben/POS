@@ -1,8 +1,11 @@
 import * as React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ShoppingCart } from "lucide-react";
 import type { CustomerDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ProductSearchInput } from "@/features/pos/components/ProductSearchInput";
 import { CategoryFilter } from "@/features/pos/components/CategoryFilter";
 import { ProductGrid } from "@/features/pos/components/ProductGrid";
@@ -27,6 +30,7 @@ export function PosPage() {
   const [completedSale, setCompletedSale] = React.useState<SaleDto | null>(null);
   const [completedCustomer, setCompletedCustomer] = React.useState<CustomerDto | null>(null);
   const [paymentPanelKey, setPaymentPanelKey] = React.useState(0);
+  const [cartSheetOpen, setCartSheetOpen] = React.useState(false);
   const queryClient = useQueryClient();
   const checkoutAreaRef = React.useRef<HTMLDivElement>(null);
 
@@ -44,6 +48,7 @@ export function PosPage() {
       clear();
       setCustomer(null);
       setPaymentPanelKey((k) => k + 1);
+      setCartSheetOpen(false);
       queryClient.invalidateQueries({ queryKey: ["inventory", currentStoreId] });
     },
   });
@@ -52,68 +57,95 @@ export function PosPage() {
     return <p className="p-6 text-muted-foreground">No store selected.</p>;
   }
 
+  const checkoutPanel = (
+    <>
+      <div className="flex-1 space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Subtotal</span>
+          <span>${totals.subtotal.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Tax</span>
+          <span>${totals.taxTotal.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-lg font-semibold">
+          <span>Total</span>
+          <span>${totals.total.toFixed(2)}</span>
+        </div>
+      </div>
+
+      <div className="space-y-3" ref={checkoutAreaRef}>
+        <CustomerSearchCombobox selected={customer} onSelect={setCustomer} />
+        <PaymentPanel
+          key={paymentPanelKey}
+          total={totals.total}
+          onChange={(p, valid) => {
+            setPayments(p);
+            setPaymentsValid(valid);
+          }}
+        />
+
+        {saleMutation.isError && (
+          <p className="text-sm text-destructive">
+            {saleMutation.error instanceof ApiError
+              ? saleMutation.error.message
+              : "Unable to complete sale"}
+          </p>
+        )}
+
+        <Button
+          size="lg"
+          className="w-full"
+          disabled={lines.length === 0 || !paymentsValid || saleMutation.isPending}
+          onClick={() => saleMutation.mutate()}
+        >
+          {saleMutation.isPending ? "Processing..." : `Charge $${totals.total.toFixed(2)}`}
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full"
+          disabled={lines.length === 0}
+          onClick={clear}
+        >
+          Clear cart
+        </Button>
+      </div>
+    </>
+  );
+
   return (
-    <div className="flex h-[calc(100vh-3.5rem)]">
-      <div className="flex flex-1 flex-col border-r p-4">
+    <div className="flex h-[calc(100vh-3.5rem)] flex-col lg:flex-row">
+      <div className="flex flex-1 flex-col overflow-y-auto border-r p-4 lg:overflow-visible">
         <ProductSearchInput onSelect={addProduct} suppressRefocusRef={checkoutAreaRef} />
         <CategoryFilter selectedCategoryId={selectedCategoryId} onSelect={setSelectedCategoryId} />
         <ProductGrid categoryId={selectedCategoryId} onSelect={addProduct} />
         <Cart lines={lines} onSetQuantity={setQuantity} onRemove={removeLine} />
       </div>
 
-      <div className="flex w-96 flex-col p-4">
-        <div className="flex-1 space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span>${totals.subtotal.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Tax</span>
-            <span>${totals.taxTotal.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-lg font-semibold">
-            <span>Total</span>
-            <span>${totals.total.toFixed(2)}</span>
-          </div>
-        </div>
+      <div className="hidden w-96 flex-col p-4 lg:flex">{checkoutPanel}</div>
 
-        <div className="space-y-3" ref={checkoutAreaRef}>
-          <CustomerSearchCombobox selected={customer} onSelect={setCustomer} />
-          <PaymentPanel
-            key={paymentPanelKey}
-            total={totals.total}
-            onChange={(p, valid) => {
-              setPayments(p);
-              setPaymentsValid(valid);
-            }}
-          />
-
-          {saleMutation.isError && (
-            <p className="text-sm text-destructive">
-              {saleMutation.error instanceof ApiError
-                ? saleMutation.error.message
-                : "Unable to complete sale"}
-            </p>
-          )}
-
+      <Sheet open={cartSheetOpen} onOpenChange={setCartSheetOpen}>
+        <SheetTrigger asChild>
           <Button
             size="lg"
-            className="w-full"
-            disabled={lines.length === 0 || !paymentsValid || saleMutation.isPending}
-            onClick={() => saleMutation.mutate()}
+            className="fixed bottom-4 right-4 z-40 gap-2 shadow-lg lg:hidden"
           >
-            {saleMutation.isPending ? "Processing..." : `Charge $${totals.total.toFixed(2)}`}
+            <ShoppingCart className="h-4 w-4" />
+            Cart
+            {lines.length > 0 && (
+              <Badge variant="secondary" className="ml-1">
+                {lines.length}
+              </Badge>
+            )}
           </Button>
-          <Button
-            variant="outline"
-            className="w-full"
-            disabled={lines.length === 0}
-            onClick={clear}
-          >
-            Clear cart
-          </Button>
-        </div>
-      </div>
+        </SheetTrigger>
+        <SheetContent side="right" className="flex w-full flex-col p-4 sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Checkout</SheetTitle>
+          </SheetHeader>
+          {checkoutPanel}
+        </SheetContent>
+      </Sheet>
 
       <Dialog open={!!completedSale} onOpenChange={(open) => !open && setCompletedSale(null)}>
         <DialogContent>

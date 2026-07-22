@@ -1,9 +1,11 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuthStore } from "@/features/auth/store";
 import { adjustStock, fetchInventory } from "@/features/inventory/api";
 
@@ -23,6 +25,10 @@ export function InventoryPage() {
       adjustStock(currentStoreId!, productId, { quantity }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory", currentStoreId] });
+      toast.success("Stock updated");
+    },
+    onError: (error) => {
+      toast.error((error as Error).message);
     },
   });
 
@@ -36,32 +42,32 @@ export function InventoryPage() {
       <p className="mb-6 text-sm text-muted-foreground">Stock levels for the current store.</p>
 
       <Card>
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="p-3 font-medium">Product</th>
-                <th className="p-3 font-medium">Reorder level</th>
-                <th className="p-3 font-medium">Quantity</th>
-                <th className="p-3 font-medium" />
-              </tr>
-            </thead>
-            <tbody>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Product</TableHead>
+                <TableHead>Reorder level</TableHead>
+                <TableHead>Quantity</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {inventoryQuery.data?.map((item) => {
                 const editValue = edits[item.productId] ?? String(item.quantity);
                 const low = item.quantity <= item.reorderLevel;
                 return (
-                  <tr key={item.id} className="border-b last:border-0">
-                    <td className="p-3">
+                  <TableRow key={item.id}>
+                    <TableCell>
                       {item.product.name}
                       {low && (
                         <Badge variant="destructive" className="ml-2">
                           Low stock
                         </Badge>
                       )}
-                    </td>
-                    <td className="p-3 text-muted-foreground">{item.reorderLevel}</td>
-                    <td className="p-3">
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{item.reorderLevel}</TableCell>
+                    <TableCell>
                       <Input
                         type="number"
                         min={0}
@@ -71,8 +77,8 @@ export function InventoryPage() {
                           setEdits((prev) => ({ ...prev, [item.productId]: e.target.value }))
                         }
                       />
-                    </td>
-                    <td className="p-3 text-right">
+                    </TableCell>
+                    <TableCell className="text-right">
                       <Button
                         size="sm"
                         variant="outline"
@@ -86,19 +92,19 @@ export function InventoryPage() {
                       >
                         Save
                       </Button>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
               {inventoryQuery.data?.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="p-6 text-center text-muted-foreground">
+                <TableRow>
+                  <TableCell colSpan={4} className="p-6 text-center text-muted-foreground">
                     No inventory yet for this store.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

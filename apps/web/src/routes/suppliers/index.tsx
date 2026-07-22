@@ -1,9 +1,12 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -12,34 +15,53 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createSupplier, fetchSuppliers } from "@/features/suppliers/api";
+
+const supplierSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  contactName: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().optional(),
+  address: z.string().optional(),
+});
+
+const defaultValues = {
+  name: "",
+  contactName: "",
+  phone: "",
+  email: "",
+  address: "",
+};
 
 export function SuppliersPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const queryClient = useQueryClient();
   const suppliersQuery = useQuery({ queryKey: ["suppliers"], queryFn: fetchSuppliers });
 
-  const [form, setForm] = React.useState({
-    name: "",
-    contactName: "",
-    phone: "",
-    email: "",
-    address: "",
+  const form = useForm<z.infer<typeof supplierSchema>>({
+    resolver: zodResolver(supplierSchema),
+    defaultValues,
   });
 
   const createMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: z.infer<typeof supplierSchema>) =>
       createSupplier({
-        name: form.name,
-        contactName: form.contactName || undefined,
-        phone: form.phone || undefined,
-        email: form.email || undefined,
-        address: form.address || undefined,
+        name: values.name,
+        contactName: values.contactName || undefined,
+        phone: values.phone || undefined,
+        email: values.email || undefined,
+        address: values.address || undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       setDialogOpen(false);
-      setForm({ name: "", contactName: "", phone: "", email: "", address: "" });
+      form.reset(defaultValues);
+      toast.success("Supplier created");
+    },
+    onError: (error) => {
+      toast.error((error as Error).message);
     },
   });
 
@@ -60,75 +82,116 @@ export function SuppliersPage() {
             <DialogHeader>
               <DialogTitle>New supplier</DialogTitle>
             </DialogHeader>
-            <form
-              className="space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                createMutation.mutate();
-              }}
-            >
-              <div className="space-y-1.5">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="contactName">Contact name</Label>
-                <Input id="contactName" value={form.contactName} onChange={(e) => setForm({ ...form, contactName: e.target.value })} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <Form {...form}>
+              <form
+                className="space-y-3"
+                onSubmit={form.handleSubmit((values) => createMutation.mutate(values))}
+              >
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="contactName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="address">Address</Label>
-                <Input id="address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-              </div>
-              {createMutation.isError && (
-                <p className="text-sm text-destructive">{(createMutation.error as Error).message}</p>
-              )}
-              <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Saving..." : "Save supplier"}
-              </Button>
-            </form>
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? "Saving..." : "Save supplier"}
+                </Button>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
 
       <Card>
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="p-3 font-medium">Name</th>
-                <th className="p-3 font-medium">Contact</th>
-                <th className="p-3 font-medium">Phone</th>
-                <th className="p-3 font-medium">Email</th>
-              </tr>
-            </thead>
-            <tbody>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Email</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {suppliersQuery.data?.map((supplier) => (
-                <tr key={supplier.id} className="border-b last:border-0">
-                  <td className="p-3">{supplier.name}</td>
-                  <td className="p-3 text-muted-foreground">{supplier.contactName ?? "—"}</td>
-                  <td className="p-3 text-muted-foreground">{supplier.phone ?? "—"}</td>
-                  <td className="p-3 text-muted-foreground">{supplier.email ?? "—"}</td>
-                </tr>
+                <TableRow key={supplier.id}>
+                  <TableCell>{supplier.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{supplier.contactName ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{supplier.phone ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{supplier.email ?? "—"}</TableCell>
+                </TableRow>
               ))}
               {suppliersQuery.data?.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="p-6 text-center text-muted-foreground">
+                <TableRow>
+                  <TableCell colSpan={4} className="p-6 text-center text-muted-foreground">
                     No suppliers yet.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

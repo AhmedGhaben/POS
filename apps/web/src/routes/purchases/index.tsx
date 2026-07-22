@@ -1,5 +1,9 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useFieldArray, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,16 +17,28 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createPurchase, fetchPurchases } from "@/features/purchases/api";
 import { fetchSuppliers } from "@/features/suppliers/api";
 import { fetchProducts } from "@/features/products/api";
 import { useAuthStore } from "@/features/auth/store";
 
-interface DraftLine {
-  productId: string;
-  quantity: string;
-  unitCost: string;
-}
+const lineSchema = z.object({
+  productId: z.string().min(1, "Required"),
+  quantity: z.coerce.number().int("Whole numbers only").min(1, "Must be at least 1"),
+  unitCost: z.coerce.number().min(0, "Must be 0 or more"),
+});
+
+const purchaseSchema = z.object({
+  supplierId: z.string().min(1, "Supplier is required"),
+  lines: z.array(lineSchema).min(1, "Add at least one line item"),
+});
+
+const defaultValues = {
+  supplierId: "",
+  lines: [{ productId: "", quantity: "1", unitCost: "" }],
+};
 
 export function PurchasesPage() {
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
@@ -37,34 +53,34 @@ export function PurchasesPage() {
   const suppliersQuery = useQuery({ queryKey: ["suppliers"], queryFn: fetchSuppliers });
   const productsQuery = useQuery({ queryKey: ["products"], queryFn: () => fetchProducts() });
 
-  const [supplierId, setSupplierId] = React.useState("");
-  const [lines, setLines] = React.useState<DraftLine[]>([{ productId: "", quantity: "1", unitCost: "" }]);
+  const form = useForm<z.input<typeof purchaseSchema>, unknown, z.output<typeof purchaseSchema>>({
+    resolver: zodResolver(purchaseSchema),
+    defaultValues,
+  });
+  const { fields, append, remove } = useFieldArray({ control: form.control, name: "lines" });
 
   const createMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: z.output<typeof purchaseSchema>) =>
       createPurchase({
         storeId: currentStoreId!,
-        supplierId,
-        lineItems: lines
-          .filter((l) => l.productId && l.quantity && l.unitCost)
-          .map((l) => ({
-            productId: l.productId,
-            quantity: Number(l.quantity),
-            unitCost: Number(l.unitCost),
-          })),
+        supplierId: values.supplierId,
+        lineItems: values.lines.map((l) => ({
+          productId: l.productId,
+          quantity: l.quantity,
+          unitCost: l.unitCost,
+        })),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchases", currentStoreId] });
       queryClient.invalidateQueries({ queryKey: ["inventory", currentStoreId] });
       setDialogOpen(false);
-      setSupplierId("");
-      setLines([{ productId: "", quantity: "1", unitCost: "" }]);
+      form.reset(defaultValues);
+      toast.success("Purchase recorded");
+    },
+    onError: (error) => {
+      toast.error((error as Error).message);
     },
   });
-
-  function updateLine(index: number, patch: Partial<DraftLine>) {
-    setLines((prev) => prev.map((l, i) => (i === index ? { ...l, ...patch } : l)));
-  }
 
   if (!currentStoreId) {
     return <p className="p-6 text-muted-foreground">No store selected.</p>;
@@ -87,123 +103,161 @@ export function PurchasesPage() {
             <DialogHeader>
               <DialogTitle>New purchase</DialogTitle>
             </DialogHeader>
-            <form
-              className="space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                createMutation.mutate();
-              }}
-            >
-              <div className="space-y-1.5">
-                <Label>Supplier</Label>
-                <Select value={supplierId} onValueChange={setSupplierId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a supplier" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {suppliersQuery.data?.map((supplier) => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <Form {...form}>
+              <form
+                className="space-y-3"
+                onSubmit={form.handleSubmit((values) => createMutation.mutate(values))}
+              >
+                <FormField
+                  control={form.control}
+                  name="supplierId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Supplier</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a supplier" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {suppliersQuery.data?.map((supplier) => (
+                            <SelectItem key={supplier.id} value={supplier.id}>
+                              {supplier.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <div className="space-y-2">
-                <Label>Line items</Label>
-                {lines.map((line, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Select value={line.productId} onValueChange={(v) => updateLine(index, { productId: v })}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Product" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {productsQuery.data?.map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            {product.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="number"
-                      min={1}
-                      placeholder="Qty"
-                      className="w-20"
-                      value={line.quantity}
-                      onChange={(e) => updateLine(index, { quantity: e.target.value })}
-                    />
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      placeholder="Unit cost"
-                      className="w-28"
-                      value={line.unitCost}
-                      onChange={(e) => updateLine(index, { unitCost: e.target.value })}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setLines((prev) => prev.filter((_, i) => i !== index))}
-                      disabled={lines.length === 1}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setLines((prev) => [...prev, { productId: "", quantity: "1", unitCost: "" }])}
-                >
-                  <Plus className="mr-1 h-3 w-3" /> Add line
+                <div className="space-y-2">
+                  <Label>Line items</Label>
+                  {fields.map((line, index) => (
+                    <div key={line.id} className="flex items-start gap-2">
+                      <FormField
+                        control={form.control}
+                        name={`lines.${index}.productId`}
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Product" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {productsQuery.data?.map((product) => (
+                                  <SelectItem key={product.id} value={product.id}>
+                                    {product.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`lines.${index}.quantity`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min={1}
+                                placeholder="Qty"
+                                className="w-20"
+                                {...field}
+                                value={field.value as string}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`lines.${index}.unitCost`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min={0}
+                                placeholder="Unit cost"
+                                className="w-28"
+                                {...field}
+                                value={field.value as string}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => remove(index)}
+                        disabled={fields.length === 1}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append({ productId: "", quantity: "1", unitCost: "" })}
+                  >
+                    <Plus className="mr-1 h-3 w-3" /> Add line
+                  </Button>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? "Saving..." : "Record purchase"}
                 </Button>
-              </div>
-
-              {createMutation.isError && (
-                <p className="text-sm text-destructive">{(createMutation.error as Error).message}</p>
-              )}
-              <Button type="submit" className="w-full" disabled={createMutation.isPending || !supplierId}>
-                {createMutation.isPending ? "Saving..." : "Record purchase"}
-              </Button>
-            </form>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
 
       <Card>
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="p-3 font-medium">PO #</th>
-                <th className="p-3 font-medium">Supplier</th>
-                <th className="p-3 font-medium">Items</th>
-                <th className="p-3 font-medium text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>PO #</TableHead>
+                <TableHead>Supplier</TableHead>
+                <TableHead>Items</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {purchasesQuery.data?.map((purchase) => (
-                <tr key={purchase.id} className="border-b last:border-0">
-                  <td className="p-3 font-mono text-xs">{purchase.purchaseNumber}</td>
-                  <td className="p-3">{purchase.supplier.name}</td>
-                  <td className="p-3 text-muted-foreground">{purchase.lineItems.length}</td>
-                  <td className="p-3 text-right">${Number(purchase.total).toFixed(2)}</td>
-                </tr>
+                <TableRow key={purchase.id}>
+                  <TableCell className="font-mono text-xs">{purchase.purchaseNumber}</TableCell>
+                  <TableCell>{purchase.supplier.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{purchase.lineItems.length}</TableCell>
+                  <TableCell className="text-right">${Number(purchase.total).toFixed(2)}</TableCell>
+                </TableRow>
               ))}
               {purchasesQuery.data?.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="p-6 text-center text-muted-foreground">
+                <TableRow>
+                  <TableCell colSpan={4} className="p-6 text-center text-muted-foreground">
                     No purchases yet.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

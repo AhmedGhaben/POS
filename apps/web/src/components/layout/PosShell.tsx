@@ -40,6 +40,9 @@ export function PosShell() {
           <span />
         )}
         <div className="flex items-center gap-2">
+          <kbd className="hidden items-center gap-1 rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-flex">
+            <span>⌘</span>K
+          </kbd>
           <StoreSwitcher />
           <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}

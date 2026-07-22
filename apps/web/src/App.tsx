@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { Toaster } from "@/components/ui/sonner";
 import { BackOfficeShell } from "@/components/layout/BackOfficeShell";
 import { BackOfficeRoute } from "@/components/layout/BackOfficeRoute";
 import { PosShell } from "@/components/layout/PosShell";
@@ -24,28 +25,31 @@ function DefaultLanding() {
 
 export function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route element={<ProtectedRoute />}>
-        <Route element={<PosShell />}>
-          <Route path="/pos" element={<PosPage />} />
-        </Route>
-        <Route element={<BackOfficeRoute />}>
-          <Route element={<BackOfficeShell />}>
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/products" element={<ProductsPage />} />
-            <Route path="/inventory" element={<InventoryPage />} />
-            <Route path="/transfers" element={<TransfersPage />} />
-            <Route path="/purchases" element={<PurchasesPage />} />
-            <Route path="/returns" element={<ReturnsPage />} />
-            <Route path="/expenses" element={<ExpensesPage />} />
-            <Route path="/suppliers" element={<SuppliersPage />} />
-            <Route path="/employees" element={<EmployeesPage />} />
+    <>
+      <Toaster position="top-right" />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<PosShell />}>
+            <Route path="/pos" element={<PosPage />} />
           </Route>
+          <Route element={<BackOfficeRoute />}>
+            <Route element={<BackOfficeShell />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/products" element={<ProductsPage />} />
+              <Route path="/inventory" element={<InventoryPage />} />
+              <Route path="/transfers" element={<TransfersPage />} />
+              <Route path="/purchases" element={<PurchasesPage />} />
+              <Route path="/returns" element={<ReturnsPage />} />
+              <Route path="/expenses" element={<ExpensesPage />} />
+              <Route path="/suppliers" element={<SuppliersPage />} />
+              <Route path="/employees" element={<EmployeesPage />} />
+            </Route>
+          </Route>
+          <Route path="/" element={<DefaultLanding />} />
         </Route>
-        <Route path="/" element={<DefaultLanding />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }

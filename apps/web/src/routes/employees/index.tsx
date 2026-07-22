@@ -1,9 +1,12 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -13,9 +16,31 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createEmployee, fetchEmployees } from "@/features/employees/api";
 import { PermissionsDialog } from "@/features/users/components/PermissionsDialog";
 import { useAuthStore } from "@/features/auth/store";
+
+const employeeSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  position: z.string().optional(),
+  phone: z.string().optional(),
+  wage: z.string().optional(),
+  email: z.string().optional(),
+  storeId: z.string().optional(),
+});
+
+const defaultValues = {
+  firstName: "",
+  lastName: "",
+  position: "",
+  phone: "",
+  email: "",
+  wage: "",
+  storeId: "",
+};
 
 export function EmployeesPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -27,31 +52,30 @@ export function EmployeesPage() {
   const isOwner = useAuthStore((s) => s.user?.role) === "OWNER";
   const employeesQuery = useQuery({ queryKey: ["employees"], queryFn: fetchEmployees });
 
-  const [form, setForm] = React.useState({
-    firstName: "",
-    lastName: "",
-    position: "",
-    phone: "",
-    email: "",
-    wage: "",
-    storeId: "",
+  const form = useForm<z.input<typeof employeeSchema>, unknown, z.output<typeof employeeSchema>>({
+    resolver: zodResolver(employeeSchema),
+    defaultValues,
   });
 
   const createMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: z.output<typeof employeeSchema>) =>
       createEmployee({
-        firstName: form.firstName,
-        lastName: form.lastName,
-        position: form.position || undefined,
-        phone: form.phone || undefined,
-        email: form.email || undefined,
-        wage: form.wage ? Number(form.wage) : undefined,
-        storeId: form.storeId || undefined,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        position: values.position || undefined,
+        phone: values.phone || undefined,
+        email: values.email || undefined,
+        wage: values.wage ? Number(values.wage) : undefined,
+        storeId: values.storeId || undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       setDialogOpen(false);
-      setForm({ firstName: "", lastName: "", position: "", phone: "", email: "", wage: "", storeId: "" });
+      form.reset(defaultValues);
+      toast.success("Employee created");
+    },
+    onError: (error) => {
+      toast.error((error as Error).message);
     },
   });
 
@@ -72,90 +96,149 @@ export function EmployeesPage() {
             <DialogHeader>
               <DialogTitle>New employee</DialogTitle>
             </DialogHeader>
-            <form
-              className="space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                createMutation.mutate();
-              }}
-            >
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="firstName">First name</Label>
-                  <Input id="firstName" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+            <Form {...form}>
+              <form
+                className="space-y-3"
+                onSubmit={form.handleSubmit((values) => createMutation.mutate(values))}
+              >
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First name</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last name</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="lastName">Last name</Label>
-                  <Input id="lastName" required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+                <FormField
+                  control={form.control}
+                  name="position"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Position</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="wage"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Hourly wage</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.01" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="position">Position</Label>
-                <Input id="position" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="wage">Hourly wage</Label>
-                  <Input id="wage" type="number" step="0.01" value={form.wage} onChange={(e) => setForm({ ...form, wage: e.target.value })} />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Assigned store</Label>
-                <Select value={form.storeId} onValueChange={(v) => setForm({ ...form, storeId: v })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All stores" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stores.map((store) => (
-                      <SelectItem key={store.id} value={store.id}>
-                        {store.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {createMutation.isError && (
-                <p className="text-sm text-destructive">{(createMutation.error as Error).message}</p>
-              )}
-              <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Saving..." : "Save employee"}
-              </Button>
-            </form>
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="storeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Assigned store</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="All stores" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {stores.map((store) => (
+                            <SelectItem key={store.id} value={store.id}>
+                              {store.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? "Saving..." : "Save employee"}
+                </Button>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
 
       <Card>
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="p-3 font-medium">Name</th>
-                <th className="p-3 font-medium">Position</th>
-                <th className="p-3 font-medium">Store</th>
-                <th className="p-3 font-medium">Login account</th>
-                {isOwner && <th className="p-3 font-medium">Permissions</th>}
-              </tr>
-            </thead>
-            <tbody>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Position</TableHead>
+                <TableHead>Store</TableHead>
+                <TableHead>Login account</TableHead>
+                {isOwner && <TableHead>Permissions</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {employeesQuery.data?.map((employee) => (
-                <tr key={employee.id} className="border-b last:border-0">
-                  <td className="p-3">
+                <TableRow key={employee.id}>
+                  <TableCell>
                     {employee.firstName} {employee.lastName}
-                  </td>
-                  <td className="p-3 text-muted-foreground">{employee.position ?? "—"}</td>
-                  <td className="p-3 text-muted-foreground">{employee.store?.name ?? "All stores"}</td>
-                  <td className="p-3 text-muted-foreground">{employee.user?.email ?? "None"}</td>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{employee.position ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{employee.store?.name ?? "All stores"}</TableCell>
+                  <TableCell className="text-muted-foreground">{employee.user?.email ?? "None"}</TableCell>
                   {isOwner && (
-                    <td className="p-3">
+                    <TableCell>
                       {employee.user && (
                         <Button
                           variant="outline"
@@ -167,19 +250,19 @@ export function EmployeesPage() {
                           Manage
                         </Button>
                       )}
-                    </td>
+                    </TableCell>
                   )}
-                </tr>
+                </TableRow>
               ))}
               {employeesQuery.data?.length === 0 && (
-                <tr>
-                  <td colSpan={isOwner ? 5 : 4} className="p-6 text-center text-muted-foreground">
+                <TableRow>
+                  <TableCell colSpan={isOwner ? 5 : 4} className="p-6 text-center text-muted-foreground">
                     No employees yet.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 

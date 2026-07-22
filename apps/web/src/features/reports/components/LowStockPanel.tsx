@@ -1,6 +1,7 @@
 import { AlertTriangle, OctagonAlert } from "lucide-react";
 import type { LowStockReportItemDto } from "@pos/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface LowStockPanelProps {
   items: LowStockReportItemDto[];
@@ -26,34 +27,34 @@ export function LowStockPanel({ items }: LowStockPanelProps) {
       <CardHeader>
         <CardTitle className="text-base">Low stock</CardTitle>
       </CardHeader>
-      <CardContent className="p-0">
+      <CardContent className="overflow-x-auto p-0">
         {items.length === 0 ? (
           <p className="px-6 pb-6 text-sm text-muted-foreground">
             All products are above their reorder level.
           </p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="p-3 font-medium">Product</th>
-                <th className="p-3 font-medium">Status</th>
-                <th className="p-3 font-medium text-right">Quantity</th>
-                <th className="p-3 font-medium text-right">Reorder level</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Product</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Quantity</TableHead>
+                <TableHead className="text-right">Reorder level</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {items.map((item) => (
-                <tr key={item.id} className="border-b last:border-0">
-                  <td className="p-3">{item.product.name}</td>
-                  <td className="p-3">
+                <TableRow key={item.id}>
+                  <TableCell>{item.product.name}</TableCell>
+                  <TableCell>
                     <StockBadge quantity={item.quantity} />
-                  </td>
-                  <td className="p-3 text-right font-medium">{item.quantity}</td>
-                  <td className="p-3 text-right text-muted-foreground">{item.reorderLevel}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="text-right font-medium">{item.quantity}</TableCell>
+                  <TableCell className="text-right text-muted-foreground">{item.reorderLevel}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
       </CardContent>
     </Card>

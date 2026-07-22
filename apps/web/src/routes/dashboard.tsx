@@ -4,6 +4,7 @@ import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/features/auth/store";
 import type { BusinessDto } from "@pos/shared";
 import { formatCurrency } from "@/lib/format";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { KpiCard } from "@/features/reports/components/KpiCard";
 import { RevenueTrendChart } from "@/features/reports/components/RevenueTrendChart";
 import { TopProductsChart } from "@/features/reports/components/TopProductsChart";
@@ -60,6 +61,7 @@ export function DashboardPage() {
   }
 
   const summary = summaryQuery.data;
+  const canCompareStores = role === "OWNER" && stores.length > 1;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
@@ -80,41 +82,54 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard
-          label="Revenue"
-          value={summary ? formatCurrency(summary.revenue) : "—"}
-          deltaPct={summary?.revenueDeltaPct ?? null}
-        />
-        <KpiCard
-          label="Profit"
-          value={summary ? formatCurrency(summary.profit) : "—"}
-          deltaPct={summary?.profitDeltaPct ?? null}
-        />
-        <KpiCard
-          label="Orders"
-          value={summary ? summary.orderCount.toLocaleString() : "—"}
-          deltaPct={summary?.orderCountDeltaPct ?? null}
-        />
-        <KpiCard
-          label="Avg. order value"
-          value={summary ? formatCurrency(summary.avgOrderValue) : "—"}
-          deltaPct={summary?.avgOrderValueDeltaPct ?? null}
-        />
-      </div>
+      <Tabs defaultValue="overview">
+        {canCompareStores && (
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="comparison">Store comparison</TabsTrigger>
+          </TabsList>
+        )}
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <RevenueTrendChart data={trendQuery.data ?? []} />
-        </div>
-        <TopProductsChart data={topProductsQuery.data ?? []} />
-      </div>
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiCard
+              label="Revenue"
+              value={summary ? formatCurrency(summary.revenue) : "—"}
+              deltaPct={summary?.revenueDeltaPct ?? null}
+            />
+            <KpiCard
+              label="Profit"
+              value={summary ? formatCurrency(summary.profit) : "—"}
+              deltaPct={summary?.profitDeltaPct ?? null}
+            />
+            <KpiCard
+              label="Orders"
+              value={summary ? summary.orderCount.toLocaleString() : "—"}
+              deltaPct={summary?.orderCountDeltaPct ?? null}
+            />
+            <KpiCard
+              label="Avg. order value"
+              value={summary ? formatCurrency(summary.avgOrderValue) : "—"}
+              deltaPct={summary?.avgOrderValueDeltaPct ?? null}
+            />
+          </div>
 
-      <LowStockPanel items={lowStockQuery.data ?? []} />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <RevenueTrendChart data={trendQuery.data ?? []} />
+            </div>
+            <TopProductsChart data={topProductsQuery.data ?? []} />
+          </div>
 
-      {role === "OWNER" && stores.length > 1 && comparisonQuery.data && (
-        <StoreComparisonChart data={comparisonQuery.data} />
-      )}
+          <LowStockPanel items={lowStockQuery.data ?? []} />
+        </TabsContent>
+
+        {canCompareStores && (
+          <TabsContent value="comparison">
+            {comparisonQuery.data && <StoreComparisonChart data={comparisonQuery.data} />}
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 }

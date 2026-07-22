@@ -1,5 +1,9 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useFieldArray, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,14 +17,35 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createTransfer, fetchTransfers } from "@/features/transfers/api";
 import { fetchProducts } from "@/features/products/api";
 import { useAuthStore } from "@/features/auth/store";
 
-interface DraftLine {
-  productId: string;
-  quantity: string;
-}
+const transferLineSchema = z.object({
+  productId: z.string().min(1, "Required"),
+  quantity: z.coerce.number().int("Whole numbers only").min(1, "Must be at least 1"),
+});
+
+const transferSchema = z
+  .object({
+    fromStoreId: z.string().min(1, "Source store is required"),
+    toStoreId: z.string().min(1, "Destination store is required"),
+    note: z.string().optional(),
+    lines: z.array(transferLineSchema).min(1, "Add at least one line item"),
+  })
+  .refine((data) => data.fromStoreId !== data.toStoreId, {
+    message: "Source and destination must be different.",
+    path: ["toStoreId"],
+  });
+
+const defaultValues = {
+  fromStoreId: "",
+  toStoreId: "",
+  note: "",
+  lines: [{ productId: "", quantity: "1" }],
+};
 
 export function TransfersPage() {
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
@@ -35,42 +60,36 @@ export function TransfersPage() {
   });
   const productsQuery = useQuery({ queryKey: ["products"], queryFn: () => fetchProducts() });
 
-  const [fromStoreId, setFromStoreId] = React.useState("");
-  const [toStoreId, setToStoreId] = React.useState("");
-  const [note, setNote] = React.useState("");
-  const [lines, setLines] = React.useState<DraftLine[]>([{ productId: "", quantity: "1" }]);
+  const form = useForm<z.input<typeof transferSchema>, unknown, z.output<typeof transferSchema>>({
+    resolver: zodResolver(transferSchema),
+    defaultValues,
+  });
+  const { fields, append, remove } = useFieldArray({ control: form.control, name: "lines" });
+  const fromStoreId = form.watch("fromStoreId");
 
   const createMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: z.output<typeof transferSchema>) =>
       createTransfer({
-        fromStoreId,
-        toStoreId,
-        note: note || undefined,
-        lineItems: lines
-          .filter((l) => l.productId && l.quantity)
-          .map((l) => ({ productId: l.productId, quantity: Number(l.quantity) })),
+        fromStoreId: values.fromStoreId,
+        toStoreId: values.toStoreId,
+        note: values.note || undefined,
+        lineItems: values.lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transfers", currentStoreId] });
       queryClient.invalidateQueries({ queryKey: ["inventory", currentStoreId] });
       setDialogOpen(false);
-      setFromStoreId("");
-      setToStoreId("");
-      setNote("");
-      setLines([{ productId: "", quantity: "1" }]);
+      form.reset(defaultValues);
+      toast.success("Stock transferred");
+    },
+    onError: (error) => {
+      toast.error((error as Error).message);
     },
   });
-
-  function updateLine(index: number, patch: Partial<DraftLine>) {
-    setLines((prev) => prev.map((l, i) => (i === index ? { ...l, ...patch } : l)));
-  }
 
   if (!currentStoreId) {
     return <p className="p-6 text-muted-foreground">No store selected.</p>;
   }
-
-  const canSubmit =
-    fromStoreId && toStoreId && fromStoreId !== toStoreId && lines.some((l) => l.productId && l.quantity);
 
   return (
     <div className="mx-auto max-w-4xl p-6">
@@ -89,147 +108,189 @@ export function TransfersPage() {
             <DialogHeader>
               <DialogTitle>New transfer</DialogTitle>
             </DialogHeader>
-            <form
-              className="space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                createMutation.mutate();
-              }}
-            >
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>From store</Label>
-                  <Select value={fromStoreId} onValueChange={setFromStoreId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Source" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {stores.map((store) => (
-                        <SelectItem key={store.id} value={store.id}>
-                          {store.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            <Form {...form}>
+              <form
+                className="space-y-3"
+                onSubmit={form.handleSubmit((values) => createMutation.mutate(values))}
+              >
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="fromStoreId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>From store</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Source" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {stores.map((store) => (
+                              <SelectItem key={store.id} value={store.id}>
+                                {store.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="toStoreId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>To store</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Destination" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {stores
+                              .filter((store) => store.id !== fromStoreId)
+                              .map((store) => (
+                                <SelectItem key={store.id} value={store.id}>
+                                  {store.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>To store</Label>
-                  <Select value={toStoreId} onValueChange={setToStoreId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Destination" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {stores
-                        .filter((store) => store.id !== fromStoreId)
-                        .map((store) => (
-                          <SelectItem key={store.id} value={store.id}>
-                            {store.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label>Line items</Label>
-                {lines.map((line, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Select value={line.productId} onValueChange={(v) => updateLine(index, { productId: v })}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Product" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {productsQuery.data?.map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            {product.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="number"
-                      min={1}
-                      placeholder="Qty"
-                      className="w-20"
-                      value={line.quantity}
-                      onChange={(e) => updateLine(index, { quantity: e.target.value })}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setLines((prev) => prev.filter((_, i) => i !== index))}
-                      disabled={lines.length === 1}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setLines((prev) => [...prev, { productId: "", quantity: "1" }])}
-                >
-                  <Plus className="mr-1 h-3 w-3" /> Add line
+                <div className="space-y-2">
+                  <Label>Line items</Label>
+                  {fields.map((line, index) => (
+                    <div key={line.id} className="flex items-start gap-2">
+                      <FormField
+                        control={form.control}
+                        name={`lines.${index}.productId`}
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Product" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {productsQuery.data?.map((product) => (
+                                  <SelectItem key={product.id} value={product.id}>
+                                    {product.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`lines.${index}.quantity`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min={1}
+                                placeholder="Qty"
+                                className="w-20"
+                                {...field}
+                                value={field.value as string}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => remove(index)}
+                        disabled={fields.length === 1}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append({ productId: "", quantity: "1" })}
+                  >
+                    <Plus className="mr-1 h-3 w-3" /> Add line
+                  </Button>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="note"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Note (optional)</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? "Transferring..." : "Transfer stock"}
                 </Button>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="note">Note (optional)</Label>
-                <Input id="note" value={note} onChange={(e) => setNote(e.target.value)} />
-              </div>
-
-              {fromStoreId && toStoreId && fromStoreId === toStoreId && (
-                <p className="text-sm text-destructive">Source and destination must be different.</p>
-              )}
-              {createMutation.isError && (
-                <p className="text-sm text-destructive">{(createMutation.error as Error).message}</p>
-              )}
-              <Button type="submit" className="w-full" disabled={createMutation.isPending || !canSubmit}>
-                {createMutation.isPending ? "Transferring..." : "Transfer stock"}
-              </Button>
-            </form>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
 
       <Card>
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="p-3 font-medium">Date</th>
-                <th className="p-3 font-medium">From</th>
-                <th className="p-3 font-medium">To</th>
-                <th className="p-3 font-medium">Items</th>
-                <th className="p-3 font-medium">Note</th>
-              </tr>
-            </thead>
-            <tbody>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>From</TableHead>
+                <TableHead>To</TableHead>
+                <TableHead>Items</TableHead>
+                <TableHead>Note</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {transfersQuery.data?.map((transfer) => (
-                <tr key={transfer.id} className="border-b last:border-0">
-                  <td className="p-3 text-muted-foreground">
+                <TableRow key={transfer.id}>
+                  <TableCell className="text-muted-foreground">
                     {new Date(transfer.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="p-3">{transfer.fromStore.name}</td>
-                  <td className="p-3">{transfer.toStore.name}</td>
-                  <td className="p-3 text-muted-foreground">
+                  </TableCell>
+                  <TableCell>{transfer.fromStore.name}</TableCell>
+                  <TableCell>{transfer.toStore.name}</TableCell>
+                  <TableCell className="text-muted-foreground">
                     {transfer.lineItems.map((li) => `${li.quantity} × ${li.product.name}`).join(", ")}
-                  </td>
-                  <td className="p-3 text-muted-foreground">{transfer.note ?? "—"}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{transfer.note ?? "—"}</TableCell>
+                </TableRow>
               ))}
               {transfersQuery.data?.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="p-6 text-center text-muted-foreground">
+                <TableRow>
+                  <TableCell colSpan={5} className="p-6 text-center text-muted-foreground">
                     No transfers yet.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

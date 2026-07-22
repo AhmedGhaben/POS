@@ -1,10 +1,13 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
 import { ExpenseCategory } from "@pos/shared";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -14,6 +17,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createExpense, fetchExpenses } from "@/features/expenses/api";
 import { useAuthStore } from "@/features/auth/store";
 
@@ -27,6 +32,18 @@ const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   [ExpenseCategory.OTHER]: "Other",
 };
 
+const expenseSchema = z.object({
+  category: z.nativeEnum(ExpenseCategory),
+  description: z.string().optional(),
+  amount: z.coerce.number().min(0, "Must be 0 or more"),
+});
+
+const defaultValues = {
+  category: ExpenseCategory.OTHER,
+  description: "",
+  amount: "",
+};
+
 export function ExpensesPage() {
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -38,24 +55,27 @@ export function ExpensesPage() {
     enabled: !!currentStoreId,
   });
 
-  const [form, setForm] = React.useState({
-    category: ExpenseCategory.OTHER as ExpenseCategory,
-    description: "",
-    amount: "",
+  const form = useForm<z.input<typeof expenseSchema>, unknown, z.output<typeof expenseSchema>>({
+    resolver: zodResolver(expenseSchema),
+    defaultValues,
   });
 
   const createMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: z.output<typeof expenseSchema>) =>
       createExpense({
         storeId: currentStoreId!,
-        category: form.category,
-        description: form.description || undefined,
-        amount: Number(form.amount),
+        category: values.category,
+        description: values.description || undefined,
+        amount: values.amount,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses", currentStoreId] });
       setDialogOpen(false);
-      setForm({ category: ExpenseCategory.OTHER, description: "", amount: "" });
+      form.reset(defaultValues);
+      toast.success("Expense logged");
+    },
+    onError: (error) => {
+      toast.error((error as Error).message);
     },
   });
 
@@ -84,78 +104,101 @@ export function ExpensesPage() {
             <DialogHeader>
               <DialogTitle>Log expense</DialogTitle>
             </DialogHeader>
-            <form
-              className="space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                createMutation.mutate();
-              }}
-            >
-              <div className="space-y-1.5">
-                <Label>Category</Label>
-                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v as ExpenseCategory })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(ExpenseCategory).map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {CATEGORY_LABELS[category]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="amount">Amount</Label>
-                <Input id="amount" type="number" step="0.01" min={0} required value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="description">Description</Label>
-                <Input id="description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-              </div>
-              {createMutation.isError && (
-                <p className="text-sm text-destructive">{(createMutation.error as Error).message}</p>
-              )}
-              <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Saving..." : "Save expense"}
-              </Button>
-            </form>
+            <Form {...form}>
+              <form
+                className="space-y-3"
+                onSubmit={form.handleSubmit((values) => createMutation.mutate(values))}
+              >
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Object.values(ExpenseCategory).map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {CATEGORY_LABELS[category]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Amount</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" min={0} {...field} value={field.value as string} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? "Saving..." : "Save expense"}
+                </Button>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
 
       <Card>
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="p-3 font-medium">Date</th>
-                <th className="p-3 font-medium">Category</th>
-                <th className="p-3 font-medium">Description</th>
-                <th className="p-3 font-medium text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {expensesQuery.data?.map((expense) => (
-                <tr key={expense.id} className="border-b last:border-0">
-                  <td className="p-3 text-muted-foreground">
+                <TableRow key={expense.id}>
+                  <TableCell className="text-muted-foreground">
                     {new Date(expense.incurredAt).toLocaleDateString()}
-                  </td>
-                  <td className="p-3">{CATEGORY_LABELS[expense.category]}</td>
-                  <td className="p-3 text-muted-foreground">{expense.description ?? "—"}</td>
-                  <td className="p-3 text-right">${Number(expense.amount).toFixed(2)}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell>{CATEGORY_LABELS[expense.category]}</TableCell>
+                  <TableCell className="text-muted-foreground">{expense.description ?? "—"}</TableCell>
+                  <TableCell className="text-right">${Number(expense.amount).toFixed(2)}</TableCell>
+                </TableRow>
               ))}
               {expensesQuery.data?.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="p-6 text-center text-muted-foreground">
+                <TableRow>
+                  <TableCell colSpan={4} className="p-6 text-center text-muted-foreground">
                     No expenses logged yet.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

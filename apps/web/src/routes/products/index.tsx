@@ -1,9 +1,12 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -13,8 +16,30 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createProduct, fetchProducts } from "@/features/products/api";
 import { fetchCategories } from "@/features/categories/api";
+
+const productSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  sku: z.string().min(1, "SKU is required"),
+  barcode: z.string().optional(),
+  categoryId: z.string().optional(),
+  costPrice: z.coerce.number().min(0, "Must be 0 or more"),
+  sellPrice: z.coerce.number().min(0, "Must be 0 or more"),
+  taxRate: z.coerce.number().min(0, "Must be 0 or more"),
+});
+
+const defaultValues = {
+  name: "",
+  sku: "",
+  barcode: "",
+  categoryId: "",
+  costPrice: "",
+  sellPrice: "",
+  taxRate: "0",
+};
 
 export function ProductsPage() {
   const [search, setSearch] = React.useState("");
@@ -27,31 +52,30 @@ export function ProductsPage() {
   });
   const categoriesQuery = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
-  const [form, setForm] = React.useState({
-    name: "",
-    sku: "",
-    barcode: "",
-    categoryId: "",
-    costPrice: "",
-    sellPrice: "",
-    taxRate: "0",
+  const form = useForm<z.input<typeof productSchema>, unknown, z.output<typeof productSchema>>({
+    resolver: zodResolver(productSchema),
+    defaultValues,
   });
 
   const createMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: z.output<typeof productSchema>) =>
       createProduct({
-        name: form.name,
-        sku: form.sku,
-        barcode: form.barcode || undefined,
-        categoryId: form.categoryId || undefined,
-        costPrice: Number(form.costPrice),
-        sellPrice: Number(form.sellPrice),
-        taxRate: Number(form.taxRate) || 0,
+        name: values.name,
+        sku: values.sku,
+        barcode: values.barcode || undefined,
+        categoryId: values.categoryId || undefined,
+        costPrice: values.costPrice,
+        sellPrice: values.sellPrice,
+        taxRate: values.taxRate,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setDialogOpen(false);
-      setForm({ name: "", sku: "", barcode: "", categoryId: "", costPrice: "", sellPrice: "", taxRate: "0" });
+      form.reset(defaultValues);
+      toast.success("Product created");
+    },
+    onError: (error) => {
+      toast.error((error as Error).message);
     },
   });
 
@@ -72,65 +96,122 @@ export function ProductsPage() {
             <DialogHeader>
               <DialogTitle>New product</DialogTitle>
             </DialogHeader>
-            <form
-              className="space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                createMutation.mutate();
-              }}
-            >
-              <div className="space-y-1.5">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="sku">SKU</Label>
-                  <Input id="sku" required value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
+            <Form {...form}>
+              <form
+                className="space-y-3"
+                onSubmit={form.handleSubmit((values) => createMutation.mutate(values))}
+              >
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="sku"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>SKU</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="barcode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Barcode</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="barcode">Barcode</Label>
-                  <Input id="barcode" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} />
+                <FormField
+                  control={form.control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Uncategorized" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {categoriesQuery.data?.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-3 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="costPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cost price</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.01" {...field} value={field.value as string} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="sellPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sell price</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.01" {...field} value={field.value as string} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="taxRate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tax %</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.01" {...field} value={field.value as string} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Category</Label>
-                <Select value={form.categoryId} onValueChange={(v) => setForm({ ...form, categoryId: v })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Uncategorized" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categoriesQuery.data?.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="costPrice">Cost price</Label>
-                  <Input id="costPrice" type="number" step="0.01" required value={form.costPrice} onChange={(e) => setForm({ ...form, costPrice: e.target.value })} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="sellPrice">Sell price</Label>
-                  <Input id="sellPrice" type="number" step="0.01" required value={form.sellPrice} onChange={(e) => setForm({ ...form, sellPrice: e.target.value })} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="taxRate">Tax %</Label>
-                  <Input id="taxRate" type="number" step="0.01" value={form.taxRate} onChange={(e) => setForm({ ...form, taxRate: e.target.value })} />
-                </div>
-              </div>
-              {createMutation.isError && (
-                <p className="text-sm text-destructive">
-                  {(createMutation.error as Error).message}
-                </p>
-              )}
-              <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Saving..." : "Save product"}
-              </Button>
-            </form>
+                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? "Saving..." : "Save product"}
+                </Button>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
@@ -143,34 +224,34 @@ export function ProductsPage() {
       />
 
       <Card>
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="p-3 font-medium">Name</th>
-                <th className="p-3 font-medium">SKU</th>
-                <th className="p-3 font-medium">Barcode</th>
-                <th className="p-3 font-medium text-right">Sell price</th>
-              </tr>
-            </thead>
-            <tbody>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>SKU</TableHead>
+                <TableHead>Barcode</TableHead>
+                <TableHead className="text-right">Sell price</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {productsQuery.data?.map((product) => (
-                <tr key={product.id} className="border-b last:border-0">
-                  <td className="p-3">{product.name}</td>
-                  <td className="p-3 text-muted-foreground">{product.sku}</td>
-                  <td className="p-3 text-muted-foreground">{product.barcode ?? "—"}</td>
-                  <td className="p-3 text-right">${Number(product.sellPrice).toFixed(2)}</td>
-                </tr>
+                <TableRow key={product.id}>
+                  <TableCell>{product.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{product.sku}</TableCell>
+                  <TableCell className="text-muted-foreground">{product.barcode ?? "—"}</TableCell>
+                  <TableCell className="text-right">${Number(product.sellPrice).toFixed(2)}</TableCell>
+                </TableRow>
               ))}
               {productsQuery.data?.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="p-6 text-center text-muted-foreground">
+                <TableRow>
+                  <TableCell colSpan={4} className="p-6 text-center text-muted-foreground">
                     No products yet.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

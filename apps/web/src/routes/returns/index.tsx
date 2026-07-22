@@ -1,5 +1,9 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useFieldArray, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,9 +17,35 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createReturn, fetchReturns } from "@/features/returns/api";
 import { fetchSalesByStore } from "@/features/sales/api";
 import { useAuthStore } from "@/features/auth/store";
+
+const returnLineSchema = z
+  .object({
+    productId: z.string(),
+    productName: z.string(),
+    maxQuantity: z.number(),
+    quantity: z.coerce.number().min(0, "Must be 0 or more"),
+  })
+  .refine((line) => line.quantity <= line.maxQuantity, {
+    message: "Cannot exceed the sold quantity",
+    path: ["quantity"],
+  });
+
+const returnSchema = z.object({
+  saleId: z.string().min(1, "Select a sale"),
+  reason: z.string().optional(),
+  lines: z.array(returnLineSchema),
+});
+
+const defaultValues: z.input<typeof returnSchema> = {
+  saleId: "",
+  reason: "",
+  lines: [],
+};
 
 export function ReturnsPage() {
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
@@ -33,29 +63,31 @@ export function ReturnsPage() {
     enabled: !!currentStoreId && dialogOpen,
   });
 
-  const [saleId, setSaleId] = React.useState("");
-  const [reason, setReason] = React.useState("");
-  const [quantities, setQuantities] = React.useState<Record<string, string>>({});
-
-  const selectedSale = salesQuery.data?.find((s) => s.id === saleId);
+  const form = useForm<z.input<typeof returnSchema>, unknown, z.output<typeof returnSchema>>({
+    resolver: zodResolver(returnSchema),
+    defaultValues,
+  });
+  const { fields, replace } = useFieldArray({ control: form.control, name: "lines" });
 
   const createMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: z.output<typeof returnSchema>) =>
       createReturn({
         storeId: currentStoreId!,
-        saleId,
-        reason: reason || undefined,
-        lineItems: Object.entries(quantities)
-          .filter(([, qty]) => Number(qty) > 0)
-          .map(([productId, qty]) => ({ productId, quantity: Number(qty) })),
+        saleId: values.saleId,
+        reason: values.reason || undefined,
+        lineItems: values.lines
+          .filter((l) => l.quantity > 0)
+          .map((l) => ({ productId: l.productId, quantity: l.quantity })),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["returns", currentStoreId] });
       queryClient.invalidateQueries({ queryKey: ["inventory", currentStoreId] });
       setDialogOpen(false);
-      setSaleId("");
-      setReason("");
-      setQuantities({});
+      form.reset(defaultValues);
+      toast.success("Return processed");
+    },
+    onError: (error) => {
+      toast.error((error as Error).message);
     },
   });
 
@@ -80,106 +112,137 @@ export function ReturnsPage() {
             <DialogHeader>
               <DialogTitle>New return</DialogTitle>
             </DialogHeader>
-            <form
-              className="space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                createMutation.mutate();
-              }}
-            >
-              <div className="space-y-1.5">
-                <Label>Sale</Label>
-                <Select
-                  value={saleId}
-                  onValueChange={(v) => {
-                    setSaleId(v);
-                    setQuantities({});
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a recent sale" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {salesQuery.data?.map((sale) => (
-                      <SelectItem key={sale.id} value={sale.id}>
-                        {sale.receiptNumber} — ${Number(sale.total).toFixed(2)}
-                      </SelectItem>
+            <Form {...form}>
+              <form
+                className="space-y-3"
+                onSubmit={form.handleSubmit((values) => createMutation.mutate(values))}
+              >
+                <FormField
+                  control={form.control}
+                  name="saleId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sale</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={(v) => {
+                          field.onChange(v);
+                          const sale = salesQuery.data?.find((s) => s.id === v);
+                          replace(
+                            sale?.lineItems.map((li) => ({
+                              productId: li.productId,
+                              productName: li.product.name,
+                              maxQuantity: li.quantity,
+                              quantity: "0",
+                            })) ?? [],
+                          );
+                        }}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a recent sale" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {salesQuery.data?.map((sale) => (
+                            <SelectItem key={sale.id} value={sale.id}>
+                              {sale.receiptNumber} — ${Number(sale.total).toFixed(2)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {fields.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Items to return</Label>
+                    {fields.map((line, index) => (
+                      <div key={line.id} className="flex items-center gap-2">
+                        <span className="flex-1 text-sm">
+                          {line.productName}{" "}
+                          <span className="text-muted-foreground">(sold {line.maxQuantity})</span>
+                        </span>
+                        <FormField
+                          control={form.control}
+                          name={`lines.${index}.quantity`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  max={line.maxQuantity}
+                                  className="w-20"
+                                  {...field}
+                                  value={field.value as string}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  </div>
+                )}
 
-              {selectedSale && (
-                <div className="space-y-2">
-                  <Label>Items to return</Label>
-                  {selectedSale.lineItems.map((line) => (
-                    <div key={line.id} className="flex items-center justify-between gap-2 text-sm">
-                      <span className="flex-1">
-                        {line.product.name}{" "}
-                        <span className="text-muted-foreground">(sold {line.quantity})</span>
-                      </span>
-                      <Input
-                        type="number"
-                        min={0}
-                        max={line.quantity}
-                        className="w-20"
-                        value={quantities[line.productId] ?? ""}
-                        onChange={(e) =>
-                          setQuantities((prev) => ({ ...prev, [line.productId]: e.target.value }))
-                        }
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
+                <FormField
+                  control={form.control}
+                  name="reason"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Reason</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <div className="space-y-1.5">
-                <Label htmlFor="reason">Reason</Label>
-                <Input id="reason" value={reason} onChange={(e) => setReason(e.target.value)} />
-              </div>
-
-              {createMutation.isError && (
-                <p className="text-sm text-destructive">{(createMutation.error as Error).message}</p>
-              )}
-              <Button type="submit" className="w-full" disabled={createMutation.isPending || !saleId}>
-                {createMutation.isPending ? "Processing..." : "Process return"}
-              </Button>
-            </form>
+                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? "Processing..." : "Process return"}
+                </Button>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
 
       <Card>
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="p-3 font-medium">Date</th>
-                <th className="p-3 font-medium">Items</th>
-                <th className="p-3 font-medium">Reason</th>
-                <th className="p-3 font-medium text-right">Refund</th>
-              </tr>
-            </thead>
-            <tbody>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Items</TableHead>
+                <TableHead>Reason</TableHead>
+                <TableHead className="text-right">Refund</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {returnsQuery.data?.map((ret) => (
-                <tr key={ret.id} className="border-b last:border-0">
-                  <td className="p-3 text-muted-foreground">
+                <TableRow key={ret.id}>
+                  <TableCell className="text-muted-foreground">
                     {new Date(ret.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="p-3 text-muted-foreground">{ret.lineItems.length}</td>
-                  <td className="p-3 text-muted-foreground">{ret.reason ?? "—"}</td>
-                  <td className="p-3 text-right">${Number(ret.totalRefund).toFixed(2)}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{ret.lineItems.length}</TableCell>
+                  <TableCell className="text-muted-foreground">{ret.reason ?? "—"}</TableCell>
+                  <TableCell className="text-right">${Number(ret.totalRefund).toFixed(2)}</TableCell>
+                </TableRow>
               ))}
               {returnsQuery.data?.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="p-6 text-center text-muted-foreground">
+                <TableRow>
+                  <TableCell colSpan={4} className="p-6 text-center text-muted-foreground">
                     No returns processed yet.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>
