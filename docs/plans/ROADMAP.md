@@ -102,17 +102,24 @@ deliver a premium experience for businesses of any size.
   itself whenever `navigator.onLine` is false, which would leave checkout
   stuck at "Processing..." forever before any of the above code ever ran —
   fixed by setting `networkMode: 'always'` globally in `query-client.ts`.
+- **Phase 11 — AI-powered business insights** (`a2e2062`): an on-demand
+  "Generate insights" panel on the dashboard turns the existing Phase 3
+  reports data (summary, revenue trend, top products, low stock) into a
+  plain-English briefing — summary paragraph, notable patterns/anomalies,
+  restocking suggestions — via a single Claude API call (`claude-opus-4-8`,
+  structured output through `messages.parse` + a Zod schema). No new data
+  queries needed; Phase 3 already computes everything the prompt uses.
+  POST rather than GET (unlike the plain-query `ReportsController`
+  endpoints) since every call costs money, and the frontend only triggers
+  it on an explicit button click, never automatically. `ANTHROPIC_API_KEY`
+  is optional — unset, the endpoint returns a clear 503 rather than a stub,
+  since there's no honest way to fake generated analysis the way the
+  Phase 9 mail stub could fake an email log.
 
-## Phase order
-
-1. **Phase 11 — AI-powered business insights**: natural-language summaries
-   of the Phase 3 reports data, anomaly detection (e.g. unusual revenue
-   dip), restocking suggestions. Built last — depends on solid reports data
-   (Phase 3, done) and a stable, tested backend (Phase 5) underneath it.
+All phases from the original roadmap are now shipped.
 
 Remaining gaps not yet assigned to a phase: rate limiting, structured
 logging, error tracking (Sentry), a `/health` endpoint, and cloud-specific
 deploy config (Fly.io/Render/ECS/etc. — the Dockerfiles from Phase 5 are the
-portable building block, but no platform has been chosen yet). Fold these
-into whichever phase is active when they become relevant, or give them
-their own phase if they pile up.
+portable building block, but no platform has been chosen yet). These would
+form the next phase if the project continues.
