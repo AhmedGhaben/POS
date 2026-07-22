@@ -63,22 +63,29 @@ deliver a premium experience for businesses of any size.
   `StoreAccessGuard` only understands a single `storeId` field. OWNER/MANAGER
   only (same as purchases). Frontend: new `/transfers` page with from/to
   store pickers + line items, reachable from the sidebar.
+- **Phase 8 — UI/UX refinement & responsiveness** (`39f5c18`): expanded the
+  shadcn/ui component set (table, dropdown-menu, tabs, sheet, form, sonner
+  toasts) and rebuilt products/purchases/returns/transfers/suppliers/
+  expenses/employees/inventory around them with react-hook-form + zod
+  validation and toast feedback on mutations. Added a Cmd/Ctrl+K command
+  palette for cross-page navigation and a real mobile layout: the sidebar
+  collapses below the `lg` breakpoint and reappears as a `Sheet` drawer
+  behind a hamburger trigger, with an account dropdown menu replacing the
+  old inline controls. Keyboard shortcuts beyond ⌘K (e.g. per-page "new
+  record" or search-focus bindings) were considered but left out — fold
+  into a later phase if still wanted.
 
 ## Phase order
 
-1. **Phase 8 — UI/UX refinement & responsiveness**: expand the shadcn
-   component set (table, dropdown-menu, tabs, toast, sheet, form — command/
-   popover already added in Phase 4), real mobile/tablet layouts, command
-   palette + keyboard shortcuts to minimize clicks per the original vision.
-2. **Phase 9 — Notifications & data export**: low-stock email alerts,
+1. **Phase 9 — Notifications & data export**: low-stock email alerts,
    emailed receipts, CSV/PDF export for reports and product/inventory lists.
    Also where the Phase 5 console-log mail stub gets replaced with a real
    provider (e.g. Resend/SES).
-3. **Phase 10 — Offline-first POS**: service worker + IndexedDB sale queue +
+2. **Phase 10 — Offline-first POS**: service worker + IndexedDB sale queue +
    sync-on-reconnect, so checkout keeps working through a connectivity drop.
    Sequenced late since it's the most architecturally invasive remaining
    phase and benefits from the hardening already in place (Phase 5).
-4. **Phase 11 — AI-powered business insights**: natural-language summaries
+3. **Phase 11 — AI-powered business insights**: natural-language summaries
    of the Phase 3 reports data, anomaly detection (e.g. unusual revenue
    dip), restocking suggestions. Built last — depends on solid reports data
    (Phase 3, done) and a stable, tested backend (Phase 5) underneath it.
