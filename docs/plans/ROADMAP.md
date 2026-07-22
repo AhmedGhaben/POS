@@ -74,18 +74,25 @@ deliver a premium experience for businesses of any size.
   old inline controls. Keyboard shortcuts beyond ⌘K (e.g. per-page "new
   record" or search-focus bindings) were considered but left out — fold
   into a later phase if still wanted.
+- **Phase 9 — Notifications & data export** (`961209d`): the Phase 5
+  console-log mail stub is now a real `MailService` that sends through
+  Resend when `RESEND_API_KEY` is set, falling back to the console log so
+  dev/CI need no account. A daily `@nestjs/schedule` cron emails low-stock
+  digests to every OWNER in the business plus MANAGERs assigned to the
+  affected store (mirrors `StoreAccessGuard`'s access rule). Checkout gained
+  an optional receipt-email field that defaults to the attached customer's
+  email, sent best-effort after the sale commits so a mail failure can't
+  fail the sale. CSV export (products, inventory, sales trend) and a PDF
+  report export (KPIs + top products) were added client-side from data
+  already on screen, rather than new backend endpoints.
 
 ## Phase order
 
-1. **Phase 9 — Notifications & data export**: low-stock email alerts,
-   emailed receipts, CSV/PDF export for reports and product/inventory lists.
-   Also where the Phase 5 console-log mail stub gets replaced with a real
-   provider (e.g. Resend/SES).
-2. **Phase 10 — Offline-first POS**: service worker + IndexedDB sale queue +
+1. **Phase 10 — Offline-first POS**: service worker + IndexedDB sale queue +
    sync-on-reconnect, so checkout keeps working through a connectivity drop.
    Sequenced late since it's the most architecturally invasive remaining
    phase and benefits from the hardening already in place (Phase 5).
-3. **Phase 11 — AI-powered business insights**: natural-language summaries
+2. **Phase 11 — AI-powered business insights**: natural-language summaries
    of the Phase 3 reports data, anomaly detection (e.g. unusual revenue
    dip), restocking suggestions. Built last — depends on solid reports data
    (Phase 3, done) and a stable, tested backend (Phase 5) underneath it.
