@@ -352,6 +352,22 @@ export interface LowStockReportItemDto {
   reorderLevel: number;
 }
 
+export interface InsightHighlightDto {
+  title: string;
+  detail: string;
+}
+
+export interface RestockSuggestionDto {
+  productName: string;
+  reason: string;
+}
+
+export interface BusinessInsightsDto {
+  summary: string;
+  highlights: InsightHighlightDto[];
+  restockSuggestions: RestockSuggestionDto[];
+}
+
 export interface StoreComparisonDto {
   storeId: string;
   storeName: string;

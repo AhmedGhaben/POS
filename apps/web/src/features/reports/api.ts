@@ -1,4 +1,5 @@
 import type {
+  BusinessInsightsDto,
   LowStockReportItemDto,
   ReportSummaryDto,
   SalesTrendPointDto,
@@ -27,4 +28,8 @@ export function fetchLowStock(storeId: string) {
 
 export function fetchStoreComparison(days: number) {
   return apiClient.get<StoreComparisonDto[]>(`/reports/business/store-comparison?days=${days}`);
+}
+
+export function generateInsights(storeId: string, days: number) {
+  return apiClient.post<BusinessInsightsDto>(`/insights/store/${storeId}?days=${days}`);
 }

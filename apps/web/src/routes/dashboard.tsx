@@ -14,6 +14,7 @@ import { KpiCard } from "@/features/reports/components/KpiCard";
 import { RevenueTrendChart } from "@/features/reports/components/RevenueTrendChart";
 import { TopProductsChart } from "@/features/reports/components/TopProductsChart";
 import { LowStockPanel } from "@/features/reports/components/LowStockPanel";
+import { InsightsPanel } from "@/features/reports/components/InsightsPanel";
 import { StoreComparisonChart } from "@/features/reports/components/StoreComparisonChart";
 import { DateRangeSelect } from "@/features/reports/components/DateRangeSelect";
 import {
@@ -178,6 +179,8 @@ export function DashboardPage() {
           </div>
 
           <LowStockPanel items={lowStockQuery.data ?? []} />
+
+          <InsightsPanel storeId={currentStoreId} days={days} />
         </TabsContent>
 
         {canCompareStores && (

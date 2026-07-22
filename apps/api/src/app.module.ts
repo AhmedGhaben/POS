@@ -20,6 +20,7 @@ import { ReturnsModule } from "./returns/returns.module";
 import { ReportsModule } from "./reports/reports.module";
 import { TransfersModule } from "./transfers/transfers.module";
 import { NotificationsModule } from "./notifications/notifications.module";
+import { InsightsModule } from "./insights/insights.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
@@ -49,6 +50,7 @@ import { PermissionsModule } from "./common/permissions/permissions.module";
     ReportsModule,
     TransfersModule,
     NotificationsModule,
+    InsightsModule,
   ],
   providers: [
     // Global order matters: authenticate first, then check @Roles() metadata,
