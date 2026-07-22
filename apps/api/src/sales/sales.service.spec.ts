@@ -12,6 +12,10 @@ function buildProduct(sellPrice: number, taxRate = 0) {
   };
 }
 
+function buildMailMock() {
+  return { sendReceiptEmail: jest.fn().mockResolvedValue(undefined) };
+}
+
 function buildPrismaMock(product: ReturnType<typeof buildProduct>, stockQty: number) {
   // Mimics what Prisma actually returns for a nested `{ create: [...] }` write
   // under `include` — the resolved rows, not the write-input wrapper.
@@ -38,7 +42,7 @@ function buildPrismaMock(product: ReturnType<typeof buildProduct>, stockQty: num
 describe("SalesService#create", () => {
   it("throws if a line item references a product outside the business", async () => {
     const prisma = { product: { findMany: jest.fn().mockResolvedValue([]) }, $transaction: jest.fn() };
-    const service = new SalesService(prisma as any);
+    const service = new SalesService(prisma as any, buildMailMock() as any);
 
     await expect(
       service.create("biz-1", "cashier-1", {
@@ -52,7 +56,7 @@ describe("SalesService#create", () => {
   it("rejects when payment amounts don't cover the total", async () => {
     const product = buildProduct(10);
     const prisma = buildPrismaMock(product, 5);
-    const service = new SalesService(prisma as any);
+    const service = new SalesService(prisma as any, buildMailMock() as any);
 
     await expect(
       service.create("biz-1", "cashier-1", {
@@ -66,7 +70,7 @@ describe("SalesService#create", () => {
   it("rejects a cash leg where tendered is less than the amount", async () => {
     const product = buildProduct(10);
     const prisma = buildPrismaMock(product, 5);
-    const service = new SalesService(prisma as any);
+    const service = new SalesService(prisma as any, buildMailMock() as any);
 
     await expect(
       service.create("biz-1", "cashier-1", {
@@ -80,7 +84,7 @@ describe("SalesService#create", () => {
   it("rejects insufficient stock", async () => {
     const product = buildProduct(10);
     const prisma = buildPrismaMock(product, 0);
-    const service = new SalesService(prisma as any);
+    const service = new SalesService(prisma as any, buildMailMock() as any);
 
     await expect(
       service.create("biz-1", "cashier-1", {
@@ -94,7 +98,7 @@ describe("SalesService#create", () => {
   it("computes tendered/change for a single cash payment", async () => {
     const product = buildProduct(10);
     const prisma = buildPrismaMock(product, 5);
-    const service = new SalesService(prisma as any);
+    const service = new SalesService(prisma as any, buildMailMock() as any);
 
     const sale = await service.create("biz-1", "cashier-1", {
       storeId: "store-1",
@@ -111,7 +115,7 @@ describe("SalesService#create", () => {
   it("splits a sale across cash and card and only tracks tendered/change for the cash leg", async () => {
     const product = buildProduct(10);
     const prisma = buildPrismaMock(product, 5);
-    const service = new SalesService(prisma as any);
+    const service = new SalesService(prisma as any, buildMailMock() as any);
 
     const sale = await service.create("biz-1", "cashier-1", {
       storeId: "store-1",

@@ -126,6 +126,9 @@ export interface SalePaymentInputDto {
 export interface CreateSaleDto {
   storeId: string;
   customerId?: string | null;
+  /** Ad-hoc address to email the receipt to. If omitted and a customer with
+   * an email is attached, that email is used automatically. */
+  receiptEmail?: string;
   payments: SalePaymentInputDto[];
   lineItems: SaleLineItemInputDto[];
 }

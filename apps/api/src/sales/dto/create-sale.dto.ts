@@ -1,6 +1,7 @@
 import { Type } from "class-transformer";
 import {
   ArrayMinSize,
+  IsEmail,
   IsEnum,
   IsInt,
   IsNumber,
@@ -41,6 +42,10 @@ export class CreateSaleDto {
   @IsOptional()
   @IsString()
   customerId?: string;
+
+  @IsOptional()
+  @IsEmail()
+  receiptEmail?: string;
 
   @ValidateNested({ each: true })
   @Type(() => SalePaymentInputDto)

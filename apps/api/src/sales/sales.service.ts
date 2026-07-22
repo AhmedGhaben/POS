@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { Prisma, PaymentMethod } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
+import { MailService } from "../common/mail/mail.service";
 import { CreateSaleDto } from "./dto/create-sale.dto";
 
 const SALE_INCLUDE = {
@@ -10,7 +11,12 @@ const SALE_INCLUDE = {
 
 @Injectable()
 export class SalesService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(SalesService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mail: MailService,
+  ) {}
 
   findByStore(storeId: string) {
     return this.prisma.sale.findMany({
@@ -80,7 +86,7 @@ export class SalesService {
       return { method: p.method, amount, tendered, change };
     });
 
-    return this.prisma.$transaction(async (tx) => {
+    const sale = await this.prisma.$transaction(async (tx) => {
       for (const li of dto.lineItems) {
         const inventoryItem = await tx.inventoryItem.findUnique({
           where: { storeId_productId: { storeId: dto.storeId, productId: li.productId } },
@@ -116,6 +122,42 @@ export class SalesService {
         },
         include: SALE_INCLUDE,
       });
+    });
+
+    // Best-effort — a mail failure shouldn't fail an already-completed sale.
+    this.emailReceiptIfRequested(dto, sale).catch((error) => {
+      this.logger.error(`Failed to email receipt for sale ${sale.id}: ${error}`);
+    });
+
+    return sale;
+  }
+
+  private async emailReceiptIfRequested(
+    dto: CreateSaleDto,
+    sale: Prisma.SaleGetPayload<{ include: typeof SALE_INCLUDE }>,
+  ): Promise<void> {
+    let email = dto.receiptEmail;
+    if (!email && dto.customerId) {
+      const customer = await this.prisma.customer.findUnique({ where: { id: dto.customerId } });
+      email = customer?.email ?? undefined;
+    }
+    if (!email) {
+      return;
+    }
+
+    const store = await this.prisma.store.findUnique({ where: { id: dto.storeId } });
+    await this.mail.sendReceiptEmail(email, {
+      storeName: store?.name ?? "Store",
+      receiptNumber: sale.receiptNumber,
+      items: sale.lineItems.map((li) => ({
+        name: li.product.name,
+        quantity: li.quantity,
+        unitPrice: li.unitPrice.toString(),
+        lineTotal: li.lineTotal.toString(),
+      })),
+      subtotal: sale.subtotal.toString(),
+      taxTotal: sale.taxTotal.toString(),
+      total: sale.total.toString(),
     });
   }
 }

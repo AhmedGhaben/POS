@@ -4,6 +4,7 @@ import { ShoppingCart } from "lucide-react";
 import type { CustomerDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ProductSearchInput } from "@/features/pos/components/ProductSearchInput";
@@ -27,6 +28,7 @@ export function PosPage() {
   const [payments, setPayments] = React.useState<SalePaymentInputDto[]>([]);
   const [paymentsValid, setPaymentsValid] = React.useState(true);
   const [customer, setCustomer] = React.useState<CustomerDto | null>(null);
+  const [receiptEmail, setReceiptEmail] = React.useState("");
   const [completedSale, setCompletedSale] = React.useState<SaleDto | null>(null);
   const [completedCustomer, setCompletedCustomer] = React.useState<CustomerDto | null>(null);
   const [paymentPanelKey, setPaymentPanelKey] = React.useState(0);
@@ -39,6 +41,7 @@ export function PosPage() {
       createSale({
         storeId: currentStoreId!,
         customerId: customer?.id ?? null,
+        receiptEmail: receiptEmail.trim() || undefined,
         payments,
         lineItems: lines.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
       }),
@@ -47,6 +50,7 @@ export function PosPage() {
       setCompletedCustomer(customer);
       clear();
       setCustomer(null);
+      setReceiptEmail("");
       setPaymentPanelKey((k) => k + 1);
       setCartSheetOpen(false);
       queryClient.invalidateQueries({ queryKey: ["inventory", currentStoreId] });
@@ -76,6 +80,12 @@ export function PosPage() {
 
       <div className="space-y-3" ref={checkoutAreaRef}>
         <CustomerSearchCombobox selected={customer} onSelect={setCustomer} />
+        <Input
+          type="email"
+          placeholder="Email receipt (optional)"
+          value={receiptEmail}
+          onChange={(e) => setReceiptEmail(e.target.value)}
+        />
         <PaymentPanel
           key={paymentPanelKey}
           total={totals.total}

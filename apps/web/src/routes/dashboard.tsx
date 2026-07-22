@@ -1,9 +1,14 @@
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
+import { jsPDF } from "jspdf";
+import { autoTable } from "jspdf-autotable";
+import { Download, FileText } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/features/auth/store";
 import type { BusinessDto } from "@pos/shared";
 import { formatCurrency } from "@/lib/format";
+import { downloadCsv } from "@/lib/csv";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { KpiCard } from "@/features/reports/components/KpiCard";
 import { RevenueTrendChart } from "@/features/reports/components/RevenueTrendChart";
@@ -62,6 +67,51 @@ export function DashboardPage() {
 
   const summary = summaryQuery.data;
   const canCompareStores = role === "OWNER" && stores.length > 1;
+  const storeName = stores.find((s) => s.id === currentStoreId)?.name ?? "store";
+
+  function exportTrendCsv() {
+    downloadCsv(
+      `sales-trend-${storeName}.csv`,
+      [
+        { header: "Date", value: (r: { date: string }) => r.date },
+        { header: "Revenue", value: (r: { revenue: number }) => r.revenue },
+        { header: "Orders", value: (r: { orderCount: number }) => r.orderCount },
+      ],
+      trendQuery.data ?? [],
+    );
+  }
+
+  function exportSummaryPdf() {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text(`${businessQuery.data?.name ?? "Business"} — ${storeName}`, 14, 16);
+    doc.setFontSize(10);
+    doc.text(`Last ${days} days`, 14, 22);
+
+    autoTable(doc, {
+      startY: 28,
+      head: [["Metric", "Value"]],
+      body: [
+        ["Revenue", summary ? formatCurrency(summary.revenue) : "—"],
+        ["Profit", summary ? formatCurrency(summary.profit) : "—"],
+        ["Orders", summary ? String(summary.orderCount) : "—"],
+        ["Avg. order value", summary ? formatCurrency(summary.avgOrderValue) : "—"],
+      ],
+    });
+
+    const afterKpiY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 28;
+    autoTable(doc, {
+      startY: afterKpiY + 10,
+      head: [["Top product", "Qty sold", "Revenue"]],
+      body: (topProductsQuery.data ?? []).map((p) => [
+        p.name,
+        String(p.quantitySold),
+        formatCurrency(p.revenue),
+      ]),
+    });
+
+    doc.save(`report-${storeName}.pdf`);
+  }
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
@@ -79,6 +129,12 @@ export function DashboardPage() {
             </span>
           )}
           <DateRangeSelect days={days} onChange={setDays} />
+          <Button variant="outline" size="sm" disabled={!trendQuery.data?.length} onClick={exportTrendCsv}>
+            <Download className="mr-2 h-4 w-4" /> CSV
+          </Button>
+          <Button variant="outline" size="sm" disabled={!summary} onClick={exportSummaryPdf}>
+            <FileText className="mr-2 h-4 w-4" /> PDF
+          </Button>
         </div>
       </div>
 

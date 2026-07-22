@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
+import { ScheduleModule } from "@nestjs/schedule";
 import { PrismaModule } from "./prisma/prisma.module";
 import { AuthModule } from "./auth/auth.module";
 import { BusinessesModule } from "./businesses/businesses.module";
@@ -18,6 +19,7 @@ import { ExpensesModule } from "./expenses/expenses.module";
 import { ReturnsModule } from "./returns/returns.module";
 import { ReportsModule } from "./reports/reports.module";
 import { TransfersModule } from "./transfers/transfers.module";
+import { NotificationsModule } from "./notifications/notifications.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
@@ -27,6 +29,7 @@ import { PermissionsModule } from "./common/permissions/permissions.module";
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     PermissionsModule,
     AuthModule,
@@ -45,6 +48,7 @@ import { PermissionsModule } from "./common/permissions/permissions.module";
     ReturnsModule,
     ReportsModule,
     TransfersModule,
+    NotificationsModule,
   ],
   providers: [
     // Global order matters: authenticate first, then check @Roles() metadata,

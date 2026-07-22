@@ -4,7 +4,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Download, Plus } from "lucide-react";
+import { downloadCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +19,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import type { ProductDto } from "@pos/shared";
 import { createProduct, fetchProducts } from "@/features/products/api";
 import { fetchCategories } from "@/features/categories/api";
 
@@ -86,12 +88,33 @@ export function ProductsPage() {
           <h1 className="text-2xl font-semibold">Products</h1>
           <p className="text-sm text-muted-foreground">Manage your product catalog.</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> New product
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            disabled={!productsQuery.data?.length}
+            onClick={() =>
+              downloadCsv(
+                "products.csv",
+                [
+                  { header: "Name", value: (p: ProductDto) => p.name },
+                  { header: "SKU", value: (p: ProductDto) => p.sku },
+                  { header: "Barcode", value: (p: ProductDto) => p.barcode },
+                  { header: "Cost price", value: (p: ProductDto) => ("costPrice" in p ? p.costPrice : "") },
+                  { header: "Sell price", value: (p: ProductDto) => p.sellPrice },
+                  { header: "Tax %", value: (p: ProductDto) => p.taxRate },
+                ],
+                productsQuery.data ?? [],
+              )
+            }
+          >
+            <Download className="mr-2 h-4 w-4" /> Export CSV
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" /> New product
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>New product</DialogTitle>
@@ -214,6 +237,7 @@ export function ProductsPage() {
             </Form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Input

@@ -1,6 +1,8 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Download } from "lucide-react";
+import type { InventoryItemDto } from "@pos/shared";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuthStore } from "@/features/auth/store";
 import { adjustStock, fetchInventory } from "@/features/inventory/api";
+import { downloadCsv } from "@/lib/csv";
 
 export function InventoryPage() {
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
@@ -38,8 +41,30 @@ export function InventoryPage() {
 
   return (
     <div className="mx-auto max-w-4xl p-6">
-      <h1 className="mb-1 text-2xl font-semibold">Inventory</h1>
-      <p className="mb-6 text-sm text-muted-foreground">Stock levels for the current store.</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="mb-1 text-2xl font-semibold">Inventory</h1>
+          <p className="text-sm text-muted-foreground">Stock levels for the current store.</p>
+        </div>
+        <Button
+          variant="outline"
+          disabled={!inventoryQuery.data?.length}
+          onClick={() =>
+            downloadCsv(
+              "inventory.csv",
+              [
+                { header: "Product", value: (i: InventoryItemDto) => i.product.name },
+                { header: "SKU", value: (i: InventoryItemDto) => i.product.sku },
+                { header: "Quantity", value: (i: InventoryItemDto) => i.quantity },
+                { header: "Reorder level", value: (i: InventoryItemDto) => i.reorderLevel },
+              ],
+              inventoryQuery.data ?? [],
+            )
+          }
+        >
+          <Download className="mr-2 h-4 w-4" /> Export CSV
+        </Button>
+      </div>
 
       <Card>
         <CardContent className="overflow-x-auto p-0">
