@@ -5,6 +5,7 @@ import { StoreSwitcher } from "./StoreSwitcher";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuthStore } from "@/features/auth/store";
 import { logout } from "@/features/auth/api";
+import { OfflineIndicator } from "@/features/pos/components/OfflineIndicator";
 
 /**
  * Minimal terminal-mode shell for the POS sale screen — no sidebar, no
@@ -40,6 +41,7 @@ export function PosShell() {
           <span />
         )}
         <div className="flex items-center gap-2">
+          <OfflineIndicator />
           <kbd className="hidden items-center gap-1 rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-flex">
             <span>⌘</span>K
           </kbd>

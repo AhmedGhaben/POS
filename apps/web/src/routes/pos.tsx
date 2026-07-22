@@ -38,13 +38,16 @@ export function PosPage() {
 
   const saleMutation = useMutation({
     mutationFn: () =>
-      createSale({
-        storeId: currentStoreId!,
-        customerId: customer?.id ?? null,
-        receiptEmail: receiptEmail.trim() || undefined,
-        payments,
-        lineItems: lines.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
-      }),
+      createSale(
+        {
+          storeId: currentStoreId!,
+          customerId: customer?.id ?? null,
+          receiptEmail: receiptEmail.trim() || undefined,
+          payments,
+          lineItems: lines.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
+        },
+        lines,
+      ),
     onSuccess: (sale) => {
       setCompletedSale(sale);
       setCompletedCustomer(customer);
@@ -162,6 +165,11 @@ export function PosPage() {
           <DialogHeader>
             <DialogTitle>Sale complete</DialogTitle>
           </DialogHeader>
+          {completedSale?.receiptNumber.startsWith("OFFLINE-") && (
+            <p className="rounded-md bg-secondary px-3 py-2 text-sm text-secondary-foreground">
+              Saved offline — this sale will sync automatically once you're back online.
+            </p>
+          )}
           {completedSale && (
             <Receipt sale={completedSale} storeName={storeName} customer={completedCustomer} />
           )}

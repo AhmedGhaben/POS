@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
+import { PwaUpdatePrompt } from "@/components/layout/PwaUpdatePrompt";
 import { BackOfficeShell } from "@/components/layout/BackOfficeShell";
 import { BackOfficeRoute } from "@/components/layout/BackOfficeRoute";
 import { PosShell } from "@/components/layout/PosShell";
@@ -27,6 +28,7 @@ export function App() {
   return (
     <>
       <Toaster position="top-right" />
+      <PwaUpdatePrompt />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route element={<ProtectedRoute />}>
