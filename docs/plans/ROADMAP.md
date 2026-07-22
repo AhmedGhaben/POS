@@ -85,14 +85,27 @@ deliver a premium experience for businesses of any size.
   fail the sale. CSV export (products, inventory, sales trend) and a PDF
   report export (KPIs + top products) were added client-side from data
   already on screen, rather than new backend endpoints.
+- **Phase 10 — Offline-first POS** (`c61298b`): a service worker
+  (vite-plugin-pwa/Workbox) precaches the app shell and runtime-caches the
+  product/category catalog, so the POS terminal keeps rendering and
+  searchable through a connectivity drop. Checkout itself doesn't depend on
+  that cache: `createSale()` checks `navigator.onLine` and falls back to
+  the same path on a real fetch failure, queuing the sale in IndexedDB (via
+  `idb`) and building a full receipt client-side (mirroring
+  `SalesService`'s math) so the cashier gets an `OFFLINE-`prefixed receipt
+  with no server round-trip. The browser's `online` event drains the queue
+  in order, replacing each entry with a real sale; a rejected sale (e.g.
+  stock ran out by the time it synced) is marked failed and left for review
+  rather than retried forever. A topbar indicator shows offline/pending
+  state with a manual "sync now" fallback. Discovered while testing:
+  React Query's default `networkMode: 'online'` pauses queries/mutations
+  itself whenever `navigator.onLine` is false, which would leave checkout
+  stuck at "Processing..." forever before any of the above code ever ran —
+  fixed by setting `networkMode: 'always'` globally in `query-client.ts`.
 
 ## Phase order
 
-1. **Phase 10 — Offline-first POS**: service worker + IndexedDB sale queue +
-   sync-on-reconnect, so checkout keeps working through a connectivity drop.
-   Sequenced late since it's the most architecturally invasive remaining
-   phase and benefits from the hardening already in place (Phase 5).
-2. **Phase 11 — AI-powered business insights**: natural-language summaries
+1. **Phase 11 — AI-powered business insights**: natural-language summaries
    of the Phase 3 reports data, anomaly detection (e.g. unusual revenue
    dip), restocking suggestions. Built last — depends on solid reports data
    (Phase 3, done) and a stable, tested backend (Phase 5) underneath it.
