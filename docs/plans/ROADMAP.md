@@ -116,10 +116,21 @@ deliver a premium experience for businesses of any size.
   since there's no honest way to fake generated analysis the way the
   Phase 9 mail stub could fake an email log.
 
+- **`/health` endpoint + rate limiting** (`4e8f21b`): `GET /health` (unauthenticated,
+  unthrottled) uses `@nestjs/terminus` with a custom Prisma indicator (`SELECT 1`)
+  so load balancers/uptime monitors get real DB-connectivity status, not just
+  "the process is alive." `@nestjs/throttler` is now a global guard — 100 req/min
+  per IP by default, with `login`/`forgot-password`/`reset-password` tightened to
+  5/min since those are the actual brute-force/enumeration targets. Skipped under
+  Jest (`NODE_ENV=test`) so the e2e specs' repeated `/auth/login` calls don't have
+  to manage a shared request budget.
+
 All phases from the original roadmap are now shipped.
 
-Remaining gaps not yet assigned to a phase: rate limiting, structured
-logging, error tracking (Sentry), a `/health` endpoint, and cloud-specific
-deploy config (Fly.io/Render/ECS/etc. — the Dockerfiles from Phase 5 are the
-portable building block, but no platform has been chosen yet). These would
-form the next phase if the project continues.
+Remaining gaps not yet assigned to a phase: structured logging, error tracking
+(Sentry), and cloud-specific deploy config (Fly.io/Render/ECS/etc. — the
+Dockerfiles from Phase 5 are the portable building block, but no platform has
+been chosen yet). Deferred deliberately: logging/Sentry need real production
+traffic to be worth anything, and deploy config needs a platform decision
+first — both were judged premature to build speculatively. Revisit once a
+deploy target is chosen.
