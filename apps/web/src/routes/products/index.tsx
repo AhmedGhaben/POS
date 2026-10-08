@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Download, Plus } from "lucide-react";
+import { Download, Plus, Upload } from "lucide-react";
 import { downloadCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import type { ProductDto } from "@pos/shared";
 import { createProduct, fetchProducts } from "@/features/products/api";
+import { ImportProductsDialog } from "@/features/products/components/ImportProductsDialog";
 import { fetchCategories } from "@/features/categories/api";
 import { useMoney } from "@/features/business/use-money";
 import { useAuthStore } from "@/features/auth/store";
@@ -52,6 +53,7 @@ export function ProductsPage() {
   // `?new=1` (from the /welcome screen) opens the create dialog straight away.
   const [searchParams, setSearchParams] = useSearchParams();
   const [dialogOpen, setDialogOpen] = React.useState(() => searchParams.get("new") === "1");
+  const [importOpen, setImportOpen] = React.useState(false);
   React.useEffect(() => {
     if (searchParams.has("new")) setSearchParams({}, { replace: true });
   }, [searchParams, setSearchParams]);
@@ -114,6 +116,11 @@ export function ProductsPage() {
                   { header: "Name", value: (p: ProductDto) => p.name },
                   { header: "SKU", value: (p: ProductDto) => p.sku },
                   { header: "Barcode", value: (p: ProductDto) => p.barcode },
+                  {
+                    header: "Category",
+                    value: (p: ProductDto) => categoriesQuery.data?.find((c) => c.id === p.categoryId)?.name ?? "",
+                  },
+                  // Blank when the user can't see costs, so re-importing leaves them unchanged.
                   { header: "Cost price", value: (p: ProductDto) => ("costPrice" in p ? p.costPrice : "") },
                   { header: "Sell price", value: (p: ProductDto) => p.sellPrice },
                   { header: "Tax %", value: (p: ProductDto) => p.taxRate },
@@ -124,6 +131,10 @@ export function ProductsPage() {
           >
             <Download className="mr-2 h-4 w-4" /> Export CSV
           </Button>
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" /> Import CSV
+          </Button>
+          <ImportProductsDialog open={importOpen} onOpenChange={setImportOpen} />
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button>
