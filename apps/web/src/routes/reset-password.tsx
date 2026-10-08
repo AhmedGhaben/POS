@@ -10,6 +10,8 @@ import { resetPassword } from "@/features/auth/api";
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") ?? "";
+  // Staff invites reuse reset tokens; only the wording differs.
+  const isInvite = searchParams.get("invite") === "1";
   const [password, setPassword] = React.useState("");
   const [confirm, setConfirm] = React.useState("");
   const [validationError, setValidationError] = React.useState<string | null>(null);
@@ -30,9 +32,11 @@ export function ResetPasswordPage() {
 
   if (mutation.isSuccess) {
     return (
-      <AuthLayout title="Password updated">
+      <AuthLayout title={isInvite ? "You're all set" : "Password updated"}>
         <p className="mb-4 text-sm text-muted-foreground">
-          Your password has been changed and you've been signed out on all devices.
+          {isInvite
+            ? "Your password is saved. Sign in with the email address your invite was sent to."
+            : "Your password has been changed and you've been signed out on all devices."}
         </p>
         <Button asChild className="w-full">
           <Link to="/login">Sign in</Link>
@@ -59,7 +63,7 @@ export function ResetPasswordPage() {
 
   return (
     <AuthLayout
-      title="Choose a new password"
+      title={isInvite ? "Set your password" : "Choose a new password"}
       footer={
         <Link to="/forgot-password" className="hover:underline">
           Link expired? Request a new one
@@ -91,7 +95,7 @@ export function ResetPasswordPage() {
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
         <Button type="submit" className="w-full" disabled={mutation.isPending}>
-          {mutation.isPending ? "Saving..." : "Set new password"}
+          {mutation.isPending ? "Saving..." : isInvite ? "Set password" : "Set new password"}
         </Button>
       </form>
     </AuthLayout>

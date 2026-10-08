@@ -1,6 +1,7 @@
 # Staff Login Accounts: plan
 
-Item **1b** of `LAUNCH_READINESS.md`. Goal: a self-serve owner can give a
+Item **1b** of `LAUNCH_READINESS.md`. **Status: shipped 2026-10-08**; see
+"Notes from building it" at the end. Goal: a self-serve owner can give a
 cashier or manager their own login from the browser, choose which stores
 they can use, and turn that access off again, without touching the API.
 
@@ -133,3 +134,20 @@ A new owner can go from `/welcome` → "Add a cashier" → save. The cashier
 signs in (with a password, or via the invite link), sees only their store,
 and sells at `/pos`. The owner can then move them to another store or
 deactivate them, which takes effect immediately. Unit and e2e tests pass.
+
+## Notes from building it (2026-10-08)
+
+- Built as planned. In addition, `JwtStrategy` now returns the role from the
+  database, so a promotion or demotion also takes effect on the next
+  request, not just deactivation.
+- Token helpers moved to `common/utils/tokens.ts` (shared by auth and
+  staff invites). `PermissionsDialog` became `PermissionsPanel`, now shown
+  as a tab inside the new "Manage" dialog.
+- Known limitation: store checkboxes use the stores in the owner's session,
+  which are loaded at login. A store created after login only appears there
+  after signing in again. The same is already true of the store switcher.
+- Verified with 9 new e2e tests, plus a smoke run through the Vite proxy:
+  owner creates an employee with a login, the cashier signs in to their
+  store, and deactivation returns 401 on the cashier's next request. The
+  browser click-through is pending, because the Chrome extension wasn't
+  connected.

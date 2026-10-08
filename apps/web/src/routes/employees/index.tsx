@@ -5,6 +5,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import type { EmployeeDto } from "@pos/shared";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,7 +22,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createEmployee, fetchEmployees } from "@/features/employees/api";
-import { PermissionsDialog } from "@/features/users/components/PermissionsDialog";
+import { CreateLoginDialog } from "@/features/users/components/CreateLoginDialog";
+import { LoginFields } from "@/features/users/components/LoginFields";
+import { ManageLoginDialog } from "@/features/users/components/ManageLoginDialog";
+import {
+  ROLE_LABELS,
+  emptyLoginFields,
+  toStaffLoginDto,
+  validateLoginFields,
+  type LoginFieldsValue,
+} from "@/features/users/login-fields";
 import { useAuthStore } from "@/features/auth/store";
 
 const employeeSchema = z.object({
@@ -43,14 +55,28 @@ const defaultValues = {
 };
 
 export function EmployeesPage() {
-  const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [permissionsUser, setPermissionsUser] = React.useState<{ id: string; email: string } | null>(
-    null,
-  );
   const queryClient = useQueryClient();
   const stores = useAuthStore((s) => s.stores);
   const isOwner = useAuthStore((s) => s.user?.role) === "OWNER";
   const employeesQuery = useQuery({ queryKey: ["employees"], queryFn: fetchEmployees });
+  const storeNames = React.useMemo(() => new Map(stores.map((s) => [s.id, s.name])), [stores]);
+  const defaultLoginStoreIds = stores.length === 1 ? [stores[0].id] : [];
+
+  // `?new=1` (from the /welcome "Add a cashier" card) opens the dialog with a login ticked.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const openedFromWelcome = isOwner && searchParams.get("new") === "1";
+  const [dialogOpen, setDialogOpen] = React.useState(openedFromWelcome);
+  const [canSignIn, setCanSignIn] = React.useState(openedFromWelcome);
+  const [loginValue, setLoginValue] = React.useState<LoginFieldsValue>(() =>
+    emptyLoginFields({ storeIds: defaultLoginStoreIds }),
+  );
+  const [loginError, setLoginError] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (searchParams.has("new")) setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  const [createLoginFor, setCreateLoginFor] = React.useState<EmployeeDto | null>(null);
+  const [manageLoginFor, setManageLoginFor] = React.useState<EmployeeDto | null>(null);
 
   const form = useForm<z.input<typeof employeeSchema>, unknown, z.output<typeof employeeSchema>>({
     resolver: zodResolver(employeeSchema),
@@ -67,24 +93,55 @@ export function EmployeesPage() {
         email: values.email || undefined,
         wage: values.wage ? Number(values.wage) : undefined,
         storeId: values.storeId || undefined,
+        login: canSignIn ? toStaffLoginDto(loginValue) : undefined,
       }),
-    onSuccess: () => {
+    onSuccess: (employee) => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       setDialogOpen(false);
       form.reset(defaultValues);
-      toast.success("Employee created");
+      setCanSignIn(false);
+      setLoginValue(emptyLoginFields({ storeIds: defaultLoginStoreIds }));
+      toast.success(
+        !employee.user
+          ? "Employee created"
+          : loginValue.method === "invite"
+            ? `Employee created — invite sent to ${employee.user.email}`
+            : `Employee created — they can sign in as ${employee.user.email}`,
+      );
     },
     onError: (error) => {
       toast.error((error as Error).message);
     },
   });
 
+  function toggleCanSignIn(checked: boolean) {
+    setCanSignIn(checked);
+    setLoginError(null);
+    if (!checked) return;
+    // Pre-fill from what's already typed in the employee fields.
+    const { email, storeId } = form.getValues();
+    setLoginValue((v) => ({
+      ...v,
+      email: v.email || email || "",
+      storeIds: v.storeIds.length > 0 ? v.storeIds : storeId ? [storeId] : v.storeIds,
+    }));
+  }
+
+  function submitEmployee(values: z.output<typeof employeeSchema>) {
+    if (canSignIn) {
+      const problem = validateLoginFields(loginValue);
+      setLoginError(problem);
+      if (problem) return;
+    }
+    createMutation.mutate(values);
+  }
+
   return (
     <div className="mx-auto max-w-4xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Employees</h1>
-          <p className="text-sm text-muted-foreground">HR profiles — separate from login accounts.</p>
+          <p className="text-sm text-muted-foreground">Your staff, and who can sign in to the POS.</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -99,7 +156,7 @@ export function EmployeesPage() {
             <Form {...form}>
               <form
                 className="space-y-3"
-                onSubmit={form.handleSubmit((values) => createMutation.mutate(values))}
+                onSubmit={form.handleSubmit(submitEmployee)}
               >
                 <div className="grid grid-cols-2 gap-3">
                   <FormField
@@ -207,6 +264,23 @@ export function EmployeesPage() {
                     </FormItem>
                   )}
                 />
+                {isOwner && (
+                  <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+                    <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-primary"
+                        checked={canSignIn}
+                        onChange={(e) => toggleCanSignIn(e.target.checked)}
+                      />
+                      Can sign in to the POS
+                    </label>
+                    {canSignIn && (
+                      <LoginFields idPrefix="new-employee" value={loginValue} onChange={setLoginValue} />
+                    )}
+                    {loginError && <p className="text-sm text-destructive">{loginError}</p>}
+                  </div>
+                )}
                 <Button type="submit" className="w-full" disabled={createMutation.isPending}>
                   {createMutation.isPending ? "Saving..." : "Save employee"}
                 </Button>
@@ -224,8 +298,8 @@ export function EmployeesPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Position</TableHead>
                 <TableHead>Store</TableHead>
-                <TableHead>Login account</TableHead>
-                {isOwner && <TableHead>Permissions</TableHead>}
+                <TableHead>Login</TableHead>
+                {isOwner && <TableHead className="w-0" />}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -236,18 +310,38 @@ export function EmployeesPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{employee.position ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{employee.store?.name ?? "All stores"}</TableCell>
-                  <TableCell className="text-muted-foreground">{employee.user?.email ?? "None"}</TableCell>
+                  <TableCell>
+                    {employee.user ? (
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className={employee.user.isActive ? "" : "text-muted-foreground line-through"}>
+                            {employee.user.email}
+                          </span>
+                          <Badge variant="secondary">{ROLE_LABELS[employee.user.role] ?? employee.user.role}</Badge>
+                          {!employee.user.isActive && <Badge variant="destructive">Deactivated</Badge>}
+                        </div>
+                        {employee.user.role !== "OWNER" && (
+                          <div className="text-xs text-muted-foreground">
+                            {employee.user.storeIds.map((id) => storeNames.get(id) ?? "Unknown store").join(", ") ||
+                              "No stores"}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">No login</span>
+                    )}
+                  </TableCell>
                   {isOwner && (
-                    <TableCell>
-                      {employee.user && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            setPermissionsUser({ id: employee.user!.id, email: employee.user!.email })
-                          }
-                        >
-                          Manage
+                    <TableCell className="text-right">
+                      {employee.user ? (
+                        employee.user.role !== "OWNER" && (
+                          <Button variant="outline" size="sm" onClick={() => setManageLoginFor(employee)}>
+                            Manage
+                          </Button>
+                        )
+                      ) : (
+                        <Button variant="outline" size="sm" onClick={() => setCreateLoginFor(employee)}>
+                          Create login
                         </Button>
                       )}
                     </TableCell>
@@ -267,11 +361,10 @@ export function EmployeesPage() {
       </Card>
 
       {isOwner && (
-        <PermissionsDialog
-          userId={permissionsUser?.id ?? null}
-          userEmail={permissionsUser?.email ?? ""}
-          onClose={() => setPermissionsUser(null)}
-        />
+        <>
+          <CreateLoginDialog employee={createLoginFor} onClose={() => setCreateLoginFor(null)} />
+          <ManageLoginDialog employee={manageLoginFor} onClose={() => setManageLoginFor(null)} />
+        </>
       )}
     </div>
   );

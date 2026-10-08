@@ -1,4 +1,10 @@
-import type { EffectivePermissionsDto, Permission, UpdateUserPermissionDto } from "@pos/shared";
+import type {
+  EffectivePermissionsDto,
+  Permission,
+  StaffAccessDto,
+  UpdateStaffAccessDto,
+  UpdateUserPermissionDto,
+} from "@pos/shared";
 import { apiClient } from "@/lib/api-client";
 
 export function fetchEffectivePermissions(userId: string) {
@@ -10,4 +16,8 @@ export function updateUserPermission(userId: string, permission: Permission, gra
     permission,
     granted,
   } satisfies UpdateUserPermissionDto);
+}
+
+export function updateStaffAccess(userId: string, dto: UpdateStaffAccessDto) {
+  return apiClient.patch<StaffAccessDto>(`/users/${userId}/access`, dto);
 }

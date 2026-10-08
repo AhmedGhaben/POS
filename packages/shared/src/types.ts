@@ -189,7 +189,7 @@ export interface EmployeeDto {
   storeId: string | null;
   store: StoreDto | null;
   userId: string | null;
-  user: { id: string; email: string; role: Role } | null;
+  user: StaffAccessDto | null;
   firstName: string;
   lastName: string;
   position: string | null;
@@ -210,6 +210,34 @@ export interface CreateEmployeeDto {
   wage?: number;
   storeId?: string;
   userId?: string;
+  /** Owner only: create a login for the employee in the same request. */
+  login?: StaffLoginDto;
+}
+
+/** Roles an owner can give a staff login. */
+export type StaffRole = "CASHIER" | "MANAGER";
+
+/** Exactly one of `password` or `sendInvite: true`. */
+export interface StaffLoginDto {
+  email: string;
+  role: StaffRole;
+  storeIds: string[];
+  password?: string;
+  sendInvite?: boolean;
+}
+
+export interface StaffAccessDto {
+  id: string;
+  email: string;
+  role: Role;
+  isActive: boolean;
+  storeIds: string[];
+}
+
+export interface UpdateStaffAccessDto {
+  role?: StaffRole;
+  storeIds?: string[];
+  isActive?: boolean;
 }
 
 export interface PurchaseLineItemInputDto {

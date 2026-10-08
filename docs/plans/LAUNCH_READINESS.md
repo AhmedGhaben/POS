@@ -21,7 +21,8 @@ nothing in `apps/api/src` ever calls `business.create`.
     can send it).
   - First-run setup wizard: store name, currency, tax defaults, add/import
     products — so a new owner doesn't land on an empty dashboard.
-- [ ] **1b. Staff login accounts UI** (found while building #1)
+- [x] **1b. Staff login accounts UI** (found while building #1). Shipped
+  2026-10-08, see `STAFF_LOGINS.md`. Browser click-through pending.
   - `/employees` only manages HR records. There is no screen to create a
     login for a cashier/manager, although the API has `POST /users` (owner
     only) and store assignment (`StoresService`, `storeUser.upsert`). A

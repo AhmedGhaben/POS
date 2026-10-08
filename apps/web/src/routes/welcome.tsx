@@ -1,5 +1,5 @@
 import { Link, Navigate } from "react-router-dom";
-import { MonitorSmartphone, Package } from "lucide-react";
+import { MonitorSmartphone, Package, UserPlus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,12 @@ const NEXT_STEPS: NextStep[] = [
     description: "Name, price and stock, so it shows up at the register.",
   },
   {
+    to: "/employees?new=1",
+    icon: UserPlus,
+    title: "Add a cashier",
+    description: "Give staff their own login, limited to the stores you choose.",
+  },
+  {
     to: "/pos",
     icon: MonitorSmartphone,
     title: "Open the POS",
@@ -38,7 +44,7 @@ export function WelcomePage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <div className="w-full max-w-2xl space-y-6">
+      <div className="w-full max-w-3xl space-y-6">
         <div className="space-y-1 text-center">
           <h1 className="text-2xl font-semibold">Welcome, {user.firstName}!</h1>
           <p className="text-muted-foreground">
@@ -50,7 +56,7 @@ export function WelcomePage() {
             </p>
           )}
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-3">
           {NEXT_STEPS.map(({ to, icon: Icon, title, description }) => (
             <Link key={to} to={to} className="group rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <Card className="h-full transition-colors group-hover:border-primary">
