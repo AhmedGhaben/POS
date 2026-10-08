@@ -30,7 +30,11 @@ export function resetPassword(token: string, newPassword: string) {
 }
 
 export function verifyEmail(token: string) {
-  return apiClient.post<{ success: boolean }>("/auth/verify-email", { token }, { skipAuth: true });
+  return apiClient.post<{ success: boolean; email: string }>(
+    "/auth/verify-email",
+    { token },
+    { skipAuth: true },
+  );
 }
 
 export function resendVerification() {

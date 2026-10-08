@@ -285,9 +285,18 @@ export class AuthService {
     await this.sendVerificationEmail(user);
   }
 
-  async verifyEmail(rawToken: string): Promise<void> {
+  /**
+   * Returns the verified address so the web page can tell whether it matches
+   * the account signed in on that browser — the link may be opened while
+   * logged in as someone else. Holding the token already proves access to
+   * that inbox, so revealing the address leaks nothing.
+   */
+  async verifyEmail(rawToken: string): Promise<{ email: string }> {
     const tokenHash = hashToken(rawToken);
-    const stored = await this.prisma.emailVerificationToken.findUnique({ where: { tokenHash } });
+    const stored = await this.prisma.emailVerificationToken.findUnique({
+      where: { tokenHash },
+      include: { user: { select: { email: true } } },
+    });
     if (!stored || stored.usedAt || stored.expiresAt < new Date()) {
       throw new BadRequestException("Invalid or expired verification link");
     }
@@ -297,5 +306,6 @@ export class AuthService {
       this.prisma.user.update({ where: { id: stored.userId }, data: { emailVerifiedAt: now } }),
       this.prisma.emailVerificationToken.update({ where: { id: stored.id }, data: { usedAt: now } }),
     ]);
+    return { email: stored.user.email };
   }
 }

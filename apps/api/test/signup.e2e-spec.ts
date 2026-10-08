@@ -143,10 +143,11 @@ describe("Sign-up & email verification (e2e)", () => {
   });
 
   it("verifies the email from the link token, and rejects reusing it", async () => {
-    await request(app.getHttpServer())
+    const verified = await request(app.getHttpServer())
       .post("/auth/verify-email")
       .send({ token: verificationToken })
       .expect(200);
+    expect(verified.body.email).toBe(EMAIL);
 
     const login = await request(app.getHttpServer())
       .post("/auth/login")

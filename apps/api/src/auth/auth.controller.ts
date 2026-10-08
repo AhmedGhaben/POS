@@ -99,8 +99,8 @@ export class AuthController {
   @Post("verify-email")
   @HttpCode(HttpStatus.OK)
   async verifyEmail(@Body() dto: VerifyEmailDto) {
-    await this.authService.verifyEmail(dto.token);
-    return { success: true };
+    const { email } = await this.authService.verifyEmail(dto.token);
+    return { success: true, email };
   }
 
   @Throttle({ default: { limit: 3, ttl: 60_000 } })

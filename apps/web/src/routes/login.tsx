@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,12 @@ import { ApiError } from "@/lib/api-client";
 export function LoginPage() {
   const navigate = useNavigate();
   const setSession = useAuthStore((s) => s.setSession);
-  const [email, setEmail] = React.useState("");
+  // Router state (not a query param, to keep the address out of history) can
+  // pre-fill the email, e.g. when /verify-email sends the user here to switch accounts.
+  const location = useLocation();
+  const [email, setEmail] = React.useState(
+    () => (location.state as { email?: string } | null)?.email ?? "",
+  );
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);

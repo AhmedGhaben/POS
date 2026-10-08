@@ -380,16 +380,17 @@ describe("AuthService", () => {
         userId: OWNER.id,
         usedAt: null,
         expiresAt: new Date(Date.now() + 60_000),
+        user: { email: OWNER.email },
         ...overrides,
       };
     }
 
-    it("marks the user verified and the token used", async () => {
+    it("marks the user verified and the token used, returning the verified email", async () => {
       const prisma = buildPrismaMock();
       prisma.emailVerificationToken.findUnique.mockResolvedValue(tokenRow());
       const { service } = buildService(prisma);
 
-      await service.verifyEmail("valid-token");
+      await expect(service.verifyEmail("valid-token")).resolves.toEqual({ email: OWNER.email });
 
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: OWNER.id },
