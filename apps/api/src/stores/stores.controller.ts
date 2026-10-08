@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { Roles } from "../common/decorators/roles.decorator";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -6,6 +6,7 @@ import { RolesGuard } from "../common/guards/roles.guard";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { AssignStoreUserDto } from "./dto/assign-store-user.dto";
 import { CreateStoreDto } from "./dto/create-store.dto";
+import { UpdateStoreDto } from "./dto/update-store.dto";
 import { StoresService } from "./stores.service";
 
 @Controller("stores")
@@ -22,6 +23,17 @@ export class StoresController {
   @Roles(Role.OWNER)
   create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateStoreDto) {
     return this.storesService.create(user.businessId, dto);
+  }
+
+  @Patch(":storeId")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER)
+  update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("storeId") storeId: string,
+    @Body() dto: UpdateStoreDto,
+  ) {
+    return this.storesService.update(user.businessId, storeId, dto);
   }
 
   @Post(":storeId/users")

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateStoreDto } from "./dto/create-store.dto";
+import { UpdateStoreDto } from "./dto/update-store.dto";
 
 @Injectable()
 export class StoresService {
@@ -29,6 +30,14 @@ export class StoresService {
         timezone: dto.timezone ?? "UTC",
       },
     });
+  }
+
+  async update(businessId: string, storeId: string, dto: UpdateStoreDto) {
+    const store = await this.prisma.store.findUnique({ where: { id: storeId } });
+    if (!store || store.businessId !== businessId) {
+      throw new NotFoundException("Store not found");
+    }
+    return this.prisma.store.update({ where: { id: storeId }, data: dto });
   }
 
   async assignUser(businessId: string, storeId: string, userId: string) {

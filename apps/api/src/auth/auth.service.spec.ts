@@ -36,7 +36,10 @@ const REGISTER_DTO = {
 function buildPrismaMock() {
   const prisma = {
     user: { findUnique: jest.fn(), update: jest.fn(), create: jest.fn() },
-    business: { create: jest.fn().mockResolvedValue({ id: "biz-new" }) },
+    business: {
+      create: jest.fn().mockResolvedValue({ id: "biz-new" }),
+      findUniqueOrThrow: jest.fn().mockResolvedValue({ id: "biz-1", name: "Demo", currency: "EUR", logoUpdatedAt: null }),
+    },
     store: {
       findMany: jest.fn().mockResolvedValue([]),
       create: jest.fn().mockResolvedValue({ id: "store-new" }),
@@ -105,6 +108,7 @@ describe("AuthService", () => {
       expect(result.refreshToken).toHaveLength(64); // 32 random bytes, hex-encoded
       expect(result.user.role).toBe(Role.OWNER);
       expect(result.user.emailVerified).toBe(true);
+      expect(result.business).toMatchObject({ currency: "EUR", logoUrl: null });
       expect(prisma.refreshToken.create).toHaveBeenCalledTimes(1);
     });
 

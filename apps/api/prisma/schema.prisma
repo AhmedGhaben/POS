@@ -57,9 +57,33 @@ enum Permission {
 }
 
 model Business {
-  id        String   @id @default(cuid())
-  name      String
-  plan      Plan     @default(SIMPLE)
+  id   String @id @default(cuid())
+  name String
+  plan Plan   @default(SIMPLE)
+
+  /// Company details shown on receipts and A4 invoices.
+  legalName          String?
+  taxId              String?
+  registrationNumber String?
+  address            String?
+  phone              String?
+  email              String?
+  website            String?
+
+  /// ISO 4217 code. Only currencies with 0-2 decimals: money columns are Decimal(10, 2).
+  currency       String  @default("USD")
+  /// Pre-fills the tax % of new products; each product keeps its own rate.
+  defaultTaxRate Decimal @default(0) @db.Decimal(5, 2)
+  receiptHeader  String?
+  receiptFooter  String?
+  invoiceFooter  String?
+
+  /// Small (<= 300 KB, resized in the browser) so it lives in the row until
+  /// object storage exists. logoUpdatedAt busts the browser cache.
+  logo          Bytes?
+  logoMimeType  String?
+  logoUpdatedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -82,6 +106,7 @@ model Store {
   business   Business @relation(fields: [businessId], references: [id])
   name       String
   address    String?
+  phone      String?
   timezone   String   @default("UTC")
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())

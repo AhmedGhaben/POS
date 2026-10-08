@@ -32,25 +32,22 @@ export class AuthController {
   @Post("login")
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    const { accessToken, refreshToken, user, stores } = await this.authService.login(
-      dto.email,
-      dto.password,
-    );
+    const { refreshToken, ...session } = await this.authService.login(dto.email, dto.password);
 
     this.setRefreshCookie(res, refreshToken);
 
-    return { accessToken, user, stores };
+    return session;
   }
 
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post("register")
   async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
-    const { accessToken, refreshToken, user, stores } = await this.authService.register(dto);
+    const { refreshToken, ...session } = await this.authService.register(dto);
 
     this.setRefreshCookie(res, refreshToken);
 
-    return { accessToken, user, stores };
+    return session;
   }
 
   @Public()

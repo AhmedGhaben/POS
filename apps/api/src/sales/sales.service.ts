@@ -145,9 +145,13 @@ export class SalesService {
       return;
     }
 
-    const store = await this.prisma.store.findUnique({ where: { id: dto.storeId } });
+    const store = await this.prisma.store.findUnique({
+      where: { id: dto.storeId },
+      include: { business: { select: { currency: true } } },
+    });
     await this.mail.sendReceiptEmail(email, {
       storeName: store?.name ?? "Store",
+      currency: store?.business.currency ?? "USD",
       receiptNumber: sale.receiptNumber,
       items: sale.lineItems.map((li) => ({
         name: li.product.name,

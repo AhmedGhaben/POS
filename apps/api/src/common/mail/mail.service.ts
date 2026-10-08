@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Resend } from "resend";
+import { formatMoney } from "../utils/currency";
 
 export interface ReceiptEmailItem {
   name: string;
@@ -11,6 +12,8 @@ export interface ReceiptEmailItem {
 
 export interface ReceiptEmailParams {
   storeName: string;
+  /** ISO 4217 code of the business. */
+  currency: string;
   receiptNumber: string;
   items: ReceiptEmailItem[];
   subtotal: string;
@@ -110,10 +113,11 @@ export class MailService {
   }
 
   async sendReceiptEmail(to: string, params: ReceiptEmailParams): Promise<void> {
+    const money = (value: string) => escapeHtml(formatMoney(value, params.currency));
     const rows = params.items
       .map(
         (item) =>
-          `<tr><td>${escapeHtml(item.name)}</td><td align="right">${item.quantity}</td><td align="right">$${item.unitPrice}</td><td align="right">$${item.lineTotal}</td></tr>`,
+          `<tr><td>${escapeHtml(item.name)}</td><td align="right">${item.quantity}</td><td align="right">${money(item.unitPrice)}</td><td align="right">${money(item.lineTotal)}</td></tr>`,
       )
       .join("");
     const storeName = escapeHtml(params.storeName);
@@ -126,7 +130,7 @@ export class MailService {
          <thead><tr><th align="left">Item</th><th align="right">Qty</th><th align="right">Price</th><th align="right">Total</th></tr></thead>
          <tbody>${rows}</tbody>
        </table>
-       <p>Subtotal: $${params.subtotal}<br/>Tax: $${params.taxTotal}<br/><b>Total: $${params.total}</b></p>
+       <p>Subtotal: ${money(params.subtotal)}<br/>Tax: ${money(params.taxTotal)}<br/><b>Total: ${money(params.total)}</b></p>
        <p>Thank you for your purchase!</p>`,
     );
   }

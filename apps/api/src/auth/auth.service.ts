@@ -15,6 +15,7 @@ import { parseDurationMs } from "../common/utils/duration";
 import { generateOpaqueToken, hashToken } from "../common/utils/tokens";
 import { normalizeEmail } from "../common/transforms/normalize-email";
 import { RegisterDto } from "./dto/register.dto";
+import { BusinessSettings, toBusinessSettings } from "../businesses/businesses.service";
 
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
@@ -35,6 +36,8 @@ interface LoginResult {
     accessibleStoreIds: string[];
   };
   stores: { id: string; businessId: string; name: string; address: string | null; timezone: string; isActive: boolean }[];
+  /** Cached by the web app so the offline POS knows currency and receipt details. */
+  business: BusinessSettings;
 }
 
 @Injectable()
@@ -133,9 +136,10 @@ export class AuthService {
   }
 
   private async buildSession(user: User): Promise<LoginResult> {
-    const allStores = await this.prisma.store.findMany({
-      where: { businessId: user.businessId, isActive: true },
-    });
+    const [allStores, business] = await Promise.all([
+      this.prisma.store.findMany({ where: { businessId: user.businessId, isActive: true } }),
+      this.prisma.business.findUniqueOrThrow({ where: { id: user.businessId } }),
+    ]);
 
     let accessibleStoreIds: string[];
     if (user.role === Role.OWNER) {
@@ -167,6 +171,7 @@ export class AuthService {
         accessibleStoreIds,
       },
       stores: accessibleStores,
+      business: toBusinessSettings(business),
     };
   }
 
