@@ -23,6 +23,7 @@ import { createPurchase, fetchPurchases } from "@/features/purchases/api";
 import { fetchSuppliers } from "@/features/suppliers/api";
 import { fetchProducts } from "@/features/products/api";
 import { useAuthStore } from "@/features/auth/store";
+import { useMoney } from "@/features/business/use-money";
 
 const lineSchema = z.object({
   productId: z.string().min(1, "Required"),
@@ -41,6 +42,7 @@ const defaultValues = {
 };
 
 export function PurchasesPage() {
+  const money = useMoney();
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const queryClient = useQueryClient();
@@ -246,7 +248,7 @@ export function PurchasesPage() {
                   <TableCell className="font-mono text-xs">{purchase.purchaseNumber}</TableCell>
                   <TableCell>{purchase.supplier.name}</TableCell>
                   <TableCell className="text-muted-foreground">{purchase.lineItems.length}</TableCell>
-                  <TableCell className="text-right">${Number(purchase.total).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{money(purchase.total)}</TableCell>
                 </TableRow>
               ))}
               {purchasesQuery.data?.length === 0 && (

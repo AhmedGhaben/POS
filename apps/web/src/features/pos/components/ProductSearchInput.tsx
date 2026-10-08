@@ -4,6 +4,7 @@ import type { ProductDto } from "@pos/shared";
 import { Input } from "@/components/ui/input";
 import { fetchProducts } from "@/features/products/api";
 import { findByBarcode } from "@/features/pos/api";
+import { useMoney } from "@/features/business/use-money";
 
 interface ProductSearchInputProps {
   onSelect: (product: ProductDto) => void;
@@ -20,6 +21,7 @@ interface ProductSearchInputProps {
  * fuzzy search results the cashier can click.
  */
 export function ProductSearchInput({ onSelect, suppressRefocusRef }: ProductSearchInputProps) {
+  const money = useMoney();
   const [query, setQuery] = React.useState("");
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -88,7 +90,7 @@ export function ProductSearchInput({ onSelect, suppressRefocusRef }: ProductSear
               onClick={() => handleSelect(product)}
             >
               <span>{product.name}</span>
-              <span className="text-muted-foreground">${Number(product.sellPrice).toFixed(2)}</span>
+              <span className="text-muted-foreground">{money(product.sellPrice)}</span>
             </button>
           ))}
         </div>

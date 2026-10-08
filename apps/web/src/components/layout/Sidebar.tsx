@@ -1,14 +1,16 @@
 import { NavLink } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS } from "./nav-items";
+import { useAuthStore } from "@/features/auth/store";
+import { navItemsFor } from "./nav-items";
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+  const role = useAuthStore((s) => s.user?.role);
   return (
     <>
       <div className="mb-4 px-2 text-lg font-semibold">POS</div>
       <nav className="flex-1 space-y-1">
-        {NAV_ITEMS.map((item) => (
+        {navItemsFor(role).map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

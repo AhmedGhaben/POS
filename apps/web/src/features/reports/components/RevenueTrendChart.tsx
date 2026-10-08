@@ -10,6 +10,7 @@ import {
 import type { SalesTrendPointDto } from "@pos/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatShortDate } from "@/lib/format";
+import { currentCurrency, useCompactMoney } from "@/features/business/use-money";
 
 interface RevenueTrendChartProps {
   data: SalesTrendPointDto[];
@@ -22,7 +23,7 @@ function TrendTooltip({ active, payload, label }: any) {
     <div className="rounded-md border bg-popover px-3 py-2 text-sm shadow-md">
       <p className="font-medium text-foreground">{formatShortDate(label)}</p>
       <p className="text-muted-foreground">
-        {formatCurrency(point.revenue)} · {point.orderCount} order{point.orderCount === 1 ? "" : "s"}
+        {formatCurrency(point.revenue, currentCurrency())} · {point.orderCount} order{point.orderCount === 1 ? "" : "s"}
       </p>
     </div>
   );
@@ -30,6 +31,7 @@ function TrendTooltip({ active, payload, label }: any) {
 
 /** Single-series trend — sequential blue, per the "trend over time" form. No legend needed for one series. */
 export function RevenueTrendChart({ data }: RevenueTrendChartProps) {
+  const compact = useCompactMoney();
   return (
     <Card>
       <CardHeader>
@@ -48,7 +50,7 @@ export function RevenueTrendChart({ data }: RevenueTrendChartProps) {
               minTickGap={24}
             />
             <YAxis
-              tickFormatter={(v: number) => formatCurrency(v)}
+              tickFormatter={(v: number) => compact(v)}
               tick={{ fill: "var(--chart-ink-muted)", fontSize: 12 }}
               axisLine={false}
               tickLine={false}

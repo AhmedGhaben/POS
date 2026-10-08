@@ -2,6 +2,7 @@ import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, 
 import type { TopProductReportDto } from "@pos/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/format";
+import { currentCurrency, useCompactMoney } from "@/features/business/use-money";
 
 interface TopProductsChartProps {
   data: TopProductReportDto[];
@@ -14,7 +15,7 @@ function TopProductsTooltip({ active, payload }: any) {
     <div className="rounded-md border bg-popover px-3 py-2 text-sm shadow-md">
       <p className="font-medium text-foreground">{item.name}</p>
       <p className="text-muted-foreground">
-        {formatCurrency(item.revenue)} · {item.quantitySold} sold
+        {formatCurrency(item.revenue, currentCurrency())} · {item.quantitySold} sold
       </p>
     </div>
   );
@@ -22,6 +23,7 @@ function TopProductsTooltip({ active, payload }: any) {
 
 /** Magnitude comparison across a handful of named items — sequential blue, one measure. */
 export function TopProductsChart({ data }: TopProductsChartProps) {
+  const compact = useCompactMoney();
   const hasData = data.length > 0;
 
   return (
@@ -53,7 +55,7 @@ export function TopProductsChart({ data }: TopProductsChartProps) {
                 <LabelList
                   dataKey="revenue"
                   position="right"
-                  formatter={(v: unknown) => formatCurrency(Number(v))}
+                  formatter={(v: unknown) => compact(Number(v))}
                   fill="var(--chart-ink-secondary)"
                   fontSize={12}
                 />

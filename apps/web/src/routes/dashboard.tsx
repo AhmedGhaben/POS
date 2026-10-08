@@ -3,10 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { jsPDF } from "jspdf";
 import { autoTable } from "jspdf-autotable";
 import { Download, FileText } from "lucide-react";
-import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/features/auth/store";
-import type { BusinessDto } from "@pos/shared";
-import { formatCurrency } from "@/lib/format";
+import { BUSINESS_QUERY_KEY, fetchBusiness } from "@/features/business/api";
+import { useCompactMoney } from "@/features/business/use-money";
 import { downloadCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,15 +25,13 @@ import {
 } from "@/features/reports/api";
 
 export function DashboardPage() {
+  const compact = useCompactMoney();
   const stores = useAuthStore((s) => s.stores);
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const role = useAuthStore((s) => s.user?.role);
   const [days, setDays] = React.useState(30);
 
-  const businessQuery = useQuery({
-    queryKey: ["business", "me"],
-    queryFn: () => apiClient.get<BusinessDto>("/businesses/me"),
-  });
+  const businessQuery = useQuery({ queryKey: BUSINESS_QUERY_KEY, queryFn: fetchBusiness });
 
   const summaryQuery = useQuery({
     queryKey: ["reports", "summary", currentStoreId, days],
@@ -93,10 +90,10 @@ export function DashboardPage() {
       startY: 28,
       head: [["Metric", "Value"]],
       body: [
-        ["Revenue", summary ? formatCurrency(summary.revenue) : "—"],
-        ["Profit", summary ? formatCurrency(summary.profit) : "—"],
+        ["Revenue", summary ? compact(summary.revenue) : "—"],
+        ["Profit", summary ? compact(summary.profit) : "—"],
         ["Orders", summary ? String(summary.orderCount) : "—"],
-        ["Avg. order value", summary ? formatCurrency(summary.avgOrderValue) : "—"],
+        ["Avg. order value", summary ? compact(summary.avgOrderValue) : "—"],
       ],
     });
 
@@ -107,7 +104,7 @@ export function DashboardPage() {
       body: (topProductsQuery.data ?? []).map((p) => [
         p.name,
         String(p.quantitySold),
-        formatCurrency(p.revenue),
+        compact(p.revenue),
       ]),
     });
 
@@ -151,12 +148,12 @@ export function DashboardPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <KpiCard
               label="Revenue"
-              value={summary ? formatCurrency(summary.revenue) : "—"}
+              value={summary ? compact(summary.revenue) : "—"}
               deltaPct={summary?.revenueDeltaPct ?? null}
             />
             <KpiCard
               label="Profit"
-              value={summary ? formatCurrency(summary.profit) : "—"}
+              value={summary ? compact(summary.profit) : "—"}
               deltaPct={summary?.profitDeltaPct ?? null}
             />
             <KpiCard
@@ -166,7 +163,7 @@ export function DashboardPage() {
             />
             <KpiCard
               label="Avg. order value"
-              value={summary ? formatCurrency(summary.avgOrderValue) : "—"}
+              value={summary ? compact(summary.avgOrderValue) : "—"}
               deltaPct={summary?.avgOrderValueDeltaPct ?? null}
             />
           </div>

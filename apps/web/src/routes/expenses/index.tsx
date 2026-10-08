@@ -21,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createExpense, fetchExpenses } from "@/features/expenses/api";
 import { useAuthStore } from "@/features/auth/store";
+import { useMoney } from "@/features/business/use-money";
 
 const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   [ExpenseCategory.RENT]: "Rent",
@@ -45,6 +46,7 @@ const defaultValues = {
 };
 
 export function ExpensesPage() {
+  const money = useMoney();
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const queryClient = useQueryClient();
@@ -91,7 +93,7 @@ export function ExpensesPage() {
         <div>
           <h1 className="text-2xl font-semibold">Expenses</h1>
           <p className="text-sm text-muted-foreground">
-            {expensesQuery.data ? `${expensesQuery.data.length} logged · $${total.toFixed(2)} total` : "Store expenses."}
+            {expensesQuery.data ? `${expensesQuery.data.length} logged · ${money(total)} total` : "Store expenses."}
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -187,7 +189,7 @@ export function ExpensesPage() {
                   </TableCell>
                   <TableCell>{CATEGORY_LABELS[expense.category]}</TableCell>
                   <TableCell className="text-muted-foreground">{expense.description ?? "—"}</TableCell>
-                  <TableCell className="text-right">${Number(expense.amount).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{money(expense.amount)}</TableCell>
                 </TableRow>
               ))}
               {expensesQuery.data?.length === 0 && (

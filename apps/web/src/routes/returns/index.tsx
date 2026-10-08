@@ -22,6 +22,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { createReturn, fetchReturns } from "@/features/returns/api";
 import { fetchSalesByStore } from "@/features/sales/api";
 import { useAuthStore } from "@/features/auth/store";
+import { useMoney } from "@/features/business/use-money";
 
 const returnLineSchema = z
   .object({
@@ -48,6 +49,7 @@ const defaultValues: z.input<typeof returnSchema> = {
 };
 
 export function ReturnsPage() {
+  const money = useMoney();
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const queryClient = useQueryClient();
@@ -146,7 +148,7 @@ export function ReturnsPage() {
                         <SelectContent>
                           {salesQuery.data?.map((sale) => (
                             <SelectItem key={sale.id} value={sale.id}>
-                              {sale.receiptNumber} — ${Number(sale.total).toFixed(2)}
+                              {sale.receiptNumber} — {money(sale.total)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -231,7 +233,7 @@ export function ReturnsPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{ret.lineItems.length}</TableCell>
                   <TableCell className="text-muted-foreground">{ret.reason ?? "—"}</TableCell>
-                  <TableCell className="text-right">${Number(ret.totalRefund).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{money(ret.totalRefund)}</TableCell>
                 </TableRow>
               ))}
               {returnsQuery.data?.length === 0 && (

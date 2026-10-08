@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ProductDto } from "@pos/shared";
 import { fetchProducts } from "@/features/products/api";
+import { useMoney } from "@/features/business/use-money";
 
 interface ProductGridProps {
   categoryId: string | null;
@@ -9,6 +10,7 @@ interface ProductGridProps {
 
 /** Browsable grid for the currently selected category — click to add to cart. */
 export function ProductGrid({ categoryId, onSelect }: ProductGridProps) {
+  const money = useMoney();
   const productsQuery = useQuery({
     queryKey: ["pos-category-products", categoryId],
     queryFn: () => fetchProducts(undefined, categoryId ?? undefined),
@@ -29,7 +31,7 @@ export function ProductGrid({ categoryId, onSelect }: ProductGridProps) {
           className="rounded-md border p-2 text-left text-sm hover:bg-accent"
         >
           <p className="truncate font-medium">{product.name}</p>
-          <p className="text-muted-foreground">${Number(product.sellPrice).toFixed(2)}</p>
+          <p className="text-muted-foreground">{money(product.sellPrice)}</p>
         </button>
       ))}
       {productsQuery.data?.length === 0 && (

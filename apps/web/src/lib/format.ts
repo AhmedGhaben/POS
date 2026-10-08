@@ -1,18 +1,25 @@
-/** Auto-compact currency: $1,284.00 / $12.9K / $4.2M — per stat-tile figure contract. */
-export function formatCurrency(value: number): string {
-  const abs = Math.abs(value);
-  if (abs >= 1_000_000) {
-    return `$${(value / 1_000_000).toFixed(1)}M`;
+const moneyFormats = new Map<string, Intl.NumberFormat>();
+const compactMoneyFormats = new Map<string, Intl.NumberFormat>();
+
+function cached(map: Map<string, Intl.NumberFormat>, currency: string, options: Intl.NumberFormatOptions) {
+  let format = map.get(currency);
+  if (!format) {
+    // `undefined` locale: the browser's, so separators match what the shop expects.
+    format = new Intl.NumberFormat(undefined, { style: "currency", currency, ...options });
+    map.set(currency, format);
   }
-  if (abs >= 10_000) {
-    return `$${(value / 1_000).toFixed(1)}K`;
-  }
-  return value.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  return format;
+}
+
+/** Exact amount in the business currency, with that currency's own decimals: $12.50, ¥500, 12,50 €. */
+export function formatMoney(value: number | string, currency: string): string {
+  return cached(moneyFormats, currency, {}).format(Number(value));
+}
+
+/** Auto-compact for stat tiles and chart axes: $1,284.00 / $12.9K / $4.2M. */
+export function formatCurrency(value: number, currency: string): string {
+  if (Math.abs(value) < 10_000) return formatMoney(value, currency);
+  return cached(compactMoneyFormats, currency, { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
 export function formatCompactNumber(value: number): string {

@@ -12,6 +12,47 @@ export interface BusinessDto {
   id: string;
   name: string;
   plan: Plan;
+  legalName: string | null;
+  taxId: string | null;
+  registrationNumber: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  /** ISO 4217, 0-2 decimal places. */
+  currency: string;
+  /** Decimal string, e.g. "19". */
+  defaultTaxRate: string;
+  receiptHeader: string | null;
+  receiptFooter: string | null;
+  invoiceFooter: string | null;
+  /** Relative to the API root (prefix with /api in the web app); null without a logo. */
+  logoUrl: string | null;
+}
+
+export type UpdateBusinessDto = Partial<
+  Pick<
+    BusinessDto,
+    | "name"
+    | "legalName"
+    | "taxId"
+    | "registrationNumber"
+    | "address"
+    | "phone"
+    | "email"
+    | "website"
+    | "currency"
+    | "receiptHeader"
+    | "receiptFooter"
+    | "invoiceFooter"
+  >
+> & { defaultTaxRate?: number };
+
+export interface UpdateStoreDto {
+  name?: string;
+  address?: string | null;
+  phone?: string | null;
+  timezone?: string;
 }
 
 export interface StoreDto {
@@ -19,6 +60,7 @@ export interface StoreDto {
   businessId: string;
   name: string;
   address: string | null;
+  phone: string | null;
   timezone: string;
   isActive: boolean;
 }
@@ -63,6 +105,7 @@ export interface LoginResponseDto {
   accessToken: string;
   user: UserDto;
   stores: StoreDto[];
+  business: BusinessDto;
 }
 
 export interface CategoryDto {

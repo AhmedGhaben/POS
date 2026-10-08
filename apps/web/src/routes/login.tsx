@@ -26,8 +26,8 @@ export function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      const { accessToken, user, stores } = await login(email, password);
-      setSession(accessToken, user, stores);
+      const { accessToken, user, stores, business } = await login(email, password);
+      setSession(accessToken, user, stores, business);
       navigate(user.role === "CASHIER" ? "/pos" : "/dashboard");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Unable to log in");

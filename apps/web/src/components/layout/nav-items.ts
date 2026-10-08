@@ -8,6 +8,7 @@ import {
   Receipt,
   Undo2,
   ArrowLeftRight,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 
@@ -15,6 +16,7 @@ export interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
+  ownerOnly?: boolean;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -27,4 +29,11 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/expenses", label: "Expenses", icon: Receipt },
   { to: "/suppliers", label: "Suppliers", icon: Truck },
   { to: "/employees", label: "Employees", icon: Users },
+  { to: "/settings", label: "Settings", icon: Settings, ownerOnly: true },
 ];
+
+/** Back-office nav for a role: cashiers get none, managers skip owner-only items. */
+export function navItemsFor(role: string | undefined): NavItem[] {
+  if (role === "CASHIER") return [];
+  return NAV_ITEMS.filter((item) => !item.ownerOnly || role === "OWNER");
+}

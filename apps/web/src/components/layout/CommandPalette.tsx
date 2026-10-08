@@ -10,7 +10,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { useAuthStore } from "@/features/auth/store";
-import { NAV_ITEMS } from "./nav-items";
+import { navItemsFor } from "./nav-items";
 
 export function CommandPalette() {
   const [open, setOpen] = React.useState(false);
@@ -33,7 +33,7 @@ export function CommandPalette() {
     setOpen(false);
   }
 
-  const navItems = role === "CASHIER" ? [] : NAV_ITEMS;
+  const navItems = navItemsFor(role);
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>

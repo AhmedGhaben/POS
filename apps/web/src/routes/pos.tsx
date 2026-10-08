@@ -18,11 +18,13 @@ import { useCart } from "@/features/pos/hooks/useCart";
 import { createSale } from "@/features/pos/api";
 import { useAuthStore } from "@/features/auth/store";
 import { ApiError } from "@/lib/api-client";
+import { useMoney } from "@/features/business/use-money";
 
 export function PosPage() {
+  const money = useMoney();
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const stores = useAuthStore((s) => s.stores);
-  const storeName = stores.find((s) => s.id === currentStoreId)?.name ?? "Store";
+  const currentStore = stores.find((s) => s.id === currentStoreId);
   const { lines, addProduct, setQuantity, removeLine, clear, totals } = useCart();
   const [selectedCategoryId, setSelectedCategoryId] = React.useState<string | null>(null);
   const [payments, setPayments] = React.useState<SalePaymentInputDto[]>([]);
@@ -69,15 +71,15 @@ export function PosPage() {
       <div className="flex-1 space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-muted-foreground">Subtotal</span>
-          <span>${totals.subtotal.toFixed(2)}</span>
+          <span>{money(totals.subtotal)}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">Tax</span>
-          <span>${totals.taxTotal.toFixed(2)}</span>
+          <span>{money(totals.taxTotal)}</span>
         </div>
         <div className="flex justify-between text-lg font-semibold">
           <span>Total</span>
-          <span>${totals.total.toFixed(2)}</span>
+          <span>{money(totals.total)}</span>
         </div>
       </div>
 
@@ -112,7 +114,7 @@ export function PosPage() {
           disabled={lines.length === 0 || !paymentsValid || saleMutation.isPending}
           onClick={() => saleMutation.mutate()}
         >
-          {saleMutation.isPending ? "Processing..." : `Charge $${totals.total.toFixed(2)}`}
+          {saleMutation.isPending ? "Processing..." : `Charge ${money(totals.total)}`}
         </Button>
         <Button
           variant="outline"
@@ -171,7 +173,7 @@ export function PosPage() {
             </p>
           )}
           {completedSale && (
-            <Receipt sale={completedSale} storeName={storeName} customer={completedCustomer} />
+            <Receipt sale={completedSale} store={currentStore} customer={completedCustomer} />
           )}
           <Button onClick={() => window.print()}>Print receipt</Button>
         </DialogContent>

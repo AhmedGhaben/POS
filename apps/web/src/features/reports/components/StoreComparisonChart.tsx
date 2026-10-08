@@ -2,6 +2,7 @@ import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, 
 import type { StoreComparisonDto } from "@pos/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/format";
+import { currentCurrency, useCompactMoney } from "@/features/business/use-money";
 
 interface StoreComparisonChartProps {
   data: StoreComparisonDto[];
@@ -14,7 +15,7 @@ function StoreComparisonTooltip({ active, payload }: any) {
     <div className="rounded-md border bg-popover px-3 py-2 text-sm shadow-md">
       <p className="font-medium text-foreground">{store.storeName}</p>
       <p className="text-muted-foreground">
-        {formatCurrency(store.revenue)} revenue · {formatCurrency(store.profit)} profit
+        {formatCurrency(store.revenue, currentCurrency())} revenue · {formatCurrency(store.profit, currentCurrency())} profit
       </p>
       <p className="text-muted-foreground">{store.orderCount} orders</p>
     </div>
@@ -23,6 +24,7 @@ function StoreComparisonTooltip({ active, payload }: any) {
 
 /** Owner-only, multi-store businesses only — magnitude comparison, sequential blue. */
 export function StoreComparisonChart({ data }: StoreComparisonChartProps) {
+  const compact = useCompactMoney();
   return (
     <Card>
       <CardHeader>
@@ -39,7 +41,7 @@ export function StoreComparisonChart({ data }: StoreComparisonChartProps) {
               tickLine={false}
             />
             <YAxis
-              tickFormatter={(v: number) => formatCurrency(v)}
+              tickFormatter={(v: number) => compact(v)}
               tick={{ fill: "var(--chart-ink-muted)", fontSize: 12 }}
               axisLine={false}
               tickLine={false}
@@ -50,7 +52,7 @@ export function StoreComparisonChart({ data }: StoreComparisonChartProps) {
               <LabelList
                 dataKey="revenue"
                 position="top"
-                formatter={(v: unknown) => formatCurrency(Number(v))}
+                formatter={(v: unknown) => compact(Number(v))}
                 fill="var(--chart-ink-secondary)"
                 fontSize={12}
               />

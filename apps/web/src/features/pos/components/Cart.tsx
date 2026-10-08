@@ -1,6 +1,7 @@
 import { Minus, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CartLine } from "@/features/pos/hooks/useCart";
+import { useMoney } from "@/features/business/use-money";
 
 interface CartProps {
   lines: CartLine[];
@@ -9,6 +10,7 @@ interface CartProps {
 }
 
 export function Cart({ lines, onSetQuantity, onRemove }: CartProps) {
+  const money = useMoney();
   if (lines.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
@@ -24,7 +26,7 @@ export function Cart({ lines, onSetQuantity, onRemove }: CartProps) {
           <div className="flex-1">
             <p className="text-sm font-medium">{line.product.name}</p>
             <p className="text-xs text-muted-foreground">
-              ${Number(line.product.sellPrice).toFixed(2)} each
+              {money(line.product.sellPrice)} each
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -47,7 +49,7 @@ export function Cart({ lines, onSetQuantity, onRemove }: CartProps) {
             </Button>
           </div>
           <p className="w-20 text-right text-sm font-medium">
-            ${(Number(line.product.sellPrice) * line.quantity).toFixed(2)}
+            {money(Number(line.product.sellPrice) * line.quantity)}
           </p>
           <Button
             size="icon"

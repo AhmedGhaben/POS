@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X } from "lucide-react";
+import { useMoney } from "@/features/business/use-money";
 
 const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   [PaymentMethod.CASH]: "Cash",
@@ -32,6 +33,7 @@ let nextRowId = 0;
  * is an opt-in toggle — it never appears in the default flow.
  */
 export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
+  const money = useMoney();
   const [isSplit, setIsSplit] = React.useState(false);
   const [method, setMethod] = React.useState<PaymentMethod>(PaymentMethod.CASH);
   const [tendered, setTendered] = React.useState("");
@@ -134,7 +136,7 @@ export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
           Add payment method
         </Button>
         <p className={`text-sm ${splitValid ? "text-muted-foreground" : "text-destructive"}`}>
-          {splitValid ? "Fully allocated" : `Remaining: $${remaining.toFixed(2)}`}
+          {splitValid ? "Fully allocated" : `Remaining: ${money(remaining)}`}
         </p>
         <button
           type="button"
@@ -178,7 +180,7 @@ export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
             >
               {singleInvalidTender
                 ? "Tendered amount is less than the total"
-                : `Change due: $${changeDue.toFixed(2)}`}
+                : `Change due: ${money(changeDue)}`}
             </p>
           )}
         </div>

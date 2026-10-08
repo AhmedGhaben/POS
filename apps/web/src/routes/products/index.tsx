@@ -23,6 +23,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import type { ProductDto } from "@pos/shared";
 import { createProduct, fetchProducts } from "@/features/products/api";
 import { fetchCategories } from "@/features/categories/api";
+import { useMoney } from "@/features/business/use-money";
+import { useAuthStore } from "@/features/auth/store";
 
 const productSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -45,6 +47,7 @@ const defaultValues = {
 };
 
 export function ProductsPage() {
+  const money = useMoney();
   const [search, setSearch] = React.useState("");
   // `?new=1` (from the /welcome screen) opens the create dialog straight away.
   const [searchParams, setSearchParams] = useSearchParams();
@@ -60,9 +63,15 @@ export function ProductsPage() {
   });
   const categoriesQuery = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
+  // New products start at the business's default tax rate (Settings → Money).
+  const defaultTaxRate = useAuthStore((s) => s.business?.defaultTaxRate ?? "0");
+  const freshValues = React.useMemo(
+    () => ({ ...defaultValues, taxRate: String(Number(defaultTaxRate)) }),
+    [defaultTaxRate],
+  );
   const form = useForm<z.input<typeof productSchema>, unknown, z.output<typeof productSchema>>({
     resolver: zodResolver(productSchema),
-    defaultValues,
+    defaultValues: freshValues,
   });
 
   const createMutation = useMutation({
@@ -79,7 +88,7 @@ export function ProductsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setDialogOpen(false);
-      form.reset(defaultValues);
+      form.reset(freshValues);
       toast.success("Product created");
     },
     onError: (error) => {
@@ -270,7 +279,7 @@ export function ProductsPage() {
                   <TableCell>{product.name}</TableCell>
                   <TableCell className="text-muted-foreground">{product.sku}</TableCell>
                   <TableCell className="text-muted-foreground">{product.barcode ?? "—"}</TableCell>
-                  <TableCell className="text-right">${Number(product.sellPrice).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{money(product.sellPrice)}</TableCell>
                 </TableRow>
               ))}
               {productsQuery.data?.length === 0 && (

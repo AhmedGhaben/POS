@@ -48,8 +48,8 @@ export function SignupPage() {
 
   const signupMutation = useMutation({
     mutationFn: (values: SignupValues) => register({ ...values, timezone: browserTimezone() }),
-    onSuccess: ({ accessToken, user, stores }) => {
-      setSession(accessToken, user, stores);
+    onSuccess: ({ accessToken, user, stores, business }) => {
+      setSession(accessToken, user, stores, business);
       navigate("/welcome", { replace: true });
     },
   });
