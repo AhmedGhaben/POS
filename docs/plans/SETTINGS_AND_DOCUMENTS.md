@@ -125,6 +125,17 @@ and tests.
 
 ## B. Print a quote (no checkout)
 
+**Status: shipped 2026-10-08** (`git log --grep "Print quote"`). Notes:
+
+- The dialog has a "For (optional)" name field, pre-filled from the POS
+  customer. It shows as "For:" on the slip and as "Bill to" on A4.
+- The shared pieces are `features/documents/`: the `DocumentLine` maths,
+  `A4Document` and `SlipHeader`, plus the receipt/A4 formats of
+  `PrintArea`. Part C reuses `A4Document` with a seller snapshot.
+- There are no automated tests on the web side, which has no test runner;
+  the logic is small (`documents/lines.ts`). Adding Vitest is worth doing
+  before part D's CSV parser.
+
 - A **"Print quote"** button in the POS checkout panel, next to "Charge",
   enabled whenever the cart has items. It doesn't create a sale, take
   payment or change stock.
