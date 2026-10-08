@@ -17,7 +17,8 @@ export function StoreCheckboxes({ stores, value, onChange, disabled }: StoreChec
   }
 
   return (
-    <div className="space-y-1.5 rounded-md border p-3">
+    // Scrolls past ~8 stores so a large business doesn't stretch the dialog.
+    <div className="max-h-56 space-y-1.5 overflow-y-auto rounded-md border p-3">
       {stores.map((store) => (
         <label key={store.id} className="flex cursor-pointer items-center gap-2 text-sm">
           <input
