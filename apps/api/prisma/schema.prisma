@@ -87,44 +87,47 @@ model Store {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  storeUsers      StoreUser[]
-  inventoryItems  InventoryItem[]
-  sales           Sale[]
-  purchases       Purchase[]
-  expenses        Expense[]
-  returns         Return[]
-  employees       Employee[]
-  transfersOut    StockTransfer[] @relation("TransferFrom")
-  transfersIn     StockTransfer[] @relation("TransferTo")
+  storeUsers     StoreUser[]
+  inventoryItems InventoryItem[]
+  sales          Sale[]
+  purchases      Purchase[]
+  expenses       Expense[]
+  returns        Return[]
+  employees      Employee[]
+  transfersOut   StockTransfer[] @relation("TransferFrom")
+  transfersIn    StockTransfer[] @relation("TransferTo")
 
   @@index([businessId])
   @@map("stores")
 }
 
 model User {
-  id           String   @id @default(cuid())
-  businessId   String
-  business     Business @relation(fields: [businessId], references: [id])
-  email        String   @unique
-  passwordHash String
-  firstName    String
-  lastName     String
-  role         Role
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String    @id @default(cuid())
+  businessId      String
+  business        Business  @relation(fields: [businessId], references: [id])
+  email           String    @unique
+  passwordHash    String
+  firstName       String
+  lastName        String
+  role            Role
+  isActive        Boolean   @default(true)
+  /// Null until the user clicks the link in their verification email.
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  storeUsers          StoreUser[]
-  salesCreated        Sale[]                @relation("SaleCashier")
-  purchasesCreated    Purchase[]            @relation("PurchaseCreatedBy")
-  expensesLogged      Expense[]             @relation("ExpenseCreatedBy")
-  returnsProcessed    Return[]              @relation("ReturnProcessedBy")
-  employeeProfile     Employee?
-  refreshTokens       RefreshToken[]
-  passwordResetTokens PasswordResetToken[]
-  auditLogs           AuditLog[]
-  permissionOverrides UserPermission[]
-  transfersCreated    StockTransfer[]      @relation("TransferCreatedBy")
+  storeUsers              StoreUser[]
+  salesCreated            Sale[]                   @relation("SaleCashier")
+  purchasesCreated        Purchase[]               @relation("PurchaseCreatedBy")
+  expensesLogged          Expense[]                @relation("ExpenseCreatedBy")
+  returnsProcessed        Return[]                 @relation("ReturnProcessedBy")
+  employeeProfile         Employee?
+  refreshTokens           RefreshToken[]
+  passwordResetTokens     PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  auditLogs               AuditLog[]
+  permissionOverrides     UserPermission[]
+  transfersCreated        StockTransfer[]          @relation("TransferCreatedBy")
 
   @@index([businessId])
   @@map("users")
@@ -175,6 +178,21 @@ model PasswordResetToken {
 
   @@index([userId])
   @@map("password_reset_tokens")
+}
+
+/// Same shape as PasswordResetToken: only the sha256 hash is stored, the raw
+/// token goes out in the verification email link.
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("email_verification_tokens")
 }
 
 /// Records who did what, when — one row per mutating (POST/PUT/PATCH/DELETE)
@@ -241,11 +259,11 @@ model Product {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  inventoryItems       InventoryItem[]
-  saleLineItems        SaleLineItem[]
-  purchaseLineItems    PurchaseLineItem[]
-  returnLineItems      ReturnLineItem[]
-  transferLineItems    StockTransferLineItem[]
+  inventoryItems    InventoryItem[]
+  saleLineItems     SaleLineItem[]
+  purchaseLineItems PurchaseLineItem[]
+  returnLineItems   ReturnLineItem[]
+  transferLineItems StockTransferLineItem[]
 
   @@unique([businessId, sku])
   @@index([businessId, barcode])
@@ -283,18 +301,18 @@ model Customer {
 }
 
 model Sale {
-  id            String        @id @default(cuid())
-  storeId       String
-  store         Store         @relation(fields: [storeId], references: [id])
-  cashierId     String
-  cashier       User          @relation("SaleCashier", fields: [cashierId], references: [id])
-  customerId    String?
-  customer      Customer?     @relation(fields: [customerId], references: [id])
-  receiptNumber String        @unique
-  subtotal      Decimal       @db.Decimal(10, 2)
-  taxTotal      Decimal       @db.Decimal(10, 2)
-  discountTotal Decimal       @default(0) @db.Decimal(10, 2)
-  total         Decimal       @db.Decimal(10, 2)
+  id             String        @id @default(cuid())
+  storeId        String
+  store          Store         @relation(fields: [storeId], references: [id])
+  cashierId      String
+  cashier        User          @relation("SaleCashier", fields: [cashierId], references: [id])
+  customerId     String?
+  customer       Customer?     @relation(fields: [customerId], references: [id])
+  receiptNumber  String        @unique
+  subtotal       Decimal       @db.Decimal(10, 2)
+  taxTotal       Decimal       @db.Decimal(10, 2)
+  discountTotal  Decimal       @default(0) @db.Decimal(10, 2)
+  total          Decimal       @db.Decimal(10, 2)
   /// Denormalized "first payment leg" — kept for back-compat with existing
   /// reports; payments[] is the authoritative source for tender details.
   paymentMethod  PaymentMethod

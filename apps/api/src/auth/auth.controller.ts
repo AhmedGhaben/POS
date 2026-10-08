@@ -2,8 +2,12 @@ import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res, UnauthorizedExc
 import { Throttle } from "@nestjs/throttler";
 import { Request, Response } from "express";
 import { Public } from "../common/decorators/public.decorator";
+import { CurrentUser } from "../common/decorators/current-user.decorator";
+import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
+import { RegisterDto } from "./dto/register.dto";
+import { VerifyEmailDto } from "./dto/verify-email.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 
@@ -32,6 +36,17 @@ export class AuthController {
       dto.email,
       dto.password,
     );
+
+    this.setRefreshCookie(res, refreshToken);
+
+    return { accessToken, user, stores };
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post("register")
+  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
+    const { accessToken, refreshToken, user, stores } = await this.authService.register(dto);
 
     this.setRefreshCookie(res, refreshToken);
 
@@ -75,6 +90,24 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() dto: ResetPasswordDto) {
     await this.authService.resetPassword(dto.token, dto.newPassword);
+    return { success: true };
+  }
+
+  /** Public so the link works in a browser where the user isn't logged in. */
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post("verify-email")
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    await this.authService.verifyEmail(dto.token);
+    return { success: true };
+  }
+
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @Post("resend-verification")
+  @HttpCode(HttpStatus.OK)
+  async resendVerification(@CurrentUser() user: AuthenticatedUser) {
+    await this.authService.resendVerification(user.userId);
     return { success: true };
   }
 }

@@ -3,6 +3,7 @@ import { Permission } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import { PrismaService } from "../prisma/prisma.service";
 import { PermissionsService } from "../common/permissions/permissions.service";
+import { normalizeEmail } from "../common/transforms/normalize-email";
 import { CreateUserDto } from "./dto/create-user.dto";
 
 const SALT_ROUNDS = 12;
@@ -53,7 +54,8 @@ export class UsersService {
   }
 
   async create(businessId: string, dto: CreateUserDto) {
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const email = normalizeEmail(dto.email);
+    const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) {
       throw new ConflictException("Email already in use");
     }
@@ -62,11 +64,13 @@ export class UsersService {
     const user = await this.prisma.user.create({
       data: {
         businessId,
-        email: dto.email,
+        email,
         passwordHash,
         firstName: dto.firstName,
         lastName: dto.lastName,
         role: dto.role,
+        // Provisioned by the business owner, who vouches for the address.
+        emailVerifiedAt: new Date(),
       },
     });
     const { passwordHash: _omit, ...safeUser } = user;

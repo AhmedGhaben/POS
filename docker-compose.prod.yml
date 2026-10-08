@@ -28,6 +28,7 @@ services:
       JWT_REFRESH_TTL: "30d"
       PORT: 3000
       CORS_ORIGIN: "http://localhost:8080"
+      APP_URL: "http://localhost:8080"
 
   web:
     build:

@@ -49,11 +49,14 @@ export class MailService {
   private readonly logger = new Logger(MailService.name);
   private readonly resend: Resend | null;
   private readonly from: string;
+  /** Base URL of the web app, used to build links in emails. */
+  private readonly appUrl: string;
 
   constructor(private readonly config: ConfigService) {
     const apiKey = this.config.get<string>("RESEND_API_KEY");
     this.resend = apiKey ? new Resend(apiKey) : null;
     this.from = this.config.get<string>("MAIL_FROM") ?? "POS <onboarding@resend.dev>";
+    this.appUrl = (this.config.get<string>("APP_URL") ?? "http://localhost:5173").replace(/\/+$/, "");
   }
 
   private async send(to: string, subject: string, html: string): Promise<void> {
@@ -68,12 +71,25 @@ export class MailService {
   }
 
   async sendPasswordResetEmail(to: string, resetToken: string): Promise<void> {
+    const link = `${this.appUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
     await this.send(
       to,
       "Reset your password",
       `<p>A password reset was requested for your account.</p>
-       <p>Reset code: <b>${resetToken}</b></p>
+       <p><a href="${link}">Choose a new password</a> (link expires in 1 hour)</p>
        <p>If you didn't request this, you can ignore this email.</p>`,
+    );
+  }
+
+  async sendEmailVerificationEmail(to: string, firstName: string, verifyToken: string): Promise<void> {
+    const link = `${this.appUrl}/verify-email?token=${encodeURIComponent(verifyToken)}`;
+    await this.send(
+      to,
+      "Verify your email",
+      `<p>Hi ${escapeHtml(firstName)},</p>
+       <p>Thanks for signing up. Please confirm your email address:</p>
+       <p><a href="${link}">Verify my email</a> (link expires in 24 hours)</p>
+       <p>If you didn't create an account, you can ignore this email.</p>`,
     );
   }
 

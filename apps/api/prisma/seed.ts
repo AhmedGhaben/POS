@@ -143,6 +143,7 @@ async function main() {
       firstName: "Ada",
       lastName: "Owner",
       role: Role.OWNER,
+      emailVerifiedAt: new Date(),
     },
     update: {},
   });
@@ -157,6 +158,7 @@ async function main() {
       firstName: "Cara",
       lastName: "Cashier",
       role: Role.CASHIER,
+      emailVerifiedAt: new Date(),
     },
     update: {},
   });

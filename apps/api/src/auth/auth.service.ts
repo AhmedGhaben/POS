@@ -1,14 +1,25 @@
-import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
-import { Role } from "@prisma/client";
+import { Plan, Role, User } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import { randomBytes, createHash } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { parseDurationMs } from "../common/utils/duration";
+import { normalizeEmail } from "../common/transforms/normalize-email";
+import { RegisterDto } from "./dto/register.dto";
 
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
+const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
+/** Same cost as UsersService and resetPassword. */
+const SALT_ROUNDS = 12;
 
 interface LoginResult {
   accessToken: string;
@@ -20,6 +31,7 @@ interface LoginResult {
     firstName: string;
     lastName: string;
     role: Role;
+    emailVerified: boolean;
     accessibleStoreIds: string[];
   };
   stores: { id: string; businessId: string; name: string; address: string | null; timezone: string; isActive: boolean }[];
@@ -35,6 +47,8 @@ function hashToken(token: string): string {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
@@ -66,7 +80,7 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<LoginResult> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
     if (!user || !user.isActive) {
       throw new UnauthorizedException("Invalid credentials");
     }
@@ -76,6 +90,57 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
+    return this.buildSession(user);
+  }
+
+  /**
+   * Creates a Business, its first Store and the OWNER user in one transaction,
+   * then logs the owner straight in. Owners see every store in their business,
+   * so no StoreUser row is needed (same as login).
+   */
+  async register(dto: RegisterDto): Promise<LoginResult> {
+    const email = normalizeEmail(dto.email);
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      throw new ConflictException("Email already in use");
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
+    const user = await this.prisma.$transaction(async (tx) => {
+      const business = await tx.business.create({
+        data: { name: dto.businessName.trim(), plan: Plan.SIMPLE },
+      });
+      await tx.store.create({
+        data: {
+          businessId: business.id,
+          name: dto.storeName.trim(),
+          timezone: dto.timezone ?? "UTC",
+        },
+      });
+      return tx.user.create({
+        data: {
+          businessId: business.id,
+          email,
+          passwordHash,
+          firstName: dto.firstName.trim(),
+          lastName: dto.lastName.trim(),
+          role: Role.OWNER,
+        },
+      });
+    });
+
+    // Best-effort, after commit: a mail outage must not fail sign-up — the
+    // owner can resend from the banner in the app.
+    try {
+      await this.sendVerificationEmail(user);
+    } catch (err) {
+      this.logger.error(`Failed to send verification email to ${user.email}: ${(err as Error).message}`);
+    }
+
+    return this.buildSession(user);
+  }
+
+  private async buildSession(user: User): Promise<LoginResult> {
     const allStores = await this.prisma.store.findMany({
       where: { businessId: user.businessId, isActive: true },
     });
@@ -106,6 +171,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        emailVerified: user.emailVerifiedAt !== null,
         accessibleStoreIds,
       },
       stores: accessibleStores,
@@ -164,7 +230,7 @@ export class AuthService {
 
   /** Always resolves the same way regardless of whether the email exists, to avoid user enumeration. */
   async forgotPassword(email: string): Promise<void> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
     if (!user || !user.isActive) return;
 
     const rawToken = generateOpaqueToken();
@@ -197,6 +263,39 @@ export class AuthService {
         where: { userId: stored.userId, revokedAt: null },
         data: { revokedAt: new Date() },
       }),
+    ]);
+  }
+
+  private async sendVerificationEmail(user: Pick<User, "id" | "email" | "firstName">): Promise<void> {
+    const rawToken = generateOpaqueToken();
+    await this.prisma.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: hashToken(rawToken),
+        expiresAt: new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS),
+      },
+    });
+    await this.mail.sendEmailVerificationEmail(user.email, user.firstName, rawToken);
+  }
+
+  /** No-op when the user is already verified, so a stale banner can't spam emails. */
+  async resendVerification(userId: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.isActive || user.emailVerifiedAt) return;
+    await this.sendVerificationEmail(user);
+  }
+
+  async verifyEmail(rawToken: string): Promise<void> {
+    const tokenHash = hashToken(rawToken);
+    const stored = await this.prisma.emailVerificationToken.findUnique({ where: { tokenHash } });
+    if (!stored || stored.usedAt || stored.expiresAt < new Date()) {
+      throw new BadRequestException("Invalid or expired verification link");
+    }
+
+    const now = new Date();
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: stored.userId }, data: { emailVerifiedAt: now } }),
+      this.prisma.emailVerificationToken.update({ where: { id: stored.id }, data: { usedAt: now } }),
     ]);
   }
 }
