@@ -69,9 +69,8 @@ staff.
    - Deactivating also revokes all of the user's refresh tokens.
 4. **Close the deactivation gap:** `JwtStrategy.validate` looks the user up
    and rejects inactive ones, so deactivation takes effect on the next
-   request. That adds one indexed primary-key query per request. If we'd
-   rather not, the alternative is "takes effect within 30 min" (decision
-   below).
+   request. That adds one indexed primary-key query per request; decided
+   2026-10-08 that immediate deactivation is worth it.
 5. **Listing:** the `GET /employees` include grows from
    `user: { id, email, role }` to also return `isActive` and `storeIds`, so
    the page can render access without extra calls.
