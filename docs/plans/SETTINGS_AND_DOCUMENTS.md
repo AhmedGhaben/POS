@@ -52,6 +52,22 @@ and tests.
 
 ## A. Business settings, currency & logo
 
+**Status: shipped 2026-10-08** (`d8a14ad` API, `85c1140` web). Notes:
+
+- **Logo endpoint is public:** `GET /businesses/:id/logo`, not `/me/logo`.
+  A plain `<img>` can't send the bearer token, and the logo is printed on
+  every receipt anyway. The business id is an unguessable cuid. The cache
+  is immutable, and the `v=` param changes on every upload.
+- **JSON body limit is 1 MB** (was Express's default 100 KB), set in
+  `main.ts`.
+- **The session carries the full business settings** (not just currency),
+  since receipts need the address and tax ID offline.
+  `ProtectedRoute` refreshes them on load.
+- **Money uses the browser's locale** for separators (`1.234,50 €` in a
+  French browser).
+- **Known limitation:** jsPDF's built-in font is Latin-only, so the
+  dashboard PDF export may garble non-Latin currency symbols (e.g. ₹, ₪).
+
 ### Data (one migration)
 
 - `Business` gains: `legalName?`, `taxId?` (VAT/tax number),
