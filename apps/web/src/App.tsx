@@ -23,6 +23,7 @@ import { ExpensesPage } from "@/routes/expenses";
 import { ReturnsPage } from "@/routes/returns";
 import { TransfersPage } from "@/routes/transfers";
 import { SettingsPage } from "@/routes/settings";
+import { InvoicesPage } from "@/routes/invoices";
 
 /** Owner/Manager default to the back office; Cashier defaults straight to POS. */
 function DefaultLanding() {
@@ -57,6 +58,7 @@ export function App() {
               <Route path="/expenses" element={<ExpensesPage />} />
               <Route path="/suppliers" element={<SuppliersPage />} />
               <Route path="/employees" element={<EmployeesPage />} />
+              <Route path="/invoices" element={<InvoicesPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>

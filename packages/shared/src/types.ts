@@ -165,6 +165,8 @@ export interface CustomerDto {
   name: string;
   phone: string | null;
   email: string | null;
+  address: string | null;
+  taxId: string | null;
 }
 
 export interface SaleLineItemInputDto {
@@ -477,4 +479,62 @@ export interface SaleDto {
   createdAt: string;
   lineItems: SaleLineItemDto[];
   payments: SalePaymentDto[];
+}
+
+/** Seller details frozen when an invoice is issued. */
+export interface SellerSnapshotDto {
+  name: string;
+  legalName: string | null;
+  taxId: string | null;
+  registrationNumber: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  currency: string;
+  logoUrl: string | null;
+  invoiceFooter: string | null;
+  store: { id: string; name: string; address: string | null; phone: string | null };
+}
+
+export interface InvoiceDto {
+  id: string;
+  businessId: string;
+  saleId: string;
+  year: number;
+  sequence: number;
+  /** e.g. INV-2026-0001 */
+  number: string;
+  issuedAt: string;
+  seller: SellerSnapshotDto;
+  buyerName: string;
+  buyerAddress: string | null;
+  buyerTaxId: string | null;
+  buyerEmail: string | null;
+  customerId: string | null;
+  sale: SaleDto;
+}
+
+export interface IssueInvoiceDto {
+  buyerName: string;
+  buyerAddress?: string;
+  buyerTaxId?: string;
+  buyerEmail?: string;
+  saveToCustomer?: boolean;
+}
+
+export interface InvoiceListItemDto {
+  id: string;
+  number: string;
+  issuedAt: string;
+  buyerName: string;
+  buyerTaxId: string | null;
+  sale: { total: string; receiptNumber: string };
+}
+
+export interface PagedDto<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

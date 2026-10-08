@@ -14,6 +14,7 @@ import { Cart } from "@/features/pos/components/Cart";
 import { Receipt } from "@/features/pos/components/Receipt";
 import { PrintArea } from "@/components/print/PrintArea";
 import { PrintQuoteDialog } from "@/features/pos/components/PrintQuoteDialog";
+import { IssueInvoiceDialog } from "@/features/invoices/components/IssueInvoiceDialog";
 import { PaymentPanel } from "@/features/pos/components/PaymentPanel";
 import { CustomerSearchCombobox } from "@/features/pos/components/CustomerSearchCombobox";
 import { useCart } from "@/features/pos/hooks/useCart";
@@ -38,6 +39,8 @@ export function PosPage() {
   const [paymentPanelKey, setPaymentPanelKey] = React.useState(0);
   const [cartSheetOpen, setCartSheetOpen] = React.useState(false);
   const [quoteOpen, setQuoteOpen] = React.useState(false);
+  // Kept separate from completedSale: only one dialog (and print area) is mounted at a time.
+  const [invoiceFor, setInvoiceFor] = React.useState<{ sale: SaleDto; customer: CustomerDto | null } | null>(null);
   const queryClient = useQueryClient();
   const checkoutAreaRef = React.useRef<HTMLDivElement>(null);
 
@@ -172,6 +175,12 @@ export function PosPage() {
         </SheetContent>
       </Sheet>
 
+      <IssueInvoiceDialog
+        sale={invoiceFor?.sale ?? null}
+        customer={invoiceFor?.customer ?? null}
+        onClose={() => setInvoiceFor(null)}
+      />
+
       <PrintQuoteDialog
         open={quoteOpen}
         onOpenChange={setQuoteOpen}
@@ -198,7 +207,18 @@ export function PosPage() {
               </PrintArea>
             </>
           )}
-          <Button onClick={() => window.print()}>Print receipt</Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button onClick={() => window.print()}>Print receipt</Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setInvoiceFor({ sale: completedSale!, customer: completedCustomer });
+                setCompletedSale(null);
+              }}
+            >
+              <FileText className="mr-2 h-4 w-4" /> A4 invoice
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

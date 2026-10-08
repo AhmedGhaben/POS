@@ -32,7 +32,8 @@ interface A4DocumentProps {
   title: string;
   /** Right-hand header rows, e.g. [["Quote ref", "Q-…"], ["Date", "8 Oct 2026"]]. */
   meta: [label: string, value: string][];
-  store: StoreDto | undefined;
+  /** Only address/phone are used, as fallbacks when the business has none. */
+  store: Pick<StoreDto, "address" | "phone"> | undefined;
   lines: DocumentLine[];
   seller?: SellerDetails;
   billTo?: BillTo | null;

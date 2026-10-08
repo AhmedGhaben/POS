@@ -1,8 +1,8 @@
-import { PaymentMethod } from "@pos/shared";
 import type { CustomerDto, SaleDto, StoreDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
 import { useMoney } from "@/features/business/use-money";
 import { SlipHeader } from "@/features/documents/components/SlipHeader";
+import { PAYMENT_LABELS } from "@/features/documents/payment-labels";
 
 interface ReceiptProps {
   sale: SaleDto;
@@ -12,12 +12,6 @@ interface ReceiptProps {
   customer?: CustomerDto | null;
 }
 
-const PAYMENT_LABELS: Record<PaymentMethod, string> = {
-  [PaymentMethod.CASH]: "Cash",
-  [PaymentMethod.CARD]: "Card",
-  [PaymentMethod.MOBILE_MONEY]: "Mobile money",
-  [PaymentMethod.OTHER]: "Other",
-};
 
 /** 80 mm slip. Shown as a preview on screen; wrap a copy in <PrintArea> to print it. */
 export function Receipt({ sale, store, customer }: ReceiptProps) {
