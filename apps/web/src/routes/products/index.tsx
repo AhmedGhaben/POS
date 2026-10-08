@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Download, Plus } from "lucide-react";
 import { downloadCsv } from "@/lib/csv";
@@ -45,7 +46,12 @@ const defaultValues = {
 
 export function ProductsPage() {
   const [search, setSearch] = React.useState("");
-  const [dialogOpen, setDialogOpen] = React.useState(false);
+  // `?new=1` (from the /welcome screen) opens the create dialog straight away.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [dialogOpen, setDialogOpen] = React.useState(() => searchParams.get("new") === "1");
+  React.useEffect(() => {
+    if (searchParams.has("new")) setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams]);
   const queryClient = useQueryClient();
 
   const productsQuery = useQuery({

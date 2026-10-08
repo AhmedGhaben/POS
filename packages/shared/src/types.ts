@@ -31,6 +31,8 @@ export interface UserDto {
   lastName: string;
   role: Role;
   isActive: boolean;
+  /** Only present on login/register responses; absent on older persisted sessions. */
+  emailVerified?: boolean;
   accessibleStoreIds: string[];
 }
 
@@ -44,6 +46,17 @@ export interface UpdateUserPermissionDto {
 export interface LoginRequestDto {
   email: string;
   password: string;
+}
+
+export interface RegisterRequestDto {
+  businessName: string;
+  storeName: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  /** IANA zone, e.g. "Europe/Paris"; the API defaults to UTC. */
+  timezone?: string;
 }
 
 export interface LoginResponseDto {

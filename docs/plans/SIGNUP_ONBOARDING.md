@@ -1,6 +1,7 @@
 # Sign-up & Onboarding — plan
 
-Item #1 of `LAUNCH_READINESS.md`. Goal: a business owner who has never
+Item #1 of `LAUNCH_READINESS.md`. **Status: shipped 2026-10-08** (see
+"Changes from the plan" at the end). Goal: a business owner who has never
 heard of us can create an account, verify their email, and reach a usable
 POS without anyone touching the database.
 
@@ -99,3 +100,17 @@ POS without anyone touching the database.
 A brand-new owner can go `/signup` → `/welcome` → add a product → sell it at
 `/pos`, verify their email from the link, and reset a forgotten password —
 all from the browser, with unit + e2e tests passing in CI.
+
+## Changes from the plan (2026-10-08)
+
+- **No "Add a cashier" card on `/welcome`.** `/employees` only manages HR
+  records; there is no UI to create a login user, so the card would lead to
+  a dead end. Tracked as item 1b in `LAUNCH_READINESS.md`.
+- Owner-created staff (`UsersService.create`) and seed users are created
+  already verified. Only self-serve owners get a verification email.
+- `/products?new=1` opens the create dialog (used by the welcome card).
+- Verified over HTTP through the Vite proxy (register → verify link from the
+  stub email → add product → stock → cash sale → forgot/reset password →
+  login with upper-cased email), then the test business was deleted. The
+  Chrome extension wasn't connected, so the pages haven't had a visual
+  click-through yet.

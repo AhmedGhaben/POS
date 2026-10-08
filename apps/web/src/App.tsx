@@ -7,6 +7,11 @@ import { PosShell } from "@/components/layout/PosShell";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { useAuthStore } from "@/features/auth/store";
 import { LoginPage } from "@/routes/login";
+import { SignupPage } from "@/routes/signup";
+import { ForgotPasswordPage } from "@/routes/forgot-password";
+import { ResetPasswordPage } from "@/routes/reset-password";
+import { VerifyEmailPage } from "@/routes/verify-email";
+import { WelcomePage } from "@/routes/welcome";
 import { PosPage } from "@/routes/pos";
 import { ProductsPage } from "@/routes/products";
 import { InventoryPage } from "@/routes/inventory";
@@ -31,7 +36,12 @@ export function App() {
       <PwaUpdatePrompt />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route element={<ProtectedRoute />}>
+          <Route path="/welcome" element={<WelcomePage />} />
           <Route element={<PosShell />}>
             <Route path="/pos" element={<PosPage />} />
           </Route>

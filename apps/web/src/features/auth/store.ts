@@ -10,6 +10,7 @@ interface AuthState {
   setSession: (accessToken: string, user: UserDto, stores: StoreDto[]) => void;
   setAccessToken: (accessToken: string) => void;
   setCurrentStoreId: (storeId: string) => void;
+  markEmailVerified: () => void;
   clearSession: () => void;
 }
 
@@ -30,6 +31,10 @@ export const useAuthStore = create<AuthState>()(
       },
       setAccessToken: (accessToken) => set({ accessToken }),
       setCurrentStoreId: (storeId) => set({ currentStoreId: storeId }),
+      markEmailVerified: () => {
+        const user = get().user;
+        if (user) set({ user: { ...user, emailVerified: true } });
+      },
       clearSession: () => set({ accessToken: null, user: null, stores: [], currentStoreId: null }),
     }),
     {

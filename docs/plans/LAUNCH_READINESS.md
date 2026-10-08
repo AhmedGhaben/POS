@@ -11,13 +11,23 @@ nothing in `apps/api/src` ever calls `business.create`.
 
 ## Must-have before selling
 
-- [ ] **1. Sign-up & onboarding**
+- [x] **1. Sign-up & onboarding** — shipped 2026-10-08, see
+  `SIGNUP_ONBOARDING.md`. Remaining: a visual click-through of the new pages
+  in a browser (the flow was verified over HTTP through the Vite proxy).
   - Registration endpoint + page: create `Business` + OWNER `User` + first
     `Store` in one transaction. Rate-limit it like the other auth endpoints.
   - Email verification (none exists today; Resend `MailService` from Phase 9
     can send it).
   - First-run setup wizard: store name, currency, tax defaults, add/import
     products — so a new owner doesn't land on an empty dashboard.
+- [ ] **1b. Staff login accounts UI** (found while building #1)
+  - `/employees` only manages HR records. There is no screen to create a
+    login for a cashier/manager, although the API has `POST /users` (owner
+    only) and store assignment (`StoresService`, `storeUser.upsert`). A
+    self-serve owner therefore can't add a cashier who can sign in.
+  - Needs: "Invite/add staff login" on the employees page (email, name,
+    role, password or invite email, store access), then add an
+    "Add a cashier" card back to `/welcome`.
 - [ ] **2. Billing / subscriptions**
   - Already in place but unused: `Business.plan` (`SIMPLE` default / `PRO`)
     in `schema.prisma`, `PlanGuard` (`apps/api/src/common/guards/plan.guard.ts`)
@@ -66,6 +76,7 @@ nothing in `apps/api/src` ever calls `business.create`.
 ## Suggested order
 
 1. Sign-up & onboarding
+1b. Staff login accounts UI
 2. Settings (currency first)
 3. Deploy with backups
 4. Billing
