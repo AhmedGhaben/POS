@@ -93,6 +93,22 @@ export class MailService {
     );
   }
 
+  async sendStaffInviteEmail(
+    to: string,
+    params: { firstName: string; businessName: string; token: string },
+  ): Promise<void> {
+    const link = `${this.appUrl}/reset-password?token=${encodeURIComponent(params.token)}&invite=1`;
+    const businessName = escapeHtml(params.businessName);
+    await this.send(
+      to,
+      `You've been added to ${businessName}`,
+      `<p>Hi ${escapeHtml(params.firstName)},</p>
+       <p>You've been given a login for <b>${businessName}</b>'s point of sale.</p>
+       <p><a href="${link}">Set your password</a> (link expires in 72 hours)</p>
+       <p>Then sign in with this email address: ${escapeHtml(to)}</p>`,
+    );
+  }
+
   async sendReceiptEmail(to: string, params: ReceiptEmailParams): Promise<void> {
     const rows = params.items
       .map(

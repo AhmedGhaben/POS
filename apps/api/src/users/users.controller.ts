@@ -6,6 +6,7 @@ import { RolesGuard } from "../common/guards/roles.guard";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserPermissionDto } from "./dto/update-user-permission.dto";
+import { UpdateStaffAccessDto } from "./dto/update-staff-access.dto";
 import { UsersService } from "./users.service";
 
 @Controller("users")
@@ -23,6 +24,17 @@ export class UsersController {
   @Roles(Role.OWNER)
   create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateUserDto) {
     return this.usersService.create(user.businessId, dto);
+  }
+
+  /** Role, store access and active flag for a cashier/manager login. */
+  @Patch(":userId/access")
+  @Roles(Role.OWNER)
+  updateAccess(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("userId") userId: string,
+    @Body() dto: UpdateStaffAccessDto,
+  ) {
+    return this.usersService.updateStaffAccess(user.businessId, user.userId, userId, dto);
   }
 
   /** Granting/revoking permissions is authority-escalation — Owner only,

@@ -9,10 +9,10 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { Plan, Role, User } from "@prisma/client";
 import * as bcrypt from "bcrypt";
-import { randomBytes, createHash } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { parseDurationMs } from "../common/utils/duration";
+import { generateOpaqueToken, hashToken } from "../common/utils/tokens";
 import { normalizeEmail } from "../common/transforms/normalize-email";
 import { RegisterDto } from "./dto/register.dto";
 
@@ -35,14 +35,6 @@ interface LoginResult {
     accessibleStoreIds: string[];
   };
   stores: { id: string; businessId: string; name: string; address: string | null; timezone: string; isActive: boolean }[];
-}
-
-function generateOpaqueToken(): string {
-  return randomBytes(32).toString("hex");
-}
-
-function hashToken(token: string): string {
-  return createHash("sha256").update(token).digest("hex");
 }
 
 @Injectable()

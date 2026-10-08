@@ -1,4 +1,15 @@
-import { IsDateString, IsEmail, IsNumber, IsOptional, IsString, Min, MinLength } from "class-validator";
+import { Type } from "class-transformer";
+import {
+  IsDateString,
+  IsEmail,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  MinLength,
+  ValidateNested,
+} from "class-validator";
+import { StaffLoginDto } from "../../users/dto/staff-login.dto";
 
 export class CreateEmployeeDto {
   @IsString()
@@ -37,4 +48,10 @@ export class CreateEmployeeDto {
   @IsOptional()
   @IsString()
   userId?: string;
+
+  /** Create a login for this employee in the same request (owner only). */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => StaffLoginDto)
+  login?: StaffLoginDto;
 }

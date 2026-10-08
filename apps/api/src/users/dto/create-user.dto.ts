@@ -1,6 +1,6 @@
-import { IsEmail, IsEnum, IsString, MinLength } from "class-validator";
-import { Role } from "@prisma/client";
+import { IsEmail, IsIn, IsString, MinLength } from "class-validator";
 import { NormalizeEmail } from "../../common/transforms/normalize-email";
+import { STAFF_ROLES, StaffRole } from "./staff-login.dto";
 
 export class CreateUserDto {
   @NormalizeEmail()
@@ -17,6 +17,7 @@ export class CreateUserDto {
   @IsString()
   lastName!: string;
 
-  @IsEnum(Role)
-  role!: Role;
+  /** Not OWNER — owners only come from sign-up. */
+  @IsIn(STAFF_ROLES)
+  role!: StaffRole;
 }
