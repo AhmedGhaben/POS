@@ -228,6 +228,27 @@ and tests.
 
 ## D. Import products from CSV
 
+**Status: shipped 2026-10-08** (`bb2886c` API, then the web commit).
+Notes:
+
+- **Required columns:** Name, SKU and Sell price. Cost price is optional
+  and defaults to 0 for new products. Header aliases are accepted (e.g.
+  Price, Item code, Qty, EAN, VAT).
+- **Stock sets the quantity** rather than adding to it, at a store chosen
+  in the preview.
+- **Updates leave blank columns unchanged.** Importing an existing SKU
+  that was deactivated reactivates it.
+- **Preview "update" vs "new"** compares against active products, so a
+  deactivated SKU previews as "new" but is reported as "updated".
+- **Number parsing** handles `1.234,50`, `1 234,5` and no-break spaces.
+  One comma followed by 3 digits (`1,234`) is read as a decimal (1.234).
+  Spreadsheet CSV exports don't add thousands separators unless the cell
+  was formatted that way.
+- **Vitest added:** `npm test` in `apps/web`, 22 tests.
+- **Known gap, not from this work:** `PUT /stores/:id/inventory/:productId`
+  doesn't check that the product belongs to the same business as the
+  store. Worth a follow-up fix.
+
 - On the products page, an **"Import CSV"** button next to "Export CSV".
 - **Download template:** the same columns as the export, plus `Category`
   and `Stock` (an optional starting quantity for the current store). An

@@ -39,7 +39,7 @@ nothing in `apps/api/src` ever calls `business.create`.
     but is currently ungated — apply `@RequiresPlan(Plan.PRO)`.
   - Needs: Stripe (or similar) subscriptions, free trial, upgrade/downgrade,
     webhook to update `Business.plan`, handling of failed payments.
-- [ ] **3. Business settings page** (none exists). Planned in
+- [x] **3. Business settings page**, shipped 2026-10-08. Planned in
   `SETTINGS_AND_DOCUMENTS.md` together with logo upload, quotes, A4
   invoices and CSV import (added 2026-10-08).
   - Currency is hard-coded to `$` in `apps/web/src/lib/format.ts`
