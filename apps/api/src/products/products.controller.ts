@@ -8,6 +8,8 @@ import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { ProductsService } from "./products.service";
+import { ImportProductsDto } from "./dto/import-products.dto";
+import { ProductsImportService } from "./products-import.service";
 
 /** Strips costPrice for callers without VIEW_COST_PRICE — margin data is
  * sensitive even though the product listing itself is open to every role
@@ -22,6 +24,7 @@ export class ProductsController {
   constructor(
     private readonly productsService: ProductsService,
     private readonly permissionsService: PermissionsService,
+    private readonly productsImportService: ProductsImportService,
   ) {}
 
   @Get()
@@ -55,6 +58,14 @@ export class ProductsController {
   @Roles(Role.OWNER, Role.MANAGER)
   create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateProductDto) {
     return this.productsService.create(user.businessId, dto);
+  }
+
+  /** CSV import: upserts by SKU, at most 1,000 rows per request. */
+  @Post("import")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  import(@CurrentUser() user: AuthenticatedUser, @Body() dto: ImportProductsDto) {
+    return this.productsImportService.import(user, dto);
   }
 
   @Patch(":productId")
