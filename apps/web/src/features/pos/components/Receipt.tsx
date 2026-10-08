@@ -19,7 +19,7 @@ const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   [PaymentMethod.OTHER]: "Other",
 };
 
-/** Print-optimized layout — see @media print rules in styles/globals.css. */
+/** 80 mm slip. Shown as a preview on screen; wrap a copy in <PrintArea> to print it. */
 export function Receipt({ sale, store, customer }: ReceiptProps) {
   const money = useMoney();
   const business = useAuthStore((s) => s.business);
@@ -35,7 +35,7 @@ export function Receipt({ sale, store, customer }: ReceiptProps) {
       : [{ id: "legacy", method: sale.paymentMethod, amount: sale.total, tendered: null, change: null }];
 
   return (
-    <div id="printable-receipt" className="mx-auto w-[300px] font-mono text-xs">
+    <div className="mx-auto w-[300px] font-mono text-xs">
       {logo && (
         // Grayscale: thermal printers are monochrome, and colour logos dither badly.
         <img src={logo} alt="" className="mx-auto mb-1 max-h-16 max-w-[200px] object-contain grayscale" />

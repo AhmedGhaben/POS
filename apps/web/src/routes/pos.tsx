@@ -12,6 +12,7 @@ import { CategoryFilter } from "@/features/pos/components/CategoryFilter";
 import { ProductGrid } from "@/features/pos/components/ProductGrid";
 import { Cart } from "@/features/pos/components/Cart";
 import { Receipt } from "@/features/pos/components/Receipt";
+import { PrintArea } from "@/components/print/PrintArea";
 import { PaymentPanel } from "@/features/pos/components/PaymentPanel";
 import { CustomerSearchCombobox } from "@/features/pos/components/CustomerSearchCombobox";
 import { useCart } from "@/features/pos/hooks/useCart";
@@ -173,7 +174,12 @@ export function PosPage() {
             </p>
           )}
           {completedSale && (
-            <Receipt sale={completedSale} store={currentStore} customer={completedCustomer} />
+            <>
+              <Receipt sale={completedSale} store={currentStore} customer={completedCustomer} />
+              <PrintArea>
+                <Receipt sale={completedSale} store={currentStore} customer={completedCustomer} />
+              </PrintArea>
+            </>
           )}
           <Button onClick={() => window.print()}>Print receipt</Button>
         </DialogContent>

@@ -85,18 +85,22 @@
   }
 }
 
+/* Printing: only #print-root (filled by <PrintArea>) is printed. It sits
+ * directly under <body>, so dialogs that scroll or use transforms can't clip
+ * it. display:none (not visibility) so hidden content adds no blank pages. */
+#print-root {
+  display: none;
+}
+
 @media print {
-  body * {
-    visibility: hidden;
+  body > *:not(#print-root) {
+    display: none !important;
   }
-  #printable-receipt,
-  #printable-receipt * {
-    visibility: visible;
-  }
-  #printable-receipt {
-    position: absolute;
-    left: 0;
-    top: 0;
+  #print-root {
+    display: block;
     width: 80mm;
+    /* Paper is white even when the app is in dark mode. */
+    color: #000;
+    background: #fff;
   }
 }
