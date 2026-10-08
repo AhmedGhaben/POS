@@ -87,15 +87,17 @@ model Business {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  stores         Store[]
-  users          User[]
-  categories     Category[]
-  products       Product[]
-  customers      Customer[]
-  suppliers      Supplier[]
-  employees      Employee[]
-  auditLogs      AuditLog[]
-  stockTransfers StockTransfer[]
+  stores          Store[]
+  users           User[]
+  categories      Category[]
+  products        Product[]
+  customers       Customer[]
+  suppliers       Supplier[]
+  employees       Employee[]
+  auditLogs       AuditLog[]
+  stockTransfers  StockTransfer[]
+  invoices        Invoice[]
+  invoiceCounters InvoiceCounter[]
 
   @@map("businesses")
 }
@@ -317,9 +319,13 @@ model Customer {
   name       String
   phone      String?
   email      String?
+  /// For A4 invoices to company buyers.
+  address    String?
+  taxId      String?
   createdAt  DateTime @default(now())
 
-  sales Sale[]
+  sales    Sale[]
+  invoices Invoice[]
 
   @@index([businessId])
   @@map("customers")
@@ -349,6 +355,7 @@ model Sale {
   lineItems SaleLineItem[]
   payments  SalePayment[]
   returns   Return[]
+  invoice   Invoice?
 
   @@index([storeId, createdAt])
   @@map("sales")
@@ -549,4 +556,47 @@ model StockTransferLineItem {
 
   @@index([transferId])
   @@map("stock_transfer_line_items")
+}
+
+/// Numbering for A4 invoices: INV-<year>-<sequence>, restarting each year.
+/// Incremented with INSERT ... ON CONFLICT ... RETURNING inside the invoice's
+/// transaction, so the row lock serializes concurrent tills and a rolled-back
+/// invoice gives its number back (no gaps).
+model InvoiceCounter {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  year       Int
+  /// The next sequence to hand out.
+  next       Int      @default(1)
+
+  @@unique([businessId, year])
+  @@map("invoice_counters")
+}
+
+/// A4 invoice for a completed sale (at most one per sale). Seller details are
+/// a snapshot: an issued invoice must not change when settings change later.
+model Invoice {
+  id           String    @id @default(cuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id])
+  saleId       String    @unique
+  sale         Sale      @relation(fields: [saleId], references: [id])
+  year         Int
+  sequence     Int
+  /// e.g. INV-2026-0001
+  number       String
+  issuedAt     DateTime  @default(now())
+  /// SellerSnapshot: business details, currency, logoUrl and the store.
+  seller       Json
+  buyerName    String
+  buyerAddress String?
+  buyerTaxId   String?
+  buyerEmail   String?
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id])
+
+  @@unique([businessId, year, sequence])
+  @@index([businessId, issuedAt])
+  @@map("invoices")
 }

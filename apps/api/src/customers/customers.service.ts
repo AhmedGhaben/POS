@@ -25,7 +25,14 @@ export class CustomersService {
 
   create(businessId: string, dto: CreateCustomerDto) {
     return this.prisma.customer.create({
-      data: { businessId, name: dto.name, phone: dto.phone, email: dto.email },
+      data: {
+        businessId,
+        name: dto.name,
+        phone: dto.phone,
+        email: dto.email,
+        address: dto.address,
+        taxId: dto.taxId,
+      },
     });
   }
 }
