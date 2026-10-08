@@ -112,5 +112,8 @@ all from the browser, with unit + e2e tests passing in CI.
 - Verified over HTTP through the Vite proxy (register → verify link from the
   stub email → add product → stock → cash sale → forgot/reset password →
   login with upper-cased email), then the test business was deleted. The
-  Chrome extension wasn't connected, so the pages haven't had a visual
-  click-through yet.
+  Chrome extension wasn't connected, so the user did the browser
+  click-through instead.
+- Bug found in that click-through: opening a verify link while signed in as
+  another account sent you to that account's dashboard. `/auth/verify-email`
+  now returns the verified email and the page offers to switch accounts.

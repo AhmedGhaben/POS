@@ -12,8 +12,9 @@ nothing in `apps/api/src` ever calls `business.create`.
 ## Must-have before selling
 
 - [x] **1. Sign-up & onboarding** — shipped 2026-10-08, see
-  `SIGNUP_ONBOARDING.md`. Remaining: a visual click-through of the new pages
-  in a browser (the flow was verified over HTTP through the Vite proxy).
+  `SIGNUP_ONBOARDING.md`. Clicked through in the browser by the user
+  2026-10-08 (found and fixed a verify-link-while-signed-in-as-someone-else
+  bug, `47b1df2`).
   - Registration endpoint + page: create `Business` + OWNER `User` + first
     `Store` in one transaction. Rate-limit it like the other auth endpoints.
   - Email verification (none exists today; Resend `MailService` from Phase 9
