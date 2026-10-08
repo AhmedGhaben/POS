@@ -98,9 +98,24 @@
   }
   #print-root {
     display: block;
-    width: 80mm;
     /* Paper is white even when the app is in dark mode. */
     color: #000;
     background: #fff;
   }
+  #print-root[data-format="receipt"] {
+    width: 80mm;
+  }
+  /* A4 documents: the 15 mm on-screen padding becomes the page margin, so
+   * long invoices keep their margins on every page. */
+  .a4-doc {
+    page: a4;
+    width: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+@page a4 {
+  size: A4;
+  margin: 15mm;
 }

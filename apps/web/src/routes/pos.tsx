@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ShoppingCart } from "lucide-react";
+import { FileText, ShoppingCart } from "lucide-react";
 import type { CustomerDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import { ProductGrid } from "@/features/pos/components/ProductGrid";
 import { Cart } from "@/features/pos/components/Cart";
 import { Receipt } from "@/features/pos/components/Receipt";
 import { PrintArea } from "@/components/print/PrintArea";
+import { PrintQuoteDialog } from "@/features/pos/components/PrintQuoteDialog";
 import { PaymentPanel } from "@/features/pos/components/PaymentPanel";
 import { CustomerSearchCombobox } from "@/features/pos/components/CustomerSearchCombobox";
 import { useCart } from "@/features/pos/hooks/useCart";
@@ -36,6 +37,7 @@ export function PosPage() {
   const [completedCustomer, setCompletedCustomer] = React.useState<CustomerDto | null>(null);
   const [paymentPanelKey, setPaymentPanelKey] = React.useState(0);
   const [cartSheetOpen, setCartSheetOpen] = React.useState(false);
+  const [quoteOpen, setQuoteOpen] = React.useState(false);
   const queryClient = useQueryClient();
   const checkoutAreaRef = React.useRef<HTMLDivElement>(null);
 
@@ -117,14 +119,21 @@ export function PosPage() {
         >
           {saleMutation.isPending ? "Processing..." : `Charge ${money(totals.total)}`}
         </Button>
-        <Button
-          variant="outline"
-          className="w-full"
-          disabled={lines.length === 0}
-          onClick={clear}
-        >
-          Clear cart
-        </Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            disabled={lines.length === 0}
+            onClick={() => {
+              setCartSheetOpen(false);
+              setQuoteOpen(true);
+            }}
+          >
+            <FileText className="mr-2 h-4 w-4" /> Print quote
+          </Button>
+          <Button variant="outline" disabled={lines.length === 0} onClick={clear}>
+            Clear cart
+          </Button>
+        </div>
       </div>
     </>
   );
@@ -162,6 +171,14 @@ export function PosPage() {
           {checkoutPanel}
         </SheetContent>
       </Sheet>
+
+      <PrintQuoteDialog
+        open={quoteOpen}
+        onOpenChange={setQuoteOpen}
+        lines={lines}
+        store={currentStore}
+        customer={customer}
+      />
 
       <Dialog open={!!completedSale} onOpenChange={(open) => !open && setCompletedSale(null)}>
         <DialogContent>
