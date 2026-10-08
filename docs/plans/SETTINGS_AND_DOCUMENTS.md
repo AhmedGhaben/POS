@@ -155,6 +155,18 @@ and tests.
 
 ## C. A4 invoice at checkout
 
+**Status: shipped 2026-10-08** (`f4564eb` API, `390ce56` web). Notes:
+
+- Added beyond the plan: **"Invoice a past sale"** on `/invoices`. It
+  picks from the current store's last 50 sales. It covers buyers who ask
+  the next day, and offline sales once they've synced.
+- The counter uses raw `INSERT … ON CONFLICT … RETURNING`, not Prisma
+  `upsert`. Prisma's `upsert` can race on the first invoice of a year.
+- **Invoice date vs sale date:** the invoice is dated when issued. The
+  sale date and receipt number are also shown on it.
+- Opening "A4 invoice" closes the Sale complete dialog first, so only one
+  `PrintArea` is mounted at a time.
+
 ### Data
 
 - New `Invoice` model:
