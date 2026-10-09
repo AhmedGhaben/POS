@@ -7,6 +7,29 @@ interface Terminal {
   storeId: string;
 }
 
+interface ReceiptPrinter {
+  deviceName: string | null;
+  paperWidthMm: number;
+  printableWidthMm: number;
+  marginLeftMm: number;
+  fontScale: number;
+  feedMm: number;
+  copies: number;
+}
+
+interface Printing {
+  receipt: ReceiptPrinter;
+  a4: { deviceName: string | null; copies: number };
+  autoPrintReceipt: boolean;
+}
+
+interface PrintJob {
+  kind: "receipt" | "a4";
+  html: string;
+  stylesheets: string[];
+  copies?: number;
+}
+
 interface Settings {
   serverUrl: string | null;
   kiosk: boolean;
@@ -34,6 +57,16 @@ const posDesktop = {
   terminal: {
     get: (): Promise<Terminal | null> => ipcRenderer.invoke("terminal:get"),
     set: (terminal: Terminal | null): Promise<void> => ipcRenderer.invoke("terminal:set", terminal),
+  },
+  printers: {
+    list: (): Promise<{ name: string; displayName: string; isDefault: boolean; description: string }[]> =>
+      ipcRenderer.invoke("printers:list"),
+    print: (job: PrintJob): Promise<{ ok: true; deviceName: string } | { ok: false; error: string }> =>
+      ipcRenderer.invoke("printers:print", job),
+  },
+  printing: {
+    get: (): Promise<Printing> => ipcRenderer.invoke("printing:get"),
+    update: (printing: Printing): Promise<Printing> => ipcRenderer.invoke("printing:update", printing),
   },
   log: {
     write: (level: "info" | "warn" | "error", message: string): void => {

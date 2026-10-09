@@ -15,6 +15,7 @@ import { fetchInvoice, fetchInvoices } from "@/features/invoices/api";
 import { A4Preview } from "@/features/invoices/components/A4Preview";
 import { InvoiceDocument } from "@/features/invoices/components/InvoiceDocument";
 import { IssueInvoiceDialog } from "@/features/invoices/components/IssueInvoiceDialog";
+import { printDocument } from "@/features/desktop/printing";
 import { fetchSalesByStore } from "@/features/sales/api";
 
 const PAGE_SIZE = 25;
@@ -42,7 +43,7 @@ function ViewInvoiceDialog({ invoiceId, onClose }: { invoiceId: string | null; o
             <A4Preview>
               <InvoiceDocument invoice={invoice} />
             </A4Preview>
-            <Button onClick={() => window.print()}>
+            <Button onClick={() => void printDocument()}>
               <Printer className="mr-2 h-4 w-4" /> Print invoice
             </Button>
             <PrintArea format="a4">

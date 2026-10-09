@@ -16,7 +16,8 @@ function getPrintRoot(): HTMLElement {
 export type PrintFormat = "receipt" | "a4";
 
 /**
- * What `window.print()` prints. Rendered straight under <body>, outside the
+ * What printDocument() prints (silently in the Windows app, through the
+ * print dialog in a browser). Rendered straight under <body>, outside the
  * app and any dialog, so a scrolling or transformed container can't clip
  * the printout. Hidden on screen; see the print rules in styles/globals.css.
  * Mount one at a time.

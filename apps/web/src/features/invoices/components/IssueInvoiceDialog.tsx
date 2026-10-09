@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { PrintArea } from "@/components/print/PrintArea";
 import { issueInvoice } from "@/features/invoices/api";
 import { A4Preview } from "./A4Preview";
+import { printDocument } from "@/features/desktop/printing";
 import { InvoiceDocument } from "./InvoiceDocument";
 
 interface IssueInvoiceDialogProps {
@@ -90,7 +91,7 @@ export function IssueInvoiceDialog({ sale, customer, onClose }: IssueInvoiceDial
             <A4Preview>
               <InvoiceDocument invoice={invoice} />
             </A4Preview>
-            <Button onClick={() => window.print()}>
+            <Button onClick={() => void printDocument()}>
               <Printer className="mr-2 h-4 w-4" /> Print invoice
             </Button>
             <PrintArea format="a4">

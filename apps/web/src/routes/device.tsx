@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthStore } from "@/features/auth/store";
 import { createTerminal, updateTerminal } from "@/features/desktop/api";
+import { PrintersSection } from "@/features/desktop/components/PrintersSection";
 import { desktop, isDesktop, useDeviceStore } from "@/features/desktop/bridge";
 import { catalogSavedAt } from "@/features/pos/catalog";
 import { isWorkingOffline, useOfflineStore } from "@/features/pos/offline-store";
@@ -280,6 +281,7 @@ export function DevicePage() {
       </div>
       {isDesktop && <TerminalSection />}
       <SyncSection />
+      {isDesktop && <PrintersSection />}
       {isDesktop && <DesktopSection />}
     </div>
   );

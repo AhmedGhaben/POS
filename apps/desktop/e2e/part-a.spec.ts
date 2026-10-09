@@ -6,6 +6,7 @@ import {
   API_URL,
   connect,
   launch,
+  restock,
   login,
   openPosWithProducts,
   outbox,
@@ -37,6 +38,7 @@ test.describe.serial("Part A: terminal, outbox and sync", () => {
     ({ app, page } = await launch(userData));
     await connect(page, proxy.url);
     await login(page);
+    await restock(page);
   });
 
   test.afterAll(async () => {

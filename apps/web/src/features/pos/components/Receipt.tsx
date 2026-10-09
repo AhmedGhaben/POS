@@ -25,7 +25,7 @@ export function Receipt({ sale, store, customer }: ReceiptProps) {
       : [{ id: "legacy", method: sale.paymentMethod, amount: sale.total, tendered: null, change: null }];
 
   return (
-    <div className="mx-auto w-[300px] font-mono text-xs">
+    <div className="receipt-slip mx-auto w-[300px] font-mono text-xs">
       <SlipHeader store={store} />
       <hr className="my-2 border-dashed" />
       <p className="text-center">{new Date(sale.createdAt).toLocaleString()}</p>

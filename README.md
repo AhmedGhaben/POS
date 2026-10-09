@@ -116,7 +116,14 @@ it they're printed to the API console, links included.
   - log folder
 - **Logs:** rotating logs in `%APPDATA%/POS/logs`, with tokens,
   passwords and card numbers scrubbed.
-- **Coming next:** silent printing, cash drawer, customer display, updates.
+- **Silent printing.** Receipts, quotes and invoices go straight to the
+  printers chosen on This device, with no dialog, and work offline.
+  - Optional auto-print after each sale.
+  - Per-printer calibration (paper and printable width, margin, text size,
+    feed, copies) and a calibration receipt.
+  - In a browser, printing still uses the print dialog.
+  - Real-printer checks: `docs/HARDWARE_CHECKLIST.md`.
+- **Coming next:** cash drawer, customer display, updates.
 
 ```bash
 npm run build:desktop --workspace apps/web   # web build for the app
@@ -130,7 +137,10 @@ now, so Windows SmartScreen shows a warning ("More info" → "Run anyway").
 
 **Desktop e2e tests** drive the real app with Playwright. They need the API
 running on :4000 with seed data. A switchable proxy simulates the server
-going down, answering 502, or losing a response:
+going down, answering 502, or losing a response. With
+`POS_DESKTOP_PRINT_TO_PDF_DIR` set, print jobs are written there as PDFs
+at the printer's page size instead of printing (the suite does this
+itself):
 
 ```bash
 npm run test:e2e --workspace apps/desktop

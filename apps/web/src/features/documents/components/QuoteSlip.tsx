@@ -17,7 +17,7 @@ export function QuoteSlip({ store, lines, reference, issuedAt, forName }: QuoteS
   const totals = documentTotals(lines);
 
   return (
-    <div className="mx-auto w-[300px] font-mono text-xs">
+    <div className="receipt-slip mx-auto w-[300px] font-mono text-xs">
       <SlipHeader store={store} />
       <hr className="my-2 border-dashed" />
       <p className="text-center text-base font-bold tracking-widest">QUOTE</p>

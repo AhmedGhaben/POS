@@ -417,6 +417,58 @@ Receipt printer / A4 printer / Cash drawer / Customer display   (B–D)
 - Print failures (printer offline or missing) show a toast with a
   "Retry print" option and are logged. The sale is never affected.
 
+**Part B status (2026-10-09): shipped.**
+
+- **Desktop** (`src/printing.ts`):
+  - Printer list (`getPrintersAsync`).
+  - One-time print pages served at `app://pos/__print/<id>` with a
+    no-script CSP. They're loaded into a single reused hidden window.
+  - The job waits for fonts and images (at most 4 s, so an offline logo
+    can't hang it). Then `webContents.print({ silent, deviceName })`.
+  - Receipts print as one continuous page: the paper width is the chosen
+    roll, and the height is the measured receipt plus the feed. A4 prints
+    on A4 with 15 mm margins.
+  - Jobs are queued one at a time. A printer missing from Windows' list
+    fails with a clear message.
+  - Every job and failure is logged.
+  - Settings are stored per till, with each config field validated on its
+    own, so one bad value can't wipe the server address.
+- **Web.**
+  - `printDocument()` replaces every `window.print()` call. In the
+    browser, or with no printer chosen, it falls back to the print dialog.
+  - A failed print shows a toast with Retry.
+  - Auto-print after a sale.
+  - Printers section on This device:
+    - receipt printer, with status Available / Not found / Not set
+    - paper width 80 / 58 / custom
+    - printable width (defaults 72 / 48 mm), left margin, text size,
+      paper after receipt, copies
+    - auto-print
+    - calibration receipt (ruler, edge box, long line)
+    - A4 printer, copies, A4 test page
+- **Print CSS.**
+  - The slip width comes from `--receipt-width` and related variables.
+    The browser default is now 72 mm instead of the full 80 mm, which
+    used to clip on most heads.
+  - Receipt lines print black.
+  - The same rules apply in the print window (`html.print-doc`), so the
+    receipt's length can be measured before printing.
+- **Tests.** Desktop Playwright `part-b.spec.ts` (9). With
+  `POS_DESKTOP_PRINT_TO_PDF_DIR`, jobs are rendered to PDF at the exact
+  page size, and the tests check:
+  - 80/58 mm widths, A4 size, one continuous page
+  - long receipts grow and stay one page
+  - copies
+  - auto-print
+  - printing offline
+  - a missing printer: the error and Retry, with the sale unaffected
+  - the log
+
+  The rendered PDFs were also inspected by eye. 30/30 desktop tests pass.
+- **Not covered automatically.** Real printers: see
+  `docs/HARDWARE_CHECKLIST.md`. Cut-after-receipt needs raw ESC/POS, so
+  it moves to C1. Drivers that auto-cut already cut after the job.
+
 ### C1. ESC/POS transport layer
 
 ```text

@@ -10,6 +10,7 @@ import { PrintArea, type PrintFormat } from "@/components/print/PrintArea";
 import { A4Document } from "@/features/documents/components/A4Document";
 import { QuoteSlip } from "@/features/documents/components/QuoteSlip";
 import { linesFromCart, quoteReference } from "@/features/documents/lines";
+import { printDocument } from "@/features/desktop/printing";
 import type { CartLine } from "@/features/pos/hooks/useCart";
 
 interface PrintQuoteDialogProps {
@@ -102,7 +103,7 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, store, customer }:
           )}
         </div>
 
-        <Button onClick={() => window.print()} disabled={lines.length === 0}>
+        <Button onClick={() => void printDocument()} disabled={lines.length === 0}>
           <Printer className="mr-2 h-4 w-4" /> Print {format === "receipt" ? "quote" : "A4 quotation"}
         </Button>
 

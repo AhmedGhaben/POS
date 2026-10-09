@@ -10,16 +10,61 @@ export const terminalSchema = z.object({
   storeId: z.string().min(1).max(64),
 });
 
+/** Calibration for the roll printer: drivers that all say "80 mm" differ. */
+export const receiptPrinterSchema = z.object({
+  deviceName: z.string().min(1).max(256).nullable(),
+  /** 58, 80, or anything in between for odd rolls. */
+  paperWidthMm: z.number().min(40).max(120),
+  printableWidthMm: z.number().min(30).max(120),
+  marginLeftMm: z.number().min(0).max(20),
+  /** 1 = as designed; below 1 shrinks text for narrow rolls. */
+  fontScale: z.number().min(0.5).max(1.5),
+  /** Blank paper after the last line, so the tear/cut is below the footer. */
+  feedMm: z.number().min(0).max(40),
+  copies: z.number().int().min(1).max(5),
+});
+
+export const a4PrinterSchema = z.object({
+  deviceName: z.string().min(1).max(256).nullable(),
+  copies: z.number().int().min(1).max(5),
+});
+
+export const printingSchema = z.object({
+  receipt: receiptPrinterSchema,
+  a4: a4PrinterSchema,
+  /** Print the receipt as soon as a sale completes. */
+  autoPrintReceipt: z.boolean(),
+});
+
+export type PrintingSettings = z.infer<typeof printingSchema>;
+
+export const DEFAULT_PRINTING: PrintingSettings = {
+  receipt: {
+    deviceName: null,
+    paperWidthMm: 80,
+    printableWidthMm: 72,
+    marginLeftMm: 0,
+    fontScale: 1,
+    feedMm: 10,
+    copies: 1,
+  },
+  a4: { deviceName: null, copies: 1 },
+  autoPrintReceipt: false,
+};
+
 /** Per-computer settings, kept in the app's data folder (never synced). */
 const configSchema = z.object({
   /** API base URL, e.g. http://localhost:4000 or https://pos.example.com/api */
-  serverUrl: z.string().url().optional(),
+  serverUrl: z.string().url().optional().catch(undefined),
   /** This till, once registered with the server. */
-  terminal: terminalSchema.nullable().optional(),
+  terminal: terminalSchema.nullable().optional().catch(undefined),
   /** Fullscreen till mode with no window frame. */
-  kiosk: z.boolean().optional(),
-  startWithWindows: z.boolean().optional(),
+  kiosk: z.boolean().optional().catch(undefined),
+  startWithWindows: z.boolean().optional().catch(undefined),
+  printing: printingSchema.optional().catch(undefined),
 });
+// Each field falls back on its own (.catch), so one bad value in a
+// hand-edited or older config.json can't wipe the server address.
 
 export type DesktopConfig = z.infer<typeof configSchema>;
 
@@ -48,6 +93,10 @@ export function getConfig(): DesktopConfig {
     cached = {};
   }
   return cached;
+}
+
+export function getPrinting(): PrintingSettings {
+  return getConfig().printing ?? DEFAULT_PRINTING;
 }
 
 export function updateConfig(patch: Partial<DesktopConfig>): DesktopConfig {

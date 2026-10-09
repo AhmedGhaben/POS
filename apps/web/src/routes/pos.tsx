@@ -21,6 +21,8 @@ import { useCart } from "@/features/pos/hooks/useCart";
 import { createSale } from "@/features/pos/api";
 import { useAuthStore } from "@/features/auth/store";
 import { ApiError } from "@/lib/api-client";
+import { printDocument } from "@/features/desktop/printing";
+import { useDeviceStore } from "@/features/desktop/bridge";
 import { useMoney } from "@/features/business/use-money";
 
 export function PosPage() {
@@ -42,6 +44,22 @@ export function PosPage() {
   // Kept separate from completedSale: only one dialog (and print area) is mounted at a time.
   const [invoiceFor, setInvoiceFor] = React.useState<{ sale: SaleDto; customer: CustomerDto | null } | null>(null);
   const queryClient = useQueryClient();
+
+  // Windows app with auto-print on: the receipt goes to the printer as soon
+  // as the sale completes (once the dialog has put it in the print area).
+  const autoPrint = useDeviceStore((s) => !!s.printing?.autoPrintReceipt && !!s.printing.receipt.deviceName);
+  const autoPrintedFor = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!completedSale || !autoPrint || autoPrintedFor.current === completedSale.id) return;
+    const saleId = completedSale.id;
+    // Marked inside the frame, so a cancelled frame (StrictMode remount)
+    // doesn't count as printed.
+    const frame = requestAnimationFrame(() => {
+      autoPrintedFor.current = saleId;
+      void printDocument();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [completedSale, autoPrint]);
   const checkoutAreaRef = React.useRef<HTMLDivElement>(null);
 
   const saleMutation = useMutation({
@@ -208,7 +226,7 @@ export function PosPage() {
             </>
           )}
           <div className="grid grid-cols-2 gap-2">
-            <Button onClick={() => window.print()}>Print receipt</Button>
+            <Button onClick={() => void printDocument()}>Print receipt</Button>
             <Button
               variant="outline"
               onClick={() => {

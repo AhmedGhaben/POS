@@ -99,11 +99,14 @@ export function tempUserData() {
  * Launches the dev build, or the packaged app when POS_DESKTOP_EXECUTABLE
  * points at it (e.g. release/win-unpacked/POS.exe).
  */
-export async function launch(userData: string): Promise<{ app: ElectronApplication; page: Page }> {
+export async function launch(
+  userData: string,
+  extraEnv: Record<string, string> = {},
+): Promise<{ app: ElectronApplication; page: Page }> {
   const executablePath = process.env.POS_DESKTOP_EXECUTABLE;
   const app = await electron.launch({
     ...(executablePath ? { executablePath: path.resolve(executablePath), args: [] } : { args: [path.resolve(__dirname, "..")] }),
-    env: { ...process.env, POS_DESKTOP_USER_DATA: userData } as Record<string, string>,
+    env: { ...process.env, POS_DESKTOP_USER_DATA: userData, ...extraEnv } as Record<string, string>,
   });
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
@@ -182,5 +185,24 @@ export function outbox(page: Page) {
           all.onerror = () => reject(all.error);
         };
       }),
+  );
+}
+
+/**
+ * Tops up the signed-in store's low stock (the suites sell the same demo
+ * products on every run, and an online sale with no stock is refused).
+ */
+export function restock(page: Page, below = 50, to = 200) {
+  return page.evaluate(
+    async ({ below, to }) => {
+      const auth = JSON.parse(localStorage.getItem("pos-auth")!).state;
+      const headers = { Authorization: `Bearer ${auth.accessToken}`, "Content-Type": "application/json" };
+      const base = `/api/stores/${auth.currentStoreId}/inventory`;
+      const items = (await (await fetch(base, { headers })).json()) as { productId: string; quantity: number }[];
+      for (const item of items.filter((i) => i.quantity < below)) {
+        await fetch(`${base}/${item.productId}`, { method: "PUT", headers, body: JSON.stringify({ quantity: to }) });
+      }
+    },
+    { below, to },
   );
 }

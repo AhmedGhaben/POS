@@ -102,8 +102,23 @@
     color: #000;
     background: #fff;
   }
+  /* Roll paper. The printable width is narrower than the paper (about 72 mm
+   * on 80 mm rolls, 48 mm on 58 mm); the desktop app sets these variables
+   * from the till's printer calibration. */
   #print-root[data-format="receipt"] {
-    width: 80mm;
+    width: var(--receipt-width, 72mm);
+    padding-left: var(--receipt-margin-left, 0mm);
+    padding-bottom: var(--receipt-feed, 0mm);
+    box-sizing: content-box;
+  }
+  #print-root[data-format="receipt"] .receipt-slip {
+    zoom: var(--receipt-scale, 1);
+    width: calc(var(--receipt-width, 72mm) / var(--receipt-scale, 1)) !important;
+    margin: 0 !important;
+  }
+  /* Thermal heads print light grey as faint dots or nothing: lines are black. */
+  #print-root[data-format="receipt"] * {
+    border-color: #000 !important;
   }
   /* A4 documents: the 15 mm on-screen padding becomes the page margin, so
    * long invoices keep their margins on every page. */
@@ -113,6 +128,29 @@
     min-height: 0 !important;
     padding: 0 !important;
   }
+}
+
+/* The Windows app's hidden print window (html.print-doc) lays the document
+ * out on screen first, to measure how long the receipt is, so the same
+ * receipt rules apply there outside print media. */
+.print-doc #print-root {
+  display: block;
+  color: #000;
+  background: #fff;
+}
+.print-doc #print-root[data-format="receipt"] {
+  width: var(--receipt-width, 72mm);
+  padding-left: var(--receipt-margin-left, 0mm);
+  padding-bottom: var(--receipt-feed, 0mm);
+  box-sizing: content-box;
+}
+.print-doc #print-root[data-format="receipt"] .receipt-slip {
+  zoom: var(--receipt-scale, 1);
+  width: calc(var(--receipt-width, 72mm) / var(--receipt-scale, 1)) !important;
+  margin: 0 !important;
+}
+.print-doc #print-root[data-format="receipt"] * {
+  border-color: #000 !important;
 }
 
 @page a4 {

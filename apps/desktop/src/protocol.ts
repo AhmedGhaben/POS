@@ -3,10 +3,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import log from "electron-log/main";
 import { getConfig } from "./config";
+import { APP_HOST, APP_ORIGIN, APP_SCHEME } from "./origin";
+import { takePrintPage } from "./printing";
 
-export const APP_SCHEME = "app";
-export const APP_HOST = "pos";
-export const APP_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
+export { APP_ORIGIN };
 
 const CSP = [
   "default-src 'self'",
@@ -19,6 +19,14 @@ const CSP = [
   "base-uri 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
+].join("; ");
+
+/** Print pages are plain documents: styles and images only, never scripts. */
+const PRINT_CSP = [
+  "default-src 'none'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
 ].join("; ");
 
 const MIME: Record<string, string> = {
@@ -73,6 +81,12 @@ export function handleAppScheme() {
     }
     if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
       return forwardToServer(request, url);
+    }
+    if (url.pathname.startsWith("/__print/")) {
+      const html = takePrintPage(url.pathname.slice("/__print/".length));
+      return html
+        ? new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": PRINT_CSP } })
+        : new Response("Not found", { status: 404 });
     }
     if (url.pathname.startsWith("/__desktop/")) {
       return serveFile(staticRoot(), url.pathname.slice("/__desktop".length), false);

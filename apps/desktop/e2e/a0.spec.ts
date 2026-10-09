@@ -4,6 +4,7 @@ import {
   connect,
   launch,
   login,
+  restock,
   openPosWithProducts,
   refreshStatus,
   sellFirstProduct,
@@ -49,7 +50,7 @@ test.describe.serial("A0: desktop shell, auth and offline", () => {
     expect(env).toEqual({
       require: "undefined",
       process: "undefined",
-      bridge: ["app", "log", "settings", "terminal"],
+      bridge: ["app", "log", "printers", "printing", "settings", "terminal"],
     });
   });
 
@@ -83,6 +84,7 @@ test.describe.serial("A0: desktop shell, auth and offline", () => {
 
   test("logs in through the forwarded API", async () => {
     await login(page);
+    await restock(page);
     // The refresh cookie is httpOnly and held by the main process, not the page.
     expect(await page.evaluate(() => document.cookie)).not.toContain("refresh");
   });

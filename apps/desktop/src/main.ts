@@ -1,8 +1,17 @@
 import { app, BrowserWindow, ipcMain, net, session, shell, type IpcMainInvokeEvent } from "electron";
 import path from "node:path";
 import { z } from "zod";
-import { getConfig, normalizeServerUrl, settingsPatchSchema, terminalSchema, updateConfig } from "./config";
+import {
+  getConfig,
+  getPrinting,
+  normalizeServerUrl,
+  printingSchema,
+  settingsPatchSchema,
+  terminalSchema,
+  updateConfig,
+} from "./config";
 import { initLogging, log, logFilePath } from "./logging";
+import { closePrintWindow, listPrinters, printJob, printJobSchema } from "./printing";
 import { APP_ORIGIN, handleAppScheme, registerAppScheme } from "./protocol";
 
 // Tests (and a second profile on one PC) point the app at another data folder.
@@ -49,6 +58,8 @@ function createWindow() {
   mainWindow.once("ready-to-show", () => mainWindow?.show());
   mainWindow.on("closed", () => {
     mainWindow = null;
+    // The hidden print window would otherwise keep the app running.
+    closePrintWindow();
   });
   mainWindow.webContents.on("render-process-gone", (_e, details) => {
     log.error(`[renderer] gone: ${details.reason} (exit ${details.exitCode})`);
@@ -152,6 +163,22 @@ function registerIpc() {
   handle("terminal:set", z.tuple([terminalSchema.nullable()]), (terminal) => {
     updateConfig({ terminal });
     log.info(terminal ? `[terminal] this till is ${terminal.code} "${terminal.name}"` : "[terminal] cleared");
+  });
+
+  handle("printers:list", z.tuple([]), listPrinters);
+
+  handle("printers:print", z.tuple([printJobSchema]), printJob);
+
+  handle("printing:get", z.tuple([]), getPrinting);
+
+  handle("printing:update", z.tuple([printingSchema]), (printing) => {
+    updateConfig({ printing });
+    log.info(
+      `[print] settings: receipt="${printing.receipt.deviceName ?? "none"}" ` +
+        `${printing.receipt.paperWidthMm}/${printing.receipt.printableWidthMm}mm, ` +
+        `a4="${printing.a4.deviceName ?? "none"}", auto=${printing.autoPrintReceipt}`,
+    );
+    return getPrinting();
   });
 
   handle(
