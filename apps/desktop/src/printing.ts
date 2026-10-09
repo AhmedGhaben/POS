@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { getPrinting, type PrintingSettings } from "./config";
+import { cutReceiptPaper } from "./hardware/drawer";
 import { log } from "./logging";
 import { APP_ORIGIN } from "./origin";
 
@@ -142,11 +143,17 @@ async function runJob(job: PrintJob): Promise<PrintResult> {
     const options = printOptions(job, settings, heightPx);
     const pdfDir = process.env.POS_DESKTOP_PRINT_TO_PDF_DIR;
     if (pdfDir) return await printToPdfForTests(win, job, options, pdfDir);
-    return await new Promise<PrintResult>((resolve) => {
+    const result = await new Promise<PrintResult>((resolve) => {
       win.webContents.print(options, (success, failureReason) => {
         resolve(success ? { ok: true, deviceName } : { ok: false, error: failureReason || "Printing failed" });
       });
     });
+    // Drivers that don't cut on their own get an ESC/POS cut after the slip.
+    // The spooler keeps jobs in order, so it lands after the receipt.
+    if (result.ok && job.kind === "receipt" && settings.cutAfterReceipt) {
+      await cutReceiptPaper(deviceName);
+    }
+    return result;
   } catch (err) {
     return { ok: false, error: (err as Error).message };
   } finally {

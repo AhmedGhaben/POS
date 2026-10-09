@@ -11,6 +11,7 @@
     "build:web": "npm run build:desktop --prefix ../web",
     "start": "npm run build && electron .",
     "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "tsc -p tsconfig.json && node --test dist/unit-tests.js",
     "test:a0": "npm run build && playwright test",
     "test:e2e": "npm run build && playwright test",
     "dist": "npm run build:web && npm run build && electron-builder --win nsis --publish never"
@@ -36,7 +37,9 @@
       "dist/**/*",
       "static/**/*",
       "package.json",
-      "!dist/**/*.map"
+      "!dist/**/*.map",
+      "!dist/**/*.test.js",
+      "!dist/unit-tests.js"
     ],
     "extraResources": [
       {

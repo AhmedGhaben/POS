@@ -511,6 +511,72 @@ hardware/
 
 - The audit log page shows the terminal and can filter manual opens.
 
+**Parts C1 and C2 status (2026-10-09): shipped.**
+
+- **C1 transports** (`apps/desktop/src/hardware/`):
+  - `escpos.ts`: init, drawer kick (pin 2/5, 2 ms units), feed, partial
+    cut.
+  - `transports.ts`: `EscPosTransport` with three implementations.
+    - `Tcp9100Transport`: for network printers.
+    - `SerialTransport`: Windows `mode.com` plus a direct write to
+      `\\.\COMx`, with no native module. COM ports are listed from the
+      registry.
+    - `WindowsRawTransport`: a RAW spooler job through one long-lived
+      PowerShell helper that compiles the winspool P/Invoke once. It takes
+      about 0.8 s to start (warmed at app start when needed) and about 1 ms
+      per job after that. Win32 errors map to plain messages, e.g. 1801
+      becomes "isn't installed in Windows".
+  - All three have timeouts and clear `TransportError`s. They can be
+    swapped without touching drawer or display code.
+  - An optional **cut after receipt** (ESC/POS) for drivers that don't cut.
+- **C2 drawer.**
+  - **API:** `Permission.OPEN_DRAWER` (owner and manager by default) and
+    `GET /users/me/permissions` (the till caches it for offline use).
+  - **API:** a `DrawerEvent` model with `POST /drawer-events`, idempotent
+    by `(storeId, clientId)`, and `GET /drawer-events` for
+    owners/managers.
+    - Each event holds the reason, sub-reason, note, terminal, the linked
+      cash sale, whether the hardware succeeded and the error, and the
+      offline flag.
+    - A manual opening without permission is kept and flagged
+      `permitted: false`, not refused, because it already happened.
+  - **Web:** drawer openings go through the same outbox as sales, so they
+    sync offline, exactly once.
+    - An opening is marked offline if it was recorded offline, or needed a
+      retry to upload.
+    - The drawer opens automatically on cash sales, after the sale is saved
+      and without waiting for printing or sync.
+    - **Open drawer** (needs OPEN_DRAWER) asks for a reason: cash pickup,
+      float adjustment, manager inspection, or other (other needs a note).
+    - A failed kick shows a toast and is recorded with its error.
+  - **Device page:** connection (receipt printer, another printer, network
+    IP/port, COM port and baud), pin, pulse length, open on cash sale, and
+    a Test drawer button (recorded as TEST).
+  - **Back office:** a **Cash drawer** page that lists openings without a
+    sale by default, or all openings, with No permission / Didn't open /
+    Offline badges.
+- **Tests:**
+  - API e2e `drawer-events.e2e-spec.ts` (8).
+  - Desktop unit tests (`npm test`, node:test, 14): ESC/POS bytes, the TCP
+    transport against a fake printer, the serial transport with fake I/O,
+    log scrubbing. They also run in CI.
+  - Desktop Playwright `part-c.spec.ts` (12), against a fake network
+    printer that records the exact bytes:
+    - test kick, pin 5 and pulse bytes
+    - cash sale kicks and is linked to the sale; card sale doesn't kick
+    - manual open with a reason and a note
+    - offline open is synced later, marked offline
+    - printer down: the sale completes and the failure is recorded
+    - the Cash drawer page
+    - a cashier without permission has no button, but cash sales still
+      open the drawer
+    - the log
+
+    42/42 desktop tests pass.
+- **Not testable here:** a real USB drawer through the Windows spooler,
+  and a real COM device. The no-such-printer and no-such-port paths are
+  checked. See `docs/HARDWARE_CHECKLIST.md`.
+
 ### D. Customer displays
 
 ```text

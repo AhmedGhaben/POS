@@ -170,7 +170,7 @@ export function serverSales(page: Page) {
 export function outbox(page: Page) {
   return page.evaluate(
     () =>
-      new Promise<{ clientId: string; state: string }[]>((resolve, reject) => {
+      new Promise<{ clientId: string; state: string; attempts: number }[]>((resolve, reject) => {
         const req = indexedDB.open("pos-offline");
         req.onerror = () => reject(req.error);
         req.onsuccess = () => {
@@ -178,9 +178,9 @@ export function outbox(page: Page) {
           const all = tx.objectStore("outbox").getAll();
           all.onsuccess = () =>
             resolve(
-              (all.result as { clientId: string; state: string; createdAt: string }[])
+              (all.result as { clientId: string; state: string; createdAt: string; attempts: number }[])
                 .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-                .map((e) => ({ clientId: e.clientId, state: e.state })),
+                .map((e) => ({ clientId: e.clientId, state: e.state, attempts: e.attempts })),
             );
           all.onerror = () => reject(all.error);
         };

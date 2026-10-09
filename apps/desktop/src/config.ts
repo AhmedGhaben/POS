@@ -34,6 +34,8 @@ export const printingSchema = z.object({
   a4: a4PrinterSchema,
   /** Print the receipt as soon as a sale completes. */
   autoPrintReceipt: z.boolean(),
+  /** Send an ESC/POS cut after each receipt (for drivers that don't cut). */
+  cutAfterReceipt: z.boolean().default(false),
 });
 
 export type PrintingSettings = z.infer<typeof printingSchema>;
@@ -50,6 +52,42 @@ export const DEFAULT_PRINTING: PrintingSettings = {
   },
   a4: { deviceName: null, copies: 1 },
   autoPrintReceipt: false,
+  cutAfterReceipt: false,
+};
+
+/**
+ * Cash drawer. Most drawers plug into the receipt printer and open when it
+ * gets the ESC/POS kick; some sit on their own COM port.
+ */
+export const drawerSchema = z.object({
+  connection: z.enum(["none", "receipt-printer", "windows-printer", "network", "serial"]),
+  /** For "windows-printer": a printer other than the receipt printer. */
+  printerName: z.string().min(1).max(256).nullable(),
+  host: z
+    .string()
+    .max(253)
+    .regex(/^[A-Za-z0-9.-]+$/, "Host name or IP address")
+    .nullable(),
+  port: z.number().int().min(1).max(65535),
+  comPort: z.string().regex(/^COM\d{1,3}$/i).nullable(),
+  baudRate: z.union([z.literal(2400), z.literal(4800), z.literal(9600), z.literal(19200), z.literal(38400), z.literal(57600), z.literal(115200)]),
+  pin: z.union([z.literal(2), z.literal(5)]),
+  pulseMs: z.number().int().min(50).max(500),
+  openOnCashSale: z.boolean(),
+});
+
+export type DrawerSettings = z.infer<typeof drawerSchema>;
+
+export const DEFAULT_DRAWER: DrawerSettings = {
+  connection: "none",
+  printerName: null,
+  host: null,
+  port: 9100,
+  comPort: null,
+  baudRate: 9600,
+  pin: 2,
+  pulseMs: 100,
+  openOnCashSale: true,
 };
 
 /** Per-computer settings, kept in the app's data folder (never synced). */
@@ -62,6 +100,7 @@ const configSchema = z.object({
   kiosk: z.boolean().optional().catch(undefined),
   startWithWindows: z.boolean().optional().catch(undefined),
   printing: printingSchema.optional().catch(undefined),
+  drawer: drawerSchema.optional().catch(undefined),
 });
 // Each field falls back on its own (.catch), so one bad value in a
 // hand-edited or older config.json can't wipe the server address.
@@ -97,6 +136,10 @@ export function getConfig(): DesktopConfig {
 
 export function getPrinting(): PrintingSettings {
   return getConfig().printing ?? DEFAULT_PRINTING;
+}
+
+export function getDrawer(): DrawerSettings {
+  return getConfig().drawer ?? DEFAULT_DRAWER;
 }
 
 export function updateConfig(patch: Partial<DesktopConfig>): DesktopConfig {

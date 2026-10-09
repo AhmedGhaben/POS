@@ -28,7 +28,25 @@ export interface PrintingSettings {
   receipt: ReceiptPrinterSettings;
   a4: { deviceName: string | null; copies: number };
   autoPrintReceipt: boolean;
+  /** ESC/POS cut after each receipt, for drivers that don't cut. */
+  cutAfterReceipt: boolean;
 }
+
+export type DrawerConnection = "none" | "receipt-printer" | "windows-printer" | "network" | "serial";
+
+export interface DrawerSettings {
+  connection: DrawerConnection;
+  printerName: string | null;
+  host: string | null;
+  port: number;
+  comPort: string | null;
+  baudRate: number;
+  pin: 2 | 5;
+  pulseMs: number;
+  openOnCashSale: boolean;
+}
+
+export type HardwareResult = { ok: true } | { ok: false; error: string };
 
 export interface DesktopPrinter {
   name: string;
@@ -78,6 +96,14 @@ export interface PosDesktopApi {
     get(): Promise<PrintingSettings>;
     update(settings: PrintingSettings): Promise<PrintingSettings>;
   };
+  drawer: {
+    get(): Promise<DrawerSettings>;
+    update(settings: DrawerSettings): Promise<DrawerSettings>;
+    open(): Promise<HardwareResult>;
+  };
+  hardware: {
+    comPorts(): Promise<string[]>;
+  };
   log: {
     write(level: "info" | "warn" | "error", message: string): void;
   };
@@ -106,20 +132,27 @@ interface DeviceState {
   terminal: DesktopTerminal | null;
   /** Null in the browser, where printing goes through the print dialog. */
   printing: PrintingSettings | null;
+  drawer: DrawerSettings | null;
   loaded: boolean;
   load: () => Promise<void>;
   setTerminal: (terminal: DesktopTerminal | null) => Promise<void>;
   setPrinting: (printing: PrintingSettings) => Promise<void>;
+  setDrawer: (drawer: DrawerSettings) => Promise<void>;
 }
 
 export const useDeviceStore = create<DeviceState>((set) => ({
   terminal: null,
   printing: null,
+  drawer: null,
   loaded: !isDesktop,
   load: async () => {
     if (!desktop) return;
-    const [terminal, printing] = await Promise.all([desktop.terminal.get(), desktop.printing.get()]);
-    set({ terminal, printing, loaded: true });
+    const [terminal, printing, drawer] = await Promise.all([
+      desktop.terminal.get(),
+      desktop.printing.get(),
+      desktop.drawer.get(),
+    ]);
+    set({ terminal, printing, drawer, loaded: true });
   },
   setTerminal: async (terminal) => {
     await desktop?.terminal.set(terminal);
@@ -128,5 +161,9 @@ export const useDeviceStore = create<DeviceState>((set) => ({
   setPrinting: async (printing) => {
     if (!desktop) return;
     set({ printing: await desktop.printing.update(printing) });
+  },
+  setDrawer: async (drawer) => {
+    if (!desktop) return;
+    set({ drawer: await desktop.drawer.update(drawer) });
   },
 }));

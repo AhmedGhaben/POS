@@ -21,3 +21,10 @@ export function updateUserPermission(userId: string, permission: Permission, gra
 export function updateStaffAccess(userId: string, dto: UpdateStaffAccessDto) {
   return apiClient.patch<StaffAccessDto>(`/users/${userId}/access`, dto);
 }
+
+export const MY_PERMISSIONS_QUERY_KEY = ["my-permissions"] as const;
+
+/** The signed-in user's own effective permissions (any role). */
+export function fetchMyPermissions() {
+  return apiClient.get<EffectivePermissionsDto>("/users/me/permissions");
+}

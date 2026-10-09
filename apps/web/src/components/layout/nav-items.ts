@@ -11,6 +11,7 @@ import {
   ArrowLeftRight,
   Settings,
   MonitorCog,
+  Vault,
   type LucideIcon,
 } from "lucide-react";
 
@@ -29,6 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/purchases", label: "Purchases", icon: ShoppingBag },
   { to: "/returns", label: "Returns", icon: Undo2 },
   { to: "/invoices", label: "Invoices", icon: FileText },
+  { to: "/drawer-events", label: "Cash drawer", icon: Vault },
   { to: "/expenses", label: "Expenses", icon: Receipt },
   { to: "/suppliers", label: "Suppliers", icon: Truck },
   { to: "/employees", label: "Employees", icon: Users },

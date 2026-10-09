@@ -13,6 +13,8 @@ interface OfflineState {
   server: ServerState;
   pendingCount: number;
   failedCount: number;
+  /** Drawer openings waiting to upload (they sync with the sales). */
+  pendingDrawerCount: number;
   isSyncing: boolean;
   lastSyncAt: string | null;
   setInternet: (online: boolean) => void;
@@ -30,6 +32,7 @@ export const useOfflineStore = create<OfflineState>()(
       server: "unknown",
       pendingCount: 0,
       failedCount: 0,
+      pendingDrawerCount: 0,
       isSyncing: false,
       lastSyncAt: null,
       setInternet: (internet) => set({ internet }),
@@ -37,8 +40,12 @@ export const useOfflineStore = create<OfflineState>()(
       setSyncing: (isSyncing) => set({ isSyncing }),
       setLastSyncAt: (lastSyncAt) => set({ lastSyncAt }),
       refreshPendingCount: async () => {
-        const counts = await outboxCounts();
-        set({ pendingCount: counts.pending + counts.syncing, failedCount: counts.failed });
+        const [sales, drawer] = await Promise.all([outboxCounts("sale"), outboxCounts("drawer-event")]);
+        set({
+          pendingCount: sales.pending + sales.syncing,
+          failedCount: sales.failed + drawer.failed,
+          pendingDrawerCount: drawer.pending + drawer.syncing,
+        });
       },
     }),
     { name: "pos-sync", partialize: (s) => ({ lastSyncAt: s.lastSyncAt }) },

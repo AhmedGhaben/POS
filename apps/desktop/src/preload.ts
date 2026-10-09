@@ -21,6 +21,7 @@ interface Printing {
   receipt: ReceiptPrinter;
   a4: { deviceName: string | null; copies: number };
   autoPrintReceipt: boolean;
+  cutAfterReceipt: boolean;
 }
 
 interface PrintJob {
@@ -29,6 +30,20 @@ interface PrintJob {
   stylesheets: string[];
   copies?: number;
 }
+
+interface Drawer {
+  connection: "none" | "receipt-printer" | "windows-printer" | "network" | "serial";
+  printerName: string | null;
+  host: string | null;
+  port: number;
+  comPort: string | null;
+  baudRate: number;
+  pin: 2 | 5;
+  pulseMs: number;
+  openOnCashSale: boolean;
+}
+
+type HardwareResult = { ok: true } | { ok: false; error: string };
 
 interface Settings {
   serverUrl: string | null;
@@ -67,6 +82,14 @@ const posDesktop = {
   printing: {
     get: (): Promise<Printing> => ipcRenderer.invoke("printing:get"),
     update: (printing: Printing): Promise<Printing> => ipcRenderer.invoke("printing:update", printing),
+  },
+  drawer: {
+    get: (): Promise<Drawer> => ipcRenderer.invoke("drawer:get"),
+    update: (drawer: Drawer): Promise<Drawer> => ipcRenderer.invoke("drawer:update", drawer),
+    open: (): Promise<HardwareResult> => ipcRenderer.invoke("drawer:open"),
+  },
+  hardware: {
+    comPorts: (): Promise<string[]> => ipcRenderer.invoke("hardware:com-ports"),
   },
   log: {
     write: (level: "info" | "warn" | "error", message: string): void => {

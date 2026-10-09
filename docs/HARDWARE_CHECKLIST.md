@@ -72,7 +72,47 @@ Printer models used: receipt `__________`, A4 `__________`
 - [ ] Close and reopen the app: printer settings are kept.
 - [ ] Restart Windows: printer settings are kept and auto-print still works.
 
-## Cash drawer (part C): to come
+## Cash drawer (part C)
+
+Drawer and printer used: `__________`, connected via `__________`.
+
+**Setup**
+
+- [ ] Plug the drawer's RJ11/RJ12 cable into the receipt printer's
+  "DK"/drawer port.
+- [ ] This device → Cash drawer → **Plugged into the receipt printer**,
+  then **Test drawer**: the drawer opens.
+  - [ ] If nothing happens, try **Pin 5**, then a longer **Pulse length**
+    (e.g. 200 ms).
+  - [ ] Network printer not installed in Windows: choose **Network printer
+    (IP address)**, enter its IP, then Test drawer.
+  - [ ] Drawer on its own COM port: choose **COM port**, the port and the
+    speed from the drawer's manual, then Test drawer.
+- [ ] **Cut the paper after each receipt:** only turn this on if receipts
+  don't already cut. Check the cut comes below the footer.
+
+**Day-to-day**
+
+- [ ] A cash sale opens the drawer by itself, at about the same moment the
+  receipt prints.
+- [ ] A card sale does **not** open the drawer.
+- [ ] **Open drawer** (as owner or manager): choose a reason, and the
+  drawer opens. It appears on **Cash drawer** in the back office with
+  your name, the till and the reason.
+- [ ] Signed in as a cashier: no **Open drawer** button. Grant it under
+  Employees → the cashier → permissions → "Open the cash drawer without a
+  sale": the button appears (after reopening the POS).
+
+**Offline and failures**
+
+- [ ] Internet unplugged: a cash sale still opens the drawer, and a manual
+  opening still works. Once back online, both show on **Cash drawer**,
+  the manual one marked **Offline**.
+- [ ] Printer off: the cash sale still completes, and "The cash drawer
+  didn't open: …" appears. The opening shows as **Didn't open** on Cash
+  drawer.
+- [ ] Two quick cash sales in a row: the drawer opens for each, and
+  nothing gets stuck.
 
 ## Customer display (part D): to come
 

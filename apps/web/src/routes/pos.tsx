@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { FileText, ShoppingCart } from "lucide-react";
+import { FileText, ShoppingCart, Vault } from "lucide-react";
+import { DrawerOpenReason, PaymentMethod } from "@pos/shared";
 import type { CustomerDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,8 @@ import { useAuthStore } from "@/features/auth/store";
 import { ApiError } from "@/lib/api-client";
 import { printDocument } from "@/features/desktop/printing";
 import { useDeviceStore } from "@/features/desktop/bridge";
+import { openCashDrawer, useCanOpenDrawer, useHasDrawer } from "@/features/desktop/drawer";
+import { OpenDrawerDialog } from "@/features/desktop/components/OpenDrawerDialog";
 import { useMoney } from "@/features/business/use-money";
 
 export function PosPage() {
@@ -49,6 +52,13 @@ export function PosPage() {
   // as the sale completes (once the dialog has put it in the print area).
   const autoPrint = useDeviceStore((s) => !!s.printing?.autoPrintReceipt && !!s.printing.receipt.deviceName);
   const autoPrintedFor = React.useRef<string | null>(null);
+
+  // Cash drawer (Windows app): opens by itself on cash sales; the manual
+  // button needs OPEN_DRAWER and asks for a reason.
+  const hasDrawer = useHasDrawer();
+  const canOpenDrawer = useCanOpenDrawer();
+  const openOnCash = useDeviceStore((s) => !!s.drawer?.openOnCashSale);
+  const [drawerDialogOpen, setDrawerDialogOpen] = React.useState(false);
   React.useEffect(() => {
     if (!completedSale || !autoPrint || autoPrintedFor.current === completedSale.id) return;
     const saleId = completedSale.id;
@@ -75,6 +85,11 @@ export function PosPage() {
         lines,
       ),
     onSuccess: (sale) => {
+      // The sale is already saved (on the server or in the outbox): open
+      // the drawer now, without waiting for printing or sync.
+      if (hasDrawer && openOnCash && sale.payments.some((p) => p.method === PaymentMethod.CASH)) {
+        void openCashDrawer({ reason: DrawerOpenReason.SALE_CASH_PAYMENT, saleClientId: sale.clientId ?? undefined });
+      }
       setCompletedSale(sale);
       setCompletedCustomer(customer);
       clear();
@@ -154,6 +169,18 @@ export function PosPage() {
           <Button variant="outline" disabled={lines.length === 0} onClick={clear}>
             Clear cart
           </Button>
+          {hasDrawer && canOpenDrawer && (
+            <Button
+              variant="outline"
+              className="col-span-2"
+              onClick={() => {
+                setCartSheetOpen(false);
+                setDrawerDialogOpen(true);
+              }}
+            >
+              <Vault className="mr-2 h-4 w-4" /> Open drawer
+            </Button>
+          )}
         </div>
       </div>
     </>
@@ -199,6 +226,7 @@ export function PosPage() {
         onClose={() => setInvoiceFor(null)}
       />
 
+      <OpenDrawerDialog open={drawerDialogOpen} onOpenChange={setDrawerDialogOpen} />
       <PrintQuoteDialog
         open={quoteOpen}
         onOpenChange={setQuoteOpen}

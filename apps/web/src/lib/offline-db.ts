@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
-import type { CreateSaleDto } from "@pos/shared";
+import type { CreateDrawerEventDto, CreateSaleDto } from "@pos/shared";
 
 /**
  * Durable local queue of things the till did that the server hasn't seen
@@ -9,11 +9,9 @@ import type { CreateSaleDto } from "@pos/shared";
  */
 export type OutboxState = "pending" | "syncing" | "synced" | "failed";
 
-export interface OutboxEntry {
+interface OutboxBase {
   /** Stable idempotency key, also sent to the server as `clientId`. */
   clientId: string;
-  kind: "sale";
-  payload: CreateSaleDto;
   createdAt: string;
   state: OutboxState;
   attempts: number;
@@ -21,6 +19,12 @@ export interface OutboxEntry {
   syncedAt?: string;
   serverId?: string;
 }
+
+export type OutboxEntry =
+  | (OutboxBase & { kind: "sale"; payload: CreateSaleDto })
+  | (OutboxBase & { kind: "drawer-event"; payload: CreateDrawerEventDto });
+
+export type OutboxKind = OutboxEntry["kind"];
 
 export interface CatalogRecord {
   key: string;
@@ -89,11 +93,13 @@ function getDb() {
   return dbPromise;
 }
 
-export async function addToOutbox(
-  entry: Pick<OutboxEntry, "clientId" | "kind" | "payload" | "createdAt">,
-): Promise<OutboxEntry> {
+type NewOutboxEntry =
+  | Pick<Extract<OutboxEntry, { kind: "sale" }>, "clientId" | "kind" | "payload" | "createdAt">
+  | Pick<Extract<OutboxEntry, { kind: "drawer-event" }>, "clientId" | "kind" | "payload" | "createdAt">;
+
+export async function addToOutbox(entry: NewOutboxEntry): Promise<OutboxEntry> {
   const db = await getDb();
-  const full: OutboxEntry = { ...entry, state: "pending", attempts: 0 };
+  const full = { ...entry, state: "pending", attempts: 0 } as OutboxEntry;
   // "strict": the browser flushes this to disk before reporting success, so
   // a sale that showed "Saved offline" survives a power cut the next second.
   // (Chromium's default lets the OS hold the write in a cache first.)
@@ -110,17 +116,19 @@ export async function listOutbox(states?: OutboxState[]): Promise<OutboxEntry[]>
   return states ? all.filter((e) => states.includes(e.state)) : all;
 }
 
-export async function updateOutbox(clientId: string, patch: Partial<OutboxEntry>): Promise<void> {
+export type OutboxPatch = Partial<Pick<OutboxBase, "state" | "attempts" | "lastError" | "syncedAt" | "serverId">>;
+
+export async function updateOutbox(clientId: string, patch: OutboxPatch): Promise<void> {
   const db = await getDb();
   const tx = db.transaction("outbox", "readwrite");
   const entry = await tx.store.get(clientId);
-  if (entry) await tx.store.put({ ...entry, ...patch, clientId });
+  if (entry) await tx.store.put({ ...entry, ...patch, clientId } as OutboxEntry);
   await tx.done;
 }
 
-export async function outboxCounts(): Promise<Record<OutboxState, number>> {
+export async function outboxCounts(kind?: OutboxKind): Promise<Record<OutboxState, number>> {
   const counts: Record<OutboxState, number> = { pending: 0, syncing: 0, synced: 0, failed: 0 };
-  for (const entry of await listOutbox()) counts[entry.state]++;
+  for (const entry of await listOutbox()) if (!kind || entry.kind === kind) counts[entry.state]++;
   return counts;
 }
 

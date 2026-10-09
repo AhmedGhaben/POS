@@ -89,6 +89,7 @@ export function buildOfflineSale(localId: string, dto: CreateSaleDto, lines: Car
     createdAt: dto.offline?.createdAt ?? new Date().toISOString(),
     createdOffline: true,
     queued: true,
+    clientId: localId,
     lineItems,
     payments,
   };

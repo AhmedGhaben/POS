@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/features/auth/store";
 import { BUSINESS_QUERY_KEY, fetchBusiness } from "@/features/business/api";
 import { useDeviceStore } from "@/features/desktop/bridge";
+import { fetchMyPermissions, MY_PERMISSIONS_QUERY_KEY } from "@/features/users/api";
 import { startSyncEngine } from "@/features/pos/sync";
 import { CommandPalette } from "./CommandPalette";
 
@@ -22,6 +23,18 @@ export function ProtectedRoute() {
   React.useEffect(() => {
     if (businessQuery.data) setBusiness(businessQuery.data);
   }, [businessQuery.data, setBusiness]);
+
+  // Same for the user's own permissions (kept for offline use).
+  const setPermissions = useAuthStore((s) => s.setPermissions);
+  const permissionsQuery = useQuery({
+    queryKey: MY_PERMISSIONS_QUERY_KEY,
+    queryFn: fetchMyPermissions,
+    enabled: !!accessToken,
+    staleTime: 5 * 60_000,
+  });
+  React.useEffect(() => {
+    if (permissionsQuery.data) setPermissions(permissionsQuery.data);
+  }, [permissionsQuery.data, setPermissions]);
 
   // Background sync of offline sales and the saved catalog, on every page.
   const signedIn = !!accessToken;

@@ -6,6 +6,7 @@ import type {
   PurchaseStatus,
   ExpenseCategory,
   Permission,
+  DrawerOpenReason,
 } from "./enums";
 
 export interface BusinessDto {
@@ -488,6 +489,8 @@ export interface SaleDto {
   createdAt: string;
   createdOffline?: boolean;
   terminalId?: string | null;
+  /** The till's idempotency key for this sale. */
+  clientId?: string | null;
   /** Client-only: a receipt built on the till for a sale still waiting in the outbox. */
   queued?: boolean;
   lineItems: SaleLineItemDto[];
@@ -572,3 +575,41 @@ export interface UpdateTerminalDto {
   storeId?: string;
   isActive?: boolean;
 }
+
+export type DrawerSubReason = "CASH_PICKUP" | "FLOAT_ADJUSTMENT" | "MANAGER_INSPECTION" | "TEST" | "OTHER";
+
+export interface CreateDrawerEventDto {
+  storeId: string;
+  clientId: string;
+  terminalId?: string;
+  reason: DrawerOpenReason;
+  subReason?: DrawerSubReason;
+  note?: string;
+  saleClientId?: string;
+  succeeded: boolean;
+  error?: string;
+  offline: boolean;
+  occurredAt: string;
+}
+
+export interface DrawerEventDto {
+  id: string;
+  storeId: string;
+  terminalId: string | null;
+  reason: DrawerOpenReason;
+  subReason: DrawerSubReason | null;
+  note: string | null;
+  saleId: string | null;
+  saleClientId: string | null;
+  succeeded: boolean;
+  error: string | null;
+  permitted: boolean;
+  createdOffline: boolean;
+  occurredAt: string;
+  createdAt: string;
+  user: { id: string; firstName: string; lastName: string; email: string };
+  terminal: { name: string; code: string } | null;
+  store: { name: string };
+}
+
+export type PermissionMap = Partial<Record<Permission, boolean>>;

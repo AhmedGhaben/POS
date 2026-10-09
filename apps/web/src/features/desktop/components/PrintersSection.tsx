@@ -275,6 +275,15 @@ export function PrintersSection() {
             />
             Print the receipt automatically after each sale
           </label>
+          <label className="flex items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              className="h-4 w-4"
+              checked={printing.cutAfterReceipt}
+              onChange={(e) => void save({ ...printing, cutAfterReceipt: e.target.checked })}
+            />
+            Cut the paper after each receipt (only if the printer doesn't already)
+          </label>
           <Button
             variant="outline"
             className="gap-2"

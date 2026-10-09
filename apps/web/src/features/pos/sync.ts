@@ -1,6 +1,6 @@
-import type { SaleDto } from "@pos/shared";
+import type { DrawerEventDto, SaleDto } from "@pos/shared";
 import { apiClient, ApiError, isRetryableError, onServerStatus } from "@/lib/api-client";
-import { listOutbox, tidyOutbox, updateOutbox, type OutboxEntry } from "@/lib/offline-db";
+import { listOutbox, tidyOutbox, updateOutbox, type OutboxEntry, type OutboxPatch } from "@/lib/offline-db";
 import { desktopLog } from "@/features/desktop/bridge";
 import { useOfflineStore, type ServerState } from "./offline-store";
 import { refreshCatalog } from "./catalog";
@@ -14,7 +14,7 @@ export interface SyncResult {
 
 export interface DrainDeps {
   list: () => Promise<OutboxEntry[]>;
-  update: (clientId: string, patch: Partial<OutboxEntry>) => Promise<void>;
+  update: (clientId: string, patch: OutboxPatch) => Promise<void>;
   upload: (entry: OutboxEntry) => Promise<{ id: string }>;
   now?: () => Date;
 }
@@ -56,8 +56,19 @@ export async function drainOutbox(deps: DrainDeps): Promise<SyncResult> {
   return result;
 }
 
-function uploadEntry(entry: OutboxEntry) {
-  return apiClient.post<SaleDto>("/sales", entry.payload, { timeoutMs: 15_000 });
+function uploadEntry(entry: OutboxEntry): Promise<{ id: string }> {
+  switch (entry.kind) {
+    case "sale":
+      return apiClient.post<SaleDto>("/sales", entry.payload, { timeoutMs: 15_000 });
+    case "drawer-event":
+      // The till may not have known the server was down when it recorded
+      // the opening; needing a retry to upload means it was offline.
+      return apiClient.post<DrawerEventDto>(
+        "/drawer-events",
+        { ...entry.payload, offline: entry.payload.offline || entry.attempts > 0 },
+        { timeoutMs: 15_000 },
+      );
+  }
 }
 
 let running: Promise<SyncResult> | null = null;

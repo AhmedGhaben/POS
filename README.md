@@ -123,7 +123,15 @@ it they're printed to the API console, links included.
     feed, copies) and a calibration receipt.
   - In a browser, printing still uses the print dialog.
   - Real-printer checks: `docs/HARDWARE_CHECKLIST.md`.
-- **Coming next:** cash drawer, customer display, updates.
+- **Cash drawer.** Plugged into the receipt printer (USB or network),
+  any Windows printer, a network printer by IP, or a COM port.
+  - Opens automatically on cash sales.
+  - **Open drawer** needs the OPEN_DRAWER permission and asks for a
+    reason.
+  - Every opening is recorded (offline too) and listed on the **Cash
+    drawer** back-office page.
+  - Optional ESC/POS paper cut after receipts.
+- **Coming next:** customer display, updates.
 
 ```bash
 npm run build:desktop --workspace apps/web   # web build for the app
@@ -154,6 +162,7 @@ POS_DESKTOP_EXECUTABLE=release/win-unpacked/POS.exe npx playwright test   # in a
 npm run test --workspace apps/api       # API unit tests
 npm run test:e2e --workspace apps/api   # API e2e: needs the migrated + seeded dev database
 npm run test --workspace apps/web       # web unit tests (Vitest)
+npm run test --workspace apps/desktop   # desktop unit tests (ESC/POS, transports, log scrubbing)
 npm run lint
 ```
 

@@ -2,7 +2,9 @@ import { app, BrowserWindow, ipcMain, net, session, shell, type IpcMainInvokeEve
 import path from "node:path";
 import { z } from "zod";
 import {
+  drawerSchema,
   getConfig,
+  getDrawer,
   getPrinting,
   normalizeServerUrl,
   printingSchema,
@@ -11,6 +13,8 @@ import {
   updateConfig,
 } from "./config";
 import { initLogging, log, logFilePath } from "./logging";
+import { openDrawer } from "./hardware/drawer";
+import { listComPorts, stopRawPrintHelper, warmRawPrintHelper } from "./hardware/transports";
 import { closePrintWindow, listPrinters, printJob, printJobSchema } from "./printing";
 import { APP_ORIGIN, handleAppScheme, registerAppScheme } from "./protocol";
 
@@ -60,6 +64,7 @@ function createWindow() {
     mainWindow = null;
     // The hidden print window would otherwise keep the app running.
     closePrintWindow();
+    stopRawPrintHelper();
   });
   mainWindow.webContents.on("render-process-gone", (_e, details) => {
     log.error(`[renderer] gone: ${details.reason} (exit ${details.exitCode})`);
@@ -105,6 +110,14 @@ function applyStartWithWindows(enabled: boolean) {
   // In development this would register electron.exe itself; only the
   // installed app should start with Windows.
   if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: enabled });
+}
+
+/** Start the Windows raw-print helper early if anything will use it. */
+function warmIfNeeded() {
+  const drawer = getDrawer();
+  if (drawer.connection === "receipt-printer" || drawer.connection === "windows-printer" || getPrinting().cutAfterReceipt) {
+    warmRawPrintHelper();
+  }
 }
 
 function publicSettings() {
@@ -173,6 +186,7 @@ function registerIpc() {
 
   handle("printing:update", z.tuple([printingSchema]), (printing) => {
     updateConfig({ printing });
+    warmIfNeeded();
     log.info(
       `[print] settings: receipt="${printing.receipt.deviceName ?? "none"}" ` +
         `${printing.receipt.paperWidthMm}/${printing.receipt.printableWidthMm}mm, ` +
@@ -180,6 +194,19 @@ function registerIpc() {
     );
     return getPrinting();
   });
+
+  handle("drawer:get", z.tuple([]), getDrawer);
+
+  handle("drawer:update", z.tuple([drawerSchema]), (drawer) => {
+    updateConfig({ drawer });
+    log.info(`[drawer] settings: ${drawer.connection}, pin ${drawer.pin}, ${drawer.pulseMs} ms, on cash sale ${drawer.openOnCashSale}`);
+    warmIfNeeded();
+    return getDrawer();
+  });
+
+  handle("drawer:open", z.tuple([]), openDrawer);
+
+  handle("hardware:com-ports", z.tuple([]), listComPorts);
 
   handle(
     "log:write",
@@ -223,6 +250,7 @@ app.whenReady().then(() => {
   registerIpc();
   lockNavigation();
   createWindow();
+  warmIfNeeded();
 });
 
 app.on("before-quit", () => {

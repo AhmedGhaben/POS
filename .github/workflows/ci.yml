@@ -68,5 +68,8 @@ jobs:
       - name: Unit tests (web)
         run: npm run test --workspace apps/web
 
+      - name: Unit tests (desktop)
+        run: npm run test --workspace apps/desktop
+
       - name: E2E tests (api)
         run: npm run test:e2e --workspace apps/api
