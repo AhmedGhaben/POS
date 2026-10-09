@@ -131,7 +131,15 @@ it they're printed to the API console, links included.
   - Every opening is recorded (offline too) and listed on the **Cash
     drawer** back-office page.
   - Optional ESC/POS paper cut after receipts.
-- **Coming next:** customer display, updates.
+- **Customer display.** Either:
+  - a 2×20 **pole display** (COM port or network; Epson, CD5220 or plain
+    commands), or
+  - a **second monitor** facing the customer, showing each item, the
+    total, then the change.
+
+  The second-monitor view is the `/customer-display` page, which also
+  works in a browser window next to the POS. It runs offline.
+- **Coming next:** auto-updates and distribution.
 
 ```bash
 npm run build:desktop --workspace apps/web   # web build for the app

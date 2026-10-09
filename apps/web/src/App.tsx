@@ -26,6 +26,7 @@ import { SettingsPage } from "@/routes/settings";
 import { InvoicesPage } from "@/routes/invoices";
 import { DevicePage } from "@/routes/device";
 import { DrawerEventsPage } from "@/routes/drawer-events";
+import { CustomerDisplayPage } from "@/routes/customer-display";
 
 /** Owner/Manager default to the back office; Cashier defaults straight to POS. */
 function DefaultLanding() {
@@ -44,6 +45,9 @@ export function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        {/* The customer-facing screen: no sign-in of its own, it only shows
+            what the POS on this computer broadcasts. */}
+        <Route path="/customer-display" element={<CustomerDisplayPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/welcome" element={<WelcomePage />} />
           <Route element={<PosShell />}>

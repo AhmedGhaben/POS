@@ -46,6 +46,28 @@ export interface DrawerSettings {
   openOnCashSale: boolean;
 }
 
+export interface DisplaySettings {
+  kind: "none" | "pole" | "monitor";
+  pole: {
+    connection: "serial" | "network";
+    comPort: string | null;
+    baudRate: number;
+    host: string | null;
+    port: number;
+    commandSet: "epson" | "cd5220" | "plain";
+  };
+  monitor: { displayId: number | null };
+  idleMessage: string;
+}
+
+export interface DesktopScreen {
+  id: number;
+  label: string;
+  width: number;
+  height: number;
+  primary: boolean;
+}
+
 export type HardwareResult = { ok: true } | { ok: false; error: string };
 
 export interface DesktopPrinter {
@@ -101,6 +123,14 @@ export interface PosDesktopApi {
     update(settings: DrawerSettings): Promise<DrawerSettings>;
     open(): Promise<HardwareResult>;
   };
+  display: {
+    get(): Promise<DisplaySettings>;
+    update(settings: DisplaySettings): Promise<DisplaySettings>;
+    /** Abstract state (see customer-display.ts); fire-and-forget. */
+    show(state: unknown): void;
+    test(): Promise<HardwareResult>;
+    screens(): Promise<DesktopScreen[]>;
+  };
   hardware: {
     comPorts(): Promise<string[]>;
   };
@@ -133,26 +163,30 @@ interface DeviceState {
   /** Null in the browser, where printing goes through the print dialog. */
   printing: PrintingSettings | null;
   drawer: DrawerSettings | null;
+  display: DisplaySettings | null;
   loaded: boolean;
   load: () => Promise<void>;
   setTerminal: (terminal: DesktopTerminal | null) => Promise<void>;
   setPrinting: (printing: PrintingSettings) => Promise<void>;
   setDrawer: (drawer: DrawerSettings) => Promise<void>;
+  setDisplay: (display: DisplaySettings) => Promise<void>;
 }
 
 export const useDeviceStore = create<DeviceState>((set) => ({
   terminal: null,
   printing: null,
   drawer: null,
+  display: null,
   loaded: !isDesktop,
   load: async () => {
     if (!desktop) return;
-    const [terminal, printing, drawer] = await Promise.all([
+    const [terminal, printing, drawer, display] = await Promise.all([
       desktop.terminal.get(),
       desktop.printing.get(),
       desktop.drawer.get(),
+      desktop.display.get(),
     ]);
-    set({ terminal, printing, drawer, loaded: true });
+    set({ terminal, printing, drawer, display, loaded: true });
   },
   setTerminal: async (terminal) => {
     await desktop?.terminal.set(terminal);
@@ -165,5 +199,9 @@ export const useDeviceStore = create<DeviceState>((set) => ({
   setDrawer: async (drawer) => {
     if (!desktop) return;
     set({ drawer: await desktop.drawer.update(drawer) });
+  },
+  setDisplay: async (display) => {
+    if (!desktop) return;
+    set({ display: await desktop.display.update(display) });
   },
 }));

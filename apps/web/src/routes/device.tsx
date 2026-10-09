@@ -11,6 +11,7 @@ import { useAuthStore } from "@/features/auth/store";
 import { createTerminal, updateTerminal } from "@/features/desktop/api";
 import { PrintersSection } from "@/features/desktop/components/PrintersSection";
 import { DrawerSection } from "@/features/desktop/components/DrawerSection";
+import { DisplaySection } from "@/features/desktop/components/DisplaySection";
 import { desktop, isDesktop, useDeviceStore } from "@/features/desktop/bridge";
 import { catalogSavedAt } from "@/features/pos/catalog";
 import { isWorkingOffline, useOfflineStore } from "@/features/pos/offline-store";
@@ -284,6 +285,7 @@ export function DevicePage() {
       <SyncSection />
       {isDesktop && <PrintersSection />}
       {isDesktop && <DrawerSection />}
+      {isDesktop && <DisplaySection />}
       {isDesktop && <DesktopSection />}
     </div>
   );

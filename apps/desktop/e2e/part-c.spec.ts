@@ -1,10 +1,10 @@
 import fs from "node:fs";
-import net from "node:net";
 import path from "node:path";
 import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
 import {
   API_URL,
   connect,
+  FakePrinter,
   launch,
   login,
   openPosWithProducts,
@@ -21,29 +21,6 @@ import {
  * (and synced) whether or not the server is reachable.
  */
 const KICK_PIN2_100MS = "1b 40 1b 70 00 32 64";
-
-/** Stand-in network receipt printer: records each connection's bytes. */
-class FakePrinter {
-  private server: net.Server | null = null;
-  readonly jobs: string[] = [];
-  port = 0;
-
-  async start() {
-    this.server = net.createServer((socket) => {
-      const chunks: Buffer[] = [];
-      socket.on("data", (c) => chunks.push(c));
-      socket.on("end", () => this.jobs.push(Array.from(Buffer.concat(chunks), (b) => b.toString(16).padStart(2, "0")).join(" ")));
-    });
-    await new Promise<void>((r) => this.server!.listen(this.port, "127.0.0.1", r));
-    this.port = (this.server!.address() as net.AddressInfo).port;
-  }
-
-  async stop() {
-    const s = this.server;
-    this.server = null;
-    if (s) await new Promise<void>((r) => s.close(() => r()));
-  }
-}
 
 interface DrawerEventRow {
   reason: string;

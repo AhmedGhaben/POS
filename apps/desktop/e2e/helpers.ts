@@ -206,3 +206,34 @@ export function restock(page: Page, below = 50, to = 200) {
     { below, to },
   );
 }
+
+/**
+ * Stand-in network device (receipt printer, pole display) on the shop LAN:
+ * records the bytes of each connection, as hex and as text.
+ */
+export class FakePrinter {
+  private server: net.Server | null = null;
+  readonly jobs: string[] = [];
+  readonly texts: string[] = [];
+  port = 0;
+
+  async start() {
+    this.server = net.createServer((socket) => {
+      const chunks: Buffer[] = [];
+      socket.on("data", (c) => chunks.push(c));
+      socket.on("end", () => {
+        const all = Buffer.concat(chunks);
+        this.jobs.push(Array.from(all, (b) => b.toString(16).padStart(2, "0")).join(" "));
+        this.texts.push(all.toString("latin1"));
+      });
+    });
+    await new Promise<void>((r) => this.server!.listen(this.port, "127.0.0.1", r));
+    this.port = (this.server!.address() as net.AddressInfo).port;
+  }
+
+  async stop() {
+    const s = this.server;
+    this.server = null;
+    if (s) await new Promise<void>((r) => s.close(() => r()));
+  }
+}

@@ -2,3 +2,4 @@
 // Only modules without Electron imports are unit-tested.
 import "./scrub.test";
 import "./hardware/hardware.test";
+import "./hardware/pole-display.test";

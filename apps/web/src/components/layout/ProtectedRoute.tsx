@@ -6,6 +6,7 @@ import { BUSINESS_QUERY_KEY, fetchBusiness } from "@/features/business/api";
 import { useDeviceStore } from "@/features/desktop/bridge";
 import { fetchMyPermissions, MY_PERMISSIONS_QUERY_KEY } from "@/features/users/api";
 import { startSyncEngine } from "@/features/pos/sync";
+import { startCustomerDisplayChannel, useIdleMessageBroadcast } from "@/features/desktop/customer-display";
 import { CommandPalette } from "./CommandPalette";
 
 export function ProtectedRoute() {
@@ -35,6 +36,10 @@ export function ProtectedRoute() {
   React.useEffect(() => {
     if (permissionsQuery.data) setPermissions(permissionsQuery.data);
   }, [permissionsQuery.data, setPermissions]);
+
+  // Customer screens can ask what to show from any page.
+  React.useEffect(() => startCustomerDisplayChannel(), []);
+  useIdleMessageBroadcast();
 
   // Background sync of offline sales and the saved catalog, on every page.
   const signedIn = !!accessToken;

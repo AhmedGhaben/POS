@@ -591,6 +591,58 @@ CustomerDisplayService
 - Both work offline. The monitor version can show the business logo while
   idle.
 
+**Part D status (2026-10-09): shipped.**
+
+- **The abstraction.** The POS publishes only an abstract state, with money
+  already formatted:
+  - `idle` (the welcome message)
+  - `cart` (the last item, every line, the total)
+  - `paid` (total, paid, change)
+
+  It goes out through `useCustomerDisplay` after an 80 ms coalesce. The
+  POS never knows what kind of display is attached.
+- **Pole display** (`src/hardware/pole-display.ts`, `src/customer-display.ts`):
+  - Shows 2×20 lines: last item and price / TOTAL, then PAID / CHANGE
+    (or TOTAL / THANK YOU for non-cash sales), then the welcome split
+    across both lines.
+  - ASCII only: accents are stripped, anything else becomes "?".
+  - Command sets: Epson ESC/POS (`US $` cursor), CD5220 (`ESC Q A/B`),
+    and plain (FF + 40 characters).
+  - Sent over a COM port or the network through the same transports as
+    the drawer.
+  - Writes are coalesced: the display shows the latest state, never a
+    backlog. An outage is logged once, and recovery is logged too.
+- **Second monitor.**
+  - The app opens a frameless fullscreen window on the chosen screen (or
+    any screen that isn't the main one), showing `/customer-display`.
+  - That page has no data or sign-in of its own. It gets the state over a
+    `BroadcastChannel` from the POS window, which answers its "hello" from
+    any page with the current sale or the welcome message.
+  - With one screen only, it opens as a normal movable window, so it
+    never covers the till.
+  - Text sizes scale with the screen (`vmin`).
+  - It also works in a plain browser: open `/customer-display` in another
+    window.
+- **Device page:** display kind; pole connection, COM/baud or IP/port, and
+  command set; the monitor's screen; the welcome message; Test display.
+- **Tests:**
+  - Desktop unit tests (9 new, 23 in total): text fitting and ASCII, every
+    state's lines, and the bytes of each command set.
+  - Playwright `part-d.spec.ts` (7):
+    - the pole over a fake network device, checking the Epson bytes and
+      the test line
+    - the item and running total, "2x" when an item is added twice
+    - paid/change, then the welcome again
+    - the CD5220 bytes
+    - display down: selling carries on, logged once
+    - the real second-monitor window following the cart, then thank you
+      and change, then the welcome
+    - turning the display off closes the window
+  - Customer-screen screenshots were checked by eye. 49/49 desktop e2e
+    tests pass.
+- **Not testable here:** a physical VFD, and non-Latin product names on a
+  pole (they show as "?"). See `docs/HARDWARE_CHECKLIST.md`.
+
 ### E. Updates and distribution
 
 - `electron-updater`:

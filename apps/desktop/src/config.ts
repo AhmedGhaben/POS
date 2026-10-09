@@ -90,6 +90,48 @@ export const DEFAULT_DRAWER: DrawerSettings = {
   openOnCashSale: true,
 };
 
+const baudRateSchema = z.union([
+  z.literal(2400),
+  z.literal(4800),
+  z.literal(9600),
+  z.literal(19200),
+  z.literal(38400),
+  z.literal(57600),
+  z.literal(115200),
+]);
+
+/** Customer-facing display: a 2x20 pole display, or a second monitor. */
+export const displaySchema = z.object({
+  kind: z.enum(["none", "pole", "monitor"]),
+  pole: z.object({
+    connection: z.enum(["serial", "network"]),
+    comPort: z.string().regex(/^COM\d{1,3}$/i).nullable(),
+    baudRate: baudRateSchema,
+    host: z
+      .string()
+      .max(253)
+      .regex(/^[A-Za-z0-9.-]+$/)
+      .nullable(),
+    port: z.number().int().min(1).max(65535),
+    commandSet: z.enum(["epson", "cd5220", "plain"]),
+  }),
+  monitor: z.object({
+    /** Electron display id; null = any screen other than the main one. */
+    displayId: z.number().int().nullable(),
+  }),
+  /** Shown while no sale is in progress. */
+  idleMessage: z.string().max(40),
+});
+
+export type DisplaySettings = z.infer<typeof displaySchema>;
+
+export const DEFAULT_DISPLAY: DisplaySettings = {
+  kind: "none",
+  pole: { connection: "serial", comPort: null, baudRate: 9600, host: null, port: 9100, commandSet: "epson" },
+  monitor: { displayId: null },
+  idleMessage: "Welcome",
+};
+
 /** Per-computer settings, kept in the app's data folder (never synced). */
 const configSchema = z.object({
   /** API base URL, e.g. http://localhost:4000 or https://pos.example.com/api */
@@ -101,6 +143,7 @@ const configSchema = z.object({
   startWithWindows: z.boolean().optional().catch(undefined),
   printing: printingSchema.optional().catch(undefined),
   drawer: drawerSchema.optional().catch(undefined),
+  display: displaySchema.optional().catch(undefined),
 });
 // Each field falls back on its own (.catch), so one bad value in a
 // hand-edited or older config.json can't wipe the server address.
@@ -140,6 +183,10 @@ export function getPrinting(): PrintingSettings {
 
 export function getDrawer(): DrawerSettings {
   return getConfig().drawer ?? DEFAULT_DRAWER;
+}
+
+export function getDisplay(): DisplaySettings {
+  return getConfig().display ?? DEFAULT_DISPLAY;
 }
 
 export function updateConfig(patch: Partial<DesktopConfig>): DesktopConfig {

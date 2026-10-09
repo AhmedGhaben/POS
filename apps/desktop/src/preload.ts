@@ -43,6 +43,20 @@ interface Drawer {
   openOnCashSale: boolean;
 }
 
+interface Display {
+  kind: "none" | "pole" | "monitor";
+  pole: {
+    connection: "serial" | "network";
+    comPort: string | null;
+    baudRate: number;
+    host: string | null;
+    port: number;
+    commandSet: "epson" | "cd5220" | "plain";
+  };
+  monitor: { displayId: number | null };
+  idleMessage: string;
+}
+
 type HardwareResult = { ok: true } | { ok: false; error: string };
 
 interface Settings {
@@ -87,6 +101,17 @@ const posDesktop = {
     get: (): Promise<Drawer> => ipcRenderer.invoke("drawer:get"),
     update: (drawer: Drawer): Promise<Drawer> => ipcRenderer.invoke("drawer:update", drawer),
     open: (): Promise<HardwareResult> => ipcRenderer.invoke("drawer:open"),
+  },
+  display: {
+    get: (): Promise<Display> => ipcRenderer.invoke("display:get"),
+    update: (display: Display): Promise<Display> => ipcRenderer.invoke("display:update", display),
+    /** Abstract state (idle / cart / paid); fire-and-forget. */
+    show: (state: unknown): void => {
+      void ipcRenderer.invoke("display:show", state).catch(() => {});
+    },
+    test: (): Promise<HardwareResult> => ipcRenderer.invoke("display:test"),
+    screens: (): Promise<{ id: number; label: string; width: number; height: number; primary: boolean }[]> =>
+      ipcRenderer.invoke("display:screens"),
   },
   hardware: {
     comPorts: (): Promise<string[]> => ipcRenderer.invoke("hardware:com-ports"),

@@ -2,8 +2,10 @@ import { app, BrowserWindow, ipcMain, net, session, shell, type IpcMainInvokeEve
 import path from "node:path";
 import { z } from "zod";
 import {
+  displaySchema,
   drawerSchema,
   getConfig,
+  getDisplay,
   getDrawer,
   getPrinting,
   normalizeServerUrl,
@@ -13,6 +15,14 @@ import {
   updateConfig,
 } from "./config";
 import { initLogging, log, logFilePath } from "./logging";
+import {
+  applyDisplaySettings,
+  closeCustomerWindow,
+  displayStateSchema,
+  listScreens,
+  showOnDisplay,
+  testDisplay,
+} from "./customer-display";
 import { openDrawer } from "./hardware/drawer";
 import { listComPorts, stopRawPrintHelper, warmRawPrintHelper } from "./hardware/transports";
 import { closePrintWindow, listPrinters, printJob, printJobSchema } from "./printing";
@@ -64,6 +74,7 @@ function createWindow() {
     mainWindow = null;
     // The hidden print window would otherwise keep the app running.
     closePrintWindow();
+    closeCustomerWindow();
     stopRawPrintHelper();
   });
   mainWindow.webContents.on("render-process-gone", (_e, details) => {
@@ -208,6 +219,21 @@ function registerIpc() {
 
   handle("hardware:com-ports", z.tuple([]), listComPorts);
 
+  handle("display:get", z.tuple([]), getDisplay);
+
+  handle("display:update", z.tuple([displaySchema]), (display) => {
+    updateConfig({ display });
+    log.info(`[display] settings: ${display.kind}${display.kind === "pole" ? ` ${display.pole.connection} ${display.pole.commandSet}` : ""}`);
+    applyDisplaySettings();
+    return getDisplay();
+  });
+
+  handle("display:show", z.tuple([displayStateSchema]), showOnDisplay);
+
+  handle("display:test", z.tuple([]), testDisplay);
+
+  handle("display:screens", z.tuple([]), listScreens);
+
   handle(
     "log:write",
     z.tuple([z.enum(["info", "warn", "error"]), z.string().max(2000)]),
@@ -251,6 +277,7 @@ app.whenReady().then(() => {
   lockNavigation();
   createWindow();
   warmIfNeeded();
+  applyDisplaySettings();
 });
 
 app.on("before-quit", () => {

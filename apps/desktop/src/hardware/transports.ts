@@ -33,8 +33,10 @@ export class Tcp9100Transport implements EscPosTransport {
     private readonly host: string,
     private readonly port = 9100,
     private readonly timeoutMs = 5000,
+    /** What it is, for messages: "network printer", "network display". */
+    device = "network printer",
   ) {
-    this.label = `network printer ${host}:${port}`;
+    this.label = `${device} ${host}:${port}`;
   }
 
   send(data: Uint8Array): Promise<void> {

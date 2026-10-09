@@ -26,6 +26,7 @@ import { printDocument } from "@/features/desktop/printing";
 import { useDeviceStore } from "@/features/desktop/bridge";
 import { openCashDrawer, useCanOpenDrawer, useHasDrawer } from "@/features/desktop/drawer";
 import { OpenDrawerDialog } from "@/features/desktop/components/OpenDrawerDialog";
+import { useCustomerDisplay } from "@/features/desktop/customer-display";
 import { useMoney } from "@/features/business/use-money";
 
 export function PosPage() {
@@ -59,6 +60,9 @@ export function PosPage() {
   const canOpenDrawer = useCanOpenDrawer();
   const openOnCash = useDeviceStore((s) => !!s.drawer?.openOnCashSale);
   const [drawerDialogOpen, setDrawerDialogOpen] = React.useState(false);
+
+  // Customer display (pole or second screen): cart, then paid/change.
+  useCustomerDisplay(lines, totals.total, completedSale);
   React.useEffect(() => {
     if (!completedSale || !autoPrint || autoPrintedFor.current === completedSale.id) return;
     const saleId = completedSale.id;

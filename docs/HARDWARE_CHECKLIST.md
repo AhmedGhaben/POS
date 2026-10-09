@@ -114,7 +114,40 @@ Drawer and printer used: `__________`, connected via `__________`.
 - [ ] Two quick cash sales in a row: the drawer opens for each, and
   nothing gets stuck.
 
-## Customer display (part D): to come
+## Customer display (part D)
+
+Display used: `__________`
+
+**Pole display (2 lines × 20)**
+
+- [ ] Plug it in. A USB pole display usually appears as a COM port
+  (Device Manager → Ports).
+- [ ] This device → Customer display → **Pole display**, **COM port**,
+  then choose the port and speed (often 9600). Click **Test display**: you
+  should see "POS DISPLAY TEST" on top and 1234567890… below.
+  - [ ] Garbled or nothing: try the **CD5220** command set, then **Plain
+    text**, and check the speed in the display's manual.
+- [ ] The welcome message shows when no sale is in progress.
+- [ ] Ringing up: each item and its price on top, the running total below.
+- [ ] Cash sale: PAID / CHANGE. Card sale: TOTAL / THANK YOU. Closing the
+  sale dialog brings back the welcome.
+- [ ] Unplug the display mid-sale: selling carries on. Plug it back in:
+  the next item shows again.
+- [ ] Accented names show without accents (Café → Cafe). Non-Latin names
+  show as "?", a limitation of pole displays.
+
+**Second monitor**
+
+- [ ] Connect the customer monitor and set Windows to **Extend** the
+  display.
+- [ ] This device → Customer display → **Second monitor**. The customer
+  screen fills the second monitor (pick it under **Screen** if there are
+  more than two).
+- [ ] Logo and welcome message when idle; items and a large total while
+  ringing up; "Thank you!" and the change after a cash sale.
+- [ ] Readable from where the customer stands. Long sales scroll to the
+  newest item.
+- [ ] Restart the app: the customer screen comes back on its own.
 
 ## Power cut
 
