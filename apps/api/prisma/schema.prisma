@@ -54,6 +54,13 @@ enum ExpenseCategory {
 enum Permission {
   VIEW_COST_PRICE
   PROCESS_RETURN
+  /// Open the cash drawer without a sale.
+  OPEN_DRAWER
+}
+
+enum DrawerOpenReason {
+  SALE_CASH_PAYMENT
+  MANUAL_OPEN
 }
 
 model Business {
@@ -98,6 +105,7 @@ model Business {
   stockTransfers  StockTransfer[]
   invoices        Invoice[]
   terminals       Terminal[]
+  drawerEvents    DrawerEvent[]
   invoiceCounters InvoiceCounter[]
 
   @@map("businesses")
@@ -125,6 +133,7 @@ model Store {
   transfersOut   StockTransfer[] @relation("TransferFrom")
   transfersIn    StockTransfer[] @relation("TransferTo")
   terminals      Terminal[]
+  drawerEvents   DrawerEvent[]
 
   @@index([businessId])
   @@map("stores")
@@ -160,6 +169,7 @@ model User {
 
   @@index([businessId])
   @@map("users")
+  drawerEvents DrawerEvent[]
 }
 
 /// An explicit override of a permission for one user, in either direction.
@@ -259,11 +269,47 @@ model Terminal {
   createdAt  DateTime @default(now())
   lastSeenAt DateTime?
 
-  sales Sale[]
+  sales        Sale[]
+  drawerEvents DrawerEvent[]
 
   @@unique([businessId, sequence])
   @@index([storeId])
   @@map("terminals")
+}
+
+/// Every time a till opened its cash drawer: with a cash sale, or by hand
+/// with a reason. Recorded on the till (offline too) and synced like sales.
+model DrawerEvent {
+  id             String           @id @default(cuid())
+  businessId     String
+  business       Business         @relation(fields: [businessId], references: [id])
+  storeId        String
+  store          Store            @relation(fields: [storeId], references: [id])
+  terminalId     String?
+  terminal       Terminal?        @relation(fields: [terminalId], references: [id])
+  userId         String
+  user           User             @relation(fields: [userId], references: [id])
+  reason         DrawerOpenReason
+  /// For MANUAL_OPEN: CASH_PICKUP, FLOAT_ADJUSTMENT, MANAGER_INSPECTION, TEST, OTHER.
+  subReason      String?
+  note           String?
+  /// The sale's own idempotency key, and the sale once it has synced.
+  saleClientId   String?
+  saleId         String?
+  /// Did the drawer command reach the hardware?
+  succeeded      Boolean          @default(true)
+  error          String?
+  /// False when the user lacked OPEN_DRAWER at upload time: it happened
+  /// anyway (maybe offline), so it's kept and flagged rather than refused.
+  permitted      Boolean          @default(true)
+  createdOffline Boolean          @default(false)
+  clientId       String
+  occurredAt     DateTime
+  createdAt      DateTime         @default(now())
+
+  @@unique([storeId, clientId])
+  @@index([businessId, occurredAt])
+  @@map("drawer_events")
 }
 
 /// Store-scoping join: which stores a MANAGER/CASHIER may access.

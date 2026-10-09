@@ -40,4 +40,10 @@ export enum ExpenseCategory {
 export enum Permission {
   VIEW_COST_PRICE = "VIEW_COST_PRICE",
   PROCESS_RETURN = "PROCESS_RETURN",
+  OPEN_DRAWER = "OPEN_DRAWER",
+}
+
+export enum DrawerOpenReason {
+  SALE_CASH_PAYMENT = "SALE_CASH_PAYMENT",
+  MANUAL_OPEN = "MANUAL_OPEN",
 }

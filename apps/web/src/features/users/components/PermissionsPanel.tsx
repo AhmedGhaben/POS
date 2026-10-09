@@ -7,6 +7,7 @@ import { fetchEffectivePermissions, updateUserPermission } from "@/features/user
 const PERMISSION_LABELS: Record<Permission, string> = {
   [Permission.VIEW_COST_PRICE]: "View cost price & margin",
   [Permission.PROCESS_RETURN]: "Process returns / refunds",
+  [Permission.OPEN_DRAWER]: "Open the cash drawer without a sale",
 };
 
 /** Owner-only. Each row reflects the resolved (role-default-or-overridden)

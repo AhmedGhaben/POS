@@ -37,6 +37,13 @@ export class UsersController {
     return this.usersService.updateStaffAccess(user.businessId, user.userId, userId, dto);
   }
 
+  /** The signed-in user's own permissions, any role: the till caches them
+   * so it can show or hide actions (like Open drawer) while offline. */
+  @Get("me/permissions")
+  getMyPermissions(@CurrentUser() user: AuthenticatedUser) {
+    return this.usersService.getEffectivePermissions(user.businessId, user.userId);
+  }
+
   /** Granting/revoking permissions is authority-escalation — Owner only,
    * unlike most other role-gated endpoints which also allow Manager. */
   @Get(":userId/permissions")
