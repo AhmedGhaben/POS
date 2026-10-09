@@ -57,6 +57,13 @@ interface Display {
   idleMessage: string;
 }
 
+type UpdateStatus =
+  | { state: "disabled"; reason: string }
+  | { state: "idle" | "checking" | "up-to-date"; checkedAt?: string }
+  | { state: "downloading"; version: string; percent: number }
+  | { state: "ready"; version: string }
+  | { state: "error"; error: string; checkedAt?: string };
+
 type HardwareResult = { ok: true } | { ok: false; error: string };
 
 interface Settings {
@@ -112,6 +119,18 @@ const posDesktop = {
     test: (): Promise<HardwareResult> => ipcRenderer.invoke("display:test"),
     screens: (): Promise<{ id: number; label: string; width: number; height: number; primary: boolean }[]> =>
       ipcRenderer.invoke("display:screens"),
+  },
+  updates: {
+    status: (): Promise<UpdateStatus> => ipcRenderer.invoke("updates:status"),
+    check: (): Promise<UpdateStatus> => ipcRenderer.invoke("updates:check"),
+    /** Restarts the app to install a downloaded update. */
+    install: (): Promise<boolean> => ipcRenderer.invoke("updates:install"),
+    /** Status pushes from the updater; returns an unsubscribe function. */
+    onStatus: (callback: (status: UpdateStatus) => void): (() => void) => {
+      const listener = (_e: unknown, s: UpdateStatus) => callback(s);
+      ipcRenderer.on("updates:status", listener);
+      return () => ipcRenderer.removeListener("updates:status", listener);
+    },
   },
   hardware: {
     comPorts: (): Promise<string[]> => ipcRenderer.invoke("hardware:com-ports"),

@@ -1,7 +1,7 @@
 {
   "name": "@pos/desktop",
   "productName": "POS",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "POS for Windows: offline till, silent printing, POS hardware",
   "author": "POS",
@@ -14,10 +14,12 @@
     "test": "tsc -p tsconfig.json && node --test dist/unit-tests.js",
     "test:a0": "npm run build && playwright test",
     "test:e2e": "npm run build && playwright test",
-    "dist": "npm run build:web && npm run build && electron-builder --win nsis --publish never"
+    "dist": "npm run build:web && npm run build && electron-builder --config electron-builder.config.js --win nsis --publish never",
+    "dist:test": "npm run build:web && npm run build && electron-builder --config electron-builder.config.js --win nsis --publish never"
   },
   "dependencies": {
     "electron-log": "5.4.4",
+    "electron-updater": "6.8.9",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -26,40 +28,5 @@
     "electron": "44.7.0",
     "electron-builder": "26.0.12",
     "typescript": "^5.6.2"
-  },
-  "build": {
-    "appId": "app.pos.desktop",
-    "productName": "POS",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "dist/**/*",
-      "static/**/*",
-      "package.json",
-      "!dist/**/*.map",
-      "!dist/**/*.test.js",
-      "!dist/unit-tests.js"
-    ],
-    "extraResources": [
-      {
-        "from": "../web/dist-desktop",
-        "to": "web"
-      }
-    ],
-    "win": {
-      "target": "nsis",
-      "signAndEditExecutable": false,
-      "artifactName": "POS-Setup-${version}.${ext}"
-    },
-    "nsis": {
-      "oneClick": false,
-      "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "POS",
-      "deleteAppDataOnUninstall": false
-    }
   }
 }

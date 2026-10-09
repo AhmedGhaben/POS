@@ -139,13 +139,25 @@ it they're printed to the API console, links included.
 
   The second-monitor view is the `/customer-display` page, which also
   works in a browser window next to the POS. It runs offline.
-- **Coming next:** auto-updates and distribution.
+- **Auto-updates.**
+  - Installed tills check this repository's GitHub Releases, download in
+    the background, and install when the app next restarts. They never
+    interrupt a sale.
+  - "Restart and update now" is on This device.
+  - Releases are built by GitHub Actions (see below).
 
 ```bash
 npm run build:desktop --workspace apps/web   # web build for the app
 npm run start --workspace apps/desktop       # compile + launch Electron
 npm run dist --workspace apps/desktop        # installer: apps/desktop/release/POS-Setup-x.y.z.exe
 ```
+
+**Releasing a new version:** bump `version` in `apps/desktop/package.json`,
+commit, then `git tag v<version> && git push origin v<version>`. The
+*Desktop release* workflow builds the installer on Windows and publishes it
+as a GitHub Release. Installed tills update themselves from there.
+Release builds are locked down with Electron fuses. `npm run dist:test
+--workspace apps/desktop` builds a copy Playwright can drive.
 
 On first launch, enter the API address, e.g. `http://localhost:4000`. That's
 the API itself, not the Vite dev server. The installer is **unsigned** for

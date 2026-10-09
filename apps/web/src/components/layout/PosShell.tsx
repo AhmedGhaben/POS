@@ -1,4 +1,5 @@
-import { Moon, Sun, LogOut, LayoutDashboard, MonitorCog } from "lucide-react";
+import { Moon, Sun, LogOut, LayoutDashboard, MonitorCog, Download } from "lucide-react";
+import { useDeviceStore } from "@/features/desktop/bridge";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { StoreSwitcher } from "./StoreSwitcher";
@@ -12,6 +13,21 @@ import { OfflineIndicator } from "@/features/pos/components/OfflineIndicator";
  * back-office nav. Cashiers only ever see this. Owner/Manager get a
  * "Back to dashboard" link to return to the back office.
  */
+/** A quiet hint that a new version will install on the next restart. */
+function UpdateReady() {
+  const version = useDeviceStore((s) => (s.update?.state === "ready" ? s.update.version : null));
+  if (!version) return null;
+  return (
+    <NavLink
+      to="/device"
+      className="hidden items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium text-muted-foreground hover:text-foreground sm:inline-flex"
+      title="Installs when the app restarts. Open This device to restart now."
+    >
+      <Download className="h-3 w-3" /> Update {version} ready
+    </NavLink>
+  );
+}
+
 export function PosShell() {
   const { theme, toggleTheme } = useTheme();
   const role = useAuthStore((s) => s.user?.role);
@@ -41,6 +57,7 @@ export function PosShell() {
           <span />
         )}
         <div className="flex items-center gap-2">
+          <UpdateReady />
           <OfflineIndicator />
           <kbd className="hidden items-center gap-1 rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-flex">
             <span>⌘</span>K

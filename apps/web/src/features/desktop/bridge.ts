@@ -68,6 +68,13 @@ export interface DesktopScreen {
   primary: boolean;
 }
 
+export type UpdateStatus =
+  | { state: "disabled"; reason: string }
+  | { state: "idle" | "checking" | "up-to-date"; checkedAt?: string }
+  | { state: "downloading"; version: string; percent: number }
+  | { state: "ready"; version: string }
+  | { state: "error"; error: string; checkedAt?: string };
+
 export type HardwareResult = { ok: true } | { ok: false; error: string };
 
 export interface DesktopPrinter {
@@ -131,6 +138,12 @@ export interface PosDesktopApi {
     test(): Promise<HardwareResult>;
     screens(): Promise<DesktopScreen[]>;
   };
+  updates: {
+    status(): Promise<UpdateStatus>;
+    check(): Promise<UpdateStatus>;
+    install(): Promise<boolean>;
+    onStatus(callback: (status: UpdateStatus) => void): () => void;
+  };
   hardware: {
     comPorts(): Promise<string[]>;
   };
@@ -164,6 +177,7 @@ interface DeviceState {
   printing: PrintingSettings | null;
   drawer: DrawerSettings | null;
   display: DisplaySettings | null;
+  update: UpdateStatus | null;
   loaded: boolean;
   load: () => Promise<void>;
   setTerminal: (terminal: DesktopTerminal | null) => Promise<void>;
@@ -172,21 +186,26 @@ interface DeviceState {
   setDisplay: (display: DisplaySettings) => Promise<void>;
 }
 
+let unsubscribeUpdates: (() => void) | null = null;
+
 export const useDeviceStore = create<DeviceState>((set) => ({
   terminal: null,
   printing: null,
   drawer: null,
   display: null,
+  update: null,
   loaded: !isDesktop,
   load: async () => {
     if (!desktop) return;
-    const [terminal, printing, drawer, display] = await Promise.all([
+    const [terminal, printing, drawer, display, update] = await Promise.all([
       desktop.terminal.get(),
       desktop.printing.get(),
       desktop.drawer.get(),
       desktop.display.get(),
+      desktop.updates.status(),
     ]);
-    set({ terminal, printing, drawer, display, loaded: true });
+    set({ terminal, printing, drawer, display, update, loaded: true });
+    if (!unsubscribeUpdates) unsubscribeUpdates = desktop.updates.onStatus((s) => set({ update: s }));
   },
   setTerminal: async (terminal) => {
     await desktop?.terminal.set(terminal);

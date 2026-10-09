@@ -1,0 +1,57 @@
+name: Desktop release
+
+# Builds the Windows installer and publishes it as a GitHub Release, which
+# installed tills pick up as an update (electron-updater reads latest.yml
+# from this repository's releases).
+#
+# To release: bump "version" in apps/desktop/package.json, commit, then
+#   git tag v<version> && git push origin v<version>
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Check the tag matches the app version
+        shell: bash
+        run: |
+          version=$(node -p "require('./apps/desktop/package.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME doesn't match apps/desktop version $version"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests (desktop)
+        run: npm run test --workspace apps/desktop
+
+      - name: Build the web app for the desktop
+        run: npm run build:desktop --workspace apps/web
+
+      - name: Build the desktop app
+        run: npm run build --workspace apps/desktop
+
+      # CI=true: icon and version info are written into POS.exe and the
+      # Electron fuses are applied (see apps/desktop/electron-builder.config.js).
+      # Unsigned until a code-signing certificate is added (CSC_LINK).
+      - name: Build the installer and publish the release
+        working-directory: apps/desktop
+        run: npx electron-builder --config electron-builder.config.js --win nsis --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

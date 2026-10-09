@@ -29,3 +29,6 @@ apps/api/prisma/dev.db
 # TypeScript build cache
 *.tsbuildinfo
 dist-desktop/
+
+# Desktop app icons (electron-builder buildResources)
+!apps/desktop/build/

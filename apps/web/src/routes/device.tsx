@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { FolderOpen, RefreshCw } from "lucide-react";
+import { Download, FolderOpen, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import { createTerminal, updateTerminal } from "@/features/desktop/api";
 import { PrintersSection } from "@/features/desktop/components/PrintersSection";
 import { DrawerSection } from "@/features/desktop/components/DrawerSection";
 import { DisplaySection } from "@/features/desktop/components/DisplaySection";
-import { desktop, isDesktop, useDeviceStore } from "@/features/desktop/bridge";
+import { desktop, isDesktop, useDeviceStore, type UpdateStatus } from "@/features/desktop/bridge";
 import { catalogSavedAt } from "@/features/pos/catalog";
 import { isWorkingOffline, useOfflineStore } from "@/features/pos/offline-store";
 import { retryFailed, syncOutbox } from "@/features/pos/sync";
@@ -224,8 +224,29 @@ function SyncSection() {
   );
 }
 
+function updateText(update: UpdateStatus | null): string {
+  switch (update?.state) {
+    case undefined:
+    case "idle":
+      return "Not checked yet";
+    case "disabled":
+      return update.reason;
+    case "checking":
+      return "Checking…";
+    case "up-to-date":
+      return "Up to date";
+    case "downloading":
+      return `Downloading version ${update.version} (${update.percent}%)`;
+    case "ready":
+      return `Version ${update.version} ready, installs on the next restart`;
+    case "error":
+      return update.error;
+  }
+}
+
 function DesktopSection() {
   const info = useQuery({ queryKey: ["desktop-info"], queryFn: () => desktop!.app.info() }).data;
+  const update = useDeviceStore((s) => s.update);
   const settingsQuery = useQuery({ queryKey: ["desktop-settings"], queryFn: () => desktop!.settings.get() });
   const settings = settingsQuery.data;
 
@@ -242,6 +263,25 @@ function DesktopSection() {
       <CardContent className="space-y-4">
         <div>
           <Row label="Desktop version">{info?.version ?? "…"}</Row>
+          <Row label="Updates">
+            <span data-testid="update-status">{updateText(update)}</span>
+          </Row>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {update?.state === "ready" ? (
+            <Button className="gap-2" onClick={() => void desktop!.updates.install()}>
+              <Download className="h-4 w-4" /> Restart and update now
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              className="gap-2"
+              disabled={update?.state === "disabled" || update?.state === "checking" || update?.state === "downloading"}
+              onClick={() => void desktop!.updates.check()}
+            >
+              <RefreshCw className="h-4 w-4" /> Check for updates
+            </Button>
+          )}
         </div>
         {settings && (
           <div className="space-y-3 text-sm">

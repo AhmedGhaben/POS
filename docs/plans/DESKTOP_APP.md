@@ -663,6 +663,65 @@ CustomerDisplayService
   Signing (Azure Trusted Signing, about $10/month, or an OV certificate,
   about $200–400/year) must be added before selling widely.
 
+**Part E status (2026-10-09): built. The first release is waiting on the
+user's go-ahead.**
+
+- **Feed.** The repository `AhmedGhaben/POS` turned out to be **public**,
+  so updates come straight from its GitHub Releases. There's no separate
+  releases repo and no token in the app. If the repo goes private, switch
+  `publish` to a public releases repo or the production server.
+- **`electron-updater`** (`src/updater.ts`):
+  - Checks 15 s after start, then every 4 h, and on "Check for updates".
+  - Downloads in the background, verifies sha512, and installs **when the
+    app quits**. It never restarts on its own.
+  - "Restart and update now" is on This device, and the POS top bar shows
+    an "Update x ready" hint.
+  - Errors are shown in plain words (offline, nothing published yet).
+  - `POS_DESKTOP_UPDATE_URL` points at a local feed for testing, and
+    `POS_DESKTOP_UPDATE_INSTALL_ON_QUIT=0` stops installs.
+- **Release pipeline:** `.github/workflows/desktop-release.yml` runs on a
+  `v*` tag on `windows-latest`:
+  - checks the tag matches `apps/desktop` version
+  - runs the unit tests and builds
+  - runs `electron-builder --publish always` with `GITHUB_TOKEN`
+- **Builds** (`electron-builder.config.js`, replacing the `build` block in
+  package.json):
+  - App icon rendered from the PWA SVG (`build/icon.png`, `build/icon.ico`).
+  - Release builds apply **Electron fuses**: no RunAsNode, no
+    NODE_OPTIONS, no inspect flags, load only from the asar, encrypted
+    cookies, and asar integrity when the exe is edited (CI).
+  - `dist:test` builds leave the inspect flags on for Playwright.
+  - CI also writes the icon and version info into POS.exe. Locally that
+    needs Developer Mode, so `POS_EDIT_EXE=1` turns it on.
+- **Also done:** PNG PWA icons (192/512) and an apple-touch-icon for the web
+  app, the item left over from launch item #4.
+- **Version is now 0.2.0.**
+- **Tests:**
+  - `e2e/updates.spec.ts` (3): a packaged 0.2.0 against a local 0.2.1 feed.
+    - Update server unreachable: a clear message.
+    - The update is found, downloaded, verified and shown as ready, with
+      the POS top-bar hint.
+    - Both steps are logged.
+  - The whole desktop suite also passes on the packaged test build (52/52).
+  - The release build (with fuses) was smoke-run. It starts normally, and
+    `ELECTRON_RUN_AS_NODE` is ignored.
+- **Incidents while testing, both fixed:**
+  1. The first update test closed the app with a downloaded update, so
+     install-on-quit **installed the 0.1.1 test build over the POS
+     installed on this PC**. The user's data was untouched. Fix: the test
+     launcher always sets `POS_DESKTOP_UPDATE_INSTALL_ON_QUIT=0`, and the
+     version was bumped to 0.2.0, so the real installer upgrades over it.
+  2. The smoke run showed the console log transport looping on EPIPE when
+     stdout was a closed pipe (about 8 MB of log in seconds, capped by
+     rotation). Fix: no console transport in the packaged app, and EPIPE
+     is ignored in the crash handler. Verified by re-running the same
+     scenario.
+- **Still open:**
+  - Code signing: SmartScreen still warns until a certificate is added
+    (`CSC_LINK`/`CSC_KEY_PASSWORD` secrets).
+  - The first real release (`v0.2.0`) needs the user's OK, because it
+    publishes the installer publicly.
+
 ### F. (Follow-up, not v1) Offline cashier switching
 
 A per-employee PIN lock and unlock that works offline, as described under

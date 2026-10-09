@@ -26,6 +26,7 @@ import {
 import { openDrawer } from "./hardware/drawer";
 import { listComPorts, stopRawPrintHelper, warmRawPrintHelper } from "./hardware/transports";
 import { closePrintWindow, listPrinters, printJob, printJobSchema } from "./printing";
+import { checkForUpdates, getUpdateStatus, initUpdater, installUpdateNow } from "./updater";
 import { APP_ORIGIN, handleAppScheme, registerAppScheme } from "./protocol";
 
 // Tests (and a second profile on one PC) point the app at another data folder.
@@ -33,14 +34,18 @@ if (process.env.POS_DESKTOP_USER_DATA) {
   app.setPath("userData", path.resolve(process.env.POS_DESKTOP_USER_DATA));
 }
 
-initLogging();
+initLogging(app.isPackaged);
 registerAppScheme();
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 }
 
-process.on("uncaughtException", (err) => log.error("[main] uncaught", err));
+process.on("uncaughtException", (err: NodeJS.ErrnoException) => {
+  // A closed stdout/stderr is not worth logging (and logging it could loop).
+  if (err.code === "EPIPE") return;
+  log.error("[main] uncaught", err);
+});
 process.on("unhandledRejection", (err) => log.error("[main] unhandled rejection", err));
 
 let mainWindow: BrowserWindow | null = null;
@@ -234,6 +239,12 @@ function registerIpc() {
 
   handle("display:screens", z.tuple([]), listScreens);
 
+  handle("updates:status", z.tuple([]), getUpdateStatus);
+
+  handle("updates:check", z.tuple([]), checkForUpdates);
+
+  handle("updates:install", z.tuple([]), installUpdateNow);
+
   handle(
     "log:write",
     z.tuple([z.enum(["info", "warn", "error"]), z.string().max(2000)]),
@@ -278,6 +289,7 @@ app.whenReady().then(() => {
   createWindow();
   warmIfNeeded();
   applyDisplaySettings();
+  initUpdater();
 });
 
 app.on("before-quit", () => {

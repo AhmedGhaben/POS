@@ -25,7 +25,11 @@ export default defineConfig(({ mode }) => ({
         theme_color: "#0a0a0a",
         background_color: "#0a0a0a",
         display: "standalone",
-        icons: [{ src: "/pwa-icon.svg", sizes: "any", type: "image/svg+xml" }],
+        icons: [
+          { src: "/pwa-icon.svg", sizes: "any", type: "image/svg+xml" },
+          { src: "/pwa-192.png", sizes: "192x192", type: "image/png" },
+          { src: "/pwa-512.png", sizes: "512x512", type: "image/png" },
+        ],
       },
       workbox: {
         navigateFallbackDenylist: [/^\/api\//],

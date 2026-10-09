@@ -106,7 +106,8 @@ export async function launch(
   const executablePath = process.env.POS_DESKTOP_EXECUTABLE;
   const app = await electron.launch({
     ...(executablePath ? { executablePath: path.resolve(executablePath), args: [] } : { args: [path.resolve(__dirname, "..")] }),
-    env: { ...process.env, POS_DESKTOP_USER_DATA: userData, ...extraEnv } as Record<string, string>,
+    // Tests never let the updater install anything on this PC.
+    env: { ...process.env, POS_DESKTOP_USER_DATA: userData, POS_DESKTOP_UPDATE_INSTALL_ON_QUIT: "0", ...extraEnv } as Record<string, string>,
   });
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");

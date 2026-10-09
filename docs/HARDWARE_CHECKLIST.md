@@ -149,6 +149,22 @@ Display used: `__________`
   newest item.
 - [ ] Restart the app: the customer screen comes back on its own.
 
+## Updates (part E)
+
+- [ ] Install `POS-Setup-<version>.exe` from the repository's GitHub
+  Releases page. This device → Updates says **Up to date** (after about
+  15 s, or after Check for updates).
+- [ ] When a newer release is published: within 4 hours (or straight away
+  with Check for updates) it says **Version x ready, installs on the next
+  restart**, and the POS top bar shows "Update x ready". Selling is not
+  interrupted.
+- [ ] Close and reopen the app: it's the new version (This device →
+  Desktop version). Settings, the till registration and pending offline
+  sales are all still there.
+- [ ] **Restart and update now** installs and reopens the app.
+- [ ] No internet: Updates says it couldn't reach the update server, and
+  nothing else is affected.
+
 ## Power cut
 
 - [ ] With the server unreachable, make a cash sale and wait for "Saved
