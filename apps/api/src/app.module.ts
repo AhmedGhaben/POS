@@ -24,6 +24,7 @@ import { TransfersModule } from "./transfers/transfers.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { InsightsModule } from "./insights/insights.module";
 import { HealthModule } from "./health/health.module";
+import { TerminalsModule } from "./terminals/terminals.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
@@ -54,6 +55,7 @@ import { PermissionsModule } from "./common/permissions/permissions.module";
     InventoryModule,
     CustomersModule,
     SalesModule,
+    TerminalsModule,
     SuppliersModule,
     EmployeesModule,
     PurchasesModule,

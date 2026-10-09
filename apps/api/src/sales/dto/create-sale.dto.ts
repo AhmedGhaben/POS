@@ -4,9 +4,12 @@ import {
   IsEmail,
   IsEnum,
   IsInt,
+  IsISO8601,
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
+  Max,
   Min,
   ValidateNested,
 } from "class-validator";
@@ -19,6 +22,25 @@ export class SaleLineItemInputDto {
   @IsInt()
   @Min(1)
   quantity!: number;
+
+  /** Offline sales only: the price the till charged. */
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  unitPrice?: number;
+
+  /** Offline sales only: the tax rate (%) the till applied. */
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  taxRate?: number;
+}
+
+/** Present when the till rang the sale up without reaching the server. */
+export class OfflineSaleInfoDto {
+  @IsISO8601()
+  createdAt!: string;
 }
 
 export class SalePaymentInputDto {
@@ -38,6 +60,20 @@ export class SalePaymentInputDto {
 export class CreateSaleDto {
   @IsString()
   storeId!: string;
+
+  /** Idempotency key from the till; required for offline sales. */
+  @IsOptional()
+  @IsUUID()
+  clientId?: string;
+
+  @IsOptional()
+  @IsString()
+  terminalId?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => OfflineSaleInfoDto)
+  offline?: OfflineSaleInfoDto;
 
   @IsOptional()
   @IsString()

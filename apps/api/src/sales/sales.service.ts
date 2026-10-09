@@ -4,6 +4,37 @@ import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { CreateSaleDto } from "./dto/create-sale.dto";
 
+/** How far an offline sale's clock may run ahead of the server's. */
+const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
+
+/**
+ * Receipt number for a sale rung up offline. The till prints the same value
+ * before the server has seen the sale (keep in step with
+ * apps/web/src/features/pos/offline-sale.ts), so a later return can find the
+ * sale by what's on the paper.
+ */
+export function offlineReceiptNumber(storeId: string, clientId: string): string {
+  const store = storeId.slice(-4).toUpperCase();
+  const client = clientId.replace(/-/g, "").slice(0, 12).toUpperCase();
+  return `OFF-${store}-${client}`;
+}
+
+function isUniqueViolation(error: unknown, field: string): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002" &&
+    JSON.stringify(error.meta?.target ?? "").includes(field)
+  );
+}
+
+function clampToNow(date: Date): Date {
+  const now = Date.now();
+  if (Number.isNaN(date.getTime()) || date.getTime() > now + MAX_CLOCK_SKEW_MS) {
+    return new Date(now);
+  }
+  return date;
+}
+
 const SALE_INCLUDE = {
   lineItems: { include: { product: true } },
   payments: true,
@@ -28,6 +59,17 @@ export class SalesService {
   }
 
   async create(businessId: string, cashierId: string, dto: CreateSaleDto) {
+    const offline = dto.offline;
+    if (offline && !dto.clientId) {
+      throw new BadRequestException("Offline sales need a clientId");
+    }
+
+    // A retry of a sale the server already has (e.g. the response was lost).
+    if (dto.clientId) {
+      const existing = await this.findByClientId(dto.storeId, dto.clientId);
+      if (existing) return existing;
+    }
+
     const productIds = dto.lineItems.map((li) => li.productId);
     const products = await this.prisma.product.findMany({
       where: { id: { in: productIds }, businessId },
@@ -41,9 +83,15 @@ export class SalesService {
     let taxTotal = new Prisma.Decimal(0);
     const lineItemsData = dto.lineItems.map((li) => {
       const product = productById.get(li.productId)!;
-      const unitPrice = product.sellPrice;
+      // An offline sale records what already happened at the till, so it
+      // keeps the price and tax the cashier charged even if they've changed
+      // on the server since.
+      const unitPrice =
+        offline && li.unitPrice !== undefined ? new Prisma.Decimal(li.unitPrice) : product.sellPrice;
+      const taxRate =
+        offline && li.taxRate !== undefined ? new Prisma.Decimal(li.taxRate) : product.taxRate;
       const lineSubtotal = unitPrice.mul(li.quantity);
-      const taxAmount = lineSubtotal.mul(product.taxRate).div(100);
+      const taxAmount = lineSubtotal.mul(taxRate).div(100);
       const lineTotal = lineSubtotal.add(taxAmount);
 
       subtotal = subtotal.add(lineSubtotal);
@@ -59,7 +107,9 @@ export class SalesService {
       };
     });
     const total = subtotal.add(taxTotal);
-    const receiptNumber = `${dto.storeId.slice(-4).toUpperCase()}-${Date.now()}`;
+    const receiptNumber = offline
+      ? offlineReceiptNumber(dto.storeId, dto.clientId!)
+      : `${dto.storeId.slice(-4).toUpperCase()}-${Date.now()}`;
 
     const paymentsTotal = dto.payments.reduce(
       (sum, p) => sum.add(new Prisma.Decimal(p.amount)),
@@ -86,43 +136,76 @@ export class SalesService {
       return { method: p.method, amount, tendered, change };
     });
 
-    const sale = await this.prisma.$transaction(async (tx) => {
-      for (const li of dto.lineItems) {
-        const inventoryItem = await tx.inventoryItem.findUnique({
-          where: { storeId_productId: { storeId: dto.storeId, productId: li.productId } },
-        });
-        if (!inventoryItem || inventoryItem.quantity < li.quantity) {
-          const product = productById.get(li.productId)!;
-          throw new BadRequestException(`Insufficient stock for "${product.name}"`);
+    const terminalId = await this.resolveTerminal(businessId, dto.terminalId);
+    const createdAt = offline ? clampToNow(new Date(offline.createdAt)) : undefined;
+
+    let sale: Prisma.SaleGetPayload<{ include: typeof SALE_INCLUDE }>;
+    try {
+      sale = await this.prisma.$transaction(async (tx) => {
+        if (offline) {
+          // The goods already left the shop: record the sale even if the
+          // server's stock count says there weren't enough.
+          for (const li of dto.lineItems) {
+            await tx.inventoryItem.upsert({
+              where: { storeId_productId: { storeId: dto.storeId, productId: li.productId } },
+              update: { quantity: { decrement: li.quantity } },
+              create: { storeId: dto.storeId, productId: li.productId, quantity: -li.quantity },
+            });
+          }
+        } else {
+          for (const li of dto.lineItems) {
+            const inventoryItem = await tx.inventoryItem.findUnique({
+              where: { storeId_productId: { storeId: dto.storeId, productId: li.productId } },
+            });
+            if (!inventoryItem || inventoryItem.quantity < li.quantity) {
+              const product = productById.get(li.productId)!;
+              throw new BadRequestException(`Insufficient stock for "${product.name}"`);
+            }
+          }
+
+          for (const li of dto.lineItems) {
+            await tx.inventoryItem.update({
+              where: { storeId_productId: { storeId: dto.storeId, productId: li.productId } },
+              data: { quantity: { decrement: li.quantity } },
+            });
+          }
         }
-      }
 
-      for (const li of dto.lineItems) {
-        await tx.inventoryItem.update({
-          where: { storeId_productId: { storeId: dto.storeId, productId: li.productId } },
-          data: { quantity: { decrement: li.quantity } },
+        if (terminalId) {
+          await tx.terminal.update({ where: { id: terminalId }, data: { lastSeenAt: new Date() } });
+        }
+
+        return tx.sale.create({
+          data: {
+            storeId: dto.storeId,
+            cashierId,
+            customerId: dto.customerId,
+            receiptNumber,
+            subtotal,
+            taxTotal,
+            discountTotal: new Prisma.Decimal(0),
+            total,
+            paymentMethod: dto.payments[0].method,
+            amountTendered,
+            changeDue,
+            clientId: dto.clientId,
+            createdOffline: !!offline,
+            terminalId,
+            ...(createdAt ? { createdAt } : {}),
+            lineItems: { create: lineItemsData },
+            payments: { create: paymentsData },
+          },
+          include: SALE_INCLUDE,
         });
-      }
-
-      return tx.sale.create({
-        data: {
-          storeId: dto.storeId,
-          cashierId,
-          customerId: dto.customerId,
-          receiptNumber,
-          subtotal,
-          taxTotal,
-          discountTotal: new Prisma.Decimal(0),
-          total,
-          paymentMethod: dto.payments[0].method,
-          amountTendered,
-          changeDue,
-          lineItems: { create: lineItemsData },
-          payments: { create: paymentsData },
-        },
-        include: SALE_INCLUDE,
       });
-    });
+    } catch (error) {
+      // Two copies of the same sale raced and the other one won.
+      if (dto.clientId && isUniqueViolation(error, "clientId")) {
+        const existing = await this.findByClientId(dto.storeId, dto.clientId);
+        if (existing) return existing;
+      }
+      throw error;
+    }
 
     // Best-effort — a mail failure shouldn't fail an already-completed sale.
     this.emailReceiptIfRequested(dto, sale).catch((error) => {
@@ -130,6 +213,27 @@ export class SalesService {
     });
 
     return sale;
+  }
+
+  private findByClientId(storeId: string, clientId: string) {
+    return this.prisma.sale.findUnique({
+      where: { storeId_clientId: { storeId, clientId } },
+      include: SALE_INCLUDE,
+    });
+  }
+
+  /** A till that's been removed is ignored rather than failing a sale that
+   * already happened. */
+  private async resolveTerminal(businessId: string, terminalId?: string): Promise<string | null> {
+    if (!terminalId) return null;
+    const terminal = await this.prisma.terminal.findFirst({
+      where: { id: terminalId, businessId },
+      select: { id: true },
+    });
+    if (!terminal) {
+      this.logger.warn(`Ignoring unknown terminal ${terminalId} on a sale`);
+    }
+    return terminal?.id ?? null;
   }
 
   private async emailReceiptIfRequested(
