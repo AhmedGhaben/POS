@@ -94,7 +94,12 @@ export async function addToOutbox(
 ): Promise<OutboxEntry> {
   const db = await getDb();
   const full: OutboxEntry = { ...entry, state: "pending", attempts: 0 };
-  await db.put("outbox", full);
+  // "strict": the browser flushes this to disk before reporting success, so
+  // a sale that showed "Saved offline" survives a power cut the next second.
+  // (Chromium's default lets the OS hold the write in a cache first.)
+  const tx = db.transaction("outbox", "readwrite", { durability: "strict" });
+  await tx.store.put(full);
+  await tx.done;
   return full;
 }
 

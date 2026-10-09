@@ -360,6 +360,14 @@ Receipt printer / A4 printer / Cash drawer / Customer display   (B–D)
     the log. **They also all pass against the packaged
     `release/win-unpacked/POS.exe`** (`POS_DESKTOP_EXECUTABLE=…`).
 
+- **Power-cut safety (2026-10-09):**
+  - Outbox writes use IndexedDB `durability: "strict"`, so the sale is
+    flushed to disk before "Saved offline" shows.
+  - Tested by force-killing the whole app process tree right after an
+    offline sale: it was still queued on relaunch and synced once.
+  - A real power cut has to be tried on hardware (it's in the acceptance
+    list).
+
 **Known limits, carried forward:**
 - **No app icon or exe metadata yet.** `signAndEditExecutable: false`,
   because electron-builder's Windows tool archive needs symlink rights

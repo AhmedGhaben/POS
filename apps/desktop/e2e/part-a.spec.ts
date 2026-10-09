@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
@@ -113,6 +114,42 @@ test.describe.serial("Part A: terminal, outbox and sync", () => {
     expect(byClient(queued[1]).createdOffline).toBe(false);
     const states = Object.fromEntries((await outbox(page)).map((e) => [e.clientId, e.state]));
     expect(queued.map((id) => states[id])).toEqual(["synced", "synced"]);
+  });
+
+  test("a hard kill right after an offline sale keeps the sale, and it syncs on restart", async () => {
+    await openPosWithProducts(page);
+    await proxy.down();
+    const receipt = await sellFirstProduct(page);
+    expect(receipt).toContain("Saved offline");
+    const [killed] = (await outbox(page)).filter((e) => e.state === "pending");
+
+    // No clean shutdown: force-kill the whole process tree, the closest a
+    // test can get to pulling the plug.
+    execSync(`taskkill /PID ${app.process().pid} /T /F`, { stdio: "ignore" });
+    ({ app, page } = await launch(userData));
+    await page.goto("app://pos/pos");
+    await expect(status()).toContainText("1 sale waiting to sync");
+
+    await proxy.up();
+    await expect(status()).toBeHidden({ timeout: 70_000 });
+    const sales = await serverSales(page);
+    expect(sales.filter((s) => s.clientId === killed.clientId)).toHaveLength(1);
+  });
+
+  test("Point of Sale stays in the bottom-left corner while back-office pages scroll", async () => {
+    await page.goto("app://pos/dashboard");
+    const pos = page.getByRole("link", { name: "Point of Sale" });
+    await expect(pos).toBeVisible();
+    // Make sure the page really is taller than the window, then scroll to the end.
+    await page.evaluate(() => {
+      document.querySelector("main")!.insertAdjacentHTML("beforeend", '<div style="height:3000px"></div>');
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+    const viewport = page.viewportSize() ?? (await page.evaluate(() => ({ width: innerWidth, height: innerHeight })));
+    const box = (await pos.boundingBox())!;
+    expect(box.x).toBeLessThan(250);
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+    expect(box.y).toBeGreaterThan(viewport.height - 120);
   });
 
   test("the log records sync activity and no secrets", async () => {
