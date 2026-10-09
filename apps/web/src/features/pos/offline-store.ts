@@ -25,7 +25,8 @@ interface OfflineState {
 export const useOfflineStore = create<OfflineState>()(
   persist(
     (set) => ({
-      internet: navigator.onLine,
+      // No `navigator` outside a browser (e.g. unit tests on Node 20).
+      internet: typeof navigator === "undefined" ? true : navigator.onLine,
       server: "unknown",
       pendingCount: 0,
       failedCount: 0,
