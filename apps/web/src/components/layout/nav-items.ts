@@ -10,6 +10,7 @@ import {
   Undo2,
   ArrowLeftRight,
   Settings,
+  MonitorCog,
   type LucideIcon,
 } from "lucide-react";
 
@@ -32,6 +33,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/suppliers", label: "Suppliers", icon: Truck },
   { to: "/employees", label: "Employees", icon: Users },
   { to: "/settings", label: "Settings", icon: Settings, ownerOnly: true },
+  { to: "/device", label: "This device", icon: MonitorCog },
 ];
 
 /** Back-office nav for a role: cashiers get none, managers skip owner-only items. */

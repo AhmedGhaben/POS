@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ProductDto } from "@pos/shared";
-import { fetchProducts } from "@/features/products/api";
+import { posFetchProducts } from "@/features/pos/catalog";
 import { useMoney } from "@/features/business/use-money";
 
 interface ProductGridProps {
@@ -13,7 +13,7 @@ export function ProductGrid({ categoryId, onSelect }: ProductGridProps) {
   const money = useMoney();
   const productsQuery = useQuery({
     queryKey: ["pos-category-products", categoryId],
-    queryFn: () => fetchProducts(undefined, categoryId ?? undefined),
+    queryFn: () => posFetchProducts(undefined, categoryId ?? undefined),
     enabled: !!categoryId,
   });
 

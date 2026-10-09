@@ -30,7 +30,7 @@ export function IssueInvoiceDialog({ sale, customer, onClose }: IssueInvoiceDial
   const [saveToCustomer, setSaveToCustomer] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [invoice, setInvoice] = React.useState<InvoiceDto | null>(null);
-  const isOffline = sale?.receiptNumber.startsWith("OFFLINE-") ?? false;
+  const isOffline = sale?.queued ?? false;
 
   React.useEffect(() => {
     if (!sale) return;

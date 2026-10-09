@@ -1,81 +1,61 @@
-import * as React from "react";
 import { toast } from "sonner";
-import { WifiOff, RefreshCw } from "lucide-react";
+import { AlertTriangle, CloudOff, RefreshCw } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useOfflineStore } from "@/features/pos/offline-store";
-import { syncPendingSales } from "@/features/pos/sync";
+import { Badge, badgeVariants } from "@/components/ui/badge";
+import { isWorkingOffline, useOfflineStore } from "@/features/pos/offline-store";
+import { syncOutbox } from "@/features/pos/sync";
 
-/** Shows an "Offline" badge while disconnected and a pending-sale count with
- * a manual "Sync now" fallback — auto-syncs on the browser's `online` event,
- * but that event isn't always reliable, so a manual retry stays available. */
+function plural(n: number, word: string) {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
+}
+
+/**
+ * Connectivity and sync status for the cashier: "Working offline — 4 sales
+ * waiting to sync", "Syncing 4 sales…", failures. Sync itself runs in the
+ * background (startSyncEngine); "Retry sync" just runs it now.
+ */
 export function OfflineIndicator() {
-  const isOnline = useOfflineStore((s) => s.isOnline);
+  const internet = useOfflineStore((s) => s.internet);
+  const server = useOfflineStore((s) => s.server);
   const pendingCount = useOfflineStore((s) => s.pendingCount);
+  const failedCount = useOfflineStore((s) => s.failedCount);
   const isSyncing = useOfflineStore((s) => s.isSyncing);
-  const setOnline = useOfflineStore((s) => s.setOnline);
-  const setSyncing = useOfflineStore((s) => s.setSyncing);
-  const refreshPendingCount = useOfflineStore((s) => s.refreshPendingCount);
+  const offline = isWorkingOffline({ internet, server });
 
-  const runSync = React.useCallback(async () => {
-    setSyncing(true);
-    try {
-      const { synced, failed } = await syncPendingSales();
-      if (synced > 0) {
-        toast.success(`Synced ${synced} offline sale${synced === 1 ? "" : "s"}`);
-      }
-      if (failed > 0) {
-        toast.error(
-          `${failed} offline sale${failed === 1 ? "" : "s"} failed to sync — needs review`,
-        );
-      }
-    } finally {
-      setSyncing(false);
-      await refreshPendingCount();
-    }
-  }, [setSyncing, refreshPendingCount]);
+  async function retry() {
+    const { synced, failed, interrupted } = await syncOutbox();
+    if (synced > 0) toast.success(`Synced ${plural(synced, "sale")}`);
+    if (failed > 0) toast.error(`${plural(failed, "sale")} failed to sync — needs review`);
+    if (interrupted) toast.error("Couldn't reach the server — will keep trying");
+  }
 
-  React.useEffect(() => {
-    refreshPendingCount();
-
-    function handleOnline() {
-      setOnline(true);
-      runSync();
-    }
-    function handleOffline() {
-      setOnline(false);
-    }
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  if (isOnline && pendingCount === 0) {
+  if (!offline && pendingCount === 0 && failedCount === 0 && !isSyncing) {
     return null;
   }
 
   return (
-    <div className="flex items-center gap-2">
-      {!isOnline && (
-        <Badge variant="destructive" className="gap-1">
-          <WifiOff className="h-3 w-3" /> Offline
+    <div className="flex items-center gap-2" data-testid="sync-status">
+      {offline && (
+        <Badge variant="destructive" className="gap-1" title={internet ? "The POS server can't be reached" : "No internet connection"}>
+          <CloudOff className="h-3 w-3" />
+          {pendingCount > 0 ? `Working offline — ${plural(pendingCount, "sale")} waiting to sync` : "Working offline"}
         </Badge>
       )}
+      {!offline && isSyncing && pendingCount > 0 && (
+        <Badge variant="secondary" className="gap-1">
+          <RefreshCw className="h-3 w-3 animate-spin" /> Syncing {plural(pendingCount, "sale")}…
+        </Badge>
+      )}
+      {failedCount > 0 && (
+        <Link to="/device" className={badgeVariants({ variant: "destructive", className: "gap-1" })}>
+          <AlertTriangle className="h-3 w-3" /> {plural(failedCount, "sale")} failed to sync
+        </Link>
+      )}
       {pendingCount > 0 && (
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!isOnline || isSyncing}
-          onClick={runSync}
-          className="gap-1"
-        >
+        <Button variant="outline" size="sm" disabled={isSyncing} onClick={retry} className="gap-1">
           <RefreshCw className={`h-3 w-3 ${isSyncing ? "animate-spin" : ""}`} />
-          {isSyncing ? "Syncing..." : `${pendingCount} pending`}
+          Retry sync
         </Button>
       )}
     </div>

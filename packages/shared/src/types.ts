@@ -488,6 +488,8 @@ export interface SaleDto {
   createdAt: string;
   createdOffline?: boolean;
   terminalId?: string | null;
+  /** Client-only: a receipt built on the till for a sale still waiting in the outbox. */
+  queued?: boolean;
   lineItems: SaleLineItemDto[];
   payments: SalePaymentDto[];
 }

@@ -1,5 +1,15 @@
 import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
-import { API_URL, launch, refreshStatus, SwitchableProxy, tempUserData } from "./helpers";
+import {
+  API_URL,
+  connect,
+  launch,
+  login,
+  openPosWithProducts,
+  refreshStatus,
+  sellFirstProduct,
+  SwitchableProxy,
+  tempUserData,
+} from "./helpers";
 
 /**
  * A0 proof of concept (docs/plans/DESKTOP_APP.md): the bundled web app,
@@ -18,24 +28,7 @@ test.describe.serial("A0: desktop shell, auth and offline", () => {
     ({ app, page } = await launch(userData));
   }
 
-  async function openPos() {
-    await page.goto("app://pos/pos");
-    await expect(page.getByRole("button", { name: /^Charge/ })).toBeVisible();
-  }
-
-  /** Picks the first category so its products are loaded (and cached in memory). */
-  async function showFirstCategory() {
-    await page.getByRole("button", { name: "All", exact: true }).locator("xpath=following-sibling::button[1]").click();
-    await expect(page.locator("div.grid > button.text-left").first()).toBeVisible();
-  }
-
-  async function sellFirstProduct() {
-    await page.locator("div.grid > button.text-left").first().click();
-    await page.getByRole("button", { name: /^Charge/ }).click();
-    await expect(page.getByRole("dialog")).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog")).toBeHidden();
-  }
+  const waiting = (n: number) => page.getByText(new RegExp(`${n} sales? waiting to sync`));
 
   test.beforeAll(async () => {
     await proxy.up();
@@ -53,7 +46,11 @@ test.describe.serial("A0: desktop shell, auth and offline", () => {
       process: typeof (window as unknown as { process?: unknown }).process,
       bridge: Object.keys((window as unknown as { posDesktop: object }).posDesktop).sort(),
     }));
-    expect(env).toEqual({ require: "undefined", process: "undefined", bridge: ["app", "settings"] });
+    expect(env).toEqual({
+      require: "undefined",
+      process: "undefined",
+      bridge: ["app", "log", "settings", "terminal"],
+    });
   });
 
   test("first run asks for the server address and rejects a bad one", async () => {
@@ -62,8 +59,7 @@ test.describe.serial("A0: desktop shell, auth and offline", () => {
     await page.getByRole("button", { name: "Connect" }).click();
     await expect(page.getByRole("alert")).toContainText("Couldn't reach");
 
-    await page.getByLabel("Server address").fill(proxy.url);
-    await page.getByRole("button", { name: "Connect" }).click();
+    await connect(page, proxy.url);
     await expect(page).toHaveURL(/^app:\/\/pos\/login/);
   });
 
@@ -75,11 +71,18 @@ test.describe.serial("A0: desktop shell, auth and offline", () => {
     expect(page.url()).toMatch(/^app:\/\/pos\//);
   });
 
+  test("a call with bad arguments is refused by the main process", async () => {
+    const error = await page.evaluate(() =>
+      (window as unknown as { posDesktop: { terminal: { set: (t: unknown) => Promise<void> } } }).posDesktop.terminal
+        .set({ id: 42 })
+        .then(() => "accepted")
+        .catch((e: Error) => e.message),
+    );
+    expect(error).toContain("Invalid arguments");
+  });
+
   test("logs in through the forwarded API", async () => {
-    await page.getByLabel("Email").fill("owner@demo-store.test");
-    await page.getByLabel("Password").fill("OwnerPass123!");
-    await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page).not.toHaveURL(/\/login/);
+    await login(page);
     // The refresh cookie is httpOnly and held by the main process, not the page.
     expect(await page.evaluate(() => document.cookie)).not.toContain("refresh");
   });
@@ -87,7 +90,7 @@ test.describe.serial("A0: desktop shell, auth and offline", () => {
   test("session survives closing and reopening the app", async () => {
     await restart();
     await expect(page).not.toHaveURL(/\/login|setup\.html/);
-    await openPos();
+    await openPosWithProducts(page);
     expect(await refreshStatus(page)).toBe(200);
   });
 
@@ -98,7 +101,7 @@ test.describe.serial("A0: desktop shell, auth and offline", () => {
       localStorage.setItem("pos-auth", JSON.stringify(raw));
     });
     await page.reload();
-    await openPos();
+    await openPosWithProducts(page);
     await expect
       .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("pos-auth")!).state.accessToken))
       .toMatch(/^ey/);
@@ -106,11 +109,11 @@ test.describe.serial("A0: desktop shell, auth and offline", () => {
   });
 
   test("server goes down mid-session: the POS keeps selling", async () => {
-    await openPos();
-    await showFirstCategory();
+    await openPosWithProducts(page);
     await proxy.down();
-    await sellFirstProduct();
-    await expect(page.getByRole("button", { name: /1 pending/ })).toBeVisible();
+    const receipt = await sellFirstProduct(page);
+    expect(receipt).toContain("Saved offline");
+    await expect(waiting(1)).toBeVisible();
     await expect(page).not.toHaveURL(/\/login/);
   });
 
@@ -118,33 +121,23 @@ test.describe.serial("A0: desktop shell, auth and offline", () => {
     await restart();
     await expect(page).not.toHaveURL(/\/login|setup\.html/);
     await page.goto("app://pos/pos");
-    await expect(page.getByRole("button", { name: /1 pending/ })).toBeVisible();
+    await expect(waiting(1)).toBeVisible();
   });
 
-  // Known gap 5 (plan): the catalog lives only in memory/the service worker,
-  // so after an offline restart there is nothing to sell. Fixed in part A.
-  test("restart while the server is down still shows the catalog", async () => {
-    test.fail(true, "gap 5: no offline catalog without a service worker (part A)");
-    await expect(page.getByRole("button", { name: "All", exact: true })).toBeVisible({ timeout: 5_000 });
+  test("restart while the server is down still shows the saved catalog", async () => {
+    await openPosWithProducts(page);
+    await sellFirstProduct(page);
+    await expect(waiting(2)).toBeVisible();
   });
 
-  // Known gap 4 (plan): nothing retries on its own when only the server was
-  // down (the browser never fires "online"). Fixed in part A.
   test("server back: the queue syncs without a click", async () => {
-    test.fail(true, "gap 4: no automatic sync when the server returns (part A)");
     await proxy.up();
-    await expect(page.getByRole("button", { name: /pending/ })).toBeHidden({ timeout: 10_000 });
-  });
-
-  test("server back: the queued sale syncs", async () => {
-    await proxy.up();
-    await page.getByRole("button", { name: /1 pending/ }).click();
-    await expect(page.getByRole("button", { name: /pending/ })).toBeHidden();
-    await expect(page.getByText(/Synced 1 offline sale/)).toBeVisible();
+    // The engine retries on a timer with backoff; this checks it gets there.
+    await expect(page.getByTestId("sync-status")).toBeHidden({ timeout: 70_000 });
   });
 
   test("logout clears the session and the refresh cookie", async () => {
-    await openPos();
+    await page.goto("app://pos/pos");
     await page.getByRole("button", { name: "Log out" }).click();
     await expect(page).toHaveURL(/\/login/);
     expect(await refreshStatus(page)).toBe(401);

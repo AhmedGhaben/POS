@@ -24,6 +24,7 @@ import { ReturnsPage } from "@/routes/returns";
 import { TransfersPage } from "@/routes/transfers";
 import { SettingsPage } from "@/routes/settings";
 import { InvoicesPage } from "@/routes/invoices";
+import { DevicePage } from "@/routes/device";
 
 /** Owner/Manager default to the back office; Cashier defaults straight to POS. */
 function DefaultLanding() {
@@ -46,6 +47,7 @@ export function App() {
           <Route path="/welcome" element={<WelcomePage />} />
           <Route element={<PosShell />}>
             <Route path="/pos" element={<PosPage />} />
+            <Route path="/device" element={<DevicePage />} />
           </Route>
           <Route element={<BackOfficeRoute />}>
             <Route element={<BackOfficeShell />}>

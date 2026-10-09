@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { PaymentMethod, Prisma } from "@prisma/client";
-import { SalesService } from "./sales.service";
+import { offlineReceiptNumber, SalesService } from "./sales.service";
 
 function buildProduct(sellPrice: number, taxRate = 0) {
   return {
@@ -133,5 +133,13 @@ describe("SalesService#create", () => {
     const cardLeg = (sale as any).payments.find((p: any) => p.method === PaymentMethod.CARD);
     expect(cardLeg.tendered).toBeNull();
     expect(cardLeg.change).toBeNull();
+  });
+});
+
+describe("offlineReceiptNumber", () => {
+  it("matches the till's formula (same vector as apps/web sync.test.ts)", () => {
+    expect(offlineReceiptNumber("cmstore0000abcd", "3f2a9c1e-7b4d-4e8f-9a01-23456789abcd")).toBe(
+      "OFF-ABCD-3F2A9C1E7B4D",
+    );
   });
 });

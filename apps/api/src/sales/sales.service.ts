@@ -199,10 +199,15 @@ export class SalesService {
         });
       });
     } catch (error) {
-      // Two copies of the same sale raced and the other one won.
-      if (dto.clientId && isUniqueViolation(error, "clientId")) {
+      // Two copies of the same sale raced and the other one won. Usually a
+      // unique violation, but a copy that waited behind the winner's locks
+      // can fail in other ways too: if the sale exists now, that's success.
+      if (dto.clientId) {
         const existing = await this.findByClientId(dto.storeId, dto.clientId);
         if (existing) return existing;
+        if (isUniqueViolation(error, "clientId")) {
+          this.logger.warn(`Sale ${dto.clientId} hit its unique key but isn't there`);
+        }
       }
       throw error;
     }

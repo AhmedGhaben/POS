@@ -2,7 +2,7 @@ import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { ProductDto } from "@pos/shared";
 import { Input } from "@/components/ui/input";
-import { fetchProducts } from "@/features/products/api";
+import { posFetchProducts } from "@/features/pos/catalog";
 import { findByBarcode } from "@/features/pos/api";
 import { useMoney } from "@/features/business/use-money";
 
@@ -27,7 +27,7 @@ export function ProductSearchInput({ onSelect, suppressRefocusRef }: ProductSear
 
   const searchQuery = useQuery({
     queryKey: ["pos-search", query],
-    queryFn: () => fetchProducts(query),
+    queryFn: () => posFetchProducts(query),
     enabled: query.trim().length > 0,
   });
 
@@ -55,7 +55,7 @@ export function ProductSearchInput({ onSelect, suppressRefocusRef }: ProductSear
       return;
     }
 
-    const results = await fetchProducts(query.trim());
+    const results = await posFetchProducts(query.trim());
     if (results.length === 1) {
       await handleSelect(results[0]);
     }

@@ -3,6 +3,8 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/features/auth/store";
 import { BUSINESS_QUERY_KEY, fetchBusiness } from "@/features/business/api";
+import { useDeviceStore } from "@/features/desktop/bridge";
+import { startSyncEngine } from "@/features/pos/sync";
 import { CommandPalette } from "./CommandPalette";
 
 export function ProtectedRoute() {
@@ -20,6 +22,14 @@ export function ProtectedRoute() {
   React.useEffect(() => {
     if (businessQuery.data) setBusiness(businessQuery.data);
   }, [businessQuery.data, setBusiness]);
+
+  // Background sync of offline sales and the saved catalog, on every page.
+  const signedIn = !!accessToken;
+  React.useEffect(() => {
+    if (!signedIn) return;
+    void useDeviceStore.getState().load();
+    return startSyncEngine();
+  }, [signedIn]);
 
   if (!accessToken) {
     return <Navigate to="/login" replace />;

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchCategories } from "@/features/categories/api";
+import { posFetchCategories } from "@/features/pos/catalog";
 import { cn } from "@/lib/utils";
 
 interface CategoryFilterProps {
@@ -9,7 +9,7 @@ interface CategoryFilterProps {
 
 /** Lets a cashier browse by category when they don't know the exact name/barcode. */
 export function CategoryFilter({ selectedCategoryId, onSelect }: CategoryFilterProps) {
-  const categoriesQuery = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
+  const categoriesQuery = useQuery({ queryKey: ["categories"], queryFn: posFetchCategories });
   const categories = categoriesQuery.data ?? [];
 
   if (categories.length === 0) {

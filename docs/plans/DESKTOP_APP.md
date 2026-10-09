@@ -310,6 +310,72 @@ Receipt printer / A4 printer / Cash drawer / Customer display   (B–D)
 [Open log folder]
 ```
 
+**Part A status (2026-10-09): shipped.**
+
+- **API.**
+  - `Sale.clientId` is unique per store. A repeat, including concurrent
+    copies, returns the existing sale.
+  - A sale sent with `offline: { createdAt }` keeps the till's price, tax,
+    time and receipt number (`OFF-<store>-<client>`, the same formula as the
+    printed receipt). It may take stock below zero, because the goods already
+    left. Such sales are flagged `createdOffline`.
+  - Online sales still check stock and ignore any client prices.
+  - `Terminal` model and `/terminals`: register (owner/manager), list,
+    rename, read own. Sales store `terminalId` and update `lastSeenAt`.
+- **Web: offline foundation.** Gaps 1–6 are fixed.
+  - IndexedDB v2 has the `outbox` (pending/syncing/synced/failed, migrated
+    from v1 `pending-sales`) and the `catalog` snapshot.
+  - Sales use an 8s timeout. Unreachable, 5xx, 408, 429 and a lapsed
+    session all queue the sale instead of failing it.
+  - Internet and server status are tracked separately (502/503/504 count as
+    the server being down).
+  - The app-wide sync engine starts in `ProtectedRoute`. It runs at start,
+    with a 30s health check, on the `online` event, and as soon as any
+    request succeeds again. Backoff applies only while uploads keep erroring.
+  - The POS search, grid, categories and barcode lookup fall back to the
+    saved catalog.
+  - Status shows "Working offline — N sales waiting to sync", "Syncing…",
+    "N failed to sync" and "Retry sync".
+- **This device** (`/device`, every role):
+  - till registration and rename (owner/manager)
+  - server and sync status
+  - failed sales with Retry (nothing is ever deleted)
+  - desktop version
+  - fullscreen till mode, start with Windows, Open log folder
+- **Desktop.**
+  - New typed operations: `terminal.get/set`, `settings.update`,
+    `app.openLogFolder`, `log.write`. Every argument is validated with zod.
+  - The rotating log scrubs Bearer tokens, JWTs, password/token fields and
+    Luhn-valid card numbers.
+  - The NSIS installer is `npm run dist --workspace apps/desktop`, which
+    produces `release/POS-Setup-x.y.z.exe` (about 115 MB).
+- **Tests.**
+  - API e2e: `offline-sales.e2e-spec.ts` (11).
+  - Web unit (13 new): sync rules including the 10-entry partial failure,
+    error classification, offline search, receipt-number vector, which is
+    also in the API spec.
+  - Desktop Playwright: 19 tests (A0 plus `part-a.spec.ts`). They cover
+    till registration, a 502 from the hosting proxy, a response lost after
+    the server saved the sale (synced exactly once), the device page, and
+    the log. **They also all pass against the packaged
+    `release/win-unpacked/POS.exe`** (`POS_DESKTOP_EXECUTABLE=…`).
+
+**Known limits, carried forward:**
+- **No app icon or exe metadata yet.** `signAndEditExecutable: false`,
+  because electron-builder's Windows tool archive needs symlink rights
+  (Developer Mode) on this PC. To fix in E, together with signing and a
+  proper icon.
+- **Electron fuses** (disable RunAsNode, disable the inspect flags) are
+  deferred to E: they would stop Playwright from driving the packaged app,
+  so they need a release-only build step.
+- **The v1→v2 IndexedDB migration has no automated test** (it needs a fake
+  IndexedDB). It's a straight copy of the old queue.
+- **The desktop tests don't run in CI** (they need a display and the API).
+- **One unexplained failure.** One full API e2e run had one failure in
+  `offline-sales` that didn't reproduce in 3 full runs or 5 runs of that
+  file. The sale fallback now returns an existing sale after *any* error
+  once its `clientId` is present.
+
 ### B. Silent printing
 
 - `printDocument(kind)` replaces the four `window.print()` calls. In the

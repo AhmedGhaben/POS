@@ -10,8 +10,8 @@ Prisma backend.
   owner in one step. Then email verification, password reset, and a
   first-run `/welcome` screen.
 - **POS**: product grid and search, barcode scanning, split payments,
-  customers, emailed receipts. Works **offline** and syncs sales when back
-  online (PWA).
+  customers, emailed receipts. Works **offline**: sales are queued on the
+  device and sync automatically, exactly once, when the server is back.
 - **Documents**:
   - 80 mm receipts with logo and business details
   - **quotes** (slip or A4) printed without checking out
@@ -38,8 +38,8 @@ Prisma backend.
 
 - `apps/api`: NestJS backend
 - `apps/web`: React (Vite) frontend
-- `apps/desktop`: Windows app (Electron) wrapping the web app, for an
-  offline till, silent printing and POS hardware (in progress, see
+- `apps/desktop`: Windows app (Electron) wrapping the web app: offline
+  till now; silent printing and POS hardware in progress (see
   `docs/plans/DESKTOP_APP.md`)
 - `packages/shared`: shared TypeScript types/enums
 - `docs/plans/`: design docs per phase/feature, and `LAUNCH_READINESS.md`
@@ -91,24 +91,51 @@ it they're printed to the API console, links included.
 
 ## Windows desktop app (in progress)
 
-`apps/desktop` bundles the web app (built with `--mode desktop`, no service
-worker) and serves it from `app://pos`. Requests to `/api/*` are forwarded to
-the server address chosen on first run, so the refresh cookie stays in the
-main process. Hardware, silent printing and the installer are coming next.
+`apps/desktop` is an Electron app for shop tills. Plan:
+`docs/plans/DESKTOP_APP.md`; done so far: A0 and part A.
+
+**What it does:**
+- **Bundled web app.** Built with `--mode desktop` (no service worker) and
+  served from `app://pos`. Requests to `/api/*` go to the server address
+  chosen on first run, so the refresh cookie stays in the main process.
+- **Selling offline.** Sales are saved on the till (IndexedDB outbox) when
+  any of these happen:
+  - the server is unreachable
+  - the server answers 502/503/504 or another 5xx
+  - the request times out
+  - the session has lapsed
+
+  They upload in the background and can't create duplicates (`clientId`).
+  Offline sales keep the price and time they were rung up with. Products
+  are saved on the till, so the POS starts and sells offline.
+- **This device** (`/device`):
+  - till registration (`POS-001 "Front Till"`)
+  - server and sync status
+  - failed sales with Retry
+  - fullscreen till mode, start with Windows
+  - log folder
+- **Logs:** rotating logs in `%APPDATA%/POS/logs`, with tokens,
+  passwords and card numbers scrubbed.
+- **Coming next:** silent printing, cash drawer, customer display, updates.
 
 ```bash
 npm run build:desktop --workspace apps/web   # web build for the app
 npm run start --workspace apps/desktop       # compile + launch Electron
+npm run dist --workspace apps/desktop        # installer: apps/desktop/release/POS-Setup-x.y.z.exe
 ```
 
-On first launch, enter the API address, e.g. `http://localhost:4000` (the
-API itself, not the Vite dev server).
+On first launch, enter the API address, e.g. `http://localhost:4000`. That's
+the API itself, not the Vite dev server. The installer is **unsigned** for
+now, so Windows SmartScreen shows a warning ("More info" → "Run anyway").
 
-**A0 tests** drive the real app with Playwright. They need the API running
-on :4000 with seed data:
+**Desktop e2e tests** drive the real app with Playwright. They need the API
+running on :4000 with seed data. A switchable proxy simulates the server
+going down, answering 502, or losing a response:
 
 ```bash
-npm run test:a0 --workspace apps/desktop
+npm run test:e2e --workspace apps/desktop
+# against the packaged app instead of the dev build:
+POS_DESKTOP_EXECUTABLE=release/win-unpacked/POS.exe npx playwright test   # in apps/desktop
 ```
 
 ## Tests

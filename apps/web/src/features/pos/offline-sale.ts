@@ -3,10 +3,22 @@ import type { CreateSaleDto, SaleDto, SaleLineItemDto, SalePaymentDto } from "@p
 import type { CartLine } from "./hooks/useCart";
 
 /**
+ * Receipt number for a sale rung up offline. Must match the API's
+ * offlineReceiptNumber() (apps/api/src/sales/sales.service.ts): the server
+ * stores the same number when the sale syncs, so the paper receipt can be
+ * looked up later.
+ */
+export function offlineReceiptNumber(storeId: string, clientId: string): string {
+  const store = storeId.slice(-4).toUpperCase();
+  const client = clientId.replace(/-/g, "").slice(0, 12).toUpperCase();
+  return `OFF-${store}-${client}`;
+}
+
+/**
  * Builds a SaleDto-shaped receipt entirely client-side, mirroring
  * SalesService#create's math, for the "queued while offline" path — there's
  * no server response yet, but the cashier still needs a receipt to print/show.
- * Replaced by the real record once syncPendingSales() succeeds.
+ * The server stores the real record when the outbox syncs.
  */
 export function buildOfflineSale(localId: string, dto: CreateSaleDto, lines: CartLine[]): SaleDto {
   let subtotal = 0;
@@ -65,7 +77,7 @@ export function buildOfflineSale(localId: string, dto: CreateSaleDto, lines: Car
     storeId: dto.storeId,
     cashierId: "",
     customerId: dto.customerId ?? null,
-    receiptNumber: `OFFLINE-${localId.slice(0, 8).toUpperCase()}`,
+    receiptNumber: offlineReceiptNumber(dto.storeId, localId),
     subtotal: subtotal.toFixed(2),
     taxTotal: taxTotal.toFixed(2),
     discountTotal: "0.00",
@@ -74,7 +86,9 @@ export function buildOfflineSale(localId: string, dto: CreateSaleDto, lines: Car
     amountTendered: amountTendered !== null ? amountTendered.toFixed(2) : null,
     changeDue: changeDue !== null ? changeDue.toFixed(2) : null,
     status: SaleStatus.COMPLETED,
-    createdAt: new Date().toISOString(),
+    createdAt: dto.offline?.createdAt ?? new Date().toISOString(),
+    createdOffline: true,
+    queued: true,
     lineItems,
     payments,
   };

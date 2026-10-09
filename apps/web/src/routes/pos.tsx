@@ -194,7 +194,7 @@ export function PosPage() {
           <DialogHeader>
             <DialogTitle>Sale complete</DialogTitle>
           </DialogHeader>
-          {completedSale?.receiptNumber.startsWith("OFFLINE-") && (
+          {completedSale?.queued && (
             <p className="rounded-md bg-secondary px-3 py-2 text-sm text-secondary-foreground">
               Saved offline — this sale will sync automatically once you're back online.
             </p>

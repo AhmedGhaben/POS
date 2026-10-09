@@ -3,13 +3,34 @@ import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 
+export const terminalSchema = z.object({
+  id: z.string().min(1).max(64),
+  name: z.string().min(1).max(60),
+  code: z.string().min(1).max(20),
+  storeId: z.string().min(1).max(64),
+});
+
 /** Per-computer settings, kept in the app's data folder (never synced). */
 const configSchema = z.object({
   /** API base URL, e.g. http://localhost:4000 or https://pos.example.com/api */
   serverUrl: z.string().url().optional(),
+  /** This till, once registered with the server. */
+  terminal: terminalSchema.nullable().optional(),
+  /** Fullscreen till mode with no window frame. */
+  kiosk: z.boolean().optional(),
+  startWithWindows: z.boolean().optional(),
 });
 
 export type DesktopConfig = z.infer<typeof configSchema>;
+
+/** What the page may change through `settings.update`. */
+export const settingsPatchSchema = z
+  .object({
+    kiosk: z.boolean(),
+    startWithWindows: z.boolean(),
+  })
+  .partial()
+  .strict();
 
 let cached: DesktopConfig | null = null;
 

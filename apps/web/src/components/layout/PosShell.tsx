@@ -1,4 +1,4 @@
-import { Moon, Sun, LogOut, LayoutDashboard } from "lucide-react";
+import { Moon, Sun, LogOut, LayoutDashboard, MonitorCog } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { StoreSwitcher } from "./StoreSwitcher";
@@ -46,6 +46,11 @@ export function PosShell() {
             <span>⌘</span>K
           </kbd>
           <StoreSwitcher />
+          <Button variant="ghost" size="icon" asChild aria-label="This device">
+            <NavLink to="/device" title="This device">
+              <MonitorCog className="h-4 w-4" />
+            </NavLink>
+          </Button>
           <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
