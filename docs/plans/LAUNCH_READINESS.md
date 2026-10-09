@@ -9,6 +9,12 @@ business that exists is the demo one created by `apps/api/prisma/seed.ts`
 (upsert of `seed-business`). There is no registration endpoint or page, and
 nothing in `apps/api/src` ever calls `business.create`.
 
+**See also `PRODUCT_AND_DISTRIBUTION.md`** (2026-10-09): how the website,
+subscriptions, downloads, accounts and updates fit together for
+non-technical shop owners. It sets the order of the remaining items. The
+Windows desktop app (`DESKTOP_APP.md`) was built before #4 and released as
+`v0.2.0` on GitHub Releases.
+
 ## Must-have before selling
 
 - [x] **1. Sign-up & onboarding** — shipped 2026-10-08, see

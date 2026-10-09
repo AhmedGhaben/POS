@@ -42,8 +42,9 @@ Prisma backend.
   till now; silent printing and POS hardware in progress (see
   `docs/plans/DESKTOP_APP.md`)
 - `packages/shared`: shared TypeScript types/enums
-- `docs/plans/`: design docs per phase/feature, and `LAUNCH_READINESS.md`
-  (what's left before selling)
+- `docs/plans/`: design docs per phase/feature, `LAUNCH_READINESS.md`
+  (what's left before selling) and `PRODUCT_AND_DISTRIBUTION.md` (website,
+  subscriptions, downloads, accounts and updates for customers)
 
 ## Development
 
