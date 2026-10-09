@@ -38,6 +38,9 @@ Prisma backend.
 
 - `apps/api`: NestJS backend
 - `apps/web`: React (Vite) frontend
+- `apps/desktop`: Windows app (Electron) wrapping the web app, for an
+  offline till, silent printing and POS hardware (in progress, see
+  `docs/plans/DESKTOP_APP.md`)
 - `packages/shared`: shared TypeScript types/enums
 - `docs/plans/`: design docs per phase/feature, and `LAUNCH_READINESS.md`
   (what's left before selling)
@@ -85,6 +88,28 @@ it they're printed to the API console, links included.
 | `APP_URL` | Public URL of the web app, used for links in emails |
 | `RESEND_API_KEY`, `MAIL_FROM` | Optional: send real email |
 | `ANTHROPIC_API_KEY` | Optional: enables AI insights |
+
+## Windows desktop app (in progress)
+
+`apps/desktop` bundles the web app (built with `--mode desktop`, no service
+worker) and serves it from `app://pos`. Requests to `/api/*` are forwarded to
+the server address chosen on first run, so the refresh cookie stays in the
+main process. Hardware, silent printing and the installer are coming next.
+
+```bash
+npm run build:desktop --workspace apps/web   # web build for the app
+npm run start --workspace apps/desktop       # compile + launch Electron
+```
+
+On first launch, enter the API address, e.g. `http://localhost:4000` (the
+API itself, not the Vite dev server).
+
+**A0 tests** drive the real app with Playwright. They need the API running
+on :4000 with seed data:
+
+```bash
+npm run test:a0 --workspace apps/desktop
+```
 
 ## Tests
 

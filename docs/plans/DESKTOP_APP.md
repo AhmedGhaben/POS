@@ -240,6 +240,46 @@ Build the minimum Electron shell, then prove each of these:
 Outcome: either the transport is confirmed, or this plan is amended before
 part A goes on.
 
+**A0 result (2026-10-09): passed. The `app://` transport is confirmed.**
+`apps/desktop/e2e/a0.spec.ts` drives the real Electron app with
+Playwright. The API runs on :4000, behind a switchable TCP proxy that stands
+in for the server going down. What passed:
+
+- The renderer has no `require`/`process`, and only the typed
+  `posDesktop` bridge is exposed.
+- First-run setup rejects an unreachable address and accepts the server
+  after a `/health` check.
+- Navigating to `file://` is blocked.
+- Login works through `app://pos/api` → server.
+- The refresh cookie is held in the main-process cookie jar
+  (`net.fetch` with `credentials: "include"`). The page never sees it.
+- The session survives closing and reopening the app (the refresh still
+  returns 200).
+- A bogus or expired access token gets a 401, then a refresh, then a new
+  token, and the user stays logged in.
+- **Server goes down mid-session:** a cash sale is queued, and the POS
+  keeps working.
+- **Restart while the server is down:** the session and the queued sale
+  are both kept.
+- When the server is back, the queued sale syncs (still a manual click,
+  see gap 4).
+- Logout gets a 401 from the refresh endpoint afterwards, so the cookie is
+  cleared.
+- The main log holds no tokens or passwords.
+
+Confirmed gaps, pinned as expected-failure tests so they flip once fixed in
+part A:
+- **Gap 5:** no catalog after an offline restart.
+- **Gap 4:** no automatic sync when only the server was down.
+
+Not covered by A0 and moved to part A tests:
+- **Gap 1:** a lost response creating a duplicate.
+- **Gap 3:** a 502 from a proxy.
+- An access token that expires *while* offline, then the server returns.
+
+Offline auth policy confirmed as proposed. The cached session reopens
+offline with no server call. Network errors never log the user out.
+
 ### A. Shell, installer, terminal identity, offline foundation
 
 - `electron-builder` NSIS installer, `POS-Setup-x.y.z.exe`.

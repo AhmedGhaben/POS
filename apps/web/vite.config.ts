@@ -3,10 +3,15 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 
-export default defineConfig({
+// `vite build --mode desktop` builds the copy bundled into the Windows app
+// (apps/desktop). No service worker there: it's served from a custom app://
+// scheme and keeps its offline data in IndexedDB instead.
+export default defineConfig(({ mode }) => ({
+  build: mode === "desktop" ? { outDir: "dist-desktop" } : undefined,
   plugins: [
     react(),
     VitePWA({
+      disable: mode === "desktop",
       registerType: "autoUpdate",
       injectRegister: null,
       devOptions: {
@@ -57,4 +62,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));
