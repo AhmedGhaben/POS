@@ -140,6 +140,9 @@ export interface CreateProductDto {
   taxRate?: number;
 }
 
+/** PATCH /products/:id. `isActive: false` archives, `true` restores. */
+export type UpdateProductDto = Partial<CreateProductDto> & { isActive?: boolean };
+
 export interface InventoryItemDto {
   id: string;
   storeId: string;

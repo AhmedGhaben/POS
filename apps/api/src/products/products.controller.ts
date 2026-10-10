@@ -32,8 +32,11 @@ export class ProductsController {
     @CurrentUser() user: AuthenticatedUser,
     @Query("search") search?: string,
     @Query("categoryId") categoryId?: string,
+    @Query("archived") archived?: string,
   ) {
-    const products = await this.productsService.findAll(user.businessId, search, categoryId);
+    // Archived products are a back-office view; the till only ever sees active ones.
+    const showArchived = archived === "true" && (user.role === Role.OWNER || user.role === Role.MANAGER);
+    const products = await this.productsService.findAll(user.businessId, search, categoryId, showArchived);
     const canViewCostPrice = await this.permissionsService.hasPermission(
       user.userId,
       user.role,
@@ -71,11 +74,17 @@ export class ProductsController {
   @Patch(":productId")
   @UseGuards(RolesGuard)
   @Roles(Role.OWNER, Role.MANAGER)
-  update(
+  async update(
     @CurrentUser() user: AuthenticatedUser,
     @Param("productId") productId: string,
     @Body() dto: UpdateProductDto,
   ) {
-    return this.productsService.update(user.businessId, productId, dto);
+    const canViewCostPrice = await this.permissionsService.hasPermission(
+      user.userId,
+      user.role,
+      Permission.VIEW_COST_PRICE,
+    );
+    const product = await this.productsService.update(user.businessId, productId, dto, canViewCostPrice);
+    return canViewCostPrice ? product : redactCostPrice(product);
   }
 }

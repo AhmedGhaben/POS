@@ -1,17 +1,23 @@
-import type { CreateProductDto, ProductDto } from "@pos/shared";
+import type { CreateProductDto, ProductDto, UpdateProductDto } from "@pos/shared";
 import type { ImportRowPayload } from "./import-rows";
 import { apiClient } from "@/lib/api-client";
 
-export function fetchProducts(search?: string, categoryId?: string) {
+/** `archived` lists archived products instead (owners and managers only). */
+export function fetchProducts(search?: string, categoryId?: string, archived = false) {
   const params = new URLSearchParams();
   if (search) params.set("search", search);
   if (categoryId) params.set("categoryId", categoryId);
+  if (archived) params.set("archived", "true");
   const query = params.toString();
   return apiClient.get<ProductDto[]>(`/products${query ? `?${query}` : ""}`);
 }
 
 export function createProduct(dto: CreateProductDto) {
   return apiClient.post<ProductDto>("/products", dto);
+}
+
+export function updateProduct(id: string, dto: UpdateProductDto) {
+  return apiClient.patch<ProductDto>(`/products/${id}`, dto);
 }
 
 export interface ImportProductsRequest {

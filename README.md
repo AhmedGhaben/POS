@@ -21,6 +21,13 @@ Prisma backend.
 - **Products & stock**: categories, per-store inventory, purchases,
   returns, transfers between stores, low-stock alerts, and **CSV
   import/export** with a validating preview.
+  - **Editing products**: owners and managers click a product to change its
+    name, SKU, barcode, category, prices or tax. A new price applies to
+    new sales only; past sales keep what was charged. Users who can't see
+    cost prices can't change them either.
+  - **Archiving**: hides a product from the till and the list without
+    touching past sales or reports. "Show archived products" lets you
+    restore it.
 - **Staff**:
   - employees with optional logins (cashier or manager), limited to
     chosen stores
