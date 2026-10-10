@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,14 +10,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { useAuthStore } from "@/features/auth/store";
 import { register } from "@/features/auth/api";
+import { currentLanguage } from "@/i18n";
 
 const signupSchema = z.object({
-  firstName: z.string().trim().min(1, "First name is required").max(50),
-  lastName: z.string().trim().min(1, "Last name is required").max(50),
-  businessName: z.string().trim().min(1, "Business name is required").max(100),
-  storeName: z.string().trim().min(1, "Store name is required").max(100),
-  email: z.string().trim().email("Enter a valid email"),
-  password: z.string().min(8, "At least 8 characters"),
+  firstName: z.string().trim().min(1, "validation.required").max(50),
+  lastName: z.string().trim().min(1, "validation.required").max(50),
+  businessName: z.string().trim().min(1, "validation.required").max(100),
+  storeName: z.string().trim().min(1, "validation.required").max(100),
+  email: z.string().trim().email("validation.email"),
+  password: z.string().min(8, "validation.passwordLength"),
 });
 
 type SignupValues = z.output<typeof signupSchema>;
@@ -39,6 +41,7 @@ function browserTimezone(): string | undefined {
 }
 
 export function SignupPage() {
+  const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const setSession = useAuthStore((s) => s.setSession);
   const form = useForm<z.input<typeof signupSchema>, unknown, SignupValues>({
@@ -47,7 +50,7 @@ export function SignupPage() {
   });
 
   const signupMutation = useMutation({
-    mutationFn: (values: SignupValues) => register({ ...values, timezone: browserTimezone() }),
+    mutationFn: (values: SignupValues) => register({ ...values, timezone: browserTimezone(), language: currentLanguage() }),
     onSuccess: ({ accessToken, user, stores, business }) => {
       setSession(accessToken, user, stores, business);
       navigate("/welcome", { replace: true });
@@ -56,13 +59,13 @@ export function SignupPage() {
 
   return (
     <AuthLayout
-      title="Create your account"
-      description="Set up your business and start selling in minutes."
+      title={t("signup.title")}
+      description={t("signup.description")}
       footer={
         <>
-          Already have an account?{" "}
+          {t("signup.haveAccount")}{" "}
           <Link to="/login" className="font-medium text-primary hover:underline">
-            Sign in
+            {t("login.submit")}
           </Link>
         </>
       }
@@ -79,7 +82,7 @@ export function SignupPage() {
               name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>First name</FormLabel>
+                  <FormLabel>{t("fields.firstName")}</FormLabel>
                   <FormControl>
                     <Input autoComplete="given-name" {...field} />
                   </FormControl>
@@ -92,7 +95,7 @@ export function SignupPage() {
               name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Last name</FormLabel>
+                  <FormLabel>{t("fields.lastName")}</FormLabel>
                   <FormControl>
                     <Input autoComplete="family-name" {...field} />
                   </FormControl>
@@ -106,9 +109,9 @@ export function SignupPage() {
             name="businessName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Business name</FormLabel>
+                <FormLabel>{t("fields.businessName")}</FormLabel>
                 <FormControl>
-                  <Input autoComplete="organization" placeholder="Corner Cafe" {...field} />
+                  <Input autoComplete="organization" placeholder={t("signup.businessPlaceholder")} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -119,9 +122,9 @@ export function SignupPage() {
             name="storeName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>First store name</FormLabel>
+                <FormLabel>{t("fields.firstStoreName")}</FormLabel>
                 <FormControl>
-                  <Input placeholder="Main Street" {...field} />
+                  <Input placeholder={t("signup.storePlaceholder")} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -132,7 +135,7 @@ export function SignupPage() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>{t("fields.email")}</FormLabel>
                 <FormControl>
                   <Input type="email" autoComplete="email" {...field} />
                 </FormControl>
@@ -145,7 +148,7 @@ export function SignupPage() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel>{t("fields.password")}</FormLabel>
                 <FormControl>
                   <Input type="password" autoComplete="new-password" {...field} />
                 </FormControl>
@@ -157,7 +160,7 @@ export function SignupPage() {
             <p className="text-sm text-destructive">{(signupMutation.error as Error).message}</p>
           )}
           <Button type="submit" className="w-full" disabled={signupMutation.isPending}>
-            {signupMutation.isPending ? "Creating account..." : "Create account"}
+            {signupMutation.isPending ? t("signup.submitting") : t("signup.submit")}
           </Button>
         </form>
       </Form>

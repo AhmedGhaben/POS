@@ -22,6 +22,8 @@ export interface BusinessDto {
   website: string | null;
   /** ISO 4217, 0-2 decimal places. */
   currency: string;
+  /** Receipts, quotes, invoices and customer emails: "en", "pt-PT" or "pt-BR". */
+  language: string;
   /** Decimal string, e.g. "19". */
   defaultTaxRate: string;
   receiptHeader: string | null;
@@ -43,6 +45,7 @@ export type UpdateBusinessDto = Partial<
     | "email"
     | "website"
     | "currency"
+    | "language"
     | "receiptHeader"
     | "receiptFooter"
     | "invoiceFooter"
@@ -76,6 +79,8 @@ export interface UserDto {
   isActive: boolean;
   /** Only present on login/register responses; absent on older persisted sessions. */
   emailVerified?: boolean;
+  /** The person's chosen language ("en", "pt-PT", "pt-BR"); null until chosen. Absent on older sessions. */
+  language?: string | null;
   accessibleStoreIds: string[];
 }
 
@@ -100,6 +105,8 @@ export interface RegisterRequestDto {
   password: string;
   /** IANA zone, e.g. "Europe/Paris"; the API defaults to UTC. */
   timezone?: string;
+  /** The sign-up page's language; becomes the owner's and the business's. */
+  language?: string;
 }
 
 export interface LoginResponseDto {

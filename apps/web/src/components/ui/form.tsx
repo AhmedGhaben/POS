@@ -9,6 +9,7 @@ import {
   type FieldPath,
   type FieldValues,
 } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 
@@ -139,7 +140,10 @@ const FormMessage = React.forwardRef<
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, children, ...props }, ref) => {
   const { error, formMessageId } = useFormField();
-  const body = error ? String(error?.message ?? "") : children;
+  const { t, i18n } = useTranslation();
+  // Schemas use keys such as "validation.required"; anything else shows as is.
+  const message = error ? String(error?.message ?? "") : "";
+  const body = error ? (i18n.exists(message) ? t(message as never) : message) : children;
 
   if (!body) {
     return null;

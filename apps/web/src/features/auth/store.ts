@@ -20,6 +20,7 @@ interface AuthState {
   setPermissions: (permissions: PermissionMap) => void;
   updateStore: (store: StoreDto) => void;
   markEmailVerified: () => void;
+  setUserLanguage: (language: string) => void;
   clearSession: () => void;
 }
 
@@ -50,6 +51,10 @@ export const useAuthStore = create<AuthState>()(
       markEmailVerified: () => {
         const user = get().user;
         if (user) set({ user: { ...user, emailVerified: true } });
+      },
+      setUserLanguage: (language) => {
+        const user = get().user;
+        if (user) set({ user: { ...user, language } });
       },
       clearSession: () =>
         set({ accessToken: null, user: null, stores: [], currentStoreId: null, business: null, permissions: null }),

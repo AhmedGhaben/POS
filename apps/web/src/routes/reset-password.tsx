@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +9,7 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { resetPassword } from "@/features/auth/api";
 
 export function ResetPasswordPage() {
+  const { t } = useTranslation(["auth", "common"]);
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") ?? "";
   // Staff invites reuse reset tokens; only the wording differs.
@@ -19,12 +21,10 @@ export function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <AuthLayout title="Invalid reset link">
-        <p className="mb-4 text-sm text-muted-foreground">
-          This link is missing its reset code. Request a new one.
-        </p>
+      <AuthLayout title={t("reset.invalidTitle")}>
+        <p className="mb-4 text-sm text-muted-foreground">{t("reset.invalidBody")}</p>
         <Button asChild className="w-full">
-          <Link to="/forgot-password">Request a new link</Link>
+          <Link to="/forgot-password">{t("reset.requestNew")}</Link>
         </Button>
       </AuthLayout>
     );
@@ -32,14 +32,12 @@ export function ResetPasswordPage() {
 
   if (mutation.isSuccess) {
     return (
-      <AuthLayout title={isInvite ? "You're all set" : "Password updated"}>
+      <AuthLayout title={isInvite ? t("reset.inviteDoneTitle") : t("reset.doneTitle")}>
         <p className="mb-4 text-sm text-muted-foreground">
-          {isInvite
-            ? "Your password is saved. Sign in with the email address your invite was sent to."
-            : "Your password has been changed and you've been signed out on all devices."}
+          {isInvite ? t("reset.inviteDoneBody") : t("reset.doneBody")}
         </p>
         <Button asChild className="w-full">
-          <Link to="/login">Sign in</Link>
+          <Link to="/login">{t("login.submit")}</Link>
         </Button>
       </AuthLayout>
     );
@@ -48,11 +46,11 @@ export function ResetPasswordPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (password.length < 8) {
-      setValidationError("Password must be at least 8 characters");
+      setValidationError(t("common:validation.passwordLength"));
       return;
     }
     if (password !== confirm) {
-      setValidationError("Passwords don't match");
+      setValidationError(t("reset.mismatch"));
       return;
     }
     setValidationError(null);
@@ -63,16 +61,16 @@ export function ResetPasswordPage() {
 
   return (
     <AuthLayout
-      title={isInvite ? "Set your password" : "Choose a new password"}
+      title={isInvite ? t("reset.inviteTitle") : t("reset.title")}
       footer={
         <Link to="/forgot-password" className="hover:underline">
-          Link expired? Request a new one
+          {t("reset.expired")}
         </Link>
       }
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="space-y-2">
-          <Label htmlFor="password">New password</Label>
+          <Label htmlFor="password">{t("fields.newPassword")}</Label>
           <Input
             id="password"
             type="password"
@@ -83,7 +81,7 @@ export function ResetPasswordPage() {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="confirm">Confirm password</Label>
+          <Label htmlFor="confirm">{t("fields.confirmPassword")}</Label>
           <Input
             id="confirm"
             type="password"
@@ -95,7 +93,7 @@ export function ResetPasswordPage() {
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
         <Button type="submit" className="w-full" disabled={mutation.isPending}>
-          {mutation.isPending ? "Saving..." : isInvite ? "Set password" : "Set new password"}
+          {mutation.isPending ? t("common:actions.saving") : isInvite ? t("reset.inviteSubmit") : t("reset.submit")}
         </Button>
       </form>
     </AuthLayout>

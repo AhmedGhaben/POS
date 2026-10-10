@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "products": "Products",
+    "inventory": "Inventory",
+    "transfers": "Transfers",
+    "purchases": "Purchases",
+    "returns": "Returns",
+    "invoices": "Invoices",
+    "cashDrawer": "Cash drawer",
+    "expenses": "Expenses",
+    "suppliers": "Suppliers",
+    "employees": "Employees",
+    "settings": "Settings",
+    "thisDevice": "This device",
+    "pointOfSale": "Point of Sale"
+  },
+  "shell": {
+    "openNavigation": "Open navigation",
+    "accountMenu": "Account menu",
+    "toggleTheme": "Toggle theme",
+    "logOut": "Log out",
+    "searchPages": "Search pages...",
+    "noResults": "No results found.",
+    "navigate": "Navigate",
+    "updateReady": "Update {{version}} ready",
+    "updateReadyHint": "Installs when the app restarts. Open This device to restart now.",
+    "backToDashboard": "Back to dashboard",
+    "selectStore": "Select store",
+    "offlineReady": "App ready to work offline",
+    "newVersion": "A new version is available",
+    "reload": "Reload"
+  },
+  "language": {
+    "label": "Language"
+  },
+  "actions": {
+    "save": "Save",
+    "saving": "Saving...",
+    "saveChanges": "Save changes",
+    "cancel": "Cancel",
+    "close": "Close",
+    "dismiss": "Dismiss",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "remove": "Remove",
+    "back": "Back",
+    "search": "Search",
+    "print": "Print",
+    "exportCsv": "Export CSV",
+    "importCsv": "Import CSV",
+    "retry": "Retry",
+    "loading": "Loading..."
+  },
+  "validation": {
+    "required": "Required",
+    "email": "Enter a valid email",
+    "passwordLength": "At least 8 characters",
+    "nonNegative": "Must be 0 or more",
+    "positive": "Must be more than 0",
+    "wholeNumber": "Must be a whole number"
+  }
+}

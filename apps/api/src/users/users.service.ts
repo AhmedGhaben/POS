@@ -56,6 +56,11 @@ export class UsersService {
     return user;
   }
 
+  async setLanguage(userId: string, language: string) {
+    await this.prisma.user.update({ where: { id: userId }, data: { language } });
+    return { language };
+  }
+
   async getEffectivePermissions(businessId: string, userId: string) {
     const user = await this.findInBusiness(businessId, userId);
     return this.permissionsService.getEffectivePermissions(user.id, user.role);

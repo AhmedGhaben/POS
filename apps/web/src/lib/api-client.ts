@@ -1,4 +1,5 @@
 import { useAuthStore } from "@/features/auth/store";
+import { currentLanguage } from "@/i18n";
 
 const BASE_URL = "/api";
 
@@ -85,6 +86,8 @@ async function request<T>(path: string, options: RequestOptions = {}, isRetry = 
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        // The server answers error messages in the language on screen.
+        "X-Language": currentLanguage(),
         ...(token && !skipAuth ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,

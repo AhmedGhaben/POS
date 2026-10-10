@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthLayout } from "@/components/layout/AuthLayout";
@@ -9,7 +10,7 @@ import { logout, verifyEmail } from "@/features/auth/api";
 type Result =
   | { status: "verifying" }
   | { status: "success"; email: string }
-  | { status: "error"; message: string };
+  | { status: "error"; message: string | null };
 
 /**
  * Landing page for the link in the verification email. Works logged in or
@@ -17,6 +18,7 @@ type Result =
  * account (e.g. the demo owner), in which case it offers to switch.
  */
 export function VerifyEmailPage() {
+  const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
@@ -24,10 +26,9 @@ export function VerifyEmailPage() {
   const isLoggedIn = useAuthStore((s) => s.accessToken !== null);
   const markEmailVerified = useAuthStore((s) => s.markEmailVerified);
   const clearSession = useAuthStore((s) => s.clearSession);
+  // A null message means "the link has no code" (translated at render).
   const [result, setResult] = React.useState<Result>(
-    token
-      ? { status: "verifying" }
-      : { status: "error", message: "This link is missing its verification code." },
+    token ? { status: "verifying" } : { status: "error", message: null },
   );
   // Tokens are single-use: StrictMode runs effects twice in dev, and a second
   // call would fail and overwrite the success state.
@@ -54,9 +55,9 @@ export function VerifyEmailPage() {
 
   if (result.status === "verifying") {
     return (
-      <AuthLayout title="Verifying your email">
+      <AuthLayout title={t("verify.verifyingTitle")}>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> One moment...
+          <Loader2 className="h-4 w-4 animate-spin" /> {t("verify.oneMoment")}
         </div>
       </AuthLayout>
     );
@@ -67,34 +68,37 @@ export function VerifyEmailPage() {
       isLoggedIn && currentUser && currentUser.email.toLowerCase() !== result.email.toLowerCase();
 
     return (
-      <AuthLayout title="Email verified">
+      <AuthLayout title={t("verify.doneTitle")}>
         <div className="mb-4 flex items-start gap-2 text-sm">
           <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
           <span>
-            <span className="font-medium">{result.email}</span> is confirmed.
+            <Trans t={t} i18nKey="verify.confirmed" values={{ email: result.email }} components={{ b: <span className="font-medium" /> }} />
           </span>
         </div>
         {signedInAsOther ? (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              This browser is signed in as{" "}
-              <span className="font-medium text-foreground">{currentUser.email}</span>, a different
-              account.
+              <Trans
+                t={t}
+                i18nKey="verify.otherAccount"
+                values={{ email: currentUser.email }}
+                components={{ b: <span className="font-medium text-foreground" /> }}
+              />
             </p>
             <Button className="w-full" onClick={() => switchAccount(result.email)}>
-              Sign in as {result.email}
+              {t("verify.signInAs", { email: result.email })}
             </Button>
             <Button asChild variant="ghost" className="w-full">
-              <Link to="/">Stay as {currentUser.email}</Link>
+              <Link to="/">{t("verify.stayAs", { email: currentUser.email })}</Link>
             </Button>
           </div>
         ) : isLoggedIn ? (
           <Button asChild className="w-full">
-            <Link to="/">Go to dashboard</Link>
+            <Link to="/">{t("verify.goToDashboard")}</Link>
           </Button>
         ) : (
           <Button className="w-full" onClick={() => navigate("/login", { state: { email: result.email } })}>
-            Sign in
+            {t("login.submit")}
           </Button>
         )}
       </AuthLayout>
@@ -102,17 +106,15 @@ export function VerifyEmailPage() {
   }
 
   return (
-    <AuthLayout title="Couldn't verify your email">
+    <AuthLayout title={t("verify.failedTitle")}>
       <div className="mb-2 flex items-center gap-2 text-sm text-destructive">
-        <XCircle className="h-5 w-5" /> {result.message}
+        <XCircle className="h-5 w-5" /> {result.message ?? t("verify.missingCode")}
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
-        {isLoggedIn
-          ? "Links expire after 24 hours and work once. Use “Resend link” in the banner to get a new one."
-          : "Links expire after 24 hours and work once. Sign in and use “Resend link” to get a new one."}
+        {isLoggedIn ? t("verify.expiredSignedIn") : t("verify.expiredSignedOut")}
       </p>
       <Button asChild className="w-full">
-        <Link to={isLoggedIn ? "/" : "/login"}>{isLoggedIn ? "Go to dashboard" : "Sign in"}</Link>
+        <Link to={isLoggedIn ? "/" : "/login"}>{isLoggedIn ? t("verify.goToDashboard") : t("login.submit")}</Link>
       </Button>
     </AuthLayout>
   );

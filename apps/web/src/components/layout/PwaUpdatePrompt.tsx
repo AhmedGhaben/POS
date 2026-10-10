@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 
 /** Registers the service worker and surfaces the two states the cashier
  * actually needs to know about: the app can now run offline, or a new
@@ -12,15 +13,15 @@ export function PwaUpdatePrompt() {
 
   React.useEffect(() => {
     if (wasOfflineReady) {
-      toast.success("App ready to work offline");
+      toast.success(i18n.t("shell.offlineReady"));
     }
   }, [wasOfflineReady]);
 
   React.useEffect(() => {
     if (wasNeedRefresh) {
-      toast("A new version is available", {
+      toast(i18n.t("shell.newVersion"), {
         action: {
-          label: "Reload",
+          label: i18n.t("shell.reload"),
           onClick: () => updateServiceWorker(true),
         },
         duration: Infinity,

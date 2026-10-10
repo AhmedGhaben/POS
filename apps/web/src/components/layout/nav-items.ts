@@ -17,25 +17,41 @@ import {
 
 export interface NavItem {
   to: string;
-  label: string;
+  /** Key in common.json's "nav" section. */
+  label: NavLabel;
   icon: LucideIcon;
   ownerOnly?: boolean;
 }
 
+export type NavLabel =
+  | "dashboard"
+  | "products"
+  | "inventory"
+  | "transfers"
+  | "purchases"
+  | "returns"
+  | "invoices"
+  | "cashDrawer"
+  | "expenses"
+  | "suppliers"
+  | "employees"
+  | "settings"
+  | "thisDevice";
+
 export const NAV_ITEMS: NavItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/products", label: "Products", icon: Package },
-  { to: "/inventory", label: "Inventory", icon: Boxes },
-  { to: "/transfers", label: "Transfers", icon: ArrowLeftRight },
-  { to: "/purchases", label: "Purchases", icon: ShoppingBag },
-  { to: "/returns", label: "Returns", icon: Undo2 },
-  { to: "/invoices", label: "Invoices", icon: FileText },
-  { to: "/drawer-events", label: "Cash drawer", icon: Vault },
-  { to: "/expenses", label: "Expenses", icon: Receipt },
-  { to: "/suppliers", label: "Suppliers", icon: Truck },
-  { to: "/employees", label: "Employees", icon: Users },
-  { to: "/settings", label: "Settings", icon: Settings, ownerOnly: true },
-  { to: "/device", label: "This device", icon: MonitorCog },
+  { to: "/dashboard", label: "dashboard", icon: LayoutDashboard },
+  { to: "/products", label: "products", icon: Package },
+  { to: "/inventory", label: "inventory", icon: Boxes },
+  { to: "/transfers", label: "transfers", icon: ArrowLeftRight },
+  { to: "/purchases", label: "purchases", icon: ShoppingBag },
+  { to: "/returns", label: "returns", icon: Undo2 },
+  { to: "/invoices", label: "invoices", icon: FileText },
+  { to: "/drawer-events", label: "cashDrawer", icon: Vault },
+  { to: "/expenses", label: "expenses", icon: Receipt },
+  { to: "/suppliers", label: "suppliers", icon: Truck },
+  { to: "/employees", label: "employees", icon: Users },
+  { to: "/settings", label: "settings", icon: Settings, ownerOnly: true },
+  { to: "/device", label: "thisDevice", icon: MonitorCog },
 ];
 
 /** Back-office nav for a role: cashiers get none, managers skip owner-only items. */

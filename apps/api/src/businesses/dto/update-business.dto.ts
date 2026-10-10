@@ -1,6 +1,7 @@
 import { Transform } from "class-transformer";
 import { IsEmail, IsIn, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength } from "class-validator";
 import { SUPPORTED_CURRENCIES } from "../../common/utils/currency";
+import { SUPPORTED_LANGUAGES } from "../../common/i18n/languages";
 
 /** Blank text fields clear the value rather than storing "". */
 const BlankToNull = () =>
@@ -37,6 +38,11 @@ export class UpdateBusinessDto {
   @IsOptional()
   @IsIn(SUPPORTED_CURRENCIES, { message: "Unsupported currency" })
   currency?: string;
+
+  /** Language of receipts, quotes, invoices and customer emails. */
+  @IsOptional()
+  @IsIn(SUPPORTED_LANGUAGES, { message: "Unsupported language" })
+  language?: string;
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })

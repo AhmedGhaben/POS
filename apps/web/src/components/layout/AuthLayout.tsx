@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { LanguagePicker } from "./LanguagePicker";
 
 interface AuthLayoutProps {
   title: string;
@@ -14,7 +15,8 @@ interface AuthLayoutProps {
 /** Centered card used by the public pages: login, sign-up, password reset, email verification. */
 export function AuthLayout({ title, description, footer, className, children }: AuthLayoutProps) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-muted/40 p-4">
+    <div className="relative flex min-h-screen flex-col items-center justify-center gap-4 bg-muted/40 p-4">
+      <LanguagePicker className="absolute right-4 top-4 h-9 bg-background" />
       <Card className={cn("w-full max-w-sm", className)}>
         <CardHeader>
           <CardTitle>{title}</CardTitle>

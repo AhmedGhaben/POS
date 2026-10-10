@@ -1,10 +1,12 @@
 import { NavLink } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/features/auth/store";
 import { navItemsFor } from "./nav-items";
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+  const { t } = useTranslation();
   const role = useAuthStore((s) => s.user?.role);
   return (
     <>
@@ -23,7 +25,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             }
           >
             <item.icon className="h-4 w-4" />
-            {item.label}
+            {t(`nav.${item.label}`)}
           </NavLink>
         ))}
       </nav>
@@ -33,7 +35,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         className="mt-2 flex shrink-0 items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent"
       >
         <ShoppingCart className="h-4 w-4" />
-        Point of Sale
+        {t("nav.pointOfSale")}
       </NavLink>
     </>
   );

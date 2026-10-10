@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Trans, useTranslation } from "react-i18next";
 import { MailWarning, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/features/auth/store";
@@ -18,11 +19,12 @@ function readDismissed(): boolean {
 
 /** Nags unverified owners until they click the link; dismissible for the browser session. */
 export function VerifyEmailBanner() {
+  const { t } = useTranslation(["auth", "common"]);
   const user = useAuthStore((s) => s.user);
   const [dismissed, setDismissed] = React.useState(readDismissed);
   const resend = useMutation({
     mutationFn: resendVerification,
-    onSuccess: () => toast.success(`Verification link sent to ${user?.email}`),
+    onSuccess: () => toast.success(t("banner.sent", { email: user?.email })),
     onError: (err) => toast.error((err as Error).message),
   });
 
@@ -42,7 +44,7 @@ export function VerifyEmailBanner() {
     <div className="flex items-center gap-3 border-b bg-amber-50 px-4 py-2 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
       <MailWarning className="h-4 w-4 shrink-0" />
       <span className="flex-1">
-        Verify your email address — we sent a link to <span className="font-medium">{user.email}</span>.
+        <Trans t={t} i18nKey="banner.body" values={{ email: user.email }} components={{ b: <span className="font-medium" /> }} />
       </span>
       <Button
         size="sm"
@@ -51,9 +53,9 @@ export function VerifyEmailBanner() {
         disabled={resend.isPending || resend.isSuccess}
         onClick={() => resend.mutate()}
       >
-        {resend.isSuccess ? "Sent" : resend.isPending ? "Sending..." : "Resend link"}
+        {resend.isSuccess ? t("banner.sentShort") : resend.isPending ? t("banner.sending") : t("banner.resend")}
       </Button>
-      <button type="button" aria-label="Dismiss" onClick={dismiss} className="rounded p-1 hover:bg-amber-100 dark:hover:bg-amber-900/40">
+      <button type="button" aria-label={t("common:actions.dismiss")} onClick={dismiss} className="rounded p-1 hover:bg-amber-100 dark:hover:bg-amber-900/40">
         <X className="h-4 w-4" />
       </button>
     </div>

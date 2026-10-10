@@ -33,6 +33,7 @@ interface LoginResult {
     lastName: string;
     role: Role;
     emailVerified: boolean;
+    language: string | null;
     accessibleStoreIds: string[];
   };
   stores: { id: string; businessId: string; name: string; address: string | null; timezone: string; isActive: boolean }[];
@@ -103,7 +104,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
     const user = await this.prisma.$transaction(async (tx) => {
       const business = await tx.business.create({
-        data: { name: dto.businessName.trim(), plan: Plan.SIMPLE },
+        data: { name: dto.businessName.trim(), plan: Plan.SIMPLE, language: dto.language ?? "en" },
       });
       await tx.store.create({
         data: {
@@ -120,6 +121,7 @@ export class AuthService {
           firstName: dto.firstName.trim(),
           lastName: dto.lastName.trim(),
           role: Role.OWNER,
+          language: dto.language ?? null,
         },
       });
     });
@@ -168,6 +170,7 @@ export class AuthService {
         lastName: user.lastName,
         role: user.role,
         emailVerified: user.emailVerifiedAt !== null,
+        language: user.language,
         accessibleStoreIds,
       },
       stores: accessibleStores,

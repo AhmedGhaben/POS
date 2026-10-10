@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useNavigate } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   CommandDialog,
   CommandEmpty,
@@ -13,6 +14,7 @@ import { useAuthStore } from "@/features/auth/store";
 import { navItemsFor } from "./nav-items";
 
 export function CommandPalette() {
+  const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const navigate = useNavigate();
   const role = useAuthStore((s) => s.user?.role);
@@ -37,19 +39,19 @@ export function CommandPalette() {
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Search pages..." />
+      <CommandInput placeholder={t("shell.searchPages")} />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading="Navigate">
+        <CommandEmpty>{t("shell.noResults")}</CommandEmpty>
+        <CommandGroup heading={t("shell.navigate")}>
           {navItems.map((item) => (
-            <CommandItem key={item.to} value={item.label} onSelect={() => go(item.to)}>
+            <CommandItem key={item.to} value={t(`nav.${item.label}`)} onSelect={() => go(item.to)}>
               <item.icon className="h-4 w-4" />
-              {item.label}
+              {t(`nav.${item.label}`)}
             </CommandItem>
           ))}
-          <CommandItem value="Point of Sale" onSelect={() => go("/pos")}>
+          <CommandItem value={t("nav.pointOfSale")} onSelect={() => go("/pos")}>
             <ShoppingCart className="h-4 w-4" />
-            Point of Sale
+            {t("nav.pointOfSale")}
           </CommandItem>
         </CommandGroup>
       </CommandList>

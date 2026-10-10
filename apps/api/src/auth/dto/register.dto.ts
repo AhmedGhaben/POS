@@ -1,5 +1,6 @@
-import { IsEmail, IsOptional, IsString, IsTimeZone, MaxLength, MinLength } from "class-validator";
+import { IsEmail, IsIn, IsOptional, IsString, IsTimeZone, MaxLength, MinLength } from "class-validator";
 import { NormalizeEmail } from "../../common/transforms/normalize-email";
+import { SUPPORTED_LANGUAGES } from "../../common/i18n/languages";
 
 export class RegisterDto {
   @IsString()
@@ -34,4 +35,9 @@ export class RegisterDto {
   @IsOptional()
   @IsTimeZone()
   timezone?: string;
+
+  /** The sign-up page's language: becomes the owner's and the business's. */
+  @IsOptional()
+  @IsIn(SUPPORTED_LANGUAGES)
+  language?: string;
 }

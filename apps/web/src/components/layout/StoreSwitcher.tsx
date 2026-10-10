@@ -1,7 +1,9 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/features/auth/store";
 
 export function StoreSwitcher() {
+  const { t } = useTranslation();
   const stores = useAuthStore((s) => s.stores);
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const setCurrentStoreId = useAuthStore((s) => s.setCurrentStoreId);
@@ -14,7 +16,7 @@ export function StoreSwitcher() {
   return (
     <Select value={currentStoreId ?? undefined} onValueChange={setCurrentStoreId}>
       <SelectTrigger className="w-[200px]">
-        <SelectValue placeholder="Select store" />
+        <SelectValue placeholder={t("shell.selectStore")} />
       </SelectTrigger>
       <SelectContent>
         {stores.map((store) => (

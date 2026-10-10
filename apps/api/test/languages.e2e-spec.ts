@@ -1,0 +1,90 @@
+import { INestApplication, ValidationPipe } from "@nestjs/common";
+import { Test, TestingModule } from "@nestjs/testing";
+import request from "supertest";
+import { AppModule } from "../src/app.module";
+import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
+import { PrismaService } from "../src/prisma/prisma.service";
+
+/**
+ * Languages (docs/plans/I18N.md): the sign-up language becomes the owner's
+ * and the business's; each person sets their own; the owner sets the
+ * business's (used for receipts and invoices).
+ */
+describe("Languages (e2e)", () => {
+  let app: INestApplication;
+  let prisma: PrismaService;
+  const RUN = Date.now();
+  const EMAIL = `lang-owner-${RUN}@e2e.test`;
+  const PASSWORD = "LangPass123!";
+  let businessId: string | undefined;
+  let token: string;
+
+  const http = () => request(app.getHttpServer());
+  const auth = () => ({ Authorization: `Bearer ${token}` });
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalFilters(new HttpExceptionFilter());
+    await app.init();
+    prisma = app.get(PrismaService);
+  });
+
+  afterAll(async () => {
+    if (businessId) {
+      const userIds = (await prisma.user.findMany({ where: { businessId }, select: { id: true } })).map((u) => u.id);
+      await prisma.$transaction([
+        prisma.auditLog.deleteMany({ where: { businessId } }),
+        prisma.storeUser.deleteMany({ where: { userId: { in: userIds } } }),
+        prisma.emailVerificationToken.deleteMany({ where: { userId: { in: userIds } } }),
+        prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } }),
+        prisma.user.deleteMany({ where: { businessId } }),
+        prisma.store.deleteMany({ where: { businessId } }),
+        prisma.business.delete({ where: { id: businessId } }),
+      ]);
+    }
+    await app.close();
+  });
+
+  it("signing up in Brazilian Portuguese sets the owner's and the business's language", async () => {
+    const res = await http()
+      .post("/auth/register")
+      .send({
+        businessName: "Loja Teste",
+        storeName: "Centro",
+        firstName: "Ana",
+        lastName: "Lima",
+        email: EMAIL,
+        password: PASSWORD,
+        language: "pt-BR",
+      })
+      .expect(201);
+    businessId = res.body.user.businessId;
+    token = res.body.accessToken;
+    expect(res.body.user.language).toBe("pt-BR");
+    expect(res.body.business.language).toBe("pt-BR");
+  });
+
+  it("an unsupported sign-up language is refused", async () => {
+    await http()
+      .post("/auth/register")
+      .send({ businessName: "X", storeName: "Y", firstName: "A", lastName: "B", email: `x-${RUN}@e2e.test`, password: PASSWORD, language: "fr" })
+      .expect(400);
+  });
+
+  it("a person changes their own language, and it comes back at the next sign-in", async () => {
+    await http().patch("/users/me/language").set(auth()).send({ language: "pt-PT" }).expect(200, { language: "pt-PT" });
+    await http().patch("/users/me/language").set(auth()).send({ language: "de" }).expect(400);
+    const login = await http().post("/auth/login").send({ email: EMAIL, password: PASSWORD }).expect(200);
+    expect(login.body.user.language).toBe("pt-PT");
+    // The business language is separate.
+    expect(login.body.business.language).toBe("pt-BR");
+  });
+
+  it("the owner sets the business language", async () => {
+    const res = await http().patch("/businesses/me").set(auth()).send({ language: "en" }).expect(200);
+    expect(res.body.language).toBe("en");
+    await http().patch("/businesses/me").set(auth()).send({ language: "xx" }).expect(400);
+  });
+});

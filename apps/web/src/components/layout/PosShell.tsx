@@ -1,4 +1,5 @@
 import { Moon, Sun, LogOut, LayoutDashboard, MonitorCog, Download } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useDeviceStore } from "@/features/desktop/bridge";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -15,20 +16,22 @@ import { OfflineIndicator } from "@/features/pos/components/OfflineIndicator";
  */
 /** A quiet hint that a new version will install on the next restart. */
 function UpdateReady() {
+  const { t } = useTranslation();
   const version = useDeviceStore((s) => (s.update?.state === "ready" ? s.update.version : null));
   if (!version) return null;
   return (
     <NavLink
       to="/device"
       className="hidden items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium text-muted-foreground hover:text-foreground sm:inline-flex"
-      title="Installs when the app restarts. Open This device to restart now."
+      title={t("shell.updateReadyHint")}
     >
-      <Download className="h-3 w-3" /> Update {version} ready
+      <Download className="h-3 w-3" /> {t("shell.updateReady", { version })}
     </NavLink>
   );
 }
 
 export function PosShell() {
+  const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const role = useAuthStore((s) => s.user?.role);
   const clearSession = useAuthStore((s) => s.clearSession);
@@ -51,7 +54,7 @@ export function PosShell() {
             className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             <LayoutDashboard className="h-4 w-4" />
-            Back to dashboard
+            {t("shell.backToDashboard")}
           </NavLink>
         ) : (
           <span />
@@ -63,15 +66,15 @@ export function PosShell() {
             <span>⌘</span>K
           </kbd>
           <StoreSwitcher />
-          <Button variant="ghost" size="icon" asChild aria-label="This device">
-            <NavLink to="/device" title="This device">
+          <Button variant="ghost" size="icon" asChild aria-label={t("nav.thisDevice")}>
+            <NavLink to="/device" title={t("nav.thisDevice")}>
               <MonitorCog className="h-4 w-4" />
             </NavLink>
           </Button>
-          <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
+          <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={t("shell.toggleTheme")}>
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Log out">
+          <Button variant="ghost" size="icon" onClick={handleLogout} aria-label={t("shell.logOut")}>
             <LogOut className="h-4 w-4" />
           </Button>
         </div>

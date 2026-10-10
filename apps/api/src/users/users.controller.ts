@@ -7,6 +7,7 @@ import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserPermissionDto } from "./dto/update-user-permission.dto";
 import { UpdateStaffAccessDto } from "./dto/update-staff-access.dto";
+import { UpdateMyLanguageDto } from "./dto/update-my-language.dto";
 import { UsersService } from "./users.service";
 
 @Controller("users")
@@ -42,6 +43,12 @@ export class UsersController {
   @Get("me/permissions")
   getMyPermissions(@CurrentUser() user: AuthenticatedUser) {
     return this.usersService.getEffectivePermissions(user.businessId, user.userId);
+  }
+
+  /** The signed-in user's own screen language, any role. */
+  @Patch("me/language")
+  setMyLanguage(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateMyLanguageDto) {
+    return this.usersService.setLanguage(user.userId, dto.language);
   }
 
   /** Granting/revoking permissions is authority-escalation — Owner only,

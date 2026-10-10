@@ -79,6 +79,8 @@ model Business {
 
   /// ISO 4217 code. Only currencies with 0-2 decimals: money columns are Decimal(10, 2).
   currency       String  @default("USD")
+  /// Language of receipts, quotes, invoices and customer emails: en, pt-PT, pt-BR.
+  language       String  @default("en")
   /// Pre-fills the tax % of new products; each product keeps its own rate.
   defaultTaxRate Decimal @default(0) @db.Decimal(5, 2)
   receiptHeader  String?
@@ -149,6 +151,8 @@ model User {
   lastName        String
   role            Role
   isActive        Boolean   @default(true)
+  /// The language this person's screens are in; null until they choose (en, pt-PT, pt-BR).
+  language        String?
   /// Null until the user clicks the link in their verification email.
   emailVerifiedAt DateTime?
   createdAt       DateTime  @default(now())

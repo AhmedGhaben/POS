@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Moon, Sun, LogOut, Menu, User as UserIcon } from "lucide-react";
+import { Check, Moon, Sun, LogOut, Menu, User as UserIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,8 +17,12 @@ import { SidebarNav } from "./Sidebar";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuthStore } from "@/features/auth/store";
 import { logout } from "@/features/auth/api";
+import { LANGUAGES } from "@/i18n";
+import { useLanguage } from "@/i18n/use-language";
 
 export function BackOfficeTopBar() {
+  const { t } = useTranslation();
+  const [language, setLanguage] = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const clearSession = useAuthStore((s) => s.clearSession);
   const user = useAuthStore((s) => s.user);
@@ -35,7 +40,7 @@ export function BackOfficeTopBar() {
       <div className="flex items-center gap-2 lg:hidden">
         <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Open navigation">
+            <Button variant="ghost" size="icon" aria-label={t("shell.openNavigation")}>
               <Menu className="h-4 w-4" />
             </Button>
           </SheetTrigger>
@@ -52,7 +57,7 @@ export function BackOfficeTopBar() {
         <StoreSwitcher />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Account menu">
+            <Button variant="ghost" size="icon" aria-label={t("shell.accountMenu")}>
               <UserIcon className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -65,11 +70,20 @@ export function BackOfficeTopBar() {
               ) : (
                 <Moon className="h-4 w-4" />
               )}
-              Toggle theme
+              {t("shell.toggleTheme")}
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t("language.label")}</DropdownMenuLabel>
+            {LANGUAGES.map((l) => (
+              <DropdownMenuItem key={l.code} onClick={() => setLanguage(l.code)}>
+                <Check className={l.code === language ? "h-4 w-4" : "h-4 w-4 opacity-0"} />
+                {l.label}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="h-4 w-4" />
-              Log out
+              {t("shell.logOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

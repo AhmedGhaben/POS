@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "dashboard": "Painel",
+    "products": "Produtos",
+    "inventory": "Stock",
+    "transfers": "Transferências",
+    "purchases": "Compras",
+    "returns": "Devoluções",
+    "invoices": "Faturas",
+    "cashDrawer": "Gaveta de dinheiro",
+    "expenses": "Despesas",
+    "suppliers": "Fornecedores",
+    "employees": "Funcionários",
+    "settings": "Definições",
+    "thisDevice": "Este dispositivo",
+    "pointOfSale": "Ponto de Venda"
+  },
+  "shell": {
+    "openNavigation": "Abrir navegação",
+    "accountMenu": "Menu da conta",
+    "toggleTheme": "Mudar tema",
+    "logOut": "Terminar sessão",
+    "searchPages": "Procurar páginas...",
+    "noResults": "Sem resultados.",
+    "navigate": "Navegar",
+    "updateReady": "Atualização {{version}} pronta",
+    "updateReadyHint": "Instala quando a aplicação reiniciar. Abra Este dispositivo para reiniciar agora.",
+    "backToDashboard": "Voltar ao painel",
+    "selectStore": "Escolher loja",
+    "offlineReady": "Aplicação pronta para trabalhar sem internet",
+    "newVersion": "Está disponível uma nova versão",
+    "reload": "Recarregar"
+  },
+  "language": {
+    "label": "Idioma"
+  },
+  "actions": {
+    "save": "Guardar",
+    "saving": "A guardar...",
+    "saveChanges": "Guardar alterações",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "dismiss": "Dispensar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "add": "Adicionar",
+    "remove": "Remover",
+    "back": "Voltar",
+    "search": "Procurar",
+    "print": "Imprimir",
+    "exportCsv": "Exportar CSV",
+    "importCsv": "Importar CSV",
+    "retry": "Tentar novamente",
+    "loading": "A carregar..."
+  },
+  "validation": {
+    "required": "Obrigatório",
+    "email": "Introduza um email válido",
+    "passwordLength": "Pelo menos 8 caracteres",
+    "nonNegative": "Tem de ser 0 ou mais",
+    "positive": "Tem de ser maior que 0",
+    "wholeNumber": "Tem de ser um número inteiro"
+  }
+}

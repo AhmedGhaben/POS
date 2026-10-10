@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +10,7 @@ import { login } from "@/features/auth/api";
 import { ApiError } from "@/lib/api-client";
 
 export function LoginPage() {
+  const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const setSession = useAuthStore((s) => s.setSession);
   // Router state (not a query param, to keep the address out of history) can
@@ -30,7 +32,7 @@ export function LoginPage() {
       setSession(accessToken, user, stores, business);
       navigate(user.role === "CASHIER" ? "/pos" : "/dashboard");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Unable to log in");
+      setError(err instanceof ApiError ? err.message : t("login.failed"));
     } finally {
       setLoading(false);
     }
@@ -38,20 +40,20 @@ export function LoginPage() {
 
   return (
     <AuthLayout
-      title="Sign in"
-      description="Access your store's point of sale."
+      title={t("login.title")}
+      description={t("login.description")}
       footer={
         <>
-          New here?{" "}
+          {t("login.newHere")}{" "}
           <Link to="/signup" className="font-medium text-primary hover:underline">
-            Create an account
+            {t("login.createAccount")}
           </Link>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t("fields.email")}</Label>
           <Input
             id="email"
             type="email"
@@ -63,9 +65,9 @@ export function LoginPage() {
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("fields.password")}</Label>
             <Link to="/forgot-password" className="text-sm text-muted-foreground hover:underline">
-              Forgot password?
+              {t("login.forgot")}
             </Link>
           </div>
           <Input
@@ -79,7 +81,7 @@ export function LoginPage() {
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Signing in..." : "Sign in"}
+          {loading ? t("login.submitting") : t("login.submit")}
         </Button>
       </form>
     </AuthLayout>
