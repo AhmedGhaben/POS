@@ -60,5 +60,23 @@
     "nonNegative": "Tem de ser 0 ou mais",
     "positive": "Tem de ser maior que 0",
     "wholeNumber": "Tem de ser um número inteiro"
+  },
+  "paymentMethods": {
+    "CASH": "Dinheiro",
+    "CARD": "Cartão",
+    "MOBILE_MONEY": "Pagamento móvel",
+    "OTHER": "Outro"
+  },
+  "drawerReasons": {
+    "CASH_PICKUP": "Recolha de dinheiro",
+    "FLOAT_ADJUSTMENT": "Acerto do fundo de caixa",
+    "MANAGER_INSPECTION": "Verificação do gerente",
+    "TEST": "Teste",
+    "OTHER": "Outro"
+  },
+  "pagination": {
+    "previous": "Anterior",
+    "next": "Seguinte",
+    "page": "Página {{page}} de {{total}}"
   }
 }

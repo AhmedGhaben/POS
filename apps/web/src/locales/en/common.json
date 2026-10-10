@@ -60,5 +60,23 @@
     "nonNegative": "Must be 0 or more",
     "positive": "Must be more than 0",
     "wholeNumber": "Must be a whole number"
+  },
+  "paymentMethods": {
+    "CASH": "Cash",
+    "CARD": "Card",
+    "MOBILE_MONEY": "Mobile money",
+    "OTHER": "Other"
+  },
+  "drawerReasons": {
+    "CASH_PICKUP": "Cash pickup",
+    "FLOAT_ADJUSTMENT": "Float adjustment",
+    "MANAGER_INSPECTION": "Manager inspection",
+    "TEST": "Test",
+    "OTHER": "Other"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {{page}} of {{total}}"
   }
 }

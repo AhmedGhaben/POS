@@ -1,0 +1,55 @@
+{
+  "store": "Store",
+  "taxId": "Tax ID: {{id}}",
+  "totals": {
+    "subtotal": "Subtotal",
+    "tax": "Tax",
+    "total": "Total"
+  },
+  "receipt": {
+    "number": "Receipt #{{number}}",
+    "tendered": "Tendered",
+    "changeDue": "Change due",
+    "thankYou": "Thank you!"
+  },
+  "quote": {
+    "slipTitle": "QUOTE",
+    "ref": "Ref {{reference}}",
+    "for": "For: {{name}}",
+    "validOn": "Prices valid on {{date}}",
+    "notReceipt": "*** NOT A RECEIPT ***",
+    "notProof": "This quote is not proof of payment.",
+    "a4Title": "QUOTATION",
+    "reference": "Reference",
+    "date": "Date",
+    "a4Notes": "Prices valid on {{date}}. This quotation is not an invoice and not proof of payment; prices and availability may change."
+  },
+  "a4": {
+    "regNo": "Reg. no.: {{number}}",
+    "billTo": "Bill to",
+    "item": "Item",
+    "qty": "Qty",
+    "unitPrice": "Unit price",
+    "amount": "Amount",
+    "subtotalExcl": "Subtotal (excl. tax)",
+    "taxOn": "Tax {{rate}}% on {{amount}}"
+  },
+  "invoice": {
+    "title": "INVOICE",
+    "number": "Invoice no.",
+    "date": "Invoice date",
+    "saleDate": "Sale date",
+    "receiptNumber": "Receipt no.",
+    "paidInFull": "Paid in full"
+  },
+  "display": {
+    "windowTitle": "Customer display",
+    "welcome": "Welcome",
+    "welcomeTo": "Welcome to {{name}}",
+    "items_one": "{{count}} item",
+    "items_other": "{{count}} items",
+    "total": "Total {{amount}}",
+    "paid": "Paid {{amount}}",
+    "change": "Change {{amount}}"
+  }
+}

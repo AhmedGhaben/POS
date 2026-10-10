@@ -60,5 +60,23 @@
     "nonNegative": "Deve ser 0 ou mais",
     "positive": "Deve ser maior que 0",
     "wholeNumber": "Deve ser um número inteiro"
+  },
+  "paymentMethods": {
+    "CASH": "Dinheiro",
+    "CARD": "Cartão",
+    "MOBILE_MONEY": "Pagamento por celular",
+    "OTHER": "Outro"
+  },
+  "drawerReasons": {
+    "CASH_PICKUP": "Sangria",
+    "FLOAT_ADJUSTMENT": "Ajuste do fundo de troco",
+    "MANAGER_INSPECTION": "Conferência do gerente",
+    "TEST": "Teste",
+    "OTHER": "Outro"
+  },
+  "pagination": {
+    "previous": "Anterior",
+    "next": "Próxima",
+    "page": "Página {{page}} de {{total}}"
   }
 }

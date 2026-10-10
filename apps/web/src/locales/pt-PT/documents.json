@@ -1,0 +1,55 @@
+{
+  "store": "Loja",
+  "taxId": "NIF: {{id}}",
+  "totals": {
+    "subtotal": "Subtotal",
+    "tax": "IVA",
+    "total": "Total"
+  },
+  "receipt": {
+    "number": "Talão n.º {{number}}",
+    "tendered": "Entregue",
+    "changeDue": "Troco",
+    "thankYou": "Obrigado!"
+  },
+  "quote": {
+    "slipTitle": "ORÇAMENTO",
+    "ref": "Ref. {{reference}}",
+    "for": "Para: {{name}}",
+    "validOn": "Preços válidos em {{date}}",
+    "notReceipt": "*** NÃO É UM TALÃO ***",
+    "notProof": "Este orçamento não é comprovativo de pagamento.",
+    "a4Title": "ORÇAMENTO",
+    "reference": "Referência",
+    "date": "Data",
+    "a4Notes": "Preços válidos em {{date}}. Este orçamento não é uma fatura nem comprovativo de pagamento; os preços e a disponibilidade podem mudar."
+  },
+  "a4": {
+    "regNo": "N.º de registo: {{number}}",
+    "billTo": "Faturar a",
+    "item": "Artigo",
+    "qty": "Qtd.",
+    "unitPrice": "Preço unitário",
+    "amount": "Valor",
+    "subtotalExcl": "Subtotal (sem IVA)",
+    "taxOn": "IVA {{rate}}% sobre {{amount}}"
+  },
+  "invoice": {
+    "title": "FATURA",
+    "number": "Fatura n.º",
+    "date": "Data da fatura",
+    "saleDate": "Data da venda",
+    "receiptNumber": "Talão n.º",
+    "paidInFull": "Pago na totalidade"
+  },
+  "display": {
+    "windowTitle": "Ecrã do cliente",
+    "welcome": "Bem-vindo",
+    "welcomeTo": "{{name}} — bem-vindo!",
+    "items_one": "{{count}} artigo",
+    "items_other": "{{count}} artigos",
+    "total": "Total {{amount}}",
+    "paid": "Pago {{amount}}",
+    "change": "Troco {{amount}}"
+  }
+}

@@ -1,8 +1,10 @@
 import * as React from "react";
 import { useAuthStore } from "@/features/auth/store";
 import { logoSrc } from "@/features/business/api";
+import { useDocumentLanguage } from "@/i18n/use-document-language";
 import {
   CUSTOMER_DISPLAY_CHANNEL,
+  welcomeText,
   type CustomerDisplayMessage,
   type CustomerDisplayState,
 } from "@/features/desktop/customer-display";
@@ -14,21 +16,19 @@ import {
  */
 export function CustomerDisplayPage() {
   const business = useAuthStore((s) => s.business);
-  const [state, setState] = React.useState<CustomerDisplayState>({
-    mode: "idle",
-    message: business ? `Welcome to ${business.name}` : "Welcome",
-  });
+  const { t } = useDocumentLanguage();
+  const [state, setState] = React.useState<CustomerDisplayState>({ mode: "idle", message: welcomeText(business) });
   const listRef = React.useRef<HTMLUListElement>(null);
 
   React.useEffect(() => {
-    document.title = "Customer display";
+    document.title = t("display.windowTitle");
     const channel = new BroadcastChannel(CUSTOMER_DISPLAY_CHANNEL);
     channel.onmessage = (e: MessageEvent<CustomerDisplayMessage>) => {
       if (e.data?.type === "state") setState(e.data.state);
     };
     channel.postMessage({ type: "hello" } satisfies CustomerDisplayMessage);
     return () => channel.close();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep the newest lines in view on a long sale.
   React.useEffect(() => {
@@ -69,9 +69,9 @@ export function CustomerDisplayPage() {
           </ul>
           <div className="flex w-[38%] min-w-0 flex-col justify-end rounded-2xl bg-white/5 p-[3vmin]">
             <p className="text-[clamp(0.9rem,3vmin,1.75rem)] text-white/60">
-              {state.itemCount} item{state.itemCount === 1 ? "" : "s"}
+              {t("display.items", { count: state.itemCount })}
             </p>
-            <p className="text-[clamp(1rem,3.6vmin,2.25rem)] text-white/80">Total</p>
+            <p className="text-[clamp(1rem,3.6vmin,2.25rem)] text-white/80">{t("totals.total")}</p>
             <p
               className="text-[clamp(1.75rem,min(9vmin,5.5vw),6rem)] font-bold leading-tight tabular-nums [overflow-wrap:anywhere]"
               data-testid="customer-total"
@@ -84,16 +84,16 @@ export function CustomerDisplayPage() {
 
       {state.mode === "paid" && (
         <div className="m-auto space-y-[3vmin] text-center">
-          <p className="text-[clamp(2rem,10vmin,5rem)] font-semibold">Thank you!</p>
-          <p className="text-[clamp(1rem,4vmin,2.25rem)] text-white/70 tabular-nums">Total {state.total}</p>
+          <p className="text-[clamp(2rem,10vmin,5rem)] font-semibold">{t("receipt.thankYou")}</p>
+          <p className="text-[clamp(1rem,4vmin,2.25rem)] text-white/70 tabular-nums">{t("display.total", { amount: state.total })}</p>
           {state.change !== null && (
             <>
-              <p className="text-[clamp(1rem,4vmin,2.25rem)] text-white/70 tabular-nums">Paid {state.paid}</p>
+              <p className="text-[clamp(1rem,4vmin,2.25rem)] text-white/70 tabular-nums">{t("display.paid", { amount: state.paid })}</p>
               <p
                 className="text-[clamp(1.75rem,11vmin,6rem)] font-bold leading-tight tabular-nums"
                 data-testid="customer-change"
               >
-                Change {state.change}
+                {t("display.change", { amount: state.change })}
               </p>
             </>
           )}

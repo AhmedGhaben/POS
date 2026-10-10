@@ -1,14 +1,11 @@
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle, CloudOff, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge, badgeVariants } from "@/components/ui/badge";
 import { isWorkingOffline, useOfflineStore } from "@/features/pos/offline-store";
 import { syncOutbox } from "@/features/pos/sync";
-
-function plural(n: number, word: string) {
-  return `${n} ${word}${n === 1 ? "" : "s"}`;
-}
 
 /**
  * Connectivity and sync status for the cashier: "Working offline — 4 sales
@@ -22,12 +19,13 @@ export function OfflineIndicator() {
   const failedCount = useOfflineStore((s) => s.failedCount);
   const isSyncing = useOfflineStore((s) => s.isSyncing);
   const offline = isWorkingOffline({ internet, server });
+  const { t } = useTranslation("pos");
 
   async function retry() {
     const { synced, failed, interrupted } = await syncOutbox();
-    if (synced > 0) toast.success(`Synced ${plural(synced, "sale")}`);
-    if (failed > 0) toast.error(`${plural(failed, "sale")} failed to sync — needs review`);
-    if (interrupted) toast.error("Couldn't reach the server — will keep trying");
+    if (synced > 0) toast.success(t("sync.synced", { count: synced }));
+    if (failed > 0) toast.error(t("sync.failedReview", { count: failed }));
+    if (interrupted) toast.error(t("sync.unreachable"));
   }
 
   if (!offline && pendingCount === 0 && failedCount === 0 && !isSyncing) {
@@ -37,25 +35,25 @@ export function OfflineIndicator() {
   return (
     <div className="flex items-center gap-2" data-testid="sync-status">
       {offline && (
-        <Badge variant="destructive" className="gap-1" title={internet ? "The POS server can't be reached" : "No internet connection"}>
+        <Badge variant="destructive" className="gap-1" title={internet ? t("sync.serverDown") : t("sync.noInternet")}>
           <CloudOff className="h-3 w-3" />
-          {pendingCount > 0 ? `Working offline — ${plural(pendingCount, "sale")} waiting to sync` : "Working offline"}
+          {pendingCount > 0 ? t("sync.offlineWaiting", { count: pendingCount }) : t("sync.offline")}
         </Badge>
       )}
       {!offline && isSyncing && pendingCount > 0 && (
         <Badge variant="secondary" className="gap-1">
-          <RefreshCw className="h-3 w-3 animate-spin" /> Syncing {plural(pendingCount, "sale")}…
+          <RefreshCw className="h-3 w-3 animate-spin" /> {t("sync.syncing", { count: pendingCount })}
         </Badge>
       )}
       {failedCount > 0 && (
         <Link to="/device" className={badgeVariants({ variant: "destructive", className: "gap-1" })}>
-          <AlertTriangle className="h-3 w-3" /> {plural(failedCount, "sale")} failed to sync
+          <AlertTriangle className="h-3 w-3" /> {t("sync.failed", { count: failedCount })}
         </Link>
       )}
       {pendingCount > 0 && (
         <Button variant="outline" size="sm" disabled={isSyncing} onClick={retry} className="gap-1">
           <RefreshCw className={`h-3 w-3 ${isSyncing ? "animate-spin" : ""}`} />
-          Retry sync
+          {t("sync.retry")}
         </Button>
       )}
     </div>

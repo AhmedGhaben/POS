@@ -1,0 +1,18 @@
+{
+  "issue": {
+    "title": "Fatura A4",
+    "titleIssued": "Fatura {{number}}",
+    "issuedHint": "Emitida. Imprima-a, ou escolha \"Guardar como PDF\" na janela de impressão para a enviar por email.",
+    "forReceipt": "Para o talão {{number}}. O número da fatura é atribuído quando continuar.",
+    "offline": "Esta venda foi guardada sem internet. As faturas são numeradas pelo servidor, por isso emita-a depois de sincronizar: Faturas → \"Faturar uma venda anterior\".",
+    "nameRequired": "Introduza o nome ou a empresa do comprador",
+    "print": "Imprimir fatura",
+    "billTo": "Faturar a (nome ou empresa)",
+    "address": "Morada",
+    "taxNumber": "NIF / número de contribuinte",
+    "email": "Email",
+    "saveToCustomer": "Guardar estes dados em {{name}} para a próxima vez",
+    "submit": "Emitir fatura",
+    "submitting": "A emitir..."
+  }
+}

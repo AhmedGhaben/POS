@@ -2,6 +2,7 @@ import * as React from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { CustomerDto } from "@pos/shared";
 import { User, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +24,7 @@ interface CustomerSearchComboboxProps {
 
 /** Defaults to "Walk-in customer" — attaching a customer is opt-in, never required. */
 export function CustomerSearchCombobox({ selected, onSelect }: CustomerSearchComboboxProps) {
+  const { t } = useTranslation("pos");
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [creating, setCreating] = React.useState(false);
@@ -75,14 +77,14 @@ export function CustomerSearchCombobox({ selected, onSelect }: CustomerSearchCom
         <PopoverTrigger asChild>
           <Button variant="outline" className="flex-1 justify-start gap-2 font-normal">
             <User className="h-4 w-4 text-muted-foreground" />
-            {selected ? selected.name : "Walk-in customer"}
+            {selected ? selected.name : t("customer.walkIn")}
           </Button>
         </PopoverTrigger>
         {selected && (
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Clear customer"
+            aria-label={t("customer.clear")}
             onClick={() => onSelect(null)}
           >
             <X className="h-4 w-4" />
@@ -91,7 +93,7 @@ export function CustomerSearchCombobox({ selected, onSelect }: CustomerSearchCom
       </div>
       <PopoverContent className="w-80 p-0" align="start">
         <Command shouldFilter={false}>
-          <CommandInput placeholder="Search customers..." value={query} onValueChange={setQuery} />
+          <CommandInput placeholder={t("customer.search")} value={query} onValueChange={setQuery} />
           <CommandList>
             {!creating && query.trim().length > 0 && (
               <>
@@ -102,7 +104,7 @@ export function CustomerSearchCombobox({ selected, onSelect }: CustomerSearchCom
                       className="text-sm text-primary hover:underline"
                       onClick={() => setCreating(true)}
                     >
-                      Add &quot;{query.trim()}&quot; as new customer
+                      {t("customer.addNew", { name: query.trim() })}
                     </button>
                   </CommandEmpty>
                 )}
@@ -127,11 +129,11 @@ export function CustomerSearchCombobox({ selected, onSelect }: CustomerSearchCom
             {creating && (
               <div className="space-y-2 p-3">
                 <div className="space-y-1">
-                  <Label htmlFor="new-customer-name">Name</Label>
+                  <Label htmlFor="new-customer-name">{t("customer.name")}</Label>
                   <Input id="new-customer-name" value={query.trim()} disabled />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="new-customer-phone">Phone (optional)</Label>
+                  <Label htmlFor="new-customer-phone">{t("customer.phone")}</Label>
                   <Input
                     id="new-customer-phone"
                     value={newPhone}
@@ -139,7 +141,7 @@ export function CustomerSearchCombobox({ selected, onSelect }: CustomerSearchCom
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="new-customer-email">Email (optional)</Label>
+                  <Label htmlFor="new-customer-email">{t("customer.email")}</Label>
                   <Input
                     id="new-customer-email"
                     type="email"
@@ -152,7 +154,7 @@ export function CustomerSearchCombobox({ selected, onSelect }: CustomerSearchCom
                   disabled={createMutation.isPending}
                   onClick={() => createMutation.mutate()}
                 >
-                  {createMutation.isPending ? "Creating..." : "Create & select"}
+                  {createMutation.isPending ? t("customer.creating") : t("customer.create")}
                 </Button>
               </div>
             )}

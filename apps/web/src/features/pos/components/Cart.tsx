@@ -1,4 +1,5 @@
 import { Minus, Plus, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import type { CartLine } from "@/features/pos/hooks/useCart";
 import { useMoney } from "@/features/business/use-money";
@@ -10,11 +11,12 @@ interface CartProps {
 }
 
 export function Cart({ lines, onSetQuantity, onRemove }: CartProps) {
+  const { t } = useTranslation("pos");
   const money = useMoney();
   if (lines.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-        Cart is empty — scan or search a product to begin.
+        {t("cart.empty")}
       </div>
     );
   }
@@ -26,7 +28,7 @@ export function Cart({ lines, onSetQuantity, onRemove }: CartProps) {
           <div className="flex-1">
             <p className="text-sm font-medium">{line.product.name}</p>
             <p className="text-xs text-muted-foreground">
-              {money(line.product.sellPrice)} each
+              {t("cart.each", { price: money(line.product.sellPrice) })}
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -34,6 +36,7 @@ export function Cart({ lines, onSetQuantity, onRemove }: CartProps) {
               size="icon"
               variant="outline"
               className="h-7 w-7"
+              aria-label={t("cart.decrease")}
               onClick={() => onSetQuantity(line.product.id, line.quantity - 1)}
             >
               <Minus className="h-3 w-3" />
@@ -43,6 +46,7 @@ export function Cart({ lines, onSetQuantity, onRemove }: CartProps) {
               size="icon"
               variant="outline"
               className="h-7 w-7"
+              aria-label={t("cart.increase")}
               onClick={() => onSetQuantity(line.product.id, line.quantity + 1)}
             >
               <Plus className="h-3 w-3" />
@@ -55,6 +59,7 @@ export function Cart({ lines, onSetQuantity, onRemove }: CartProps) {
             size="icon"
             variant="ghost"
             className="h-7 w-7 text-muted-foreground"
+            aria-label={t("cart.remove", { name: line.product.name })}
             onClick={() => onRemove(line.product.id)}
           >
             <X className="h-3.5 w-3.5" />

@@ -1,0 +1,18 @@
+{
+  "issue": {
+    "title": "A4 invoice",
+    "titleIssued": "Invoice {{number}}",
+    "issuedHint": "Issued. Print it, or choose \"Save as PDF\" in the print window to email it.",
+    "forReceipt": "For receipt {{number}}. The invoice number is assigned when you continue.",
+    "offline": "This sale was saved offline. Invoices are numbered by the server, so issue one once it has synced: Invoices → \"Invoice a past sale\".",
+    "nameRequired": "Enter the buyer's name or company",
+    "print": "Print invoice",
+    "billTo": "Bill to (name or company)",
+    "address": "Address",
+    "taxNumber": "Tax / VAT number",
+    "email": "Email",
+    "saveToCustomer": "Save these details to {{name}} for next time",
+    "submit": "Issue invoice",
+    "submitting": "Issuing..."
+  }
+}

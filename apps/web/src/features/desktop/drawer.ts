@@ -4,15 +4,8 @@ import { useAuthStore } from "@/features/auth/store";
 import { isWorkingOffline, useOfflineStore } from "@/features/pos/offline-store";
 import { syncOutbox } from "@/features/pos/sync";
 import { addToOutbox } from "@/lib/offline-db";
+import i18n from "@/i18n";
 import { desktop, desktopLog, useDeviceStore } from "./bridge";
-
-export const DRAWER_SUB_REASON_LABELS: Record<DrawerSubReason, string> = {
-  CASH_PICKUP: "Cash pickup",
-  FLOAT_ADJUSTMENT: "Float adjustment",
-  MANAGER_INSPECTION: "Manager inspection",
-  TEST: "Test",
-  OTHER: "Other",
-};
 
 /** A drawer is set up on this till (Windows app only). */
 export function useHasDrawer() {
@@ -73,7 +66,7 @@ export async function openCashDrawer(options: OpenDrawerOptions): Promise<boolea
   }
 
   if (!result.ok) {
-    toast.error(`The cash drawer didn't open: ${result.error}`, { duration: 10_000 });
+    toast.error(i18n.t("pos:drawer.failed", { error: result.error }), { duration: 10_000 });
   }
   return result.ok;
 }

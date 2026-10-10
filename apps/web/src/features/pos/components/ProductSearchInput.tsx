@@ -4,6 +4,7 @@ import type { ProductDto } from "@pos/shared";
 import { Input } from "@/components/ui/input";
 import { posFetchProducts } from "@/features/pos/catalog";
 import { findByBarcode } from "@/features/pos/api";
+import { useTranslation } from "react-i18next";
 import { useMoney } from "@/features/business/use-money";
 
 interface ProductSearchInputProps {
@@ -21,6 +22,7 @@ interface ProductSearchInputProps {
  * fuzzy search results the cashier can click.
  */
 export function ProductSearchInput({ onSelect, suppressRefocusRef }: ProductSearchInputProps) {
+  const { t } = useTranslation("pos");
   const money = useMoney();
   const [query, setQuery] = React.useState("");
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -69,7 +71,7 @@ export function ProductSearchInput({ onSelect, suppressRefocusRef }: ProductSear
       <Input
         ref={inputRef}
         autoFocus
-        placeholder="Scan barcode or search by name / SKU..."
+        placeholder={t("search.placeholder")}
         className="h-14 text-lg"
         value={query}
         onChange={(e) => setQuery(e.target.value)}

@@ -1,0 +1,22 @@
+{
+  "description": "Todas as vezes que a gaveta de uma caixa abriu, com quem, onde e porquê. As aberturas feitas sem internet aparecem quando a caixa sincronizar.",
+  "withoutSale": "Sem venda",
+  "allOpenings": "Todas as aberturas",
+  "columns": {
+    "when": "Quando",
+    "who": "Quem",
+    "till": "Caixa",
+    "reason": "Motivo",
+    "note": "Nota"
+  },
+  "cashSale": "Venda a dinheiro",
+  "noSale": "Sem venda: {{reason}}",
+  "unregisteredTill": "Caixa não registada",
+  "badges": {
+    "noPermission": "Sem permissão",
+    "didntOpen": "Não abriu",
+    "offline": "Sem internet"
+  },
+  "emptyManual": "Não há aberturas da gaveta sem venda.",
+  "emptyAll": "Ainda não há aberturas da gaveta registadas."
+}

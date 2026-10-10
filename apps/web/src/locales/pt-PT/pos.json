@@ -1,0 +1,98 @@
+{
+  "noStore": "Nenhuma loja selecionada.",
+  "totals": {
+    "subtotal": "Subtotal",
+    "tax": "IVA",
+    "total": "Total"
+  },
+  "search": {
+    "placeholder": "Leia o código de barras ou procure por nome / referência..."
+  },
+  "categories": {
+    "all": "Todos",
+    "empty": "Não há produtos nesta categoria."
+  },
+  "cart": {
+    "title": "Carrinho",
+    "empty": "O carrinho está vazio — leia ou procure um produto para começar.",
+    "each": "{{price}} cada",
+    "decrease": "Menos um",
+    "increase": "Mais um",
+    "remove": "Remover {{name}}"
+  },
+  "customer": {
+    "walkIn": "Cliente de balcão",
+    "clear": "Remover cliente",
+    "search": "Procurar clientes...",
+    "addNew": "Adicionar \"{{name}}\" como novo cliente",
+    "name": "Nome",
+    "phone": "Telefone (opcional)",
+    "email": "Email (opcional)",
+    "create": "Criar e selecionar",
+    "creating": "A criar..."
+  },
+  "payment": {
+    "removePayment": "Remover pagamento",
+    "addMethod": "Adicionar meio de pagamento",
+    "fullyAllocated": "Valor totalmente distribuído",
+    "remaining": "Em falta: {{amount}}",
+    "cancelSplit": "Cancelar pagamento dividido",
+    "tendered": "Valor entregue (opcional)",
+    "tenderedTooLow": "O valor entregue é inferior ao total",
+    "changeDue": "Troco: {{amount}}",
+    "split": "+ Dividir pagamento"
+  },
+  "checkout": {
+    "title": "Pagamento",
+    "emailReceipt": "Enviar talão por email (opcional)",
+    "failed": "Não foi possível concluir a venda",
+    "processing": "A processar...",
+    "charge": "Cobrar {{amount}}",
+    "printQuote": "Imprimir orçamento",
+    "clearCart": "Limpar carrinho",
+    "openDrawer": "Abrir gaveta"
+  },
+  "complete": {
+    "title": "Venda concluída",
+    "savedOffline": "Guardada sem internet — esta venda é sincronizada automaticamente quando voltar a ter ligação.",
+    "printReceipt": "Imprimir talão",
+    "a4Invoice": "Fatura A4"
+  },
+  "quote": {
+    "title": "Imprimir orçamento",
+    "description": "Mostra os preços do carrinho sem vender nada. O carrinho fica como está.",
+    "smallSlip": "Talão pequeno",
+    "a4": "Orçamento A4",
+    "forLabel": "Para (opcional)",
+    "forPlaceholder": "Nome do cliente ou da empresa",
+    "printSlip": "Imprimir orçamento",
+    "printA4": "Imprimir orçamento A4"
+  },
+  "drawer": {
+    "title": "Abrir gaveta de dinheiro",
+    "description": "Sem venda. Fica registado com o seu nome, a caixa e o motivo.",
+    "reason": "Motivo",
+    "note": "Nota",
+    "noteOptional": "Nota (opcional)",
+    "opening": "A abrir…",
+    "opened": "Gaveta aberta",
+    "failed": "A gaveta de dinheiro não abriu: {{error}}"
+  },
+  "sync": {
+    "synced_one": "{{count}} venda sincronizada",
+    "synced_other": "{{count}} vendas sincronizadas",
+    "failedReview_one": "{{count}} venda não sincronizou — precisa de revisão",
+    "failedReview_other": "{{count}} vendas não sincronizaram — precisam de revisão",
+    "unreachable": "Não foi possível contactar o servidor — vamos continuar a tentar",
+    "serverDown": "Não é possível contactar o servidor do ponto de venda",
+    "noInternet": "Sem ligação à internet",
+    "offline": "A trabalhar sem internet",
+    "offlineWaiting_one": "A trabalhar sem internet — {{count}} venda por sincronizar",
+    "offlineWaiting_other": "A trabalhar sem internet — {{count}} vendas por sincronizar",
+    "syncing_one": "A sincronizar {{count}} venda…",
+    "syncing_other": "A sincronizar {{count}} vendas…",
+    "failed_one": "{{count}} venda não sincronizou",
+    "failed_other": "{{count}} vendas não sincronizaram",
+    "retry": "Sincronizar agora"
+  }
+}

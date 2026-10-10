@@ -3,7 +3,7 @@ import type { BusinessDto, StoreDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
 import { logoSrc } from "@/features/business/api";
 import { documentTotals, type DocumentLine } from "@/features/documents/lines";
-import { formatMoney } from "@/lib/format";
+import { useDocumentLanguage } from "@/i18n/use-document-language";
 
 /** Seller block. Invoices pass a snapshot taken at issue time; quotes use the live settings. */
 export type SellerDetails = Pick<
@@ -48,9 +48,9 @@ interface A4DocumentProps {
 export function A4Document({ title, meta, store, lines, seller, billTo, notes }: A4DocumentProps) {
   const liveBusiness = useAuthStore((s) => s.business);
   const from = seller ?? liveBusiness;
+  const { t, money } = useDocumentLanguage(from?.currency);
   if (!from) return null;
 
-  const money = (v: number) => formatMoney(v, from.currency);
   const totals = documentTotals(lines);
   const logo = logoSrc(from);
   const contact = [from.phone ?? store?.phone, from.email, from.website].filter(Boolean).join(" · ");
@@ -66,8 +66,8 @@ export function A4Document({ title, meta, store, lines, seller, billTo, notes }:
             <p className="whitespace-pre-line">{from.address ?? store?.address}</p>
           )}
           {contact && <p>{contact}</p>}
-          {from.taxId && <p>Tax ID: {from.taxId}</p>}
-          {from.registrationNumber && <p>Reg. no.: {from.registrationNumber}</p>}
+          {from.taxId && <p>{t("taxId", { id: from.taxId })}</p>}
+          {from.registrationNumber && <p>{t("a4.regNo", { number: from.registrationNumber })}</p>}
         </div>
         <div className="text-right">
           <p className="mb-3 text-[20pt] font-bold tracking-wide">{title}</p>
@@ -86,10 +86,10 @@ export function A4Document({ title, meta, store, lines, seller, billTo, notes }:
 
       {billTo && (
         <section className="mt-[10mm] w-[85mm] space-y-0.5 border-l-2 border-neutral-300 pl-3">
-          <p className="text-[8pt] font-semibold uppercase tracking-wider text-neutral-600">Bill to</p>
+          <p className="text-[8pt] font-semibold uppercase tracking-wider text-neutral-600">{t("a4.billTo")}</p>
           <p className="font-semibold">{billTo.name}</p>
           {billTo.address && <p className="whitespace-pre-line">{billTo.address}</p>}
-          {billTo.taxId && <p>Tax ID: {billTo.taxId}</p>}
+          {billTo.taxId && <p>{t("taxId", { id: billTo.taxId })}</p>}
           {billTo.email && <p>{billTo.email}</p>}
         </section>
       )}
@@ -97,11 +97,11 @@ export function A4Document({ title, meta, store, lines, seller, billTo, notes }:
       <table className="mt-[10mm] w-full border-collapse">
         <thead>
           <tr className="border-b-2 border-black text-left text-[9pt]">
-            <th className="py-1.5 pr-2 font-semibold">Item</th>
-            <th className="py-1.5 pr-2 text-right font-semibold">Qty</th>
-            <th className="py-1.5 pr-2 text-right font-semibold">Unit price</th>
-            <th className="py-1.5 pr-2 text-right font-semibold">Tax</th>
-            <th className="py-1.5 text-right font-semibold">Amount</th>
+            <th className="py-1.5 pr-2 font-semibold">{t("a4.item")}</th>
+            <th className="py-1.5 pr-2 text-right font-semibold">{t("a4.qty")}</th>
+            <th className="py-1.5 pr-2 text-right font-semibold">{t("a4.unitPrice")}</th>
+            <th className="py-1.5 pr-2 text-right font-semibold">{t("totals.tax")}</th>
+            <th className="py-1.5 text-right font-semibold">{t("a4.amount")}</th>
           </tr>
         </thead>
         <tbody>
@@ -124,19 +124,19 @@ export function A4Document({ title, meta, store, lines, seller, billTo, notes }:
         <table className="w-full">
           <tbody>
             <tr>
-              <td className="py-0.5">Subtotal (excl. tax)</td>
+              <td className="py-0.5">{t("a4.subtotalExcl")}</td>
               <td className="py-0.5 text-right">{money(totals.net)}</td>
             </tr>
             {totals.byRate.map((row) => (
               <tr key={row.rate}>
                 <td className="py-0.5 text-neutral-700">
-                  Tax {row.rate}% on {money(row.net)}
+                  {t("a4.taxOn", { rate: row.rate, amount: money(row.net) })}
                 </td>
                 <td className="py-0.5 text-right">{money(row.tax)}</td>
               </tr>
             ))}
             <tr className="border-t-2 border-black text-[12pt] font-bold">
-              <td className="pt-1.5">Total</td>
+              <td className="pt-1.5">{t("totals.total")}</td>
               <td className="pt-1.5 text-right">{money(totals.gross)}</td>
             </tr>
           </tbody>

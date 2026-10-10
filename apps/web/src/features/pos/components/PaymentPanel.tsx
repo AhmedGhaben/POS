@@ -5,14 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useMoney } from "@/features/business/use-money";
-
-const PAYMENT_LABELS: Record<PaymentMethod, string> = {
-  [PaymentMethod.CASH]: "Cash",
-  [PaymentMethod.CARD]: "Card",
-  [PaymentMethod.MOBILE_MONEY]: "Mobile money",
-  [PaymentMethod.OTHER]: "Other",
-};
 
 interface SplitRow {
   id: number;
@@ -33,6 +27,7 @@ let nextRowId = 0;
  * is an opt-in toggle — it never appears in the default flow.
  */
 export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
+  const { t } = useTranslation(["pos", "common"]);
   const money = useMoney();
   const [isSplit, setIsSplit] = React.useState(false);
   const [method, setMethod] = React.useState<PaymentMethod>(PaymentMethod.CASH);
@@ -109,7 +104,7 @@ export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
               <SelectContent>
                 {Object.values(PaymentMethod).map((m) => (
                   <SelectItem key={m} value={m}>
-                    {PAYMENT_LABELS[m]}
+                    {t(`common:paymentMethods.${m}`)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -125,7 +120,7 @@ export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
             <Button
               variant="ghost"
               size="icon"
-              aria-label="Remove payment"
+              aria-label={t("payment.removePayment")}
               onClick={() => removeRow(row.id)}
             >
               <X className="h-4 w-4" />
@@ -133,17 +128,17 @@ export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
           </div>
         ))}
         <Button variant="outline" size="sm" className="w-full" onClick={addRow}>
-          Add payment method
+          {t("payment.addMethod")}
         </Button>
         <p className={`text-sm ${splitValid ? "text-muted-foreground" : "text-destructive"}`}>
-          {splitValid ? "Fully allocated" : `Remaining: ${money(remaining)}`}
+          {splitValid ? t("payment.fullyAllocated") : t("payment.remaining", { amount: money(remaining) })}
         </p>
         <button
           type="button"
           className="text-sm text-muted-foreground underline-offset-2 hover:underline"
           onClick={disableSplit}
         >
-          Cancel split payment
+          {t("payment.cancelSplit")}
         </button>
       </div>
     );
@@ -158,7 +153,7 @@ export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
         <SelectContent>
           {Object.values(PaymentMethod).map((m) => (
             <SelectItem key={m} value={m}>
-              {PAYMENT_LABELS[m]}
+              {t(`common:paymentMethods.${m}`)}
             </SelectItem>
           ))}
         </SelectContent>
@@ -170,7 +165,7 @@ export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
             type="number"
             step="0.01"
             min="0"
-            placeholder="Tendered amount (optional)"
+            placeholder={t("payment.tendered")}
             value={tendered}
             onChange={(e) => setTendered(e.target.value)}
           />
@@ -179,8 +174,8 @@ export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
               className={`text-sm ${singleInvalidTender ? "text-destructive" : "text-muted-foreground"}`}
             >
               {singleInvalidTender
-                ? "Tendered amount is less than the total"
-                : `Change due: ${money(changeDue)}`}
+                ? t("payment.tenderedTooLow")
+                : t("payment.changeDue", { amount: money(changeDue) })}
             </p>
           )}
         </div>
@@ -191,7 +186,7 @@ export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
         className="text-sm text-muted-foreground underline-offset-2 hover:underline"
         onClick={enableSplit}
       >
-        + Split payment
+        {t("payment.split")}
       </button>
     </div>
   );

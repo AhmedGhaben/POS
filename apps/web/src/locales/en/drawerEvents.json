@@ -1,0 +1,22 @@
+{
+  "description": "Every time a till's drawer opened, with who, where and why. Openings made offline appear once the till syncs.",
+  "withoutSale": "Without a sale",
+  "allOpenings": "All openings",
+  "columns": {
+    "when": "When",
+    "who": "Who",
+    "till": "Till",
+    "reason": "Reason",
+    "note": "Note"
+  },
+  "cashSale": "Cash sale",
+  "noSale": "No sale: {{reason}}",
+  "unregisteredTill": "Unregistered till",
+  "badges": {
+    "noPermission": "No permission",
+    "didntOpen": "Didn't open",
+    "offline": "Offline"
+  },
+  "emptyManual": "No drawer openings without a sale.",
+  "emptyAll": "No drawer openings recorded yet."
+}

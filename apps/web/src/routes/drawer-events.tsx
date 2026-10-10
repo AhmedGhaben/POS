@@ -1,12 +1,14 @@
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { DrawerOpenReason, type DrawerEventDto, type PagedDto } from "@pos/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DRAWER_SUB_REASON_LABELS } from "@/features/desktop/drawer";
 import { apiClient } from "@/lib/api-client";
+import { formatDateTime } from "@/lib/format";
 
 const PAGE_SIZE = 50;
 
@@ -16,13 +18,14 @@ function fetchDrawerEvents(page: number, reason: DrawerOpenReason | null) {
   return apiClient.get<PagedDto<DrawerEventDto>>(`/drawer-events?${params}`);
 }
 
-function reasonLabel(e: DrawerEventDto) {
-  if (e.reason === DrawerOpenReason.SALE_CASH_PAYMENT) return "Cash sale";
-  return `No sale: ${DRAWER_SUB_REASON_LABELS[e.subReason ?? "OTHER"]}`;
+function reasonLabel(e: DrawerEventDto, t: TFunction<["drawerEvents", "common"]>) {
+  if (e.reason === DrawerOpenReason.SALE_CASH_PAYMENT) return t("cashSale");
+  return t("noSale", { reason: t(`common:drawerReasons.${e.subReason ?? "OTHER"}`) });
 }
 
 /** Every cash drawer opening, newest first. Manual openings are what owners watch. */
 export function DrawerEventsPage() {
+  const { t } = useTranslation(["drawerEvents", "common"]);
   const [page, setPage] = React.useState(1);
   const [manualOnly, setManualOnly] = React.useState(true);
   const query = useQuery({
@@ -36,9 +39,9 @@ export function DrawerEventsPage() {
     <div className="mx-auto max-w-5xl p-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Cash drawer</h1>
+          <h1 className="text-2xl font-semibold">{t("common:nav.cashDrawer")}</h1>
           <p className="text-sm text-muted-foreground">
-            Every time a till's drawer opened, with who, where and why. Openings made offline appear once the till syncs.
+            {t("description")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -50,7 +53,7 @@ export function DrawerEventsPage() {
               setPage(1);
             }}
           >
-            Without a sale
+            {t("withoutSale")}
           </Button>
           <Button
             variant={manualOnly ? "outline" : "default"}
@@ -60,7 +63,7 @@ export function DrawerEventsPage() {
               setPage(1);
             }}
           >
-            All openings
+            {t("allOpenings")}
           </Button>
         </div>
       </div>
@@ -70,37 +73,37 @@ export function DrawerEventsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>When</TableHead>
-                <TableHead>Who</TableHead>
-                <TableHead>Till</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Note</TableHead>
+                <TableHead>{t("columns.when")}</TableHead>
+                <TableHead>{t("columns.who")}</TableHead>
+                <TableHead>{t("columns.till")}</TableHead>
+                <TableHead>{t("columns.reason")}</TableHead>
+                <TableHead>{t("columns.note")}</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
               {data?.items.map((e) => (
                 <TableRow key={e.id}>
-                  <TableCell className="whitespace-nowrap">{new Date(e.occurredAt).toLocaleString()}</TableCell>
+                  <TableCell className="whitespace-nowrap">{formatDateTime(e.occurredAt)}</TableCell>
                   <TableCell>
                     {e.user.firstName} {e.user.lastName}
                     <span className="block text-xs text-muted-foreground">{e.user.email}</span>
                   </TableCell>
                   <TableCell>
-                    {e.terminal ? `${e.terminal.code} · ${e.terminal.name}` : "Unregistered till"}
+                    {e.terminal ? `${e.terminal.code} · ${e.terminal.name}` : t("unregisteredTill")}
                     <span className="block text-xs text-muted-foreground">{e.store.name}</span>
                   </TableCell>
-                  <TableCell>{reasonLabel(e)}</TableCell>
+                  <TableCell>{reasonLabel(e, t)}</TableCell>
                   <TableCell className="max-w-[16rem] text-muted-foreground [overflow-wrap:anywhere]">{e.note}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {!e.permitted && <Badge variant="destructive">No permission</Badge>}
+                      {!e.permitted && <Badge variant="destructive">{t("badges.noPermission")}</Badge>}
                       {!e.succeeded && (
                         <Badge variant="outline" title={e.error ?? undefined}>
-                          Didn't open
+                          {t("badges.didntOpen")}
                         </Badge>
                       )}
-                      {e.createdOffline && <Badge variant="secondary">Offline</Badge>}
+                      {e.createdOffline && <Badge variant="secondary">{t("badges.offline")}</Badge>}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -108,7 +111,7 @@ export function DrawerEventsPage() {
               {data?.items.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="p-6 text-center text-muted-foreground">
-                    {manualOnly ? "No drawer openings without a sale." : "No drawer openings recorded yet."}
+                    {manualOnly ? t("emptyManual") : t("emptyAll")}
                   </TableCell>
                 </TableRow>
               )}
@@ -120,13 +123,13 @@ export function DrawerEventsPage() {
       {pageCount > 1 && (
         <div className="mt-4 flex items-center justify-end gap-2 text-sm">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-            Previous
+            {t("common:pagination.previous")}
           </Button>
           <span className="text-muted-foreground">
-            Page {page} of {pageCount}
+            {t("common:pagination.page", { page, total: pageCount })}
           </span>
           <Button variant="outline" size="sm" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)}>
-            Next
+            {t("common:pagination.next")}
           </Button>
         </div>
       )}

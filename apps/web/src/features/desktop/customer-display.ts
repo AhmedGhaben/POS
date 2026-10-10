@@ -1,7 +1,8 @@
 import * as React from "react";
 import type { SaleDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
-import { useMoney } from "@/features/business/use-money";
+import i18n, { DEFAULT_LANGUAGE, isLanguage } from "@/i18n";
+import { useDocumentLanguage } from "@/i18n/use-document-language";
 import type { CartLine } from "@/features/pos/hooks/useCart";
 import { desktop, useDeviceStore } from "./bridge";
 
@@ -30,10 +31,17 @@ export type CustomerDisplayMessage = { type: "state"; state: CustomerDisplayStat
 let channel: BroadcastChannel | null = null;
 let lastState: CustomerDisplayState | null = null;
 
+/** "Welcome to <business>" in the business language: the customer reads it. */
+export function welcomeText(business: { name: string; language?: string } | null | undefined): string {
+  const lng = isLanguage(business?.language) ? business.language : DEFAULT_LANGUAGE;
+  return business
+    ? i18n.t("documents:display.welcomeTo", { name: business.name, lng })
+    : i18n.t("documents:display.welcome", { lng });
+}
+
 function idleMessage(): string {
   const idle = useDeviceStore.getState().display?.idleMessage?.trim();
-  const business = useAuthStore.getState().business?.name;
-  return idle || (business ? `Welcome to ${business}` : "Welcome");
+  return idle || welcomeText(useAuthStore.getState().business);
 }
 
 function getChannel(): BroadcastChannel | null {
@@ -65,8 +73,8 @@ export function publishDisplayState(state: CustomerDisplayState) {
 /** The welcome text: this till's idle message, else the business name. */
 export function useIdleMessage() {
   const idle = useDeviceStore((s) => s.display?.idleMessage);
-  const business = useAuthStore((s) => s.business?.name);
-  return idle?.trim() || (business ? `Welcome to ${business}` : "Welcome");
+  const business = useAuthStore((s) => s.business);
+  return idle?.trim() || welcomeText(business);
 }
 
 /** Keep idle customer screens in step when the welcome message changes. */
@@ -83,7 +91,7 @@ export function useIdleMessageBroadcast() {
  * message otherwise. Coalesces bursts (scanning) into one update.
  */
 export function useCustomerDisplay(lines: CartLine[], total: number, completedSale: SaleDto | null) {
-  const money = useMoney();
+  const { money } = useDocumentLanguage(); // the customer's screen: business language
   const idleMessage = useIdleMessage();
   const previous = React.useRef<Map<string, number>>(new Map());
   const lastItem = React.useRef<{ name: string; quantity: number; price: string } | null>(null);

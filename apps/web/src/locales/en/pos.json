@@ -1,0 +1,98 @@
+{
+  "noStore": "No store selected.",
+  "totals": {
+    "subtotal": "Subtotal",
+    "tax": "Tax",
+    "total": "Total"
+  },
+  "search": {
+    "placeholder": "Scan barcode or search by name / SKU..."
+  },
+  "categories": {
+    "all": "All",
+    "empty": "No products in this category."
+  },
+  "cart": {
+    "title": "Cart",
+    "empty": "Cart is empty — scan or search a product to begin.",
+    "each": "{{price}} each",
+    "decrease": "One less",
+    "increase": "One more",
+    "remove": "Remove {{name}}"
+  },
+  "customer": {
+    "walkIn": "Walk-in customer",
+    "clear": "Clear customer",
+    "search": "Search customers...",
+    "addNew": "Add \"{{name}}\" as new customer",
+    "name": "Name",
+    "phone": "Phone (optional)",
+    "email": "Email (optional)",
+    "create": "Create & select",
+    "creating": "Creating..."
+  },
+  "payment": {
+    "removePayment": "Remove payment",
+    "addMethod": "Add payment method",
+    "fullyAllocated": "Fully allocated",
+    "remaining": "Remaining: {{amount}}",
+    "cancelSplit": "Cancel split payment",
+    "tendered": "Tendered amount (optional)",
+    "tenderedTooLow": "Tendered amount is less than the total",
+    "changeDue": "Change due: {{amount}}",
+    "split": "+ Split payment"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "emailReceipt": "Email receipt (optional)",
+    "failed": "Unable to complete sale",
+    "processing": "Processing...",
+    "charge": "Charge {{amount}}",
+    "printQuote": "Print quote",
+    "clearCart": "Clear cart",
+    "openDrawer": "Open drawer"
+  },
+  "complete": {
+    "title": "Sale complete",
+    "savedOffline": "Saved offline — this sale will sync automatically once you're back online.",
+    "printReceipt": "Print receipt",
+    "a4Invoice": "A4 invoice"
+  },
+  "quote": {
+    "title": "Print quote",
+    "description": "Shows the cart's prices without selling anything. The cart stays as it is.",
+    "smallSlip": "Small slip",
+    "a4": "A4 quotation",
+    "forLabel": "For (optional)",
+    "forPlaceholder": "Customer or company name",
+    "printSlip": "Print quote",
+    "printA4": "Print A4 quotation"
+  },
+  "drawer": {
+    "title": "Open cash drawer",
+    "description": "No sale. This is recorded with your name, the till and the reason.",
+    "reason": "Reason",
+    "note": "Note",
+    "noteOptional": "Note (optional)",
+    "opening": "Opening…",
+    "opened": "Drawer opened",
+    "failed": "The cash drawer didn't open: {{error}}"
+  },
+  "sync": {
+    "synced_one": "Synced {{count}} sale",
+    "synced_other": "Synced {{count}} sales",
+    "failedReview_one": "{{count}} sale failed to sync — needs review",
+    "failedReview_other": "{{count}} sales failed to sync — needs review",
+    "unreachable": "Couldn't reach the server — will keep trying",
+    "serverDown": "The POS server can't be reached",
+    "noInternet": "No internet connection",
+    "offline": "Working offline",
+    "offlineWaiting_one": "Working offline — {{count}} sale waiting to sync",
+    "offlineWaiting_other": "Working offline — {{count}} sales waiting to sync",
+    "syncing_one": "Syncing {{count}} sale…",
+    "syncing_other": "Syncing {{count}} sales…",
+    "failed_one": "{{count}} sale failed to sync",
+    "failed_other": "{{count}} sales failed to sync",
+    "retry": "Retry sync"
+  }
+}

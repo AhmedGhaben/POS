@@ -1,8 +1,7 @@
 import type { CustomerDto, SaleDto, StoreDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
-import { useMoney } from "@/features/business/use-money";
 import { SlipHeader } from "@/features/documents/components/SlipHeader";
-import { PAYMENT_LABELS } from "@/features/documents/payment-labels";
+import { useDocumentLanguage } from "@/i18n/use-document-language";
 
 interface ReceiptProps {
   sale: SaleDto;
@@ -13,9 +12,9 @@ interface ReceiptProps {
 }
 
 
-/** 80 mm slip. Shown as a preview on screen; wrap a copy in <PrintArea> to print it. */
+/** 80 mm slip, in the business language. Shown as a preview on screen; wrap a copy in <PrintArea> to print it. */
 export function Receipt({ sale, store, customer }: ReceiptProps) {
-  const money = useMoney();
+  const { t, money, dateTime } = useDocumentLanguage();
   const business = useAuthStore((s) => s.business);
   const changeDue = sale.changeDue !== null ? Number(sale.changeDue) : null;
   // Pre-migration sales have no payments rows; fall back to the legacy single-method field.
@@ -28,8 +27,8 @@ export function Receipt({ sale, store, customer }: ReceiptProps) {
     <div className="receipt-slip mx-auto w-[300px] font-mono text-xs">
       <SlipHeader store={store} />
       <hr className="my-2 border-dashed" />
-      <p className="text-center">{new Date(sale.createdAt).toLocaleString()}</p>
-      <p className="text-center">Receipt #{sale.receiptNumber}</p>
+      <p className="text-center">{dateTime(sale.createdAt)}</p>
+      <p className="text-center">{t("receipt.number", { number: sale.receiptNumber })}</p>
       {customer && <p className="text-center">{customer.name}</p>}
       <hr className="my-2 border-dashed" />
       {sale.lineItems.map((line) => (
@@ -42,37 +41,37 @@ export function Receipt({ sale, store, customer }: ReceiptProps) {
       ))}
       <hr className="my-2 border-dashed" />
       <div className="flex justify-between">
-        <span>Subtotal</span>
+        <span>{t("totals.subtotal")}</span>
         <span>{money(sale.subtotal)}</span>
       </div>
       <div className="flex justify-between">
-        <span>Tax</span>
+        <span>{t("totals.tax")}</span>
         <span>{money(sale.taxTotal)}</span>
       </div>
       <div className="flex justify-between font-semibold">
-        <span>Total</span>
+        <span>{t("totals.total")}</span>
         <span>{money(sale.total)}</span>
       </div>
       <hr className="my-2 border-dashed" />
       {payments.map((payment, i) => (
         <div key={payment.id ?? i} className="flex justify-between">
-          <span>{PAYMENT_LABELS[payment.method]}</span>
+          <span>{t(`common:paymentMethods.${payment.method}`)}</span>
           <span>{money(payment.amount)}</span>
         </div>
       ))}
       {sale.amountTendered !== null && (
         <div className="flex justify-between">
-          <span>Tendered</span>
+          <span>{t("receipt.tendered")}</span>
           <span>{money(sale.amountTendered)}</span>
         </div>
       )}
       {changeDue !== null && changeDue > 0 && (
         <div className="flex justify-between">
-          <span>Change due</span>
+          <span>{t("receipt.changeDue")}</span>
           <span>{money(changeDue)}</span>
         </div>
       )}
-      <p className="mt-2 whitespace-pre-line text-center">{business?.receiptFooter || "Thank you!"}</p>
+      <p className="mt-2 whitespace-pre-line text-center">{business?.receiptFooter || t("receipt.thankYou")}</p>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileText, ShoppingCart, Vault } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { DrawerOpenReason, PaymentMethod } from "@pos/shared";
 import type { CustomerDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ import { useCustomerDisplay } from "@/features/desktop/customer-display";
 import { useMoney } from "@/features/business/use-money";
 
 export function PosPage() {
+  const { t } = useTranslation("pos");
   const money = useMoney();
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const stores = useAuthStore((s) => s.stores);
@@ -106,22 +108,22 @@ export function PosPage() {
   });
 
   if (!currentStoreId) {
-    return <p className="p-6 text-muted-foreground">No store selected.</p>;
+    return <p className="p-6 text-muted-foreground">{t("noStore")}</p>;
   }
 
   const checkoutPanel = (
     <>
       <div className="flex-1 space-y-2 text-sm">
         <div className="flex justify-between">
-          <span className="text-muted-foreground">Subtotal</span>
+          <span className="text-muted-foreground">{t("totals.subtotal")}</span>
           <span>{money(totals.subtotal)}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-muted-foreground">Tax</span>
+          <span className="text-muted-foreground">{t("totals.tax")}</span>
           <span>{money(totals.taxTotal)}</span>
         </div>
         <div className="flex justify-between text-lg font-semibold">
-          <span>Total</span>
+          <span>{t("totals.total")}</span>
           <span>{money(totals.total)}</span>
         </div>
       </div>
@@ -130,7 +132,7 @@ export function PosPage() {
         <CustomerSearchCombobox selected={customer} onSelect={setCustomer} />
         <Input
           type="email"
-          placeholder="Email receipt (optional)"
+          placeholder={t("checkout.emailReceipt")}
           value={receiptEmail}
           onChange={(e) => setReceiptEmail(e.target.value)}
         />
@@ -147,7 +149,7 @@ export function PosPage() {
           <p className="text-sm text-destructive">
             {saleMutation.error instanceof ApiError
               ? saleMutation.error.message
-              : "Unable to complete sale"}
+              : t("checkout.failed")}
           </p>
         )}
 
@@ -157,7 +159,7 @@ export function PosPage() {
           disabled={lines.length === 0 || !paymentsValid || saleMutation.isPending}
           onClick={() => saleMutation.mutate()}
         >
-          {saleMutation.isPending ? "Processing..." : `Charge ${money(totals.total)}`}
+          {saleMutation.isPending ? t("checkout.processing") : t("checkout.charge", { amount: money(totals.total) })}
         </Button>
         <div className="grid grid-cols-2 gap-2">
           <Button
@@ -168,10 +170,10 @@ export function PosPage() {
               setQuoteOpen(true);
             }}
           >
-            <FileText className="mr-2 h-4 w-4" /> Print quote
+            <FileText className="mr-2 h-4 w-4" /> {t("checkout.printQuote")}
           </Button>
           <Button variant="outline" disabled={lines.length === 0} onClick={clear}>
-            Clear cart
+            {t("checkout.clearCart")}
           </Button>
           {hasDrawer && canOpenDrawer && (
             <Button
@@ -182,7 +184,7 @@ export function PosPage() {
                 setDrawerDialogOpen(true);
               }}
             >
-              <Vault className="mr-2 h-4 w-4" /> Open drawer
+              <Vault className="mr-2 h-4 w-4" /> {t("checkout.openDrawer")}
             </Button>
           )}
         </div>
@@ -208,7 +210,7 @@ export function PosPage() {
             className="fixed bottom-4 right-4 z-40 gap-2 shadow-lg lg:hidden"
           >
             <ShoppingCart className="h-4 w-4" />
-            Cart
+            {t("cart.title")}
             {lines.length > 0 && (
               <Badge variant="secondary" className="ml-1">
                 {lines.length}
@@ -218,7 +220,7 @@ export function PosPage() {
         </SheetTrigger>
         <SheetContent side="right" className="flex w-full flex-col p-4 sm:max-w-md">
           <SheetHeader>
-            <SheetTitle>Checkout</SheetTitle>
+            <SheetTitle>{t("checkout.title")}</SheetTitle>
           </SheetHeader>
           {checkoutPanel}
         </SheetContent>
@@ -242,11 +244,11 @@ export function PosPage() {
       <Dialog open={!!completedSale} onOpenChange={(open) => !open && setCompletedSale(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Sale complete</DialogTitle>
+            <DialogTitle>{t("complete.title")}</DialogTitle>
           </DialogHeader>
           {completedSale?.queued && (
             <p className="rounded-md bg-secondary px-3 py-2 text-sm text-secondary-foreground">
-              Saved offline — this sale will sync automatically once you're back online.
+              {t("complete.savedOffline")}
             </p>
           )}
           {completedSale && (
@@ -258,7 +260,7 @@ export function PosPage() {
             </>
           )}
           <div className="grid grid-cols-2 gap-2">
-            <Button onClick={() => void printDocument()}>Print receipt</Button>
+            <Button onClick={() => void printDocument()}>{t("complete.printReceipt")}</Button>
             <Button
               variant="outline"
               onClick={() => {
@@ -266,7 +268,7 @@ export function PosPage() {
                 setCompletedSale(null);
               }}
             >
-              <FileText className="mr-2 h-4 w-4" /> A4 invoice
+              <FileText className="mr-2 h-4 w-4" /> {t("complete.a4Invoice")}
             </Button>
           </div>
         </DialogContent>

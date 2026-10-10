@@ -1,16 +1,18 @@
 import * as React from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { DrawerOpenReason, type DrawerSubReason } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { DRAWER_SUB_REASON_LABELS, openCashDrawer } from "../drawer";
+import { openCashDrawer } from "../drawer";
 
 const REASONS: DrawerSubReason[] = ["CASH_PICKUP", "FLOAT_ADJUSTMENT", "MANAGER_INSPECTION", "OTHER"];
 
 /** "Open drawer" without a sale: asks why, opens, and records it (offline too). */
 export function OpenDrawerDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { t } = useTranslation(["pos", "common"]);
   const [reason, setReason] = React.useState<DrawerSubReason>("CASH_PICKUP");
   const [note, setNote] = React.useState("");
   const [busy, setBusy] = React.useState(false);
@@ -31,7 +33,7 @@ export function OpenDrawerDialog({ open, onOpenChange }: { open: boolean; onOpen
     const opened = await openCashDrawer({ reason: DrawerOpenReason.MANUAL_OPEN, subReason: reason, note });
     setBusy(false);
     if (opened) {
-      toast.success("Drawer opened");
+      toast.success(t("drawer.opened"));
       onOpenChange(false);
     }
   }
@@ -40,12 +42,12 @@ export function OpenDrawerDialog({ open, onOpenChange }: { open: boolean; onOpen
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Open cash drawer</DialogTitle>
-          <DialogDescription>No sale. This is recorded with your name, the till and the reason.</DialogDescription>
+          <DialogTitle>{t("drawer.title")}</DialogTitle>
+          <DialogDescription>{t("drawer.description")}</DialogDescription>
         </DialogHeader>
         <form className="space-y-4" onSubmit={submit}>
           <fieldset className="space-y-2">
-            <legend className="mb-1 text-sm font-medium">Reason</legend>
+            <legend className="mb-1 text-sm font-medium">{t("drawer.reason")}</legend>
             {REASONS.map((r) => (
               <label key={r} className="flex items-center gap-3 text-sm">
                 <input
@@ -55,12 +57,12 @@ export function OpenDrawerDialog({ open, onOpenChange }: { open: boolean; onOpen
                   checked={reason === r}
                   onChange={() => setReason(r)}
                 />
-                {DRAWER_SUB_REASON_LABELS[r]}
+                {t(`common:drawerReasons.${r}`)}
               </label>
             ))}
           </fieldset>
           <div className="space-y-1.5">
-            <Label htmlFor="drawer-note">Note{reason === "OTHER" ? "" : " (optional)"}</Label>
+            <Label htmlFor="drawer-note">{reason === "OTHER" ? t("drawer.note") : t("drawer.noteOptional")}</Label>
             <Textarea
               id="drawer-note"
               maxLength={300}
@@ -70,7 +72,7 @@ export function OpenDrawerDialog({ open, onOpenChange }: { open: boolean; onOpen
             />
           </div>
           <Button type="submit" className="w-full" disabled={busy || needsNote}>
-            {busy ? "Opening…" : "Open drawer"}
+            {busy ? t("drawer.opening") : t("checkout.openDrawer")}
           </Button>
         </form>
       </DialogContent>

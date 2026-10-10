@@ -1,26 +1,23 @@
 import type { InvoiceDto } from "@pos/shared";
 import { A4Document } from "@/features/documents/components/A4Document";
 import { linesFromSale } from "@/features/documents/lines";
-import { PAYMENT_LABELS } from "@/features/documents/payment-labels";
-import { formatMoney } from "@/lib/format";
-
-const longDate = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+import { useDocumentLanguage } from "@/i18n/use-document-language";
 
 /** An issued invoice, rendered from its stored snapshot: never from current settings. */
 export function InvoiceDocument({ invoice }: { invoice: InvoiceDto }) {
   const { sale, seller } = invoice;
+  const { t, money, longDate } = useDocumentLanguage(seller.currency);
   const payments =
     sale.payments.length > 0 ? sale.payments : [{ id: "legacy", method: sale.paymentMethod, amount: sale.total }];
 
   return (
     <A4Document
-      title="INVOICE"
+      title={t("invoice.title")}
       meta={[
-        ["Invoice no.", invoice.number],
-        ["Invoice date", longDate(invoice.issuedAt)],
-        ["Sale date", longDate(sale.createdAt)],
-        ["Receipt no.", sale.receiptNumber],
+        [t("invoice.number"), invoice.number],
+        [t("invoice.date"), longDate(invoice.issuedAt)],
+        [t("invoice.saleDate"), longDate(sale.createdAt)],
+        [t("invoice.receiptNumber"), sale.receiptNumber],
       ]}
       seller={seller}
       store={seller.store}
@@ -33,10 +30,10 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceDto }) {
       }}
       notes={
         <div className="text-[9pt]">
-          <p className="font-semibold">Paid in full</p>
+          <p className="font-semibold">{t("invoice.paidInFull")}</p>
           <p className="text-neutral-700">
             {payments
-              .map((p) => `${PAYMENT_LABELS[p.method]} ${formatMoney(p.amount, seller.currency)}`)
+              .map((p) => `${t(`common:paymentMethods.${p.method}`)} ${money(p.amount)}`)
               .join(" · ")}
           </p>
         </div>

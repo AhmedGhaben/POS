@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import type { ProductDto } from "@pos/shared";
 import { posFetchProducts } from "@/features/pos/catalog";
 import { useMoney } from "@/features/business/use-money";
@@ -10,6 +11,7 @@ interface ProductGridProps {
 
 /** Browsable grid for the currently selected category — click to add to cart. */
 export function ProductGrid({ categoryId, onSelect }: ProductGridProps) {
+  const { t } = useTranslation("pos");
   const money = useMoney();
   const productsQuery = useQuery({
     queryKey: ["pos-category-products", categoryId],
@@ -36,7 +38,7 @@ export function ProductGrid({ categoryId, onSelect }: ProductGridProps) {
       ))}
       {productsQuery.data?.length === 0 && (
         <p className="col-span-3 py-2 text-center text-sm text-muted-foreground">
-          No products in this category.
+          {t("categories.empty")}
         </p>
       )}
     </div>

@@ -1,0 +1,18 @@
+{
+  "issue": {
+    "title": "Fatura A4",
+    "titleIssued": "Fatura {{number}}",
+    "issuedHint": "Emitida. Imprima, ou escolha \"Salvar como PDF\" na janela de impressão para enviar por e-mail.",
+    "forReceipt": "Para o recibo {{number}}. O número da fatura é atribuído quando você continuar.",
+    "offline": "Esta venda foi salva sem internet. As faturas são numeradas pelo servidor, então emita depois que ela sincronizar: Faturas → \"Faturar uma venda anterior\".",
+    "nameRequired": "Digite o nome ou a empresa do comprador",
+    "print": "Imprimir fatura",
+    "billTo": "Cobrar de (nome ou empresa)",
+    "address": "Endereço",
+    "taxNumber": "CNPJ / CPF",
+    "email": "E-mail",
+    "saveToCustomer": "Salvar estes dados em {{name}} para a próxima vez",
+    "submit": "Emitir fatura",
+    "submitting": "Emitindo..."
+  }
+}

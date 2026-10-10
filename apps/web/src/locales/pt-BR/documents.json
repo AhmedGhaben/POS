@@ -1,0 +1,55 @@
+{
+  "store": "Loja",
+  "taxId": "CNPJ/CPF: {{id}}",
+  "totals": {
+    "subtotal": "Subtotal",
+    "tax": "Impostos",
+    "total": "Total"
+  },
+  "receipt": {
+    "number": "Recibo nº {{number}}",
+    "tendered": "Recebido",
+    "changeDue": "Troco",
+    "thankYou": "Obrigado!"
+  },
+  "quote": {
+    "slipTitle": "ORÇAMENTO",
+    "ref": "Ref. {{reference}}",
+    "for": "Para: {{name}}",
+    "validOn": "Preços válidos em {{date}}",
+    "notReceipt": "*** NÃO É RECIBO ***",
+    "notProof": "Este orçamento não é comprovante de pagamento.",
+    "a4Title": "ORÇAMENTO",
+    "reference": "Referência",
+    "date": "Data",
+    "a4Notes": "Preços válidos em {{date}}. Este orçamento não é fatura nem comprovante de pagamento; preços e disponibilidade podem mudar."
+  },
+  "a4": {
+    "regNo": "Inscrição: {{number}}",
+    "billTo": "Cobrar de",
+    "item": "Item",
+    "qty": "Qtd.",
+    "unitPrice": "Preço unitário",
+    "amount": "Valor",
+    "subtotalExcl": "Subtotal (sem impostos)",
+    "taxOn": "Imposto {{rate}}% sobre {{amount}}"
+  },
+  "invoice": {
+    "title": "FATURA",
+    "number": "Fatura nº",
+    "date": "Data da fatura",
+    "saleDate": "Data da venda",
+    "receiptNumber": "Recibo nº",
+    "paidInFull": "Pago integralmente"
+  },
+  "display": {
+    "windowTitle": "Tela do cliente",
+    "welcome": "Bem-vindo",
+    "welcomeTo": "{{name}} — boas-vindas!",
+    "items_one": "{{count}} item",
+    "items_other": "{{count}} itens",
+    "total": "Total {{amount}}",
+    "paid": "Pago {{amount}}",
+    "change": "Troco {{amount}}"
+  }
+}
