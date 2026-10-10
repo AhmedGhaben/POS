@@ -6,6 +6,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { ExpenseCategory } from "@pos/shared";
 import { Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,21 +23,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { createExpense, fetchExpenses } from "@/features/expenses/api";
 import { useAuthStore } from "@/features/auth/store";
 import { useMoney } from "@/features/business/use-money";
-
-const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
-  [ExpenseCategory.RENT]: "Rent",
-  [ExpenseCategory.UTILITIES]: "Utilities",
-  [ExpenseCategory.SUPPLIES]: "Supplies",
-  [ExpenseCategory.PAYROLL]: "Payroll",
-  [ExpenseCategory.MARKETING]: "Marketing",
-  [ExpenseCategory.MAINTENANCE]: "Maintenance",
-  [ExpenseCategory.OTHER]: "Other",
-};
+import { formatDate } from "@/lib/format";
 
 const expenseSchema = z.object({
   category: z.nativeEnum(ExpenseCategory),
   description: z.string().optional(),
-  amount: z.coerce.number().min(0, "Must be 0 or more"),
+  amount: z.coerce.number().min(0, "validation.nonNegative"),
 });
 
 const defaultValues = {
@@ -46,6 +38,7 @@ const defaultValues = {
 };
 
 export function ExpensesPage() {
+  const { t } = useTranslation(["backoffice", "common"]);
   const money = useMoney();
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -74,7 +67,7 @@ export function ExpensesPage() {
       queryClient.invalidateQueries({ queryKey: ["expenses", currentStoreId] });
       setDialogOpen(false);
       form.reset(defaultValues);
-      toast.success("Expense logged");
+      toast.success(t("expenses.logged"));
     },
     onError: (error) => {
       toast.error((error as Error).message);
@@ -84,27 +77,27 @@ export function ExpensesPage() {
   const total = expensesQuery.data?.reduce((sum, e) => sum + Number(e.amount), 0) ?? 0;
 
   if (!currentStoreId) {
-    return <p className="p-6 text-muted-foreground">No store selected.</p>;
+    return <p className="p-6 text-muted-foreground">{t("noStore")}</p>;
   }
 
   return (
     <div className="mx-auto max-w-4xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Expenses</h1>
+          <h1 className="text-2xl font-semibold">{t("common:nav.expenses")}</h1>
           <p className="text-sm text-muted-foreground">
-            {expensesQuery.data ? `${expensesQuery.data.length} logged · ${money(total)} total` : "Store expenses."}
+            {expensesQuery.data ? t("expenses.summary", { count: expensesQuery.data.length, total: money(total) }) : t("expenses.subtitle")}
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="mr-2 h-4 w-4" /> Log expense
+              <Plus className="mr-2 h-4 w-4" /> {t("expenses.new")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Log expense</DialogTitle>
+              <DialogTitle>{t("expenses.new")}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form
@@ -116,7 +109,7 @@ export function ExpensesPage() {
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
+                      <FormLabel>{t("expenses.category")}</FormLabel>
                       <Select value={field.value} onValueChange={field.onChange}>
                         <FormControl>
                           <SelectTrigger>
@@ -126,7 +119,7 @@ export function ExpensesPage() {
                         <SelectContent>
                           {Object.values(ExpenseCategory).map((category) => (
                             <SelectItem key={category} value={category}>
-                              {CATEGORY_LABELS[category]}
+                              {t(`expenses.categories.${category}`)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -140,7 +133,7 @@ export function ExpensesPage() {
                   name="amount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Amount</FormLabel>
+                      <FormLabel>{t("expenses.amount")}</FormLabel>
                       <FormControl>
                         <Input type="number" step="0.01" min={0} {...field} value={field.value as string} />
                       </FormControl>
@@ -153,7 +146,7 @@ export function ExpensesPage() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>{t("expenses.description")}</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -162,7 +155,7 @@ export function ExpensesPage() {
                   )}
                 />
                 <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Saving..." : "Save expense"}
+                  {createMutation.isPending ? t("common:actions.saving") : t("expenses.save")}
                 </Button>
               </form>
             </Form>
@@ -175,19 +168,19 @@ export function ExpensesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>{t("fields.date")}</TableHead>
+                <TableHead>{t("expenses.category")}</TableHead>
+                <TableHead>{t("expenses.description")}</TableHead>
+                <TableHead className="text-right">{t("expenses.amount")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {expensesQuery.data?.map((expense) => (
                 <TableRow key={expense.id}>
                   <TableCell className="text-muted-foreground">
-                    {new Date(expense.incurredAt).toLocaleDateString()}
+                    {formatDate(expense.incurredAt)}
                   </TableCell>
-                  <TableCell>{CATEGORY_LABELS[expense.category]}</TableCell>
+                  <TableCell>{t(`expenses.categories.${expense.category}`)}</TableCell>
                   <TableCell className="text-muted-foreground">{expense.description ?? "—"}</TableCell>
                   <TableCell className="text-right">{money(expense.amount)}</TableCell>
                 </TableRow>
@@ -195,7 +188,7 @@ export function ExpensesPage() {
               {expensesQuery.data?.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="p-6 text-center text-muted-foreground">
-                    No expenses logged yet.
+                    {t("expenses.empty")}
                   </TableCell>
                 </TableRow>
               )}

@@ -1,0 +1,40 @@
+{
+  "noStore": "No store selected.",
+  "fields": {
+    "name": "Name",
+    "phone": "Phone",
+    "email": "Email",
+    "address": "Address",
+    "date": "Date"
+  },
+  "suppliers": {
+    "subtitle": "Vendors you purchase inventory from.",
+    "new": "New supplier",
+    "contactName": "Contact name",
+    "contact": "Contact",
+    "save": "Save supplier",
+    "created": "Supplier created",
+    "empty": "No suppliers yet."
+  },
+  "expenses": {
+    "subtitle": "Store expenses.",
+    "summary_one": "{{count}} logged · {{total}} total",
+    "summary_other": "{{count}} logged · {{total}} total",
+    "new": "Log expense",
+    "category": "Category",
+    "amount": "Amount",
+    "description": "Description",
+    "save": "Save expense",
+    "logged": "Expense logged",
+    "empty": "No expenses logged yet.",
+    "categories": {
+      "RENT": "Rent",
+      "UTILITIES": "Utilities",
+      "SUPPLIES": "Supplies",
+      "PAYROLL": "Payroll",
+      "MARKETING": "Marketing",
+      "MAINTENANCE": "Maintenance",
+      "OTHER": "Other"
+    }
+  }
+}

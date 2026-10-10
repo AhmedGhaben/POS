@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import type { EmployeeDto } from "@pos/shared";
 import { Badge } from "@/components/ui/badge";
@@ -26,8 +27,8 @@ import { CreateLoginDialog } from "@/features/users/components/CreateLoginDialog
 import { LoginFields } from "@/features/users/components/LoginFields";
 import { ManageLoginDialog } from "@/features/users/components/ManageLoginDialog";
 import {
-  ROLE_LABELS,
   emptyLoginFields,
+  roleLabel,
   toStaffLoginDto,
   validateLoginFields,
   type LoginFieldsValue,
@@ -35,8 +36,8 @@ import {
 import { useAuthStore } from "@/features/auth/store";
 
 const employeeSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
+  firstName: z.string().min(1, "validation.required"),
+  lastName: z.string().min(1, "validation.required"),
   position: z.string().optional(),
   phone: z.string().optional(),
   wage: z.string().optional(),
@@ -55,6 +56,7 @@ const defaultValues = {
 };
 
 export function EmployeesPage() {
+  const { t } = useTranslation(["employees", "common"]);
   const queryClient = useQueryClient();
   const stores = useAuthStore((s) => s.stores);
   const isOwner = useAuthStore((s) => s.user?.role) === "OWNER";
@@ -103,10 +105,10 @@ export function EmployeesPage() {
       setLoginValue(emptyLoginFields({ storeIds: defaultLoginStoreIds }));
       toast.success(
         !employee.user
-          ? "Employee created"
+          ? t("created")
           : loginValue.method === "invite"
-            ? `Employee created — invite sent to ${employee.user.email}`
-            : `Employee created — they can sign in as ${employee.user.email}`,
+            ? t("createdInvite", { email: employee.user.email })
+            : t("createdLogin", { email: employee.user.email }),
       );
     },
     onError: (error) => {
@@ -140,18 +142,18 @@ export function EmployeesPage() {
     <div className="mx-auto max-w-4xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Employees</h1>
-          <p className="text-sm text-muted-foreground">Your staff, and who can sign in to the POS.</p>
+          <h1 className="text-2xl font-semibold">{t("common:nav.employees")}</h1>
+          <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="mr-2 h-4 w-4" /> New employee
+              <Plus className="mr-2 h-4 w-4" /> {t("new")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>New employee</DialogTitle>
+              <DialogTitle>{t("new")}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form
@@ -164,7 +166,7 @@ export function EmployeesPage() {
                     name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>First name</FormLabel>
+                        <FormLabel>{t("fields.firstName")}</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -177,7 +179,7 @@ export function EmployeesPage() {
                     name="lastName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Last name</FormLabel>
+                        <FormLabel>{t("fields.lastName")}</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -191,7 +193,7 @@ export function EmployeesPage() {
                   name="position"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Position</FormLabel>
+                      <FormLabel>{t("fields.position")}</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -205,7 +207,7 @@ export function EmployeesPage() {
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone</FormLabel>
+                        <FormLabel>{t("fields.phone")}</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -218,7 +220,7 @@ export function EmployeesPage() {
                     name="wage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Hourly wage</FormLabel>
+                        <FormLabel>{t("fields.wage")}</FormLabel>
                         <FormControl>
                           <Input type="number" step="0.01" {...field} />
                         </FormControl>
@@ -232,7 +234,7 @@ export function EmployeesPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>{t("fields.email")}</FormLabel>
                       <FormControl>
                         <Input type="email" {...field} />
                       </FormControl>
@@ -245,11 +247,11 @@ export function EmployeesPage() {
                   name="storeId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Assigned store</FormLabel>
+                      <FormLabel>{t("fields.store")}</FormLabel>
                       <Select value={field.value} onValueChange={field.onChange}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="All stores" />
+                            <SelectValue placeholder={t("allStores")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -273,7 +275,7 @@ export function EmployeesPage() {
                         checked={canSignIn}
                         onChange={(e) => toggleCanSignIn(e.target.checked)}
                       />
-                      Can sign in to the POS
+                      {t("canSignIn")}
                     </label>
                     {canSignIn && (
                       <LoginFields idPrefix="new-employee" value={loginValue} onChange={setLoginValue} />
@@ -282,7 +284,7 @@ export function EmployeesPage() {
                   </div>
                 )}
                 <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Saving..." : "Save employee"}
+                  {createMutation.isPending ? t("common:actions.saving") : t("save")}
                 </Button>
               </form>
             </Form>
@@ -295,10 +297,10 @@ export function EmployeesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Position</TableHead>
-                <TableHead>Store</TableHead>
-                <TableHead>Login</TableHead>
+                <TableHead>{t("columns.name")}</TableHead>
+                <TableHead>{t("fields.position")}</TableHead>
+                <TableHead>{t("columns.store")}</TableHead>
+                <TableHead>{t("columns.login")}</TableHead>
                 {isOwner && <TableHead className="w-0" />}
               </TableRow>
             </TableHeader>
@@ -309,7 +311,7 @@ export function EmployeesPage() {
                     {employee.firstName} {employee.lastName}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{employee.position ?? "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{employee.store?.name ?? "All stores"}</TableCell>
+                  <TableCell className="text-muted-foreground">{employee.store?.name ?? t("allStores")}</TableCell>
                   <TableCell>
                     {employee.user ? (
                       <div className="space-y-1">
@@ -317,18 +319,18 @@ export function EmployeesPage() {
                           <span className={employee.user.isActive ? "" : "text-muted-foreground line-through"}>
                             {employee.user.email}
                           </span>
-                          <Badge variant="secondary">{ROLE_LABELS[employee.user.role] ?? employee.user.role}</Badge>
-                          {!employee.user.isActive && <Badge variant="destructive">Deactivated</Badge>}
+                          <Badge variant="secondary">{roleLabel(employee.user.role)}</Badge>
+                          {!employee.user.isActive && <Badge variant="destructive">{t("deactivated")}</Badge>}
                         </div>
                         {employee.user.role !== "OWNER" && (
                           <div className="text-xs text-muted-foreground">
-                            {employee.user.storeIds.map((id) => storeNames.get(id) ?? "Unknown store").join(", ") ||
-                              "No stores"}
+                            {employee.user.storeIds.map((id) => storeNames.get(id) ?? t("unknownStore")).join(", ") ||
+                              t("noStores")}
                           </div>
                         )}
                       </div>
                     ) : (
-                      <span className="text-muted-foreground">No login</span>
+                      <span className="text-muted-foreground">{t("noLogin")}</span>
                     )}
                   </TableCell>
                   {isOwner && (
@@ -336,12 +338,12 @@ export function EmployeesPage() {
                       {employee.user ? (
                         employee.user.role !== "OWNER" && (
                           <Button variant="outline" size="sm" onClick={() => setManageLoginFor(employee)}>
-                            Manage
+                            {t("manage.button")}
                           </Button>
                         )
                       ) : (
                         <Button variant="outline" size="sm" onClick={() => setCreateLoginFor(employee)}>
-                          Create login
+                          {t("login.create")}
                         </Button>
                       )}
                     </TableCell>
@@ -351,7 +353,7 @@ export function EmployeesPage() {
               {employeesQuery.data?.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={isOwner ? 5 : 4} className="p-6 text-center text-muted-foreground">
-                    No employees yet.
+                    {t("empty")}
                   </TableCell>
                 </TableRow>
               )}

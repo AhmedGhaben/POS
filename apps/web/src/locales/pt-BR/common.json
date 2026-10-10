@@ -59,7 +59,9 @@
     "passwordLength": "Pelo menos 8 caracteres",
     "nonNegative": "Deve ser 0 ou mais",
     "positive": "Deve ser maior que 0",
-    "wholeNumber": "Deve ser um número inteiro"
+    "wholeNumber": "Deve ser um número inteiro",
+    "atLeast1": "Deve ser pelo menos 1",
+    "addLine": "Adicione pelo menos um item"
   },
   "paymentMethods": {
     "CASH": "Dinheiro",
@@ -78,5 +80,10 @@
     "previous": "Anterior",
     "next": "Próxima",
     "page": "Página {{page}} de {{total}}"
+  },
+  "roles": {
+    "OWNER": "Proprietário",
+    "MANAGER": "Gerente",
+    "CASHIER": "Operador de caixa"
   }
 }

@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,14 +27,14 @@ import { useAuthStore } from "@/features/auth/store";
 import { useMoney } from "@/features/business/use-money";
 
 const lineSchema = z.object({
-  productId: z.string().min(1, "Required"),
-  quantity: z.coerce.number().int("Whole numbers only").min(1, "Must be at least 1"),
-  unitCost: z.coerce.number().min(0, "Must be 0 or more"),
+  productId: z.string().min(1, "validation.required"),
+  quantity: z.coerce.number().int("validation.wholeNumber").min(1, "validation.atLeast1"),
+  unitCost: z.coerce.number().min(0, "validation.nonNegative"),
 });
 
 const purchaseSchema = z.object({
-  supplierId: z.string().min(1, "Supplier is required"),
-  lines: z.array(lineSchema).min(1, "Add at least one line item"),
+  supplierId: z.string().min(1, "validation.required"),
+  lines: z.array(lineSchema).min(1, "validation.addLine"),
 });
 
 const defaultValues = {
@@ -42,6 +43,7 @@ const defaultValues = {
 };
 
 export function PurchasesPage() {
+  const { t } = useTranslation(["stock", "common"]);
   const money = useMoney();
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -77,7 +79,7 @@ export function PurchasesPage() {
       queryClient.invalidateQueries({ queryKey: ["inventory", currentStoreId] });
       setDialogOpen(false);
       form.reset(defaultValues);
-      toast.success("Purchase recorded");
+      toast.success(t("purchases.done"));
     },
     onError: (error) => {
       toast.error((error as Error).message);
@@ -85,25 +87,25 @@ export function PurchasesPage() {
   });
 
   if (!currentStoreId) {
-    return <p className="p-6 text-muted-foreground">No store selected.</p>;
+    return <p className="p-6 text-muted-foreground">{t("noStore")}</p>;
   }
 
   return (
     <div className="mx-auto max-w-4xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Purchases</h1>
-          <p className="text-sm text-muted-foreground">Restock inventory from suppliers.</p>
+          <h1 className="text-2xl font-semibold">{t("common:nav.purchases")}</h1>
+          <p className="text-sm text-muted-foreground">{t("purchases.subtitle")}</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="mr-2 h-4 w-4" /> New purchase
+              <Plus className="mr-2 h-4 w-4" /> {t("purchases.new")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>New purchase</DialogTitle>
+              <DialogTitle>{t("purchases.new")}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form
@@ -115,11 +117,11 @@ export function PurchasesPage() {
                   name="supplierId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Supplier</FormLabel>
+                      <FormLabel>{t("purchases.supplier")}</FormLabel>
                       <Select value={field.value} onValueChange={field.onChange}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a supplier" />
+                            <SelectValue placeholder={t("purchases.selectSupplier")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -136,7 +138,7 @@ export function PurchasesPage() {
                 />
 
                 <div className="space-y-2">
-                  <Label>Line items</Label>
+                  <Label>{t("lineItems")}</Label>
                   {fields.map((line, index) => (
                     <div key={line.id} className="flex items-start gap-2">
                       <FormField
@@ -147,7 +149,7 @@ export function PurchasesPage() {
                             <Select value={field.value} onValueChange={field.onChange}>
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Product" />
+                                  <SelectValue placeholder={t("columns.product")} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
@@ -171,7 +173,7 @@ export function PurchasesPage() {
                               <Input
                                 type="number"
                                 min={1}
-                                placeholder="Qty"
+                                placeholder={t("qty")}
                                 className="w-20"
                                 {...field}
                                 value={field.value as string}
@@ -191,7 +193,7 @@ export function PurchasesPage() {
                                 type="number"
                                 step="0.01"
                                 min={0}
-                                placeholder="Unit cost"
+                                placeholder={t("purchases.unitCost")}
                                 className="w-28"
                                 {...field}
                                 value={field.value as string}
@@ -205,6 +207,7 @@ export function PurchasesPage() {
                         type="button"
                         variant="ghost"
                         size="icon"
+                        aria-label={t("removeLine")}
                         onClick={() => remove(index)}
                         disabled={fields.length === 1}
                       >
@@ -218,12 +221,12 @@ export function PurchasesPage() {
                     size="sm"
                     onClick={() => append({ productId: "", quantity: "1", unitCost: "" })}
                   >
-                    <Plus className="mr-1 h-3 w-3" /> Add line
+                    <Plus className="mr-1 h-3 w-3" /> {t("addLine")}
                   </Button>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Saving..." : "Record purchase"}
+                  {createMutation.isPending ? t("common:actions.saving") : t("purchases.submit")}
                 </Button>
               </form>
             </Form>
@@ -236,10 +239,10 @@ export function PurchasesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>PO #</TableHead>
-                <TableHead>Supplier</TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead className="text-right">Total</TableHead>
+                <TableHead>{t("purchases.poNumber")}</TableHead>
+                <TableHead>{t("purchases.supplier")}</TableHead>
+                <TableHead>{t("columns.items")}</TableHead>
+                <TableHead className="text-right">{t("columns.total")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -254,7 +257,7 @@ export function PurchasesPage() {
               {purchasesQuery.data?.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="p-6 text-center text-muted-foreground">
-                    No purchases yet.
+                    {t("purchases.empty")}
                   </TableCell>
                 </TableRow>
               )}

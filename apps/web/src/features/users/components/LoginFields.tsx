@@ -1,4 +1,5 @@
 import type { StaffRole } from "@pos/shared";
+import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,6 +15,7 @@ interface LoginFieldsProps {
 
 /** Email, role, stores and password-or-invite for a new staff login. */
 export function LoginFields({ value, onChange, idPrefix }: LoginFieldsProps) {
+  const { t } = useTranslation(["employees", "common"]);
   const stores = useAuthStore((s) => s.stores);
   const set = <K extends keyof LoginFieldsValue>(key: K, v: LoginFieldsValue[K]) =>
     onChange({ ...value, [key]: v });
@@ -22,7 +24,7 @@ export function LoginFields({ value, onChange, idPrefix }: LoginFieldsProps) {
     <div className="space-y-3">
       <div className="grid grid-cols-[1fr_8rem] gap-3">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-email`}>Login email</Label>
+          <Label htmlFor={`${idPrefix}-email`}>{t("login.email")}</Label>
           <Input
             id={`${idPrefix}-email`}
             type="email"
@@ -32,26 +34,26 @@ export function LoginFields({ value, onChange, idPrefix }: LoginFieldsProps) {
           />
         </div>
         <div className="space-y-2">
-          <Label>Role</Label>
+          <Label>{t("login.role")}</Label>
           <Select value={value.role} onValueChange={(v) => set("role", v as StaffRole)}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="CASHIER">Cashier</SelectItem>
-              <SelectItem value="MANAGER">Manager</SelectItem>
+              <SelectItem value="CASHIER">{t("common:roles.CASHIER")}</SelectItem>
+              <SelectItem value="MANAGER">{t("common:roles.MANAGER")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label>Stores they can use</Label>
+        <Label>{t("login.stores")}</Label>
         <StoreCheckboxes stores={stores} value={value.storeIds} onChange={(ids) => set("storeIds", ids)} />
       </div>
 
       <fieldset className="space-y-2">
-        <legend className="mb-2 text-sm font-medium">Password</legend>
+        <legend className="mb-2 text-sm font-medium">{t("login.password")}</legend>
         <label className="flex cursor-pointer items-center gap-2 text-sm">
           <input
             type="radio"
@@ -60,14 +62,14 @@ export function LoginFields({ value, onChange, idPrefix }: LoginFieldsProps) {
             checked={value.method === "password"}
             onChange={() => set("method", "password")}
           />
-          Set a password now and tell them
+          {t("login.setPassword")}
         </label>
         {value.method === "password" && (
           <Input
             type="password"
             autoComplete="new-password"
-            placeholder="At least 8 characters"
-            aria-label="Initial password"
+            placeholder={t("common:validation.passwordLength")}
+            aria-label={t("login.initialPassword")}
             value={value.password}
             onChange={(e) => set("password", e.target.value)}
             className="ml-6 w-[calc(100%-1.5rem)]"
@@ -81,7 +83,7 @@ export function LoginFields({ value, onChange, idPrefix }: LoginFieldsProps) {
             checked={value.method === "invite"}
             onChange={() => set("method", "invite")}
           />
-          Email them a link to set their own password
+          {t("login.sendInvite")}
         </label>
       </fieldset>
     </div>

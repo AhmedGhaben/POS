@@ -1,0 +1,40 @@
+{
+  "noStore": "Nenhuma loja selecionada.",
+  "fields": {
+    "name": "Nome",
+    "phone": "Telefone",
+    "email": "Email",
+    "address": "Morada",
+    "date": "Data"
+  },
+  "suppliers": {
+    "subtitle": "Fornecedores a quem compra stock.",
+    "new": "Novo fornecedor",
+    "contactName": "Pessoa de contacto",
+    "contact": "Contacto",
+    "save": "Guardar fornecedor",
+    "created": "Fornecedor criado",
+    "empty": "Ainda não há fornecedores."
+  },
+  "expenses": {
+    "subtitle": "Despesas da loja.",
+    "summary_one": "{{count}} registada · {{total}} no total",
+    "summary_other": "{{count}} registadas · {{total}} no total",
+    "new": "Registar despesa",
+    "category": "Categoria",
+    "amount": "Valor",
+    "description": "Descrição",
+    "save": "Guardar despesa",
+    "logged": "Despesa registada",
+    "empty": "Ainda não há despesas registadas.",
+    "categories": {
+      "RENT": "Renda",
+      "UTILITIES": "Água, luz e gás",
+      "SUPPLIES": "Material",
+      "PAYROLL": "Salários",
+      "MARKETING": "Publicidade",
+      "MAINTENANCE": "Manutenção",
+      "OTHER": "Outro"
+    }
+  }
+}

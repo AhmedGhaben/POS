@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,7 +21,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { createSupplier, fetchSuppliers } from "@/features/suppliers/api";
 
 const supplierSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, "validation.required"),
   contactName: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().optional(),
@@ -36,6 +37,7 @@ const defaultValues = {
 };
 
 export function SuppliersPage() {
+  const { t } = useTranslation(["backoffice", "common"]);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const queryClient = useQueryClient();
   const suppliersQuery = useQuery({ queryKey: ["suppliers"], queryFn: fetchSuppliers });
@@ -58,7 +60,7 @@ export function SuppliersPage() {
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       setDialogOpen(false);
       form.reset(defaultValues);
-      toast.success("Supplier created");
+      toast.success(t("suppliers.created"));
     },
     onError: (error) => {
       toast.error((error as Error).message);
@@ -69,18 +71,18 @@ export function SuppliersPage() {
     <div className="mx-auto max-w-4xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Suppliers</h1>
-          <p className="text-sm text-muted-foreground">Vendors you purchase inventory from.</p>
+          <h1 className="text-2xl font-semibold">{t("common:nav.suppliers")}</h1>
+          <p className="text-sm text-muted-foreground">{t("suppliers.subtitle")}</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="mr-2 h-4 w-4" /> New supplier
+              <Plus className="mr-2 h-4 w-4" /> {t("suppliers.new")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>New supplier</DialogTitle>
+              <DialogTitle>{t("suppliers.new")}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form
@@ -92,7 +94,7 @@ export function SuppliersPage() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name</FormLabel>
+                      <FormLabel>{t("fields.name")}</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -105,7 +107,7 @@ export function SuppliersPage() {
                   name="contactName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact name</FormLabel>
+                      <FormLabel>{t("suppliers.contactName")}</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -119,7 +121,7 @@ export function SuppliersPage() {
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone</FormLabel>
+                        <FormLabel>{t("fields.phone")}</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -132,7 +134,7 @@ export function SuppliersPage() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>{t("fields.email")}</FormLabel>
                         <FormControl>
                           <Input type="email" {...field} />
                         </FormControl>
@@ -146,7 +148,7 @@ export function SuppliersPage() {
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Address</FormLabel>
+                      <FormLabel>{t("fields.address")}</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -155,7 +157,7 @@ export function SuppliersPage() {
                   )}
                 />
                 <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Saving..." : "Save supplier"}
+                  {createMutation.isPending ? t("common:actions.saving") : t("suppliers.save")}
                 </Button>
               </form>
             </Form>
@@ -168,10 +170,10 @@ export function SuppliersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>{t("fields.name")}</TableHead>
+                <TableHead>{t("suppliers.contact")}</TableHead>
+                <TableHead>{t("fields.phone")}</TableHead>
+                <TableHead>{t("fields.email")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -186,7 +188,7 @@ export function SuppliersPage() {
               {suppliersQuery.data?.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="p-6 text-center text-muted-foreground">
-                    No suppliers yet.
+                    {t("suppliers.empty")}
                   </TableCell>
                 </TableRow>
               )}

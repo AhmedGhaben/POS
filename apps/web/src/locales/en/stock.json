@@ -1,0 +1,67 @@
+{
+  "noStore": "No store selected.",
+  "lineItems": "Line items",
+  "qty": "Qty",
+  "addLine": "Add line",
+  "removeLine": "Remove line",
+  "noteOptional": "Note (optional)",
+  "columns": {
+    "product": "Product",
+    "sku": "SKU",
+    "quantity": "Quantity",
+    "date": "Date",
+    "items": "Items",
+    "note": "Note",
+    "total": "Total"
+  },
+  "inventory": {
+    "subtitle": "Stock levels for the current store.",
+    "exportFile": "inventory.csv",
+    "reorderLevel": "Reorder level",
+    "lowStock": "Low stock",
+    "updated": "Stock updated",
+    "empty": "No inventory yet for this store."
+  },
+  "transfers": {
+    "title": "Stock transfers",
+    "subtitle": "Move inventory between stores.",
+    "new": "New transfer",
+    "fromStore": "From store",
+    "toStore": "To store",
+    "source": "Source",
+    "destination": "Destination",
+    "from": "From",
+    "to": "To",
+    "sameStore": "Source and destination must be different.",
+    "submit": "Transfer stock",
+    "submitting": "Transferring...",
+    "done": "Stock transferred",
+    "empty": "No transfers yet."
+  },
+  "purchases": {
+    "subtitle": "Restock inventory from suppliers.",
+    "new": "New purchase",
+    "supplier": "Supplier",
+    "selectSupplier": "Select a supplier",
+    "unitCost": "Unit cost",
+    "submit": "Record purchase",
+    "done": "Purchase recorded",
+    "poNumber": "PO #",
+    "empty": "No purchases yet."
+  },
+  "returns": {
+    "subtitle": "Process refunds against a past sale.",
+    "new": "New return",
+    "sale": "Sale",
+    "selectSale": "Select a recent sale",
+    "itemsToReturn": "Items to return",
+    "sold": "(sold {{count}})",
+    "overSold": "Cannot exceed the sold quantity",
+    "reason": "Reason",
+    "submit": "Process return",
+    "submitting": "Processing...",
+    "done": "Return processed",
+    "refund": "Refund",
+    "empty": "No returns processed yet."
+  }
+}

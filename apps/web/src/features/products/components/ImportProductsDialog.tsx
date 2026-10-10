@@ -1,6 +1,8 @@
 import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Trans, useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { Download, FileUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuthStore } from "@/features/auth/store";
 import { fetchProducts, IMPORT_CHUNK_SIZE, importProducts } from "@/features/products/api";
-import { buildPreview, mapColumns, TEMPLATE_HEADERS, type ImportField, type PreviewRow } from "@/features/products/import-rows";
+import { buildPreview, fieldHeader, IMPORT_FIELDS, mapColumns, type ImportField, type PreviewRow } from "@/features/products/import-rows";
 import { downloadCsv } from "@/lib/csv";
 import { parseCsv } from "@/lib/csv-parse";
 
@@ -24,32 +26,32 @@ type Step =
 const PREVIEW_LIMIT = 300;
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
-const STATUS_BADGE: Record<PreviewRow["status"], { label: string; variant: "default" | "secondary" | "destructive" }> = {
-  new: { label: "New", variant: "default" },
-  update: { label: "Update", variant: "secondary" },
-  error: { label: "Error", variant: "destructive" },
+const STATUS_VARIANT: Record<PreviewRow["status"], "default" | "secondary" | "destructive"> = {
+  new: "default",
+  update: "secondary",
+  error: "destructive",
 };
 
 function downloadTemplate() {
-  const fields = Object.keys(TEMPLATE_HEADERS) as ImportField[];
   const example: Record<ImportField, string> = {
-    name: "Green tea 250g",
+    name: i18n.t("products:import.exampleName"),
     sku: "TEA-250",
     barcode: "5012345678900",
-    category: "Drinks",
+    category: i18n.t("products:import.exampleCategory"),
     costPrice: "2.10",
     sellPrice: "4.50",
     taxRate: "10",
     stock: "24",
   };
   downloadCsv(
-    "products-template.csv",
-    fields.map((f) => ({ header: TEMPLATE_HEADERS[f], value: (row: Record<ImportField, string>) => row[f] })),
+    i18n.t("products:import.templateFile"),
+    IMPORT_FIELDS.map((f) => ({ header: fieldHeader(f), value: (row: Record<ImportField, string>) => row[f] })),
     [example],
   );
 }
 
 export function ImportProductsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { t } = useTranslation(["products", "common"]);
   const queryClient = useQueryClient();
   const stores = useAuthStore((s) => s.stores);
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
@@ -67,14 +69,14 @@ export function ImportProductsDialog({ open, onOpenChange }: { open: boolean; on
   }, [open, currentStoreId]);
 
   async function readFile(file: File) {
-    if (file.size > MAX_FILE_BYTES) return setStep({ kind: "choose", error: "That file is over 5 MB." });
+    if (file.size > MAX_FILE_BYTES) return setStep({ kind: "choose", error: t("import.tooBig") });
     const { rows } = parseCsv(await file.text());
-    if (rows.length < 2) return setStep({ kind: "choose", error: "The file has no product rows under the header." });
+    if (rows.length < 2) return setStep({ kind: "choose", error: t("import.noRows") });
     const { columns, missing } = mapColumns(rows[0]);
     if (missing.length > 0) {
       return setStep({
         kind: "choose",
-        error: `Missing column${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}. Download the template to see the expected headers.`,
+        error: t("import.missingColumns", { count: missing.length, columns: missing.join(", ") }),
       });
     }
     const existing = await queryClient.fetchQuery({ queryKey: ["products", ""], queryFn: () => fetchProducts() });
@@ -91,7 +93,7 @@ export function ImportProductsDialog({ open, onOpenChange }: { open: boolean; on
       updated: 0,
       skipped: [
         ...errorRows.map((r) => ({ line: r.line, sku: r.sku, reason: r.errors.join("; ") })),
-        ...notUpdated.map((r) => ({ line: r.line, sku: r.sku, reason: "SKU already exists (updating is off)" })),
+        ...notUpdated.map((r) => ({ line: r.line, sku: r.sku, reason: t("import.updatingOff") })),
       ],
     };
     setStep({ kind: "importing", done: 0, total: toSend.length });
@@ -111,7 +113,7 @@ export function ImportProductsDialog({ open, onOpenChange }: { open: boolean; on
       }
     } catch (err) {
       // Earlier chunks are already saved; say so rather than implying nothing happened.
-      toast.error(`Import stopped: ${(err as Error).message}`);
+      toast.error(t("import.stopped", { error: (err as Error).message }));
     }
     result.skipped.sort((a, b) => a.line - b.line);
     setStep({ kind: "done", ...result });
@@ -124,9 +126,9 @@ export function ImportProductsDialog({ open, onOpenChange }: { open: boolean; on
     <Dialog open={open} onOpenChange={(o) => step.kind !== "importing" && onOpenChange(o)}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Import products from CSV</DialogTitle>
+          <DialogTitle>{t("import.title")}</DialogTitle>
           <DialogDescription>
-            Products are matched by SKU. Nothing is saved until you confirm the preview.
+            {t("import.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -135,10 +137,9 @@ export function ImportProductsDialog({ open, onOpenChange }: { open: boolean; on
             <div className="rounded-md border border-dashed p-6 text-center">
               <FileUp className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
               <p className="mb-3 text-sm text-muted-foreground">
-                A .csv file with a header row. Required columns: Name, SKU, Sell price. Optional: Barcode, Category, Cost
-                price, Tax %, Stock. Excel files: use File → Save As → CSV.
+                {t("import.fileHelp")}
               </p>
-              <Button onClick={() => inputRef.current?.click()}>Choose file</Button>
+              <Button onClick={() => inputRef.current?.click()}>{t("import.chooseFile")}</Button>
               <input
                 ref={inputRef}
                 type="file"
@@ -153,7 +154,7 @@ export function ImportProductsDialog({ open, onOpenChange }: { open: boolean; on
             </div>
             {step.error && <p className="text-sm text-destructive">{step.error}</p>}
             <Button variant="link" className="h-auto p-0" onClick={downloadTemplate}>
-              <Download className="mr-1 h-4 w-4" /> Download template
+              <Download className="mr-1 h-4 w-4" /> {t("import.downloadTemplate")}
             </Button>
           </div>
         )}
@@ -175,16 +176,19 @@ export function ImportProductsDialog({ open, onOpenChange }: { open: boolean; on
 
         {step.kind === "importing" && (
           <p className="py-6 text-center text-sm text-muted-foreground">
-            Importing… {step.done} of {step.total} rows
+            {t("import.importing", { done: step.done, total: step.total })}
           </p>
         )}
 
         {step.kind === "done" && (
           <div className="space-y-4">
             <p className="text-sm">
-              <span className="font-semibold">{step.created}</span> created,{" "}
-              <span className="font-semibold">{step.updated}</span> updated,{" "}
-              <span className="font-semibold">{step.skipped.length}</span> skipped.
+              <Trans
+                t={t}
+                i18nKey="import.result"
+                values={{ created: step.created, updated: step.updated, skipped: step.skipped.length }}
+                components={{ b: <span className="font-semibold" /> }}
+              />
             </p>
             {step.skipped.length > 0 && (
               <>
@@ -192,9 +196,9 @@ export function ImportProductsDialog({ open, onOpenChange }: { open: boolean; on
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-16">Line</TableHead>
-                        <TableHead>SKU</TableHead>
-                        <TableHead>Reason</TableHead>
+                        <TableHead className="w-16">{t("import.line")}</TableHead>
+                        <TableHead>{t("columns.sku")}</TableHead>
+                        <TableHead>{t("import.reason")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -212,22 +216,22 @@ export function ImportProductsDialog({ open, onOpenChange }: { open: boolean; on
                   variant="outline"
                   onClick={() =>
                     downloadCsv(
-                      "skipped-rows.csv",
+                      t("import.skippedFile"),
                       [
-                        { header: "Line", value: (s: { line: number }) => s.line },
-                        { header: "SKU", value: (s: { sku: string }) => s.sku },
-                        { header: "Reason", value: (s: { reason: string }) => s.reason },
+                        { header: t("import.line"), value: (s: { line: number }) => s.line },
+                        { header: t("columns.sku"), value: (s: { sku: string }) => s.sku },
+                        { header: t("import.reason"), value: (s: { reason: string }) => s.reason },
                       ],
                       step.skipped,
                     )
                   }
                 >
-                  <Download className="mr-2 h-4 w-4" /> Download skipped rows
+                  <Download className="mr-2 h-4 w-4" /> {t("import.downloadSkipped")}
                 </Button>
               </>
             )}
             <Button className="w-full" onClick={() => onOpenChange(false)}>
-              Done
+              {t("import.done")}
             </Button>
           </div>
         )}
@@ -250,6 +254,7 @@ interface PreviewStepProps {
 }
 
 function PreviewStep(props: PreviewStepProps) {
+  const { t } = useTranslation("products");
   const { step, updateExisting, createCategories, storeId, stores } = props;
   const counts = { new: 0, update: 0, error: 0 };
   for (const row of step.rows) counts[row.status]++;
@@ -259,11 +264,12 @@ function PreviewStep(props: PreviewStepProps) {
   return (
     <div className="space-y-4">
       <p className="text-sm">
-        <span className="font-medium">{step.fileName}</span>: {counts.new} new, {counts.update} matching existing SKUs,{" "}
-        <span className={counts.error > 0 ? "font-medium text-destructive" : undefined}>
-          {counts.error} with errors
-        </span>
-        .
+        <Trans
+          t={t}
+          i18nKey="import.summary"
+          values={{ file: step.fileName, created: counts.new, updated: counts.update, errors: counts.error }}
+          components={{ b: <span className="font-medium" />, err: <span className={counts.error > 0 ? "font-medium text-destructive" : undefined} /> }}
+        />
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -275,8 +281,8 @@ function PreviewStep(props: PreviewStepProps) {
             onChange={(e) => props.setUpdateExisting(e.target.checked)}
           />
           <span>
-            Update existing products with a matching SKU
-            <span className="block text-xs text-muted-foreground">Columns left blank keep their current values.</span>
+            {t("import.updateExisting")}
+            <span className="block text-xs text-muted-foreground">{t("import.updateExistingHint")}</span>
           </span>
         </label>
         <label className="flex cursor-pointer items-start gap-2 text-sm">
@@ -287,16 +293,16 @@ function PreviewStep(props: PreviewStepProps) {
             onChange={(e) => props.setCreateCategories(e.target.checked)}
           />
           <span>
-            Create missing categories
-            <span className="block text-xs text-muted-foreground">Otherwise rows with an unknown category are skipped.</span>
+            {t("import.createCategories")}
+            <span className="block text-xs text-muted-foreground">{t("import.createCategoriesHint")}</span>
           </span>
         </label>
         {step.hasStock && (
           <div className="space-y-1 sm:col-span-2">
-            <Label>Stock column sets the quantity at</Label>
+            <Label>{t("import.stockAt")}</Label>
             <Select value={storeId} onValueChange={props.setStoreId}>
               <SelectTrigger className="sm:w-72">
-                <SelectValue placeholder="Choose a store" />
+                <SelectValue placeholder={t("import.chooseStore")} />
               </SelectTrigger>
               <SelectContent>
                 {stores.map((s) => (
@@ -314,11 +320,11 @@ function PreviewStep(props: PreviewStepProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-14">Line</TableHead>
-              <TableHead className="w-20">Status</TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead className="text-right">Sell price</TableHead>
+              <TableHead className="w-14">{t("import.line")}</TableHead>
+              <TableHead className="w-20">{t("import.status")}</TableHead>
+              <TableHead>{t("columns.sku")}</TableHead>
+              <TableHead>{t("columns.name")}</TableHead>
+              <TableHead className="text-right">{t("columns.sellPrice")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -326,7 +332,7 @@ function PreviewStep(props: PreviewStepProps) {
               <TableRow key={row.line} className={row.status === "error" ? "bg-destructive/5" : undefined}>
                 <TableCell>{row.line}</TableCell>
                 <TableCell>
-                  <Badge variant={STATUS_BADGE[row.status].variant}>{STATUS_BADGE[row.status].label}</Badge>
+                  <Badge variant={STATUS_VARIANT[row.status]}>{t(`import.statuses.${row.status}`)}</Badge>
                 </TableCell>
                 <TableCell>{row.sku || "—"}</TableCell>
                 <TableCell>
@@ -340,21 +346,21 @@ function PreviewStep(props: PreviewStepProps) {
         </Table>
         {step.rows.length > PREVIEW_LIMIT && (
           <p className="p-2 text-center text-xs text-muted-foreground">
-            Showing the first {PREVIEW_LIMIT} of {step.rows.length} rows; all of them will be imported.
+            {t("import.showingFirst", { shown: PREVIEW_LIMIT, total: step.rows.length })}
           </p>
         )}
       </div>
 
       <div className="flex flex-wrap justify-end gap-2">
         <Button variant="outline" onClick={props.onBack}>
-          Choose another file
+          {t("import.chooseAnother")}
         </Button>
         <Button disabled={importable === 0 || needsStore} onClick={props.onImport}>
-          Import {importable} product{importable === 1 ? "" : "s"}
+          {t("import.submit", { count: importable })}
         </Button>
       </div>
       {counts.error > 0 && (
-        <p className="text-right text-xs text-muted-foreground">Rows with errors are skipped and listed afterwards.</p>
+        <p className="text-right text-xs text-muted-foreground">{t("import.errorsSkipped")}</p>
       )}
     </div>
   );

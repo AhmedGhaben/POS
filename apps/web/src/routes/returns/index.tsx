@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,21 +24,22 @@ import { createReturn, fetchReturns } from "@/features/returns/api";
 import { fetchSalesByStore } from "@/features/sales/api";
 import { useAuthStore } from "@/features/auth/store";
 import { useMoney } from "@/features/business/use-money";
+import { formatDate } from "@/lib/format";
 
 const returnLineSchema = z
   .object({
     productId: z.string(),
     productName: z.string(),
     maxQuantity: z.number(),
-    quantity: z.coerce.number().min(0, "Must be 0 or more"),
+    quantity: z.coerce.number().min(0, "validation.nonNegative"),
   })
   .refine((line) => line.quantity <= line.maxQuantity, {
-    message: "Cannot exceed the sold quantity",
+    message: "stock:returns.overSold",
     path: ["quantity"],
   });
 
 const returnSchema = z.object({
-  saleId: z.string().min(1, "Select a sale"),
+  saleId: z.string().min(1, "validation.required"),
   reason: z.string().optional(),
   lines: z.array(returnLineSchema),
 });
@@ -49,6 +51,7 @@ const defaultValues: z.input<typeof returnSchema> = {
 };
 
 export function ReturnsPage() {
+  const { t } = useTranslation(["stock", "common"]);
   const money = useMoney();
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -86,7 +89,7 @@ export function ReturnsPage() {
       queryClient.invalidateQueries({ queryKey: ["inventory", currentStoreId] });
       setDialogOpen(false);
       form.reset(defaultValues);
-      toast.success("Return processed");
+      toast.success(t("returns.done"));
     },
     onError: (error) => {
       toast.error((error as Error).message);
@@ -94,25 +97,25 @@ export function ReturnsPage() {
   });
 
   if (!currentStoreId) {
-    return <p className="p-6 text-muted-foreground">No store selected.</p>;
+    return <p className="p-6 text-muted-foreground">{t("noStore")}</p>;
   }
 
   return (
     <div className="mx-auto max-w-4xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Returns</h1>
-          <p className="text-sm text-muted-foreground">Process refunds against a past sale.</p>
+          <h1 className="text-2xl font-semibold">{t("common:nav.returns")}</h1>
+          <p className="text-sm text-muted-foreground">{t("returns.subtitle")}</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="mr-2 h-4 w-4" /> New return
+              <Plus className="mr-2 h-4 w-4" /> {t("returns.new")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>New return</DialogTitle>
+              <DialogTitle>{t("returns.new")}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form
@@ -124,7 +127,7 @@ export function ReturnsPage() {
                   name="saleId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Sale</FormLabel>
+                      <FormLabel>{t("returns.sale")}</FormLabel>
                       <Select
                         value={field.value}
                         onValueChange={(v) => {
@@ -142,7 +145,7 @@ export function ReturnsPage() {
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a recent sale" />
+                            <SelectValue placeholder={t("returns.selectSale")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -160,12 +163,12 @@ export function ReturnsPage() {
 
                 {fields.length > 0 && (
                   <div className="space-y-2">
-                    <Label>Items to return</Label>
+                    <Label>{t("returns.itemsToReturn")}</Label>
                     {fields.map((line, index) => (
                       <div key={line.id} className="flex items-center gap-2">
                         <span className="flex-1 text-sm">
                           {line.productName}{" "}
-                          <span className="text-muted-foreground">(sold {line.maxQuantity})</span>
+                          <span className="text-muted-foreground">{t("returns.sold", { count: line.maxQuantity })}</span>
                         </span>
                         <FormField
                           control={form.control}
@@ -196,7 +199,7 @@ export function ReturnsPage() {
                   name="reason"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Reason</FormLabel>
+                      <FormLabel>{t("returns.reason")}</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -206,7 +209,7 @@ export function ReturnsPage() {
                 />
 
                 <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Processing..." : "Process return"}
+                  {createMutation.isPending ? t("returns.submitting") : t("returns.submit")}
                 </Button>
               </form>
             </Form>
@@ -219,17 +222,17 @@ export function ReturnsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead className="text-right">Refund</TableHead>
+                <TableHead>{t("columns.date")}</TableHead>
+                <TableHead>{t("columns.items")}</TableHead>
+                <TableHead>{t("returns.reason")}</TableHead>
+                <TableHead className="text-right">{t("returns.refund")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {returnsQuery.data?.map((ret) => (
                 <TableRow key={ret.id}>
                   <TableCell className="text-muted-foreground">
-                    {new Date(ret.createdAt).toLocaleDateString()}
+                    {formatDate(ret.createdAt)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{ret.lineItems.length}</TableCell>
                   <TableCell className="text-muted-foreground">{ret.reason ?? "—"}</TableCell>
@@ -239,7 +242,7 @@ export function ReturnsPage() {
               {returnsQuery.data?.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="p-6 text-center text-muted-foreground">
-                    No returns processed yet.
+                    {t("returns.empty")}
                   </TableCell>
                 </TableRow>
               )}

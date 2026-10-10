@@ -2,6 +2,7 @@ import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Download } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { InventoryItemDto } from "@pos/shared";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import { adjustStock, fetchInventory } from "@/features/inventory/api";
 import { downloadCsv } from "@/lib/csv";
 
 export function InventoryPage() {
+  const { t } = useTranslation(["stock", "common"]);
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const queryClient = useQueryClient();
   const [edits, setEdits] = React.useState<Record<string, string>>({});
@@ -28,7 +30,7 @@ export function InventoryPage() {
       adjustStock(currentStoreId!, productId, { quantity }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory", currentStoreId] });
-      toast.success("Stock updated");
+      toast.success(t("inventory.updated"));
     },
     onError: (error) => {
       toast.error((error as Error).message);
@@ -36,33 +38,33 @@ export function InventoryPage() {
   });
 
   if (!currentStoreId) {
-    return <p className="p-6 text-muted-foreground">No store selected.</p>;
+    return <p className="p-6 text-muted-foreground">{t("noStore")}</p>;
   }
 
   return (
     <div className="mx-auto max-w-4xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="mb-1 text-2xl font-semibold">Inventory</h1>
-          <p className="text-sm text-muted-foreground">Stock levels for the current store.</p>
+          <h1 className="mb-1 text-2xl font-semibold">{t("common:nav.inventory")}</h1>
+          <p className="text-sm text-muted-foreground">{t("inventory.subtitle")}</p>
         </div>
         <Button
           variant="outline"
           disabled={!inventoryQuery.data?.length}
           onClick={() =>
             downloadCsv(
-              "inventory.csv",
+              t("inventory.exportFile"),
               [
-                { header: "Product", value: (i: InventoryItemDto) => i.product.name },
-                { header: "SKU", value: (i: InventoryItemDto) => i.product.sku },
-                { header: "Quantity", value: (i: InventoryItemDto) => i.quantity },
-                { header: "Reorder level", value: (i: InventoryItemDto) => i.reorderLevel },
+                { header: t("columns.product"), value: (i: InventoryItemDto) => i.product.name },
+                { header: t("columns.sku"), value: (i: InventoryItemDto) => i.product.sku },
+                { header: t("columns.quantity"), value: (i: InventoryItemDto) => i.quantity },
+                { header: t("inventory.reorderLevel"), value: (i: InventoryItemDto) => i.reorderLevel },
               ],
               inventoryQuery.data ?? [],
             )
           }
         >
-          <Download className="mr-2 h-4 w-4" /> Export CSV
+          <Download className="mr-2 h-4 w-4" /> {t("common:actions.exportCsv")}
         </Button>
       </div>
 
@@ -71,9 +73,9 @@ export function InventoryPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead>Reorder level</TableHead>
-                <TableHead>Quantity</TableHead>
+                <TableHead>{t("columns.product")}</TableHead>
+                <TableHead>{t("inventory.reorderLevel")}</TableHead>
+                <TableHead>{t("columns.quantity")}</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -87,7 +89,7 @@ export function InventoryPage() {
                       {item.product.name}
                       {low && (
                         <Badge variant="destructive" className="ml-2">
-                          Low stock
+                          {t("inventory.lowStock")}
                         </Badge>
                       )}
                     </TableCell>
@@ -115,7 +117,7 @@ export function InventoryPage() {
                           })
                         }
                       >
-                        Save
+                        {t("common:actions.save")}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -124,7 +126,7 @@ export function InventoryPage() {
               {inventoryQuery.data?.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="p-6 text-center text-muted-foreground">
-                    No inventory yet for this store.
+                    {t("inventory.empty")}
                   </TableCell>
                 </TableRow>
               )}

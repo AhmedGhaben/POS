@@ -1,0 +1,40 @@
+{
+  "noStore": "Nenhuma loja selecionada.",
+  "fields": {
+    "name": "Nome",
+    "phone": "Telefone",
+    "email": "E-mail",
+    "address": "Endereço",
+    "date": "Data"
+  },
+  "suppliers": {
+    "subtitle": "Fornecedores de quem você compra estoque.",
+    "new": "Novo fornecedor",
+    "contactName": "Nome do contato",
+    "contact": "Contato",
+    "save": "Salvar fornecedor",
+    "created": "Fornecedor cadastrado",
+    "empty": "Nenhum fornecedor ainda."
+  },
+  "expenses": {
+    "subtitle": "Despesas da loja.",
+    "summary_one": "{{count}} registrada · {{total}} no total",
+    "summary_other": "{{count}} registradas · {{total}} no total",
+    "new": "Registrar despesa",
+    "category": "Categoria",
+    "amount": "Valor",
+    "description": "Descrição",
+    "save": "Salvar despesa",
+    "logged": "Despesa registrada",
+    "empty": "Nenhuma despesa registrada ainda.",
+    "categories": {
+      "RENT": "Aluguel",
+      "UTILITIES": "Contas (água, luz, gás)",
+      "SUPPLIES": "Materiais",
+      "PAYROLL": "Folha de pagamento",
+      "MARKETING": "Marketing",
+      "MAINTENANCE": "Manutenção",
+      "OTHER": "Outro"
+    }
+  }
+}

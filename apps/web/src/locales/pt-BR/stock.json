@@ -1,0 +1,67 @@
+{
+  "noStore": "Nenhuma loja selecionada.",
+  "lineItems": "Itens",
+  "qty": "Qtd.",
+  "addLine": "Adicionar item",
+  "removeLine": "Remover item",
+  "noteOptional": "Observação (opcional)",
+  "columns": {
+    "product": "Produto",
+    "sku": "Código",
+    "quantity": "Quantidade",
+    "date": "Data",
+    "items": "Itens",
+    "note": "Observação",
+    "total": "Total"
+  },
+  "inventory": {
+    "subtitle": "Níveis de estoque da loja atual.",
+    "exportFile": "estoque.csv",
+    "reorderLevel": "Estoque mínimo",
+    "lowStock": "Estoque baixo",
+    "updated": "Estoque atualizado",
+    "empty": "Ainda não há estoque nesta loja."
+  },
+  "transfers": {
+    "title": "Transferências de estoque",
+    "subtitle": "Mova estoque entre lojas.",
+    "new": "Nova transferência",
+    "fromStore": "Da loja",
+    "toStore": "Para a loja",
+    "source": "Origem",
+    "destination": "Destino",
+    "from": "De",
+    "to": "Para",
+    "sameStore": "A origem e o destino devem ser diferentes.",
+    "submit": "Transferir estoque",
+    "submitting": "Transferindo...",
+    "done": "Estoque transferido",
+    "empty": "Nenhuma transferência ainda."
+  },
+  "purchases": {
+    "subtitle": "Reponha o estoque com fornecedores.",
+    "new": "Nova compra",
+    "supplier": "Fornecedor",
+    "selectSupplier": "Selecione um fornecedor",
+    "unitCost": "Custo unitário",
+    "submit": "Registrar compra",
+    "done": "Compra registrada",
+    "poNumber": "Nº do pedido",
+    "empty": "Nenhuma compra ainda."
+  },
+  "returns": {
+    "subtitle": "Faça reembolsos de uma venda anterior.",
+    "new": "Nova devolução",
+    "sale": "Venda",
+    "selectSale": "Selecione uma venda recente",
+    "itemsToReturn": "Itens a devolver",
+    "sold": "(vendidos {{count}})",
+    "overSold": "Não pode passar da quantidade vendida",
+    "reason": "Motivo",
+    "submit": "Processar devolução",
+    "submitting": "Processando...",
+    "done": "Devolução processada",
+    "refund": "Reembolso",
+    "empty": "Nenhuma devolução processada ainda."
+  }
+}

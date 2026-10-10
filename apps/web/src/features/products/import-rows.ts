@@ -1,34 +1,39 @@
+import i18n from "@/i18n";
 import { parseLooseNumber } from "@/lib/csv-parse";
 
 export type ImportField = "name" | "sku" | "barcode" | "category" | "costPrice" | "sellPrice" | "taxRate" | "stock";
 
 /** Column order of the template (and of the export, minus Stock). */
-export const TEMPLATE_HEADERS: Record<ImportField, string> = {
-  name: "Name",
-  sku: "SKU",
-  barcode: "Barcode",
-  category: "Category",
-  costPrice: "Cost price",
-  sellPrice: "Sell price",
-  taxRate: "Tax %",
-  stock: "Stock",
-};
+export const IMPORT_FIELDS: ImportField[] = ["name", "sku", "barcode", "category", "costPrice", "sellPrice", "taxRate", "stock"];
 
-/** Accepted header spellings, compared after lowercasing and dropping everything but letters. */
+/** A column's header in the language on screen ("Sell price", "Preço de venda"). */
+export function fieldHeader(field: ImportField): string {
+  return i18n.t(`products:columns.${field}`);
+}
+
+/**
+ * Accepted header spellings, English and Portuguese, compared after
+ * lowercasing and dropping accents and everything but letters.
+ */
 const HEADER_ALIASES: Record<ImportField, string[]> = {
-  name: ["name", "product", "productname", "item", "itemname", "description"],
-  sku: ["sku", "code", "itemcode", "productcode", "ref", "reference"],
-  barcode: ["barcode", "ean", "upc", "gtin"],
-  category: ["category", "categoryname", "group"],
-  costPrice: ["costprice", "cost", "purchaseprice", "buyprice"],
-  sellPrice: ["sellprice", "price", "sellingprice", "saleprice", "retailprice", "unitprice"],
-  taxRate: ["tax", "taxrate", "vat", "vatrate"],
-  stock: ["stock", "quantity", "qty", "onhand", "stockquantity"],
+  name: ["name", "product", "productname", "item", "itemname", "description", "nome", "produto", "descricao", "artigo", "designacao"],
+  sku: ["sku", "code", "itemcode", "productcode", "ref", "reference", "referencia", "codigo", "codigodoproduto", "codigointerno"],
+  barcode: ["barcode", "ean", "upc", "gtin", "codigodebarras", "codbarras"],
+  category: ["category", "categoryname", "group", "categoria", "familia", "grupo"],
+  costPrice: ["costprice", "cost", "purchaseprice", "buyprice", "precodecusto", "custo", "precocusto", "precodecompra"],
+  sellPrice: ["sellprice", "price", "sellingprice", "saleprice", "retailprice", "unitprice", "precodevenda", "preco", "pvp", "precovenda"],
+  taxRate: ["tax", "taxrate", "vat", "vatrate", "iva", "taxa", "imposto", "taxadeiva"],
+  stock: ["stock", "quantity", "qty", "onhand", "stockquantity", "estoque", "quantidade", "qtd", "existencias"],
 };
 
 const REQUIRED: ImportField[] = ["name", "sku", "sellPrice"];
 
-const normalizeHeader = (h: string) => h.toLowerCase().replace(/[^a-z]/g, "");
+const normalizeHeader = (h: string) =>
+  h
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
 
 export type ColumnMap = Partial<Record<ImportField, number>>;
 
@@ -44,7 +49,7 @@ export function mapColumns(header: string[]): { columns: ColumnMap; missing: str
       }
     }
   });
-  const missing = REQUIRED.filter((f) => columns[f] === undefined).map((f) => TEMPLATE_HEADERS[f]);
+  const missing = REQUIRED.filter((f) => columns[f] === undefined).map(fieldHeader);
   return { columns, missing };
 }
 
@@ -94,46 +99,49 @@ export function buildPreview(dataRows: string[][], columns: ColumnMap, existingS
     const name = cell(row, "name");
     const sellRaw = cell(row, "sellPrice");
 
-    if (!name) errors.push("Name is missing");
-    else if (name.length > 200) errors.push("Name is over 200 characters");
-    if (!sku) errors.push("SKU is missing");
-    else if (sku.length > 64) errors.push("SKU is over 64 characters");
-    else if (seen.has(sku)) errors.push("SKU appears earlier in the file");
+    const e = (key: string, values: Record<string, unknown> = {}) =>
+      errors.push(i18n.t(`products:import.errors.${key}` as never, values) as string);
+    if (!name) e("missing", { field: fieldHeader("name") });
+    else if (name.length > 200) e("tooLong", { field: fieldHeader("name"), max: 200 });
+    if (!sku) e("missing", { field: fieldHeader("sku") });
+    else if (sku.length > 64) e("tooLong", { field: fieldHeader("sku"), max: 64 });
+    else if (seen.has(sku)) e("duplicateSku");
     if (sku) seen.add(sku);
 
-    const amount = (field: ImportField, label: string, required: boolean): number | undefined => {
+    const amount = (field: ImportField, required: boolean): number | undefined => {
       const raw = cell(row, field);
       const value = parseLooseNumber(raw);
+      const label = fieldHeader(field);
       if (value === null) {
-        if (required) errors.push(`${label} is missing`);
+        if (required) e("missing", { field: label });
         return undefined;
       }
-      if (Number.isNaN(value)) errors.push(`${label} "${raw}" isn't a number`);
-      else if (value < 0) errors.push(`${label} can't be negative`);
-      else if (!hasTwoDecimalsAtMost(value)) errors.push(`${label} has more than 2 decimals`);
+      if (Number.isNaN(value)) e("notNumber", { field: label, value: raw });
+      else if (value < 0) e("negative", { field: label });
+      else if (!hasTwoDecimalsAtMost(value)) e("decimals", { field: label });
       else return value;
       return undefined;
     };
-    const sellPrice = amount("sellPrice", "Sell price", true);
-    const costPrice = amount("costPrice", "Cost price", false);
-    const taxRate = amount("taxRate", "Tax %", false);
-    if (taxRate !== undefined && taxRate > 100) errors.push("Tax % is over 100");
+    const sellPrice = amount("sellPrice", true);
+    const costPrice = amount("costPrice", false);
+    const taxRate = amount("taxRate", false);
+    if (taxRate !== undefined && taxRate > 100) e("over100", { field: fieldHeader("taxRate") });
 
     let stock: number | undefined;
     const stockRaw = cell(row, "stock");
     const stockValue = parseLooseNumber(stockRaw);
     if (stockValue !== null) {
       if (!Number.isInteger(stockValue) || stockValue < 0) {
-        errors.push(`Stock "${stockRaw}" must be a whole number, 0 or more`);
+        e("stock", { field: fieldHeader("stock"), value: stockRaw });
       } else {
         stock = stockValue;
       }
     }
 
     const barcode = cell(row, "barcode");
-    if (barcode.length > 64) errors.push("Barcode is over 64 characters");
+    if (barcode.length > 64) e("tooLong", { field: fieldHeader("barcode"), max: 64 });
     const category = cell(row, "category");
-    if (category.length > 100) errors.push("Category is over 100 characters");
+    if (category.length > 100) e("tooLong", { field: fieldHeader("category"), max: 100 });
 
     const base = { line, sku, name, sellPrice: sellRaw };
     if (errors.length > 0) return { ...base, status: "error", errors };

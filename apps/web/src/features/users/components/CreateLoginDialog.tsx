@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import type { EmployeeDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -21,6 +22,7 @@ interface CreateLoginDialogProps {
 
 /** Owner-only: give an existing employee a login. */
 export function CreateLoginDialog({ employee, onClose }: CreateLoginDialogProps) {
+  const { t } = useTranslation("employees");
   const queryClient = useQueryClient();
   const stores = useAuthStore((s) => s.stores);
   const [value, setValue] = React.useState<LoginFieldsValue>(emptyLoginFields());
@@ -40,8 +42,8 @@ export function CreateLoginDialog({ employee, onClose }: CreateLoginDialogProps)
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       toast.success(
         value.method === "invite"
-          ? `Invite sent to ${updated.user?.email}`
-          : `Login created — ${updated.firstName} can sign in as ${updated.user?.email}`,
+          ? t("login.inviteSent", { email: updated.user?.email })
+          : t("login.created", { name: updated.firstName, email: updated.user?.email }),
       );
       onClose();
     },
@@ -60,15 +62,15 @@ export function CreateLoginDialog({ employee, onClose }: CreateLoginDialogProps)
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            Create login — {employee?.firstName} {employee?.lastName}
+            {t("login.createTitle", { name: `${employee?.firstName ?? ""} ${employee?.lastName ?? ""}`.trim() })}
           </DialogTitle>
-          <DialogDescription>They'll use this to sign in to the POS.</DialogDescription>
+          <DialogDescription>{t("login.createDescription")}</DialogDescription>
         </DialogHeader>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <LoginFields idPrefix="create-login" value={value} onChange={setValue} />
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" className="w-full" disabled={mutation.isPending}>
-            {mutation.isPending ? "Creating..." : value.method === "invite" ? "Create and send invite" : "Create login"}
+            {mutation.isPending ? t("login.creating") : value.method === "invite" ? t("login.createAndInvite") : t("login.create")}
           </Button>
         </form>
       </DialogContent>

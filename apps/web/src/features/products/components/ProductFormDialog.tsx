@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Archive, ArchiveRestore } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { ProductDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,13 +20,13 @@ import { useAuthStore } from "@/features/auth/store";
 const NO_CATEGORY = "none";
 
 const productSchema = z.object({
-  name: z.string().trim().min(1, "Name is required"),
-  sku: z.string().trim().min(1, "SKU is required"),
+  name: z.string().trim().min(1, "validation.required"),
+  sku: z.string().trim().min(1, "validation.required"),
   barcode: z.string().optional(),
   categoryId: z.string().optional(),
-  costPrice: z.coerce.number().min(0, "Must be 0 or more"),
-  sellPrice: z.coerce.number().min(0, "Must be 0 or more"),
-  taxRate: z.coerce.number().min(0, "Must be 0 or more"),
+  costPrice: z.coerce.number().min(0, "validation.nonNegative"),
+  sellPrice: z.coerce.number().min(0, "validation.nonNegative"),
+  taxRate: z.coerce.number().min(0, "validation.nonNegative"),
 });
 type FormInput = z.input<typeof productSchema>;
 type FormOutput = z.output<typeof productSchema>;
@@ -68,6 +69,7 @@ export function ProductFormDialog({
   onOpenChange: (open: boolean) => void;
   product: ProductDto | null;
 }) {
+  const { t } = useTranslation(["products", "common"]);
   const queryClient = useQueryClient();
   const categoriesQuery = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
   // New products start at the business's default tax rate (Settings → Money).
@@ -106,13 +108,13 @@ export function ProductFormDialog({
         ? updateProduct(product.id, body)
         : createProduct({ ...body, barcode: body.barcode || undefined, costPrice: values.costPrice });
     },
-    onSuccess: () => done(editing ? "Product updated" : "Product created"),
+    onSuccess: () => done(editing ? t("form.updated") : t("form.created")),
     onError,
   });
 
   const archiveMutation = useMutation({
     mutationFn: (isActive: boolean) => updateProduct(product!.id, { isActive }),
-    onSuccess: (_data, isActive) => done(isActive ? "Product restored" : "Product archived"),
+    onSuccess: (_data, isActive) => done(isActive ? t("form.restored") : t("form.archived")),
     onError,
   });
 
@@ -122,10 +124,10 @@ export function ProductFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{editing ? "Edit product" : "New product"}</DialogTitle>
+          <DialogTitle>{editing ? t("form.editTitle") : t("newProduct")}</DialogTitle>
           {editing && (
             <DialogDescription>
-              Price changes apply to new sales. Past sales keep the price they were sold at.
+              {t("form.priceNote")}
             </DialogDescription>
           )}
         </DialogHeader>
@@ -136,7 +138,7 @@ export function ProductFormDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>{t("columns.name")}</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -150,7 +152,7 @@ export function ProductFormDialog({
                 name="sku"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>SKU</FormLabel>
+                    <FormLabel>{t("columns.sku")}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -163,7 +165,7 @@ export function ProductFormDialog({
                 name="barcode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Barcode</FormLabel>
+                    <FormLabel>{t("columns.barcode")}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -177,15 +179,15 @@ export function ProductFormDialog({
               name="categoryId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
+                  <FormLabel>{t("columns.category")}</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
-                      <SelectTrigger aria-label="Category">
-                        <SelectValue placeholder="Uncategorized" />
+                      <SelectTrigger aria-label={t("columns.category")}>
+                        <SelectValue placeholder={t("form.uncategorized")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value={NO_CATEGORY}>Uncategorized</SelectItem>
+                      <SelectItem value={NO_CATEGORY}>{t("form.uncategorized")}</SelectItem>
                       {categoriesQuery.data?.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.name}
@@ -204,7 +206,7 @@ export function ProductFormDialog({
                   name="costPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Cost price</FormLabel>
+                      <FormLabel>{t("columns.costPrice")}</FormLabel>
                       <FormControl>
                         <Input type="number" step="0.01" {...field} value={field.value as string} />
                       </FormControl>
@@ -218,7 +220,7 @@ export function ProductFormDialog({
                 name="sellPrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Sell price</FormLabel>
+                    <FormLabel>{t("columns.sellPrice")}</FormLabel>
                     <FormControl>
                       <Input type="number" step="0.01" {...field} value={field.value as string} />
                     </FormControl>
@@ -231,7 +233,7 @@ export function ProductFormDialog({
                 name="taxRate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tax %</FormLabel>
+                    <FormLabel>{t("columns.taxRate")}</FormLabel>
                     <FormControl>
                       <Input type="number" step="0.01" {...field} value={field.value as string} />
                     </FormControl>
@@ -241,7 +243,7 @@ export function ProductFormDialog({
               />
             </div>
             <Button type="submit" className="w-full" disabled={busy}>
-              {saveMutation.isPending ? "Saving..." : editing ? "Save changes" : "Save product"}
+              {saveMutation.isPending ? t("common:actions.saving") : editing ? t("common:actions.saveChanges") : t("form.save")}
             </Button>
             {editing &&
               (product.isActive ? (
@@ -252,7 +254,7 @@ export function ProductFormDialog({
                   disabled={busy}
                   onClick={() => archiveMutation.mutate(false)}
                 >
-                  <Archive className="h-4 w-4" /> Archive product
+                  <Archive className="h-4 w-4" /> {t("form.archive")}
                 </Button>
               ) : (
                 <Button
@@ -262,12 +264,12 @@ export function ProductFormDialog({
                   disabled={busy}
                   onClick={() => archiveMutation.mutate(true)}
                 >
-                  <ArchiveRestore className="h-4 w-4" /> Restore product
+                  <ArchiveRestore className="h-4 w-4" /> {t("form.restore")}
                 </Button>
               ))}
             {editing && product.isActive && (
               <p className="text-center text-xs text-muted-foreground">
-                Archiving hides it from the till and this list. Past sales and reports keep it.
+                {t("form.archiveNote")}
               </p>
             )}
           </form>

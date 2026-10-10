@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import type { EmployeeDto, StaffRole, UpdateStaffAccessDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ interface ManageLoginDialogProps {
 
 /** Owner-only: role, store access, deactivate/reactivate, and permission overrides. */
 export function ManageLoginDialog({ employee, onClose }: ManageLoginDialogProps) {
+  const { t } = useTranslation(["employees", "common"]);
   const queryClient = useQueryClient();
   const stores = useAuthStore((s) => s.stores);
   const user = employee?.user ?? null;
@@ -37,9 +39,9 @@ export function ManageLoginDialog({ employee, onClose }: ManageLoginDialogProps)
     mutationFn: (dto: UpdateStaffAccessDto) => updateStaffAccess(user!.id, dto),
     onSuccess: (_updated, dto) => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
-      if (dto.isActive === false) toast.success(`${user!.email} can no longer sign in`);
-      else if (dto.isActive === true) toast.success(`${user!.email} can sign in again`);
-      else toast.success("Access updated");
+      if (dto.isActive === false) toast.success(t("manage.deactivated", { email: user!.email }));
+      else if (dto.isActive === true) toast.success(t("manage.reactivated", { email: user!.email }));
+      else toast.success(t("manage.updated"));
       onClose();
     },
     onError: (err) => setError((err as Error).message),
@@ -48,7 +50,7 @@ export function ManageLoginDialog({ employee, onClose }: ManageLoginDialogProps)
   function saveAccess(e: React.FormEvent) {
     e.preventDefault();
     if (storeIds.length === 0) {
-      setError("Pick at least one store they can use");
+      setError(t("login.pickStore"));
       return;
     }
     setError(null);
@@ -62,36 +64,36 @@ export function ManageLoginDialog({ employee, onClose }: ManageLoginDialogProps)
           <DialogTitle>
             {employee?.firstName} {employee?.lastName}
           </DialogTitle>
-          <DialogDescription>Signs in as {user?.email}</DialogDescription>
+          <DialogDescription>{t("manage.signsInAs", { email: user?.email })}</DialogDescription>
         </DialogHeader>
         {user && (
           <Tabs defaultValue="access">
             <TabsList className="mb-4">
-              <TabsTrigger value="access">Access</TabsTrigger>
-              <TabsTrigger value="permissions">Permissions</TabsTrigger>
+              <TabsTrigger value="access">{t("manage.access")}</TabsTrigger>
+              <TabsTrigger value="permissions">{t("manage.permissions")}</TabsTrigger>
             </TabsList>
             <TabsContent value="access">
               {user.isActive ? (
                 <form className="space-y-4" onSubmit={saveAccess}>
                   <div className="space-y-2">
-                    <Label>Role</Label>
+                    <Label>{t("login.role")}</Label>
                     <Select value={role} onValueChange={(v) => setRole(v as StaffRole)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="CASHIER">Cashier — POS only</SelectItem>
-                        <SelectItem value="MANAGER">Manager — POS and back office</SelectItem>
+                        <SelectItem value="CASHIER">{t("manage.cashierRole")}</SelectItem>
+                        <SelectItem value="MANAGER">{t("manage.managerRole")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Stores they can use</Label>
+                    <Label>{t("login.stores")}</Label>
                     <StoreCheckboxes stores={stores} value={storeIds} onChange={setStoreIds} />
                   </div>
                   {error && <p className="text-sm text-destructive">{error}</p>}
                   <Button type="submit" className="w-full" disabled={mutation.isPending}>
-                    Save changes
+                    {t("common:actions.saveChanges")}
                   </Button>
                   <div className="border-t pt-4">
                     <Button
@@ -101,17 +103,17 @@ export function ManageLoginDialog({ employee, onClose }: ManageLoginDialogProps)
                       disabled={mutation.isPending}
                       onClick={() => mutation.mutate({ isActive: false })}
                     >
-                      Deactivate login
+                      {t("manage.deactivate")}
                     </Button>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Signs them out everywhere straight away. Their sales history is kept.
+                      {t("manage.deactivateHint")}
                     </p>
                   </div>
                 </form>
               ) : (
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    This login is deactivated, so they can't sign in.
+                    {t("manage.isDeactivated")}
                   </p>
                   {error && <p className="text-sm text-destructive">{error}</p>}
                   <Button
@@ -119,7 +121,7 @@ export function ManageLoginDialog({ employee, onClose }: ManageLoginDialogProps)
                     disabled={mutation.isPending}
                     onClick={() => mutation.mutate({ isActive: true })}
                   >
-                    Reactivate login
+                    {t("manage.reactivate")}
                   </Button>
                 </div>
               )}

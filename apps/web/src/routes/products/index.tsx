@@ -2,6 +2,7 @@ import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { Download, Pencil, Plus, Upload } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { downloadCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { ProductDto } from "@pos/shared";
 import { fetchProducts } from "@/features/products/api";
+import { fieldHeader } from "@/features/products/import-rows";
 import { ImportProductsDialog } from "@/features/products/components/ImportProductsDialog";
 import { ProductFormDialog } from "@/features/products/components/ProductFormDialog";
 import { fetchCategories } from "@/features/categories/api";
@@ -16,6 +18,7 @@ import { useMoney } from "@/features/business/use-money";
 import { useAuthStore } from "@/features/auth/store";
 
 export function ProductsPage() {
+  const { t } = useTranslation(["products", "common"]);
   const money = useMoney();
   const [search, setSearch] = React.useState("");
   const [showArchived, setShowArchived] = React.useState(false);
@@ -52,9 +55,10 @@ export function ProductsPage() {
     <div className="mx-auto max-w-5xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Products</h1>
+          <h1 className="text-2xl font-semibold">{t("common:nav.products")}</h1>
           <p className="text-sm text-muted-foreground">
-            Manage your product catalog.{canEdit && " Click a product to edit it."}
+            {t("subtitle")}
+            {canEdit && ` ${t("clickToEdit")}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -63,32 +67,32 @@ export function ProductsPage() {
             disabled={!productsQuery.data?.length}
             onClick={() =>
               downloadCsv(
-                "products.csv",
+                t("exportFile"),
                 [
-                  { header: "Name", value: (p: ProductDto) => p.name },
-                  { header: "SKU", value: (p: ProductDto) => p.sku },
-                  { header: "Barcode", value: (p: ProductDto) => p.barcode },
+                  { header: fieldHeader("name"), value: (p: ProductDto) => p.name },
+                  { header: fieldHeader("sku"), value: (p: ProductDto) => p.sku },
+                  { header: fieldHeader("barcode"), value: (p: ProductDto) => p.barcode },
                   {
-                    header: "Category",
+                    header: fieldHeader("category"),
                     value: (p: ProductDto) => categoriesQuery.data?.find((c) => c.id === p.categoryId)?.name ?? "",
                   },
                   // Blank when the user can't see costs, so re-importing leaves them unchanged.
-                  { header: "Cost price", value: (p: ProductDto) => ("costPrice" in p ? p.costPrice : "") },
-                  { header: "Sell price", value: (p: ProductDto) => p.sellPrice },
-                  { header: "Tax %", value: (p: ProductDto) => p.taxRate },
+                  { header: fieldHeader("costPrice"), value: (p: ProductDto) => ("costPrice" in p ? p.costPrice : "") },
+                  { header: fieldHeader("sellPrice"), value: (p: ProductDto) => p.sellPrice },
+                  { header: fieldHeader("taxRate"), value: (p: ProductDto) => p.taxRate },
                 ],
                 productsQuery.data ?? [],
               )
             }
           >
-            <Download className="mr-2 h-4 w-4" /> Export CSV
+            <Download className="mr-2 h-4 w-4" /> {t("common:actions.exportCsv")}
           </Button>
           <Button variant="outline" onClick={() => setImportOpen(true)}>
-            <Upload className="mr-2 h-4 w-4" /> Import CSV
+            <Upload className="mr-2 h-4 w-4" /> {t("common:actions.importCsv")}
           </Button>
           <ImportProductsDialog open={importOpen} onOpenChange={setImportOpen} />
           <Button onClick={openNew}>
-            <Plus className="mr-2 h-4 w-4" /> New product
+            <Plus className="mr-2 h-4 w-4" /> {t("newProduct")}
           </Button>
           <ProductFormDialog open={dialogOpen} onOpenChange={setDialogOpen} product={editing} />
         </div>
@@ -96,7 +100,7 @@ export function ProductsPage() {
 
       <div className="mb-4 flex flex-wrap items-center gap-4">
         <Input
-          placeholder="Search by name, SKU, or barcode..."
+          placeholder={t("searchPlaceholder")}
           className="max-w-sm"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -109,7 +113,7 @@ export function ProductsPage() {
               checked={showArchived}
               onChange={(e) => setShowArchived(e.target.checked)}
             />
-            Show archived products
+            {t("showArchived")}
           </label>
         )}
       </div>
@@ -119,10 +123,10 @@ export function ProductsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Barcode</TableHead>
-                <TableHead className="text-right">Sell price</TableHead>
+                <TableHead>{t("columns.name")}</TableHead>
+                <TableHead>{t("columns.sku")}</TableHead>
+                <TableHead>{t("columns.barcode")}</TableHead>
+                <TableHead className="text-right">{t("columns.sellPrice")}</TableHead>
                 {canEdit && <TableHead className="w-12" />}
               </TableRow>
             </TableHeader>
@@ -142,7 +146,7 @@ export function ProductsPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        aria-label={`Edit ${product.name}`}
+                        aria-label={t("editNamed", { name: product.name })}
                         onClick={(e) => {
                           e.stopPropagation();
                           openEdit(product);
@@ -157,7 +161,7 @@ export function ProductsPage() {
               {productsQuery.data?.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={canEdit ? 5 : 4} className="p-6 text-center text-muted-foreground">
-                    {showArchived ? "No archived products." : "No products yet."}
+                    {showArchived ? t("emptyArchived") : t("empty")}
                   </TableCell>
                 </TableRow>
               )}

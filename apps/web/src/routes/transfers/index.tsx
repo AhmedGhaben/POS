@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,21 +23,22 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { createTransfer, fetchTransfers } from "@/features/transfers/api";
 import { fetchProducts } from "@/features/products/api";
 import { useAuthStore } from "@/features/auth/store";
+import { formatDate } from "@/lib/format";
 
 const transferLineSchema = z.object({
-  productId: z.string().min(1, "Required"),
-  quantity: z.coerce.number().int("Whole numbers only").min(1, "Must be at least 1"),
+  productId: z.string().min(1, "validation.required"),
+  quantity: z.coerce.number().int("validation.wholeNumber").min(1, "validation.atLeast1"),
 });
 
 const transferSchema = z
   .object({
-    fromStoreId: z.string().min(1, "Source store is required"),
-    toStoreId: z.string().min(1, "Destination store is required"),
+    fromStoreId: z.string().min(1, "validation.required"),
+    toStoreId: z.string().min(1, "validation.required"),
     note: z.string().optional(),
-    lines: z.array(transferLineSchema).min(1, "Add at least one line item"),
+    lines: z.array(transferLineSchema).min(1, "validation.addLine"),
   })
   .refine((data) => data.fromStoreId !== data.toStoreId, {
-    message: "Source and destination must be different.",
+    message: "stock:transfers.sameStore",
     path: ["toStoreId"],
   });
 
@@ -48,6 +50,7 @@ const defaultValues = {
 };
 
 export function TransfersPage() {
+  const { t } = useTranslation(["stock", "common"]);
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const stores = useAuthStore((s) => s.stores);
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -80,7 +83,7 @@ export function TransfersPage() {
       queryClient.invalidateQueries({ queryKey: ["inventory", currentStoreId] });
       setDialogOpen(false);
       form.reset(defaultValues);
-      toast.success("Stock transferred");
+      toast.success(t("transfers.done"));
     },
     onError: (error) => {
       toast.error((error as Error).message);
@@ -88,25 +91,25 @@ export function TransfersPage() {
   });
 
   if (!currentStoreId) {
-    return <p className="p-6 text-muted-foreground">No store selected.</p>;
+    return <p className="p-6 text-muted-foreground">{t("noStore")}</p>;
   }
 
   return (
     <div className="mx-auto max-w-4xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Stock transfers</h1>
-          <p className="text-sm text-muted-foreground">Move inventory between stores.</p>
+          <h1 className="text-2xl font-semibold">{t("transfers.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("transfers.subtitle")}</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="mr-2 h-4 w-4" /> New transfer
+              <Plus className="mr-2 h-4 w-4" /> {t("transfers.new")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>New transfer</DialogTitle>
+              <DialogTitle>{t("transfers.new")}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form
@@ -119,11 +122,11 @@ export function TransfersPage() {
                     name="fromStoreId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>From store</FormLabel>
+                        <FormLabel>{t("transfers.fromStore")}</FormLabel>
                         <Select value={field.value} onValueChange={field.onChange}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Source" />
+                              <SelectValue placeholder={t("transfers.source")} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -143,11 +146,11 @@ export function TransfersPage() {
                     name="toStoreId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>To store</FormLabel>
+                        <FormLabel>{t("transfers.toStore")}</FormLabel>
                         <Select value={field.value} onValueChange={field.onChange}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Destination" />
+                              <SelectValue placeholder={t("transfers.destination")} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -167,7 +170,7 @@ export function TransfersPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Line items</Label>
+                  <Label>{t("lineItems")}</Label>
                   {fields.map((line, index) => (
                     <div key={line.id} className="flex items-start gap-2">
                       <FormField
@@ -178,7 +181,7 @@ export function TransfersPage() {
                             <Select value={field.value} onValueChange={field.onChange}>
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Product" />
+                                  <SelectValue placeholder={t("columns.product")} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
@@ -202,7 +205,7 @@ export function TransfersPage() {
                               <Input
                                 type="number"
                                 min={1}
-                                placeholder="Qty"
+                                placeholder={t("qty")}
                                 className="w-20"
                                 {...field}
                                 value={field.value as string}
@@ -216,6 +219,7 @@ export function TransfersPage() {
                         type="button"
                         variant="ghost"
                         size="icon"
+                        aria-label={t("removeLine")}
                         onClick={() => remove(index)}
                         disabled={fields.length === 1}
                       >
@@ -229,7 +233,7 @@ export function TransfersPage() {
                     size="sm"
                     onClick={() => append({ productId: "", quantity: "1" })}
                   >
-                    <Plus className="mr-1 h-3 w-3" /> Add line
+                    <Plus className="mr-1 h-3 w-3" /> {t("addLine")}
                   </Button>
                 </div>
 
@@ -238,7 +242,7 @@ export function TransfersPage() {
                   name="note"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Note (optional)</FormLabel>
+                      <FormLabel>{t("noteOptional")}</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -248,7 +252,7 @@ export function TransfersPage() {
                 />
 
                 <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Transferring..." : "Transfer stock"}
+                  {createMutation.isPending ? t("transfers.submitting") : t("transfers.submit")}
                 </Button>
               </form>
             </Form>
@@ -261,18 +265,18 @@ export function TransfersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>From</TableHead>
-                <TableHead>To</TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead>Note</TableHead>
+                <TableHead>{t("columns.date")}</TableHead>
+                <TableHead>{t("transfers.from")}</TableHead>
+                <TableHead>{t("transfers.to")}</TableHead>
+                <TableHead>{t("columns.items")}</TableHead>
+                <TableHead>{t("columns.note")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {transfersQuery.data?.map((transfer) => (
                 <TableRow key={transfer.id}>
                   <TableCell className="text-muted-foreground">
-                    {new Date(transfer.createdAt).toLocaleDateString()}
+                    {formatDate(transfer.createdAt)}
                   </TableCell>
                   <TableCell>{transfer.fromStore.name}</TableCell>
                   <TableCell>{transfer.toStore.name}</TableCell>
@@ -285,7 +289,7 @@ export function TransfersPage() {
               {transfersQuery.data?.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="p-6 text-center text-muted-foreground">
-                    No transfers yet.
+                    {t("transfers.empty")}
                   </TableCell>
                 </TableRow>
               )}

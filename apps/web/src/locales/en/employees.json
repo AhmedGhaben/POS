@@ -1,0 +1,73 @@
+{
+  "subtitle": "Your staff, and who can sign in to the POS.",
+  "new": "New employee",
+  "save": "Save employee",
+  "created": "Employee created",
+  "createdInvite": "Employee created — invite sent to {{email}}",
+  "createdLogin": "Employee created — they can sign in as {{email}}",
+  "allStores": "All stores",
+  "canSignIn": "Can sign in to the POS",
+  "deactivated": "Deactivated",
+  "unknownStore": "Unknown store",
+  "noStores": "No stores",
+  "noLogin": "No login",
+  "empty": "No employees yet.",
+  "fields": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "position": "Position",
+    "phone": "Phone",
+    "wage": "Hourly wage",
+    "email": "Email",
+    "store": "Assigned store"
+  },
+  "columns": {
+    "name": "Name",
+    "store": "Store",
+    "login": "Login"
+  },
+  "login": {
+    "email": "Login email",
+    "role": "Role",
+    "stores": "Stores they can use",
+    "password": "Password",
+    "setPassword": "Set a password now and tell them",
+    "initialPassword": "Initial password",
+    "sendInvite": "Email them a link to set their own password",
+    "invalidEmail": "Enter a valid login email",
+    "pickStore": "Pick at least one store they can use",
+    "shortPassword": "Password must be at least 8 characters",
+    "createTitle": "Create login — {{name}}",
+    "createDescription": "They'll use this to sign in to the POS.",
+    "create": "Create login",
+    "createAndInvite": "Create and send invite",
+    "creating": "Creating...",
+    "inviteSent": "Invite sent to {{email}}",
+    "created": "Login created — {{name}} can sign in as {{email}}"
+  },
+  "manage": {
+    "button": "Manage",
+    "signsInAs": "Signs in as {{email}}",
+    "access": "Access",
+    "permissions": "Permissions",
+    "cashierRole": "Cashier — POS only",
+    "managerRole": "Manager — POS and back office",
+    "deactivate": "Deactivate login",
+    "deactivateHint": "Signs them out everywhere straight away. Their sales history is kept.",
+    "isDeactivated": "This login is deactivated, so they can't sign in.",
+    "reactivate": "Reactivate login",
+    "deactivated": "{{email}} can no longer sign in",
+    "reactivated": "{{email}} can sign in again",
+    "updated": "Access updated"
+  },
+  "permissions": {
+    "allowed": "Allowed",
+    "notAllowed": "Not allowed",
+    "reset": "Reset",
+    "labels": {
+      "VIEW_COST_PRICE": "View cost price & margin",
+      "PROCESS_RETURN": "Process returns / refunds",
+      "OPEN_DRAWER": "Open the cash drawer without a sale"
+    }
+  }
+}

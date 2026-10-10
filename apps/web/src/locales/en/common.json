@@ -59,7 +59,9 @@
     "passwordLength": "At least 8 characters",
     "nonNegative": "Must be 0 or more",
     "positive": "Must be more than 0",
-    "wholeNumber": "Must be a whole number"
+    "wholeNumber": "Must be a whole number",
+    "atLeast1": "Must be at least 1",
+    "addLine": "Add at least one line item"
   },
   "paymentMethods": {
     "CASH": "Cash",
@@ -78,5 +80,10 @@
     "previous": "Previous",
     "next": "Next",
     "page": "Page {{page}} of {{total}}"
+  },
+  "roles": {
+    "OWNER": "Owner",
+    "MANAGER": "Manager",
+    "CASHIER": "Cashier"
   }
 }

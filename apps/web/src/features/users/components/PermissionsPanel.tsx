@@ -1,18 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Permission } from "@pos/shared";
+import { useTranslation } from "react-i18next";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { fetchEffectivePermissions, updateUserPermission } from "@/features/users/api";
 
-const PERMISSION_LABELS: Record<Permission, string> = {
-  [Permission.VIEW_COST_PRICE]: "View cost price & margin",
-  [Permission.PROCESS_RETURN]: "Process returns / refunds",
-  [Permission.OPEN_DRAWER]: "Open the cash drawer without a sale",
-};
-
 /** Owner-only. Each row reflects the resolved (role-default-or-overridden)
  * value — "Reset" clears any override and reverts to the role's default. */
 export function PermissionsPanel({ userId }: { userId: string }) {
+  const { t } = useTranslation("employees");
   const queryClient = useQueryClient();
   const permissionsQuery = useQuery({
     queryKey: ["user-permissions", userId],
@@ -33,7 +29,7 @@ export function PermissionsPanel({ userId }: { userId: string }) {
         const effective = permissionsQuery.data?.[permission];
         return (
           <div key={permission} className="flex items-center justify-between gap-3">
-            <span className="text-sm">{PERMISSION_LABELS[permission]}</span>
+            <span className="text-sm">{t(`permissions.labels.${permission}`)}</span>
             <div className="flex items-center gap-2">
               <Select
                 value={effective === undefined ? undefined : String(effective)}
@@ -43,12 +39,12 @@ export function PermissionsPanel({ userId }: { userId: string }) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="true">Allowed</SelectItem>
-                  <SelectItem value="false">Not allowed</SelectItem>
+                  <SelectItem value="true">{t("permissions.allowed")}</SelectItem>
+                  <SelectItem value="false">{t("permissions.notAllowed")}</SelectItem>
                 </SelectContent>
               </Select>
               <Button variant="ghost" size="sm" onClick={() => mutation.mutate({ permission, granted: null })}>
-                Reset
+                {t("permissions.reset")}
               </Button>
             </div>
           </div>

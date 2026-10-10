@@ -1,0 +1,73 @@
+{
+  "subtitle": "Os seus funcionários, e quem pode iniciar sessão no ponto de venda.",
+  "new": "Novo funcionário",
+  "save": "Guardar funcionário",
+  "created": "Funcionário criado",
+  "createdInvite": "Funcionário criado — convite enviado para {{email}}",
+  "createdLogin": "Funcionário criado — pode iniciar sessão como {{email}}",
+  "allStores": "Todas as lojas",
+  "canSignIn": "Pode iniciar sessão no ponto de venda",
+  "deactivated": "Desativado",
+  "unknownStore": "Loja desconhecida",
+  "noStores": "Sem lojas",
+  "noLogin": "Sem acesso",
+  "empty": "Ainda não há funcionários.",
+  "fields": {
+    "firstName": "Nome",
+    "lastName": "Apelido",
+    "position": "Função",
+    "phone": "Telefone",
+    "wage": "Salário por hora",
+    "email": "Email",
+    "store": "Loja atribuída"
+  },
+  "columns": {
+    "name": "Nome",
+    "store": "Loja",
+    "login": "Acesso"
+  },
+  "login": {
+    "email": "Email de acesso",
+    "role": "Perfil",
+    "stores": "Lojas que pode usar",
+    "password": "Palavra-passe",
+    "setPassword": "Definir uma palavra-passe agora e comunicá-la",
+    "initialPassword": "Palavra-passe inicial",
+    "sendInvite": "Enviar-lhe um link por email para definir a própria palavra-passe",
+    "invalidEmail": "Introduza um email de acesso válido",
+    "pickStore": "Escolha pelo menos uma loja que possa usar",
+    "shortPassword": "A palavra-passe tem de ter pelo menos 8 caracteres",
+    "createTitle": "Criar acesso — {{name}}",
+    "createDescription": "Vai usar isto para iniciar sessão no ponto de venda.",
+    "create": "Criar acesso",
+    "createAndInvite": "Criar e enviar convite",
+    "creating": "A criar...",
+    "inviteSent": "Convite enviado para {{email}}",
+    "created": "Acesso criado — {{name}} pode iniciar sessão como {{email}}"
+  },
+  "manage": {
+    "button": "Gerir",
+    "signsInAs": "Inicia sessão como {{email}}",
+    "access": "Acesso",
+    "permissions": "Permissões",
+    "cashierRole": "Operador de caixa — só o ponto de venda",
+    "managerRole": "Gerente — ponto de venda e gestão",
+    "deactivate": "Desativar acesso",
+    "deactivateHint": "Termina a sessão em todo o lado de imediato. O histórico de vendas é mantido.",
+    "isDeactivated": "Este acesso está desativado, por isso não pode iniciar sessão.",
+    "reactivate": "Reativar acesso",
+    "deactivated": "{{email}} já não pode iniciar sessão",
+    "reactivated": "{{email}} pode voltar a iniciar sessão",
+    "updated": "Acesso atualizado"
+  },
+  "permissions": {
+    "allowed": "Permitido",
+    "notAllowed": "Não permitido",
+    "reset": "Repor",
+    "labels": {
+      "VIEW_COST_PRICE": "Ver preço de custo e margem",
+      "PROCESS_RETURN": "Processar devoluções / reembolsos",
+      "OPEN_DRAWER": "Abrir a gaveta de dinheiro sem venda"
+    }
+  }
+}

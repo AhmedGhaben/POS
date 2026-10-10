@@ -1,0 +1,73 @@
+{
+  "subtitle": "Sua equipe, e quem pode entrar no PDV.",
+  "new": "Novo funcionário",
+  "save": "Salvar funcionário",
+  "created": "Funcionário cadastrado",
+  "createdInvite": "Funcionário cadastrado — convite enviado para {{email}}",
+  "createdLogin": "Funcionário cadastrado — pode entrar como {{email}}",
+  "allStores": "Todas as lojas",
+  "canSignIn": "Pode entrar no PDV",
+  "deactivated": "Desativado",
+  "unknownStore": "Loja desconhecida",
+  "noStores": "Nenhuma loja",
+  "noLogin": "Sem login",
+  "empty": "Nenhum funcionário ainda.",
+  "fields": {
+    "firstName": "Nome",
+    "lastName": "Sobrenome",
+    "position": "Cargo",
+    "phone": "Telefone",
+    "wage": "Salário por hora",
+    "email": "E-mail",
+    "store": "Loja"
+  },
+  "columns": {
+    "name": "Nome",
+    "store": "Loja",
+    "login": "Login"
+  },
+  "login": {
+    "email": "E-mail de login",
+    "role": "Função",
+    "stores": "Lojas que pode usar",
+    "password": "Senha",
+    "setPassword": "Definir uma senha agora e informar",
+    "initialPassword": "Senha inicial",
+    "sendInvite": "Enviar um link por e-mail para a pessoa criar a própria senha",
+    "invalidEmail": "Digite um e-mail de login válido",
+    "pickStore": "Escolha pelo menos uma loja que a pessoa pode usar",
+    "shortPassword": "A senha deve ter pelo menos 8 caracteres",
+    "createTitle": "Criar login — {{name}}",
+    "createDescription": "A pessoa vai usar isto para entrar no PDV.",
+    "create": "Criar login",
+    "createAndInvite": "Criar e enviar convite",
+    "creating": "Criando...",
+    "inviteSent": "Convite enviado para {{email}}",
+    "created": "Login criado — {{name}} pode entrar como {{email}}"
+  },
+  "manage": {
+    "button": "Gerenciar",
+    "signsInAs": "Entra como {{email}}",
+    "access": "Acesso",
+    "permissions": "Permissões",
+    "cashierRole": "Operador de caixa — só o PDV",
+    "managerRole": "Gerente — PDV e retaguarda",
+    "deactivate": "Desativar login",
+    "deactivateHint": "Desconecta a pessoa de todos os lugares na hora. O histórico de vendas é mantido.",
+    "isDeactivated": "Este login está desativado, então a pessoa não consegue entrar.",
+    "reactivate": "Reativar login",
+    "deactivated": "{{email}} não pode mais entrar",
+    "reactivated": "{{email}} pode entrar novamente",
+    "updated": "Acesso atualizado"
+  },
+  "permissions": {
+    "allowed": "Permitido",
+    "notAllowed": "Não permitido",
+    "reset": "Redefinir",
+    "labels": {
+      "VIEW_COST_PRICE": "Ver preço de custo e margem",
+      "PROCESS_RETURN": "Processar devoluções / reembolsos",
+      "OPEN_DRAWER": "Abrir a gaveta de dinheiro sem venda"
+    }
+  }
+}

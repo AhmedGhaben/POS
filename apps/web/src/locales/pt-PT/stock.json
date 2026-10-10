@@ -1,0 +1,67 @@
+{
+  "noStore": "Nenhuma loja selecionada.",
+  "lineItems": "Linhas",
+  "qty": "Qtd.",
+  "addLine": "Adicionar linha",
+  "removeLine": "Remover linha",
+  "noteOptional": "Nota (opcional)",
+  "columns": {
+    "product": "Produto",
+    "sku": "Referência",
+    "quantity": "Quantidade",
+    "date": "Data",
+    "items": "Artigos",
+    "note": "Nota",
+    "total": "Total"
+  },
+  "inventory": {
+    "subtitle": "Níveis de stock da loja atual.",
+    "exportFile": "stock.csv",
+    "reorderLevel": "Stock mínimo",
+    "lowStock": "Stock baixo",
+    "updated": "Stock atualizado",
+    "empty": "Ainda não há stock nesta loja."
+  },
+  "transfers": {
+    "title": "Transferências de stock",
+    "subtitle": "Mover stock entre lojas.",
+    "new": "Nova transferência",
+    "fromStore": "Da loja",
+    "toStore": "Para a loja",
+    "source": "Origem",
+    "destination": "Destino",
+    "from": "De",
+    "to": "Para",
+    "sameStore": "A origem e o destino têm de ser diferentes.",
+    "submit": "Transferir stock",
+    "submitting": "A transferir...",
+    "done": "Stock transferido",
+    "empty": "Ainda não há transferências."
+  },
+  "purchases": {
+    "subtitle": "Repor stock a partir de fornecedores.",
+    "new": "Nova compra",
+    "supplier": "Fornecedor",
+    "selectSupplier": "Escolha um fornecedor",
+    "unitCost": "Custo unitário",
+    "submit": "Registar compra",
+    "done": "Compra registada",
+    "poNumber": "N.º encomenda",
+    "empty": "Ainda não há compras."
+  },
+  "returns": {
+    "subtitle": "Processar reembolsos de uma venda anterior.",
+    "new": "Nova devolução",
+    "sale": "Venda",
+    "selectSale": "Escolha uma venda recente",
+    "itemsToReturn": "Artigos a devolver",
+    "sold": "(vendidos {{count}})",
+    "overSold": "Não pode exceder a quantidade vendida",
+    "reason": "Motivo",
+    "submit": "Processar devolução",
+    "submitting": "A processar...",
+    "done": "Devolução processada",
+    "refund": "Reembolso",
+    "empty": "Ainda não foram processadas devoluções."
+  }
+}
