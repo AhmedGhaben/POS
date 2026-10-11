@@ -1,0 +1,73 @@
+{
+  "subtitle": "Your business details appear on receipts and invoices.",
+  "loadFailed": "Couldn't load settings. Check your connection.",
+  "save": "Save settings",
+  "saved": "Settings saved",
+  "fields": {
+    "address": "Address",
+    "phone": "Phone"
+  },
+  "business": {
+    "title": "Business",
+    "description": "Company details for receipts and A4 invoices.",
+    "name": "Business name",
+    "fields": {
+      "legalName": "Legal name",
+      "taxId": "Tax / VAT number",
+      "registrationNumber": "Company registration number",
+      "address": "Address",
+      "phone": "Phone",
+      "email": "Email",
+      "website": "Website"
+    },
+    "hints": {
+      "legalName": "If different from the business name, e.g. \"Corner Cafe LLC\"."
+    }
+  },
+  "money": {
+    "title": "Money",
+    "currency": "Currency",
+    "example": "Example: {{amount}}",
+    "defaultTax": "Default tax %",
+    "defaultTaxHint": "Pre-filled on new products. Existing products keep their rate.",
+    "taxRange": "0 to 100"
+  },
+  "documents": {
+    "title": "Receipts & invoices",
+    "language": "Language of receipts and invoices",
+    "languageHint": "Receipts, quotes, invoices, the customer display and receipt emails use this language. Each person's screens use their own.",
+    "receiptHeader": "Receipt header",
+    "receiptHeaderPlaceholder": "e.g. Open 7 days, 8am–8pm",
+    "receiptFooter": "Receipt footer",
+    "receiptFooterPlaceholder": "Thank you!",
+    "receiptFooterHint": "Defaults to \"Thank you!\" when blank.",
+    "invoiceFooter": "Invoice footer",
+    "invoiceFooterPlaceholder": "Bank details, payment terms…"
+  },
+  "logo": {
+    "title": "Logo",
+    "alt": "Business logo",
+    "help": "Shown on receipts and invoices. PNG with a transparent background works best; large images are shrunk automatically.",
+    "upload": "Upload logo",
+    "replace": "Replace",
+    "uploading": "Uploading...",
+    "updated": "Logo updated",
+    "removed": "Logo removed",
+    "unreadable": "That file isn't an image we can read",
+    "wrongType": "Choose a PNG, JPEG or WebP image",
+    "tooDetailed": "That image is too detailed to fit in 300 KB — try a simpler logo"
+  },
+  "stores": {
+    "title": "Stores",
+    "description": "Each store's address and phone print on its receipts.",
+    "edit": "Edit store",
+    "name": "Name",
+    "store": "Store",
+    "timezone": "Timezone",
+    "printedHint": "Address and phone are printed on this store's receipts.",
+    "save": "Save store",
+    "updated": "Store updated",
+    "nameRequired": "Store name is required",
+    "badTimezone": "Unknown timezone — use a name like Europe/Paris"
+  }
+}

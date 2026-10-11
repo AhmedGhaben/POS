@@ -2,6 +2,7 @@ import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { MonitorSmartphone } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,6 +49,7 @@ function TextField({
 
 /** Settings → This device → Customer display (Windows app only). */
 export function DisplaySection() {
+  const { t } = useTranslation("device");
   const display = useDeviceStore((s) => s.display);
   const setDisplay = useDeviceStore((s) => s.setDisplay);
   const [testing, setTesting] = React.useState(false);
@@ -68,7 +70,7 @@ export function DisplaySection() {
     try {
       await setDisplay(next);
     } catch {
-      toast.error("Couldn't save the display settings. Check the values.");
+      toast.error(t("display.saveFailed"));
     }
   }
   const savePole = (patch: Partial<DisplaySettings["pole"]>) => save({ ...display, pole: { ...display.pole, ...patch } });
@@ -77,8 +79,8 @@ export function DisplaySection() {
     setTesting(true);
     const result = await desktop!.display.test();
     setTesting(false);
-    if (result.ok) toast.success(display!.kind === "pole" ? "Sent a test line to the display" : "Customer screen opened");
-    else toast.error(`Display test failed: ${result.error}`);
+    if (result.ok) toast.success(display!.kind === "pole" ? t("display.testSent") : t("display.screenOpened"));
+    else toast.error(t("display.testFailed", { error: result.error }));
   }
 
   const onlyOneScreen = screens.data?.length === 1;
@@ -86,22 +88,20 @@ export function DisplaySection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Customer display</CardTitle>
-        <CardDescription>
-          Shows the customer each item and the total while you ring up, then the change. Works offline.
-        </CardDescription>
+        <CardTitle>{t("display.title")}</CardTitle>
+        <CardDescription>{t("display.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="display-kind">Display</Label>
+          <Label htmlFor="display-kind">{t("display.kind")}</Label>
           <Select value={display.kind} onValueChange={(v) => void save({ ...display, kind: v as DisplaySettings["kind"] })}>
-            <SelectTrigger id="display-kind" aria-label="Customer display">
+            <SelectTrigger id="display-kind" aria-label={t("display.title")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">No customer display</SelectItem>
-              <SelectItem value="pole">Pole display (2 lines × 20 characters)</SelectItem>
-              <SelectItem value="monitor">Second monitor facing the customer</SelectItem>
+              <SelectItem value="none">{t("display.kinds.none")}</SelectItem>
+              <SelectItem value="pole">{t("display.kinds.pole")}</SelectItem>
+              <SelectItem value="monitor">{t("display.kinds.monitor")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -109,43 +109,43 @@ export function DisplaySection() {
         {display.kind === "pole" && (
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="pole-connection">Connection</Label>
+              <Label htmlFor="pole-connection">{t("drawer.connection")}</Label>
               <Select
                 value={display.pole.connection}
                 onValueChange={(v) => void savePole({ connection: v as "serial" | "network" })}
               >
-                <SelectTrigger id="pole-connection" aria-label="Display connection">
+                <SelectTrigger id="pole-connection" aria-label={t("display.connectionLabel")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="serial">COM port (USB or serial)</SelectItem>
-                  <SelectItem value="network">Network (IP address)</SelectItem>
+                  <SelectItem value="serial">{t("display.serial")}</SelectItem>
+                  <SelectItem value="network">{t("display.network")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="pole-commands">Command set</Label>
+              <Label htmlFor="pole-commands">{t("display.commandSet")}</Label>
               <Select
                 value={display.pole.commandSet}
                 onValueChange={(v) => void savePole({ commandSet: v as DisplaySettings["pole"]["commandSet"] })}
               >
-                <SelectTrigger id="pole-commands" aria-label="Command set">
+                <SelectTrigger id="pole-commands" aria-label={t("display.commandSet")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="epson">Epson / ESC-POS (most)</SelectItem>
+                  <SelectItem value="epson">{t("display.epson")}</SelectItem>
                   <SelectItem value="cd5220">CD5220</SelectItem>
-                  <SelectItem value="plain">Plain text</SelectItem>
+                  <SelectItem value="plain">{t("display.plain")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {display.pole.connection === "serial" ? (
               <>
                 <div className="space-y-1.5">
-                  <Label htmlFor="pole-com">COM port</Label>
+                  <Label htmlFor="pole-com">{t("drawer.comPort")}</Label>
                   <Select value={display.pole.comPort ?? ""} onValueChange={(v) => void savePole({ comPort: v })}>
-                    <SelectTrigger id="pole-com" aria-label="Display COM port">
-                      <SelectValue placeholder={comPorts.data?.length === 0 ? "No COM ports found" : "Choose a port"} />
+                    <SelectTrigger id="pole-com" aria-label={t("display.comPortLabel")}>
+                      <SelectValue placeholder={comPorts.data?.length === 0 ? t("drawer.noComPorts") : t("drawer.choosePort")} />
                     </SelectTrigger>
                     <SelectContent>
                       {(comPorts.data ?? []).map((port) => (
@@ -157,9 +157,9 @@ export function DisplaySection() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="pole-baud">Speed (baud)</Label>
+                  <Label htmlFor="pole-baud">{t("drawer.baud")}</Label>
                   <Select value={String(display.pole.baudRate)} onValueChange={(v) => void savePole({ baudRate: Number(v) })}>
-                    <SelectTrigger id="pole-baud" aria-label="Display baud rate">
+                    <SelectTrigger id="pole-baud" aria-label={t("display.baudLabel")}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -176,19 +176,19 @@ export function DisplaySection() {
               <>
                 <TextField
                   id="pole-host"
-                  label="Display IP address"
+                  label={t("display.ip")}
                   placeholder="192.168.1.60"
                   value={display.pole.host ?? ""}
                   onCommit={(host) => void savePole({ host: host || null })}
                 />
                 <TextField
                   id="pole-port"
-                  label="Display port"
+                  label={t("display.port")}
                   value={String(display.pole.port)}
                   onCommit={(v) => {
                     const port = Number(v);
                     if (Number.isInteger(port) && port > 0 && port < 65536) void savePole({ port });
-                    else toast.error("Port must be a number from 1 to 65535");
+                    else toast.error(t("drawer.badPort"));
                   }}
                 />
               </>
@@ -198,29 +198,28 @@ export function DisplaySection() {
 
         {display.kind === "monitor" && (
           <div className="space-y-1.5">
-            <Label htmlFor="monitor-screen">Screen</Label>
+            <Label htmlFor="monitor-screen">{t("display.screen")}</Label>
             <Select
               value={display.monitor.displayId === null ? ANY_OTHER : String(display.monitor.displayId)}
               onValueChange={(v) =>
                 void save({ ...display, monitor: { displayId: v === ANY_OTHER ? null : Number(v) } })
               }
             >
-              <SelectTrigger id="monitor-screen" aria-label="Customer screen">
+              <SelectTrigger id="monitor-screen" aria-label={t("display.screenLabel")}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ANY_OTHER}>The screen that isn't the till's</SelectItem>
+                <SelectItem value={ANY_OTHER}>{t("display.otherScreen")}</SelectItem>
                 {(screens.data ?? []).map((s) => (
                   <SelectItem key={s.id} value={String(s.id)}>
-                    {s.label} ({s.width}×{s.height}){s.primary ? " · main screen" : ""}
+                    {s.label} ({s.width}×{s.height}){s.primary ? ` · ${t("display.mainScreen")}` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {onlyOneScreen && (
               <p className="text-sm text-muted-foreground">
-                Only one screen is connected: the customer view opens as a window you can move once a second
-                screen is plugged in.
+                {t("display.oneScreen")}
               </p>
             )}
           </div>
@@ -230,14 +229,14 @@ export function DisplaySection() {
           <>
             <TextField
               id="display-idle"
-              label="Welcome message"
-              placeholder="Welcome"
+              label={t("display.welcomeMessage")}
+              placeholder={t("display.welcomePlaceholder")}
               maxLength={40}
               value={display.idleMessage}
               onCommit={(idleMessage) => void save({ ...display, idleMessage })}
             />
             <Button variant="outline" className="gap-2" disabled={testing} onClick={() => void test()}>
-              <MonitorSmartphone className="h-4 w-4" /> Test display
+              <MonitorSmartphone className="h-4 w-4" /> {t("display.test")}
             </Button>
           </>
         )}

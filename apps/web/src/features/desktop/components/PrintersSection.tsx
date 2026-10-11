@@ -2,6 +2,7 @@ import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Printer, RefreshCw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PrintArea } from "@/components/print/PrintArea";
 import { desktop, useDeviceStore, type PrintingSettings, type ReceiptPrinterSettings } from "../bridge";
 import { printDocument } from "../printing";
+import { formatDateTime } from "@/lib/format";
 
 const NONE = "__none__";
 /** Typical printable widths: the print head is narrower than the roll. */
@@ -26,21 +28,22 @@ function PrinterSelect({
   printers: { name: string; displayName: string; isDefault: boolean }[];
   onChange: (name: string | null) => void;
 }) {
+  const { t } = useTranslation("device");
   const missing = value !== null && !printers.some((p) => p.name === value);
   return (
     <Select value={value ?? NONE} onValueChange={(v) => onChange(v === NONE ? null : v)}>
-      <SelectTrigger id={id} aria-label={id === "receipt-printer" ? "Receipt printer" : "A4 printer"}>
+      <SelectTrigger id={id} aria-label={id === "receipt-printer" ? t("printers.receipt") : t("printers.a4")}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={NONE}>None (show the print dialog)</SelectItem>
+        <SelectItem value={NONE}>{t("printers.none")}</SelectItem>
         {printers.map((p) => (
           <SelectItem key={p.name} value={p.name}>
             {p.displayName}
-            {p.isDefault ? " (Windows default)" : ""}
+            {p.isDefault ? ` ${t("printers.windowsDefault")}` : ""}
           </SelectItem>
         ))}
-        {missing && <SelectItem value={value}>{value} (not found)</SelectItem>}
+        {missing && <SelectItem value={value}>{t("printers.missingName", { name: value })}</SelectItem>}
       </SelectContent>
     </Select>
   );
@@ -90,15 +93,20 @@ function NumberField({
 
 /** Ruler, edge box and long lines: shows at a glance what the printer cuts off. */
 function CalibrationReceipt({ printerName, r }: { printerName: string; r: ReceiptPrinterSettings }) {
+  const { t } = useTranslation("device");
   const marks = Array.from({ length: Math.floor(r.printableWidthMm / 10) + 1 }, (_, i) => i * 10);
   return (
     <div className="receipt-slip mx-auto w-[300px] font-mono text-xs">
-      <p className="text-center font-bold">PRINTER CALIBRATION</p>
+      <p className="text-center font-bold">{t("calibration.title")}</p>
       <p className="text-center [overflow-wrap:anywhere]">{printerName}</p>
       <hr className="my-2 border-dashed border-black" />
       <p>
-        Paper {r.paperWidthMm} mm · printable {r.printableWidthMm} mm · left margin {r.marginLeftMm} mm · text
-        size {Math.round(r.fontScale * 100)}%
+        {t("calibration.summary", {
+          paper: r.paperWidthMm,
+          printable: r.printableWidthMm,
+          margin: r.marginLeftMm,
+          scale: Math.round(r.fontScale * 100),
+        })}
       </p>
       <div className="relative mt-2 h-6 border-x-2 border-b-2 border-black">
         {marks.map((mm) => (
@@ -111,25 +119,25 @@ function CalibrationReceipt({ printerName, r }: { printerName: string; r: Receip
           </span>
         ))}
       </div>
-      <div className="mt-2 border-2 border-black p-1 text-center font-bold">BOTH SIDES OF THIS BOX MUST PRINT</div>
+      <div className="mt-2 border-2 border-black p-1 text-center font-bold">{t("calibration.box")}</div>
       <p className="mt-2 break-all">{"1234567890".repeat(8)}</p>
-      <p className="mt-2">Right side cut off: lower "Printable width".</p>
-      <p>Empty space on the right: raise it.</p>
-      <p>Everything shifted: change "Left margin".</p>
-      <p className="mt-2 text-center">*** END ***</p>
+      <p className="mt-2">{t("calibration.cutOff")}</p>
+      <p>{t("calibration.emptyRight")}</p>
+      <p>{t("calibration.shifted")}</p>
+      <p className="mt-2 text-center">{t("calibration.end")}</p>
     </div>
   );
 }
 
 function A4TestPage({ printerName }: { printerName: string }) {
+  const { t } = useTranslation("device");
   return (
     <div className="a4-doc mx-auto w-[210mm] bg-white p-[15mm] text-sm text-black">
-      <h1 className="text-2xl font-bold">A4 test page</h1>
+      <h1 className="text-2xl font-bold">{t("printers.a4TestTitle")}</h1>
       <p className="mt-1">{printerName}</p>
-      <p>{new Date().toLocaleString()}</p>
+      <p>{formatDateTime(new Date())}</p>
       <div className="mt-6 border-2 border-black p-4">
-        This box spans the full printable width. If all four sides print with a margin of about 15 mm around the
-        page, invoices and A4 quotations will print correctly on this printer.
+        {t("printers.a4TestBody")}
       </div>
     </div>
   );
@@ -137,6 +145,7 @@ function A4TestPage({ printerName }: { printerName: string }) {
 
 /** Settings → This device → Printers (Windows app only). */
 export function PrintersSection() {
+  const { t } = useTranslation("device");
   const printing = useDeviceStore((s) => s.printing);
   const setPrinting = useDeviceStore((s) => s.setPrinting);
   const printersQuery = useQuery({ queryKey: ["desktop-printers"], queryFn: () => desktop!.printers.list() });
@@ -158,27 +167,31 @@ export function PrintersSection() {
     try {
       await setPrinting(next);
     } catch {
-      toast.error("Couldn't save the printer settings");
+      toast.error(t("printers.saveFailed"));
     }
   }
   const r = printing.receipt;
   const updateReceipt = (patch: Partial<ReceiptPrinterSettings>) => save({ ...printing, receipt: { ...r, ...patch } });
   const paperPreset = r.paperWidthMm === 58 || r.paperWidthMm === 80 ? String(r.paperWidthMm) : "custom";
   const status = (name: string | null) =>
-    !name ? "Not set" : printers.some((p) => p.name === name) ? "Available" : printersQuery.isLoading ? "…" : "Not found";
+    !name
+      ? t("printers.notSet")
+      : printers.some((p) => p.name === name)
+        ? t("printers.available")
+        : printersQuery.isLoading
+          ? "…"
+          : t("printers.notFound");
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Printers</CardTitle>
-        <CardDescription>
-          Receipts and invoices print straight to these printers, without a dialog. Works offline too.
-        </CardDescription>
+        <CardTitle>{t("printers.title")}</CardTitle>
+        <CardDescription>{t("printers.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="font-medium">Receipt printer</h3>
+            <h3 className="font-medium">{t("printers.receipt")}</h3>
             <span className="text-sm text-muted-foreground" data-testid="receipt-printer-status">
               {status(r.deviceName)}
             </span>
@@ -191,7 +204,7 @@ export function PrintersSection() {
           />
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label htmlFor="paper-width">Paper width</Label>
+              <Label htmlFor="paper-width">{t("printers.paperWidth")}</Label>
               <Select
                 value={paperPreset}
                 onValueChange={(v) => {
@@ -200,20 +213,20 @@ export function PrintersSection() {
                   void updateReceipt({ paperWidthMm: mm, printableWidthMm: PRINTABLE_FOR_PAPER[mm] });
                 }}
               >
-                <SelectTrigger id="paper-width" aria-label="Paper width">
+                <SelectTrigger id="paper-width" aria-label={t("printers.paperWidth")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="80">80 mm</SelectItem>
                   <SelectItem value="58">58 mm</SelectItem>
-                  <SelectItem value="custom">Custom</SelectItem>
+                  <SelectItem value="custom">{t("printers.custom")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {paperPreset === "custom" && (
               <NumberField
                 id="paper-width-custom"
-                label="Custom paper width"
+                label={t("printers.customWidth")}
                 suffix="mm"
                 value={r.paperWidthMm}
                 min={40}
@@ -223,7 +236,7 @@ export function PrintersSection() {
             )}
             <NumberField
               id="printable-width"
-              label="Printable width"
+              label={t("printers.printableWidth")}
               suffix="mm"
               value={r.printableWidthMm}
               min={30}
@@ -232,7 +245,7 @@ export function PrintersSection() {
             />
             <NumberField
               id="margin-left"
-              label="Left margin"
+              label={t("printers.leftMargin")}
               suffix="mm"
               value={r.marginLeftMm}
               min={0}
@@ -241,7 +254,7 @@ export function PrintersSection() {
             />
             <NumberField
               id="font-scale"
-              label="Text size"
+              label={t("printers.textSize")}
               suffix="%"
               value={Math.round(r.fontScale * 100)}
               min={50}
@@ -250,7 +263,7 @@ export function PrintersSection() {
             />
             <NumberField
               id="feed"
-              label="Paper after receipt"
+              label={t("printers.feed")}
               suffix="mm"
               value={r.feedMm}
               min={0}
@@ -259,7 +272,7 @@ export function PrintersSection() {
             />
             <NumberField
               id="receipt-copies"
-              label="Copies"
+              label={t("printers.copies")}
               value={r.copies}
               min={1}
               max={5}
@@ -273,7 +286,7 @@ export function PrintersSection() {
               checked={printing.autoPrintReceipt}
               onChange={(e) => void save({ ...printing, autoPrintReceipt: e.target.checked })}
             />
-            Print the receipt automatically after each sale
+            {t("printers.autoPrint")}
           </label>
           <label className="flex items-center gap-3 text-sm">
             <input
@@ -282,7 +295,7 @@ export function PrintersSection() {
               checked={printing.cutAfterReceipt}
               onChange={(e) => void save({ ...printing, cutAfterReceipt: e.target.checked })}
             />
-            Cut the paper after each receipt (only if the printer doesn't already)
+            {t("printers.cut")}
           </label>
           <Button
             variant="outline"
@@ -290,16 +303,16 @@ export function PrintersSection() {
             disabled={!r.deviceName || test !== null}
             onClick={() => setTest("receipt")}
           >
-            <Printer className="h-4 w-4" /> Print calibration receipt
+            <Printer className="h-4 w-4" /> {t("printers.printCalibration")}
           </Button>
         </section>
 
         <section className="space-y-3 border-t pt-6">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="font-medium">A4 printer</h3>
+            <h3 className="font-medium">{t("printers.a4")}</h3>
             <span className="text-sm text-muted-foreground">{status(printing.a4.deviceName)}</span>
           </div>
-          <p className="text-sm text-muted-foreground">For invoices and A4 quotations.</p>
+          <p className="text-sm text-muted-foreground">{t("printers.a4Hint")}</p>
           <PrinterSelect
             id="a4-printer"
             value={printing.a4.deviceName}
@@ -309,7 +322,7 @@ export function PrintersSection() {
           <div className="grid gap-3 sm:grid-cols-3">
             <NumberField
               id="a4-copies"
-              label="Copies"
+              label={t("printers.copies")}
               value={printing.a4.copies}
               min={1}
               max={5}
@@ -322,12 +335,12 @@ export function PrintersSection() {
             disabled={!printing.a4.deviceName || test !== null}
             onClick={() => setTest("a4")}
           >
-            <Printer className="h-4 w-4" /> Print A4 test page
+            <Printer className="h-4 w-4" /> {t("printers.printA4Test")}
           </Button>
         </section>
 
         <Button variant="ghost" size="sm" className="gap-2" onClick={() => void printersQuery.refetch()}>
-          <RefreshCw className="h-4 w-4" /> Refresh printer list
+          <RefreshCw className="h-4 w-4" /> {t("printers.refresh")}
         </Button>
 
         {test === "receipt" && (

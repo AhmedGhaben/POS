@@ -1,0 +1,73 @@
+{
+  "subtitle": "Os dados da sua empresa aparecem nos recibos e nas faturas.",
+  "loadFailed": "Não foi possível carregar as configurações. Verifique sua conexão.",
+  "save": "Salvar configurações",
+  "saved": "Configurações salvas",
+  "fields": {
+    "address": "Endereço",
+    "phone": "Telefone"
+  },
+  "business": {
+    "title": "Empresa",
+    "description": "Dados da empresa para recibos e faturas A4.",
+    "name": "Nome da empresa",
+    "fields": {
+      "legalName": "Razão social",
+      "taxId": "CNPJ / CPF",
+      "registrationNumber": "Inscrição estadual / municipal",
+      "address": "Endereço",
+      "phone": "Telefone",
+      "email": "E-mail",
+      "website": "Site"
+    },
+    "hints": {
+      "legalName": "Se for diferente do nome da empresa, por exemplo \"Café da Esquina Ltda.\"."
+    }
+  },
+  "money": {
+    "title": "Dinheiro",
+    "currency": "Moeda",
+    "example": "Exemplo: {{amount}}",
+    "defaultTax": "Imposto padrão %",
+    "defaultTaxHint": "Preenchido nos novos produtos. Os produtos existentes mantêm a sua alíquota.",
+    "taxRange": "De 0 a 100"
+  },
+  "documents": {
+    "title": "Recibos e faturas",
+    "language": "Idioma dos recibos e faturas",
+    "languageHint": "Recibos, orçamentos, faturas, a tela do cliente e os recibos por e-mail usam este idioma. A tela de cada pessoa usa o idioma dela.",
+    "receiptHeader": "Cabeçalho do recibo",
+    "receiptHeaderPlaceholder": "ex.: Aberto todos os dias, 8h–20h",
+    "receiptFooter": "Rodapé do recibo",
+    "receiptFooterPlaceholder": "Obrigado!",
+    "receiptFooterHint": "Em branco, mostra \"Obrigado!\".",
+    "invoiceFooter": "Rodapé da fatura",
+    "invoiceFooterPlaceholder": "Dados bancários, Pix, condições de pagamento…"
+  },
+  "logo": {
+    "title": "Logotipo",
+    "alt": "Logotipo da empresa",
+    "help": "Aparece nos recibos e nas faturas. Um PNG com fundo transparente fica melhor; imagens grandes são reduzidas automaticamente.",
+    "upload": "Enviar logotipo",
+    "replace": "Substituir",
+    "uploading": "Enviando...",
+    "updated": "Logotipo atualizado",
+    "removed": "Logotipo removido",
+    "unreadable": "Não conseguimos ler esse arquivo como imagem",
+    "wrongType": "Escolha uma imagem PNG, JPEG ou WebP",
+    "tooDetailed": "Essa imagem é detalhada demais para caber em 300 KB — tente um logotipo mais simples"
+  },
+  "stores": {
+    "title": "Lojas",
+    "description": "O endereço e o telefone de cada loja saem impressos nos recibos dela.",
+    "edit": "Editar loja",
+    "name": "Nome",
+    "store": "Loja",
+    "timezone": "Fuso horário",
+    "printedHint": "O endereço e o telefone saem impressos nos recibos desta loja.",
+    "save": "Salvar loja",
+    "updated": "Loja atualizada",
+    "nameRequired": "O nome da loja é obrigatório",
+    "badTimezone": "Fuso horário desconhecido — use um nome como America/Sao_Paulo"
+  }
+}

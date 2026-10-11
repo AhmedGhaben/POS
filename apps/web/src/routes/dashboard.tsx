@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { jsPDF } from "jspdf";
 import { autoTable } from "jspdf-autotable";
 import { Download, FileText } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/features/auth/store";
 import { BUSINESS_QUERY_KEY, fetchBusiness } from "@/features/business/api";
 import { useCompactMoney } from "@/features/business/use-money";
@@ -25,6 +26,7 @@ import {
 } from "@/features/reports/api";
 
 export function DashboardPage() {
+  const { t, i18n } = useTranslation(["reports", "common"]);
   const compact = useCompactMoney();
   const stores = useAuthStore((s) => s.stores);
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
@@ -60,20 +62,20 @@ export function DashboardPage() {
   });
 
   if (!currentStoreId) {
-    return <p className="p-6 text-muted-foreground">No store selected.</p>;
+    return <p className="p-6 text-muted-foreground">{t("noStore")}</p>;
   }
 
   const summary = summaryQuery.data;
   const canCompareStores = role === "OWNER" && stores.length > 1;
-  const storeName = stores.find((s) => s.id === currentStoreId)?.name ?? "store";
+  const storeName = stores.find((s) => s.id === currentStoreId)?.name ?? t("store");
 
   function exportTrendCsv() {
     downloadCsv(
-      `sales-trend-${storeName}.csv`,
+      t("export.trendFile", { store: storeName }),
       [
-        { header: "Date", value: (r: { date: string }) => r.date },
-        { header: "Revenue", value: (r: { revenue: number }) => r.revenue },
-        { header: "Orders", value: (r: { orderCount: number }) => r.orderCount },
+        { header: t("export.date"), value: (r: { date: string }) => r.date },
+        { header: t("kpi.revenue"), value: (r: { revenue: number }) => r.revenue },
+        { header: t("kpi.orders"), value: (r: { orderCount: number }) => r.orderCount },
       ],
       trendQuery.data ?? [],
     );
@@ -82,25 +84,25 @@ export function DashboardPage() {
   function exportSummaryPdf() {
     const doc = new jsPDF();
     doc.setFontSize(16);
-    doc.text(`${businessQuery.data?.name ?? "Business"} — ${storeName}`, 14, 16);
+    doc.text(`${businessQuery.data?.name ?? t("export.business")} — ${storeName}`, 14, 16);
     doc.setFontSize(10);
-    doc.text(`Last ${days} days`, 14, 22);
+    doc.text(t("lastDays", { count: days }), 14, 22);
 
     autoTable(doc, {
       startY: 28,
-      head: [["Metric", "Value"]],
+      head: [[t("export.metric"), t("export.value")]],
       body: [
-        ["Revenue", summary ? compact(summary.revenue) : "—"],
-        ["Profit", summary ? compact(summary.profit) : "—"],
-        ["Orders", summary ? String(summary.orderCount) : "—"],
-        ["Avg. order value", summary ? compact(summary.avgOrderValue) : "—"],
+        [t("kpi.revenue"), summary ? compact(summary.revenue) : "—"],
+        [t("kpi.profit"), summary ? compact(summary.profit) : "—"],
+        [t("kpi.orders"), summary ? String(summary.orderCount) : "—"],
+        [t("kpi.avgOrder"), summary ? compact(summary.avgOrderValue) : "—"],
       ],
     });
 
     const afterKpiY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 28;
     autoTable(doc, {
       startY: afterKpiY + 10,
-      head: [["Top product", "Qty sold", "Revenue"]],
+      head: [[t("export.topProduct"), t("export.qtySold"), t("kpi.revenue")]],
       body: (topProductsQuery.data ?? []).map((p) => [
         p.name,
         String(p.quantitySold),
@@ -108,22 +110,22 @@ export function DashboardPage() {
       ]),
     });
 
-    doc.save(`report-${storeName}.pdf`);
+    doc.save(t("export.reportFile", { store: storeName }));
   }
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
+          <h1 className="text-2xl font-semibold">{t("common:nav.dashboard")}</h1>
           <p className="text-sm text-muted-foreground">
-            {businessQuery.data?.name ?? "Loading..."}
+            {businessQuery.data?.name ?? t("common:actions.loading")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           {businessQuery.data && (
             <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium">
-              {businessQuery.data.plan} plan
+              {t("plan", { plan: businessQuery.data.plan })}
             </span>
           )}
           <DateRangeSelect days={days} onChange={setDays} />
@@ -139,30 +141,30 @@ export function DashboardPage() {
       <Tabs defaultValue="overview">
         {canCompareStores && (
           <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="comparison">Store comparison</TabsTrigger>
+            <TabsTrigger value="overview">{t("tabs.overview")}</TabsTrigger>
+            <TabsTrigger value="comparison">{t("tabs.comparison")}</TabsTrigger>
           </TabsList>
         )}
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <KpiCard
-              label="Revenue"
+              label={t("kpi.revenue")}
               value={summary ? compact(summary.revenue) : "—"}
               deltaPct={summary?.revenueDeltaPct ?? null}
             />
             <KpiCard
-              label="Profit"
+              label={t("kpi.profit")}
               value={summary ? compact(summary.profit) : "—"}
               deltaPct={summary?.profitDeltaPct ?? null}
             />
             <KpiCard
-              label="Orders"
-              value={summary ? summary.orderCount.toLocaleString() : "—"}
+              label={t("kpi.orders")}
+              value={summary ? summary.orderCount.toLocaleString(i18n.language) : "—"}
               deltaPct={summary?.orderCountDeltaPct ?? null}
             />
             <KpiCard
-              label="Avg. order value"
+              label={t("kpi.avgOrder")}
               value={summary ? compact(summary.avgOrderValue) : "—"}
               deltaPct={summary?.avgOrderValueDeltaPct ?? null}
             />

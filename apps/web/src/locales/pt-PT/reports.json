@@ -1,0 +1,61 @@
+{
+  "noStore": "Nenhuma loja selecionada.",
+  "store": "loja",
+  "plan": "Plano {{plan}}",
+  "lastDays_one": "Último {{count}} dia",
+  "lastDays_other": "Últimos {{count}} dias",
+  "tabs": {
+    "overview": "Resumo",
+    "comparison": "Comparar lojas"
+  },
+  "kpi": {
+    "revenue": "Receita",
+    "profit": "Lucro",
+    "orders": "Vendas",
+    "avgOrder": "Valor médio por venda",
+    "noChange": "Sem alteração face ao período anterior",
+    "vsPrior": "{{pct}}% face ao período anterior",
+    "new": "Novo neste período"
+  },
+  "export": {
+    "trendFile": "evolucao-vendas-{{store}}.csv",
+    "reportFile": "relatorio-{{store}}.pdf",
+    "date": "Data",
+    "business": "Empresa",
+    "metric": "Indicador",
+    "value": "Valor",
+    "topProduct": "Produto mais vendido",
+    "qtySold": "Qtd. vendida"
+  },
+  "charts": {
+    "revenueTrend": "Evolução da receita",
+    "storePerformance": "Desempenho das lojas",
+    "topProducts": "Produtos mais vendidos",
+    "noSales": "Ainda não há vendas neste período.",
+    "revenueProfit": "{{revenue}} de receita · {{profit}} de lucro",
+    "orders_one": "{{count}} venda",
+    "orders_other": "{{count}} vendas",
+    "sold_one": "{{count}} vendido",
+    "sold_other": "{{count}} vendidos"
+  },
+  "lowStock": {
+    "title": "Stock baixo",
+    "allGood": "Todos os produtos estão acima do stock mínimo.",
+    "product": "Produto",
+    "status": "Estado",
+    "quantity": "Quantidade",
+    "reorderLevel": "Stock mínimo",
+    "out": "Esgotado",
+    "low": "Stock baixo"
+  },
+  "insights": {
+    "title": "Análise com IA",
+    "description": "Uma leitura simples dos números deste período, gerada a pedido.",
+    "generate": "Gerar análise",
+    "regenerate": "Gerar de novo",
+    "generating": "A gerar...",
+    "failed": "Não foi possível gerar a análise.",
+    "highlights": "Destaques",
+    "restock": "Sugestões de reposição"
+  }
+}

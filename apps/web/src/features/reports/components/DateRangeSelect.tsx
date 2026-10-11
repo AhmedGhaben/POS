@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface DateRangeSelectProps {
@@ -5,13 +6,10 @@ interface DateRangeSelectProps {
   onChange: (days: number) => void;
 }
 
-const PRESETS = [
-  { value: 7, label: "Last 7 days" },
-  { value: 30, label: "Last 30 days" },
-  { value: 90, label: "Last 90 days" },
-];
+const PRESETS = [7, 30, 90];
 
 export function DateRangeSelect({ days, onChange }: DateRangeSelectProps) {
+  const { t } = useTranslation("reports");
   return (
     <Select value={String(days)} onValueChange={(v) => onChange(Number(v))}>
       <SelectTrigger className="w-[160px]">
@@ -19,8 +17,8 @@ export function DateRangeSelect({ days, onChange }: DateRangeSelectProps) {
       </SelectTrigger>
       <SelectContent>
         {PRESETS.map((preset) => (
-          <SelectItem key={preset.value} value={String(preset.value)}>
-            {preset.label}
+          <SelectItem key={preset} value={String(preset)}>
+            {t("lastDays", { count: preset })}
           </SelectItem>
         ))}
       </SelectContent>

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { ImageIcon, Trash2, Upload } from "lucide-react";
 import type { BusinessDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ interface LogoUploaderProps {
 }
 
 export function LogoUploader({ business, onSaved }: LogoUploaderProps) {
+  const { t } = useTranslation(["settings", "common"]);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -21,7 +23,7 @@ export function LogoUploader({ business, onSaved }: LogoUploaderProps) {
     onSuccess: (updated) => {
       setError(null);
       onSaved(updated);
-      toast.success("Logo updated");
+      toast.success(t("logo.updated"));
     },
     onError: (err) => setError((err as Error).message),
   });
@@ -30,7 +32,7 @@ export function LogoUploader({ business, onSaved }: LogoUploaderProps) {
     mutationFn: removeLogo,
     onSuccess: (updated) => {
       onSaved(updated);
-      toast.success("Logo removed");
+      toast.success(t("logo.removed"));
     },
     onError: (err) => setError((err as Error).message),
   });
@@ -42,24 +44,23 @@ export function LogoUploader({ business, onSaved }: LogoUploaderProps) {
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
       <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-white">
         {src ? (
-          <img src={src} alt="Business logo" className="max-h-full max-w-full object-contain" />
+          <img src={src} alt={t("logo.alt")} className="max-h-full max-w-full object-contain" />
         ) : (
           <ImageIcon className="h-8 w-8 text-muted-foreground" />
         )}
       </div>
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">
-          Shown on receipts and invoices. PNG with a transparent background works best; large images are
-          shrunk automatically.
+          {t("logo.help")}
         </p>
         <div className="flex gap-2">
           <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => inputRef.current?.click()}>
             <Upload className="mr-2 h-4 w-4" />
-            {upload.isPending ? "Uploading..." : src ? "Replace" : "Upload logo"}
+            {upload.isPending ? t("logo.uploading") : src ? t("logo.replace") : t("logo.upload")}
           </Button>
           {src && (
             <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={() => remove.mutate()}>
-              <Trash2 className="mr-2 h-4 w-4" /> Remove
+              <Trash2 className="mr-2 h-4 w-4" /> {t("common:actions.remove")}
             </Button>
           )}
         </div>

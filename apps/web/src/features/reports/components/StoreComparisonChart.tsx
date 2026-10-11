@@ -1,5 +1,7 @@
 import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { StoreComparisonDto } from "@pos/shared";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/format";
 import { currentCurrency, useCompactMoney } from "@/features/business/use-money";
@@ -15,20 +17,24 @@ function StoreComparisonTooltip({ active, payload }: any) {
     <div className="rounded-md border bg-popover px-3 py-2 text-sm shadow-md">
       <p className="font-medium text-foreground">{store.storeName}</p>
       <p className="text-muted-foreground">
-        {formatCurrency(store.revenue, currentCurrency())} revenue · {formatCurrency(store.profit, currentCurrency())} profit
+        {i18n.t("reports:charts.revenueProfit", {
+          revenue: formatCurrency(store.revenue, currentCurrency()),
+          profit: formatCurrency(store.profit, currentCurrency()),
+        })}
       </p>
-      <p className="text-muted-foreground">{store.orderCount} orders</p>
+      <p className="text-muted-foreground">{i18n.t("reports:charts.orders", { count: store.orderCount })}</p>
     </div>
   );
 }
 
 /** Owner-only, multi-store businesses only — magnitude comparison, sequential blue. */
 export function StoreComparisonChart({ data }: StoreComparisonChartProps) {
+  const { t } = useTranslation("reports");
   const compact = useCompactMoney();
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Store performance</CardTitle>
+        <CardTitle className="text-base">{t("charts.storePerformance")}</CardTitle>
       </CardHeader>
       <CardContent className="h-72">
         <ResponsiveContainer width="100%" height="100%">

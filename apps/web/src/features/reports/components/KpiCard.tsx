@@ -1,4 +1,5 @@
 import { ArrowDown, ArrowUp } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,7 @@ interface KpiCardProps {
 
 /** Stat tile: label + value + signed delta vs the prior period of equal length. */
 export function KpiCard({ label, value, deltaPct, upIsGood = true }: KpiCardProps) {
+  const { t, i18n } = useTranslation("reports");
   const isUp = deltaPct !== null && deltaPct > 0;
   const isDown = deltaPct !== null && deltaPct < 0;
   const isGoodDirection = (isUp && upIsGood) || (isDown && !upIsGood);
@@ -34,11 +36,15 @@ export function KpiCard({ label, value, deltaPct, upIsGood = true }: KpiCardProp
             {isUp && <ArrowUp className="h-3.5 w-3.5" />}
             {isDown && <ArrowDown className="h-3.5 w-3.5" />}
             <span>
-              {deltaPct === 0 ? "No change" : `${Math.abs(deltaPct).toFixed(1)}%`} vs prior period
+              {deltaPct === 0
+                ? t("kpi.noChange")
+                : t("kpi.vsPrior", {
+                    pct: Math.abs(deltaPct).toLocaleString(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+                  })}
             </span>
           </div>
         ) : (
-          <p className="mt-1 text-sm text-muted-foreground">New this period</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("kpi.new")}</p>
         )}
       </CardContent>
     </Card>

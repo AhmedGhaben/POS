@@ -14,5 +14,29 @@
     "saveToCustomer": "Salvar estes dados em {{name}} para a próxima vez",
     "submit": "Emitir fatura",
     "submitting": "Emitindo..."
+  },
+  "page": {
+    "invoice": "Fatura",
+    "reprintNote": "Reimprime exatamente como foi emitida, mesmo que suas configurações tenham mudado.",
+    "loadFailed": "Não foi possível carregar a fatura.",
+    "pastSale": "Faturar uma venda anterior",
+    "pastSaleHint": "Vendas recentes em {{store}}. Troque de loja no topo para ver as vendas de outra loja.",
+    "thisStore": "esta loja",
+    "sale": "Venda",
+    "chooseSale": "Escolha uma venda",
+    "noSales": "Nenhuma venda nesta loja ainda.",
+    "continue": "Continuar",
+    "subtitle": "Faturas A4 emitidas no pagamento.",
+    "total_one": "{{count}} no total.",
+    "total_other": "{{count}} no total.",
+    "columns": {
+      "number": "Número",
+      "date": "Data",
+      "billTo": "Cobrar de",
+      "receipt": "Recibo",
+      "total": "Total"
+    },
+    "viewPrint": "Ver / imprimir",
+    "empty": "Nenhuma fatura ainda. Emita uma no PDV depois de uma venda (\"Fatura A4\"), ou aqui para uma venda anterior."
   }
 }

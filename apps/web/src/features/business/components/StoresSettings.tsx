@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import type { StoreDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ function isValidTimezone(tz: string): boolean {
 }
 
 function EditStoreDialog({ store, onClose }: { store: StoreDto | null; onClose: () => void }) {
+  const { t } = useTranslation(["settings", "common"]);
   const updateCached = useAuthStore((s) => s.updateStore);
   const [form, setForm] = React.useState({ name: "", address: "", phone: "", timezone: "" });
   const [error, setError] = React.useState<string | null>(null);
@@ -35,7 +37,7 @@ function EditStoreDialog({ store, onClose }: { store: StoreDto | null; onClose: 
     mutationFn: () => updateStore(store!.id, form),
     onSuccess: (updated) => {
       updateCached(updated);
-      toast.success("Store updated");
+      toast.success(t("stores.updated"));
       onClose();
     },
     onError: (err) => setError((err as Error).message),
@@ -43,8 +45,8 @@ function EditStoreDialog({ store, onClose }: { store: StoreDto | null; onClose: 
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name.trim()) return setError("Store name is required");
-    if (!isValidTimezone(form.timezone)) return setError("Unknown timezone — use a name like Europe/Paris");
+    if (!form.name.trim()) return setError(t("stores.nameRequired"));
+    if (!isValidTimezone(form.timezone)) return setError(t("stores.badTimezone"));
     setError(null);
     mutation.mutate();
   }
@@ -56,24 +58,24 @@ function EditStoreDialog({ store, onClose }: { store: StoreDto | null; onClose: 
     <Dialog open={!!store} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit store</DialogTitle>
+          <DialogTitle>{t("stores.edit")}</DialogTitle>
         </DialogHeader>
         <form className="space-y-3" onSubmit={submit}>
           <div className="space-y-2">
-            <Label htmlFor="store-name">Name</Label>
+            <Label htmlFor="store-name">{t("stores.name")}</Label>
             <Input id="store-name" value={form.name} onChange={set("name")} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="store-address">Address</Label>
+            <Label htmlFor="store-address">{t("fields.address")}</Label>
             <Textarea id="store-address" rows={2} value={form.address} onChange={set("address")} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="store-phone">Phone</Label>
+              <Label htmlFor="store-phone">{t("fields.phone")}</Label>
               <Input id="store-phone" value={form.phone} onChange={set("phone")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="store-tz">Timezone</Label>
+              <Label htmlFor="store-tz">{t("stores.timezone")}</Label>
               <Input id="store-tz" list="timezones" value={form.timezone} onChange={set("timezone")} />
               <datalist id="timezones">
                 {Intl.supportedValuesOf("timeZone").map((tz) => (
@@ -82,10 +84,10 @@ function EditStoreDialog({ store, onClose }: { store: StoreDto | null; onClose: 
               </datalist>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">Address and phone are printed on this store's receipts.</p>
+          <p className="text-xs text-muted-foreground">{t("stores.printedHint")}</p>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" className="w-full" disabled={mutation.isPending}>
-            {mutation.isPending ? "Saving..." : "Save store"}
+            {mutation.isPending ? t("common:actions.saving") : t("stores.save")}
           </Button>
         </form>
       </DialogContent>
@@ -95,6 +97,7 @@ function EditStoreDialog({ store, onClose }: { store: StoreDto | null; onClose: 
 
 /** Uses the stores cached in the session; a store created elsewhere shows after signing in again. */
 export function StoresSettings() {
+  const { t } = useTranslation(["settings", "common"]);
   const stores = useAuthStore((s) => s.stores);
   const [editing, setEditing] = React.useState<StoreDto | null>(null);
 
@@ -104,9 +107,9 @@ export function StoresSettings() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Store</TableHead>
-              <TableHead>Address</TableHead>
-              <TableHead>Timezone</TableHead>
+              <TableHead>{t("stores.store")}</TableHead>
+              <TableHead>{t("fields.address")}</TableHead>
+              <TableHead>{t("stores.timezone")}</TableHead>
               <TableHead className="w-0" />
             </TableRow>
           </TableHeader>
@@ -118,7 +121,7 @@ export function StoresSettings() {
                 <TableCell className="text-muted-foreground">{store.timezone}</TableCell>
                 <TableCell>
                   <Button variant="outline" size="sm" onClick={() => setEditing(store)}>
-                    Edit
+                    {t("common:actions.edit")}
                   </Button>
                 </TableCell>
               </TableRow>

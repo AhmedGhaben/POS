@@ -1,3 +1,5 @@
+import { currentLanguage } from "@/i18n";
+
 export interface CurrencyOption {
   code: string;
   /** e.g. "EUR — Euro (€)" */
@@ -5,11 +7,13 @@ export interface CurrencyOption {
 }
 
 /**
+ * Names follow the language on screen ("Euro", "euro").
  * Same rule as the API (common/utils/currency.ts): ISO 4217 codes with 0-2
  * decimals, because money columns are Decimal(10, 2). Sorted by name.
  */
 export function supportedCurrencies(): CurrencyOption[] {
-  const names = new Intl.DisplayNames(undefined, { type: "currency" });
+  const lang = currentLanguage();
+  const names = new Intl.DisplayNames(lang, { type: "currency" });
   return Intl.supportedValuesOf("currency")
     .filter(
       (code) =>
@@ -19,10 +23,10 @@ export function supportedCurrencies(): CurrencyOption[] {
     .map((code) => {
       const name = names.of(code) ?? code;
       const symbol =
-        new Intl.NumberFormat(undefined, { style: "currency", currency: code, currencyDisplay: "narrowSymbol" })
+        new Intl.NumberFormat(lang, { style: "currency", currency: code, currencyDisplay: "narrowSymbol" })
           .formatToParts(0)
           .find((p) => p.type === "currency")?.value ?? code;
       return { code, label: symbol === code ? `${code} — ${name}` : `${code} — ${name} (${symbol})` };
     })
-    .sort((a, b) => a.label.localeCompare(b.label));
+    .sort((a, b) => a.label.localeCompare(b.label, lang));
 }

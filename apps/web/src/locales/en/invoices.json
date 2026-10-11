@@ -14,5 +14,29 @@
     "saveToCustomer": "Save these details to {{name}} for next time",
     "submit": "Issue invoice",
     "submitting": "Issuing..."
+  },
+  "page": {
+    "invoice": "Invoice",
+    "reprintNote": "Reprints exactly as issued, even if your settings have changed since.",
+    "loadFailed": "Couldn't load the invoice.",
+    "pastSale": "Invoice a past sale",
+    "pastSaleHint": "Recent sales at {{store}}. Switch store at the top to see another store's sales.",
+    "thisStore": "this store",
+    "sale": "Sale",
+    "chooseSale": "Choose a sale",
+    "noSales": "No sales at this store yet.",
+    "continue": "Continue",
+    "subtitle": "A4 invoices issued at checkout.",
+    "total_one": "{{count}} in total.",
+    "total_other": "{{count}} in total.",
+    "columns": {
+      "number": "Number",
+      "date": "Date",
+      "billTo": "Bill to",
+      "receipt": "Receipt",
+      "total": "Total"
+    },
+    "viewPrint": "View / print",
+    "empty": "No invoices yet. Issue one from the POS after a sale (\"A4 invoice\"), or for a past sale here."
   }
 }

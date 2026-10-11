@@ -1,0 +1,61 @@
+{
+  "noStore": "No store selected.",
+  "store": "store",
+  "plan": "{{plan}} plan",
+  "lastDays_one": "Last {{count}} day",
+  "lastDays_other": "Last {{count}} days",
+  "tabs": {
+    "overview": "Overview",
+    "comparison": "Store comparison"
+  },
+  "kpi": {
+    "revenue": "Revenue",
+    "profit": "Profit",
+    "orders": "Orders",
+    "avgOrder": "Avg. order value",
+    "noChange": "No change vs prior period",
+    "vsPrior": "{{pct}}% vs prior period",
+    "new": "New this period"
+  },
+  "export": {
+    "trendFile": "sales-trend-{{store}}.csv",
+    "reportFile": "report-{{store}}.pdf",
+    "date": "Date",
+    "business": "Business",
+    "metric": "Metric",
+    "value": "Value",
+    "topProduct": "Top product",
+    "qtySold": "Qty sold"
+  },
+  "charts": {
+    "revenueTrend": "Revenue trend",
+    "storePerformance": "Store performance",
+    "topProducts": "Top products",
+    "noSales": "No sales in this period yet.",
+    "revenueProfit": "{{revenue}} revenue · {{profit}} profit",
+    "orders_one": "{{count}} order",
+    "orders_other": "{{count}} orders",
+    "sold_one": "{{count}} sold",
+    "sold_other": "{{count}} sold"
+  },
+  "lowStock": {
+    "title": "Low stock",
+    "allGood": "All products are above their reorder level.",
+    "product": "Product",
+    "status": "Status",
+    "quantity": "Quantity",
+    "reorderLevel": "Reorder level",
+    "out": "Out of stock",
+    "low": "Low stock"
+  },
+  "insights": {
+    "title": "AI insights",
+    "description": "A plain-English read on this period's numbers, generated on demand.",
+    "generate": "Generate insights",
+    "regenerate": "Regenerate",
+    "generating": "Generating...",
+    "failed": "Unable to generate insights.",
+    "highlights": "Highlights",
+    "restock": "Restock suggestions"
+  }
+}

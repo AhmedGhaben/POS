@@ -1,4 +1,5 @@
 import { AlertTriangle, OctagonAlert } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { LowStockReportItemDto } from "@pos/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,6 +10,7 @@ interface LowStockPanelProps {
 
 /** Status conveyed via icon + label together — never color alone. */
 function StockBadge({ quantity }: { quantity: number }) {
+  const { t } = useTranslation("reports");
   const isOut = quantity === 0;
   return (
     <span
@@ -16,30 +18,31 @@ function StockBadge({ quantity }: { quantity: number }) {
       style={{ backgroundColor: isOut ? "var(--chart-critical)" : "var(--chart-warning)" }}
     >
       {isOut ? <OctagonAlert className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
-      {isOut ? "Out of stock" : "Low stock"}
+      {isOut ? t("lowStock.out") : t("lowStock.low")}
     </span>
   );
 }
 
 export function LowStockPanel({ items }: LowStockPanelProps) {
+  const { t } = useTranslation("reports");
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Low stock</CardTitle>
+        <CardTitle className="text-base">{t("lowStock.title")}</CardTitle>
       </CardHeader>
       <CardContent className="overflow-x-auto p-0">
         {items.length === 0 ? (
           <p className="px-6 pb-6 text-sm text-muted-foreground">
-            All products are above their reorder level.
+            {t("lowStock.allGood")}
           </p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Quantity</TableHead>
-                <TableHead className="text-right">Reorder level</TableHead>
+                <TableHead>{t("lowStock.product")}</TableHead>
+                <TableHead>{t("lowStock.status")}</TableHead>
+                <TableHead className="text-right">{t("lowStock.quantity")}</TableHead>
+                <TableHead className="text-right">{t("lowStock.reorderLevel")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import type { BusinessDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,20 +19,22 @@ import { supportedCurrencies } from "@/features/business/currencies";
 import { LogoUploader } from "@/features/business/components/LogoUploader";
 import { StoresSettings } from "@/features/business/components/StoresSettings";
 import { formatMoney } from "@/lib/format";
+import { LANGUAGES } from "@/i18n";
 
 const settingsSchema = z.object({
-  name: z.string().trim().min(1, "Business name is required").max(100),
+  name: z.string().trim().min(1, "validation.required").max(100),
   legalName: z.string().max(150),
   taxId: z.string().max(50),
   registrationNumber: z.string().max(50),
   address: z.string().max(300),
   phone: z.string().max(40),
-  email: z.union([z.literal(""), z.string().trim().email("Enter a valid email")]),
+  email: z.union([z.literal(""), z.string().trim().email("validation.email")]),
   website: z.string().max(100),
   currency: z.string().length(3),
+  language: z.string(),
   defaultTaxRate: z
     .string()
-    .refine((v) => v !== "" && !Number.isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100, "0 to 100"),
+    .refine((v) => v !== "" && !Number.isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100, "settings:money.taxRange"),
   receiptHeader: z.string().max(300),
   receiptFooter: z.string().max(300),
   invoiceFooter: z.string().max(1000),
@@ -50,6 +53,7 @@ function toFormValues(b: BusinessDto): SettingsValues {
     email: b.email ?? "",
     website: b.website ?? "",
     currency: b.currency,
+    language: b.language ?? "en",
     defaultTaxRate: String(Number(b.defaultTaxRate)),
     receiptHeader: b.receiptHeader ?? "",
     receiptFooter: b.receiptFooter ?? "",
@@ -58,17 +62,22 @@ function toFormValues(b: BusinessDto): SettingsValues {
 }
 
 /** Text fields: blank clears the value on the server. */
-const TEXT_FIELDS: { name: keyof SettingsValues; label: string; description?: string; multiline?: boolean }[] = [
-  { name: "legalName", label: "Legal name", description: "If different from the business name, e.g. \"Corner Cafe LLC\"." },
-  { name: "taxId", label: "Tax / VAT number" },
-  { name: "registrationNumber", label: "Company registration number" },
-  { name: "address", label: "Address", multiline: true },
-  { name: "phone", label: "Phone" },
-  { name: "email", label: "Email" },
-  { name: "website", label: "Website" },
+const TEXT_FIELDS: {
+  name: "legalName" | "taxId" | "registrationNumber" | "address" | "phone" | "email" | "website";
+  described?: boolean;
+  multiline?: boolean;
+}[] = [
+  { name: "legalName", described: true },
+  { name: "taxId" },
+  { name: "registrationNumber" },
+  { name: "address", multiline: true },
+  { name: "phone" },
+  { name: "email" },
+  { name: "website" },
 ];
 
 export function SettingsPage() {
+  const { t } = useTranslation(["settings", "common"]);
   const role = useAuthStore((s) => s.user?.role);
   const setBusiness = useAuthStore((s) => s.setBusiness);
   const queryClient = useQueryClient();
@@ -90,7 +99,7 @@ export function SettingsPage() {
     mutationFn: (values: SettingsValues) => updateBusiness({ ...values, defaultTaxRate: Number(values.defaultTaxRate) }),
     onSuccess: (business) => {
       saved(business);
-      toast.success("Settings saved");
+      toast.success(t("saved"));
     },
     onError: (err) => toast.error((err as Error).message),
   });
@@ -103,15 +112,15 @@ export function SettingsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-semibold">Settings</h1>
+        <h1 className="text-2xl font-semibold">{t("common:nav.settings")}</h1>
         <p className="text-sm text-muted-foreground">
-          Your business details appear on receipts and invoices.
+          {t("subtitle")}
         </p>
       </div>
 
       {!business ? (
         <p className="text-sm text-muted-foreground">
-          {businessQuery.isError ? "Couldn't load settings. Check your connection." : "Loading..."}
+          {businessQuery.isError ? t("loadFailed") : t("common:actions.loading")}
         </p>
       ) : (
         <>
@@ -119,8 +128,8 @@ export function SettingsPage() {
             <form className="space-y-6" onSubmit={form.handleSubmit((v) => saveMutation.mutate(v))}>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Business</CardTitle>
-                  <CardDescription>Company details for receipts and A4 invoices.</CardDescription>
+                  <CardTitle className="text-base">{t("business.title")}</CardTitle>
+                  <CardDescription>{t("business.description")}</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-2">
                   <FormField
@@ -128,7 +137,7 @@ export function SettingsPage() {
                     name="name"
                     render={({ field }) => (
                       <FormItem className="sm:col-span-2">
-                        <FormLabel>Business name</FormLabel>
+                        <FormLabel>{t("business.name")}</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -136,18 +145,18 @@ export function SettingsPage() {
                       </FormItem>
                     )}
                   />
-                  {TEXT_FIELDS.map(({ name, label, description, multiline }) => (
+                  {TEXT_FIELDS.map(({ name, described, multiline }) => (
                     <FormField
                       key={name}
                       control={form.control}
                       name={name}
                       render={({ field }) => (
-                        <FormItem className={multiline || description ? "sm:col-span-2" : undefined}>
-                          <FormLabel>{label}</FormLabel>
+                        <FormItem className={multiline || described ? "sm:col-span-2" : undefined}>
+                          <FormLabel>{t(`business.fields.${name}`)}</FormLabel>
                           <FormControl>
                             {multiline ? <Textarea rows={2} {...field} /> : <Input {...field} />}
                           </FormControl>
-                          {description && <FormDescription>{description}</FormDescription>}
+                          {described && <FormDescription>{t(`business.hints.${name as "legalName"}`)}</FormDescription>}
                           <FormMessage />
                         </FormItem>
                       )}
@@ -158,7 +167,7 @@ export function SettingsPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Money</CardTitle>
+                  <CardTitle className="text-base">{t("money.title")}</CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-2">
                   <FormField
@@ -166,7 +175,7 @@ export function SettingsPage() {
                     name="currency"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Currency</FormLabel>
+                        <FormLabel>{t("money.currency")}</FormLabel>
                         <Select value={field.value} onValueChange={field.onChange}>
                           <FormControl>
                             <SelectTrigger>
@@ -181,7 +190,7 @@ export function SettingsPage() {
                             ))}
                           </SelectContent>
                         </Select>
-                        {currency && <FormDescription>Example: {formatMoney(1234.5, currency)}</FormDescription>}
+                        {currency && <FormDescription>{t("money.example", { amount: formatMoney(1234.5, currency) })}</FormDescription>}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -191,11 +200,11 @@ export function SettingsPage() {
                     name="defaultTaxRate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default tax %</FormLabel>
+                        <FormLabel>{t("money.defaultTax")}</FormLabel>
                         <FormControl>
                           <Input type="number" step="0.01" min="0" max="100" {...field} />
                         </FormControl>
-                        <FormDescription>Pre-filled on new products. Existing products keep their rate.</FormDescription>
+                        <FormDescription>{t("money.defaultTaxHint")}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -205,17 +214,42 @@ export function SettingsPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Receipts & invoices</CardTitle>
+                  <CardTitle className="text-base">{t("documents.title")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="language"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("documents.language")}</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger aria-label={t("documents.language")}>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {LANGUAGES.map((l) => (
+                              <SelectItem key={l.code} value={l.code}>
+                                {l.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>{t("documents.languageHint")}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="receiptHeader"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Receipt header</FormLabel>
+                        <FormLabel>{t("documents.receiptHeader")}</FormLabel>
                         <FormControl>
-                          <Textarea rows={2} placeholder="e.g. Open 7 days, 8am–8pm" {...field} />
+                          <Textarea rows={2} placeholder={t("documents.receiptHeaderPlaceholder")} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -226,11 +260,11 @@ export function SettingsPage() {
                     name="receiptFooter"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Receipt footer</FormLabel>
+                        <FormLabel>{t("documents.receiptFooter")}</FormLabel>
                         <FormControl>
-                          <Textarea rows={2} placeholder="Thank you!" {...field} />
+                          <Textarea rows={2} placeholder={t("documents.receiptFooterPlaceholder")} {...field} />
                         </FormControl>
-                        <FormDescription>Defaults to "Thank you!" when blank.</FormDescription>
+                        <FormDescription>{t("documents.receiptFooterHint")}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -240,9 +274,9 @@ export function SettingsPage() {
                     name="invoiceFooter"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Invoice footer</FormLabel>
+                        <FormLabel>{t("documents.invoiceFooter")}</FormLabel>
                         <FormControl>
-                          <Textarea rows={3} placeholder="Bank details, payment terms…" {...field} />
+                          <Textarea rows={3} placeholder={t("documents.invoiceFooterPlaceholder")} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -253,7 +287,7 @@ export function SettingsPage() {
 
               <div className="flex justify-end">
                 <Button type="submit" disabled={saveMutation.isPending || !form.formState.isDirty}>
-                  {saveMutation.isPending ? "Saving..." : "Save settings"}
+                  {saveMutation.isPending ? t("common:actions.saving") : t("save")}
                 </Button>
               </div>
             </form>
@@ -261,7 +295,7 @@ export function SettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Logo</CardTitle>
+              <CardTitle className="text-base">{t("logo.title")}</CardTitle>
             </CardHeader>
             <CardContent>
               <LogoUploader business={business} onSaved={saved} />
@@ -270,8 +304,8 @@ export function SettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Stores</CardTitle>
-              <CardDescription>Each store's address and phone print on its receipts.</CardDescription>
+              <CardTitle className="text-base">{t("stores.title")}</CardTitle>
+              <CardDescription>{t("stores.description")}</CardDescription>
             </CardHeader>
             <CardContent>
               <StoresSettings />

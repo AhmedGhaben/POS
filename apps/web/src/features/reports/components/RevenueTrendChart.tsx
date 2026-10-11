@@ -8,6 +8,7 @@ import {
   YAxis,
 } from "recharts";
 import type { SalesTrendPointDto } from "@pos/shared";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatShortDate } from "@/lib/format";
 import { currentCurrency, useCompactMoney } from "@/features/business/use-money";
@@ -31,11 +32,12 @@ function TrendTooltip({ active, payload, label }: any) {
 
 /** Single-series trend — sequential blue, per the "trend over time" form. No legend needed for one series. */
 export function RevenueTrendChart({ data }: RevenueTrendChartProps) {
+  const { t } = useTranslation("reports");
   const compact = useCompactMoney();
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Revenue trend</CardTitle>
+        <CardTitle className="text-base">{t("charts.revenueTrend")}</CardTitle>
       </CardHeader>
       <CardContent className="h-72 pl-0">
         <ResponsiveContainer width="100%" height="100%">

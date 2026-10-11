@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import { desktop, type DesktopPrintJob } from "./bridge";
 
 /**
@@ -36,9 +37,9 @@ export async function printDocument(options: { copies?: number } = {}): Promise<
 async function sendJob(job: DesktopPrintJob): Promise<void> {
   const result = await desktop!.printers.print(job);
   if (!result.ok) {
-    toast.error(`Couldn't print: ${result.error}`, {
+    toast.error(i18n.t("device:printers.printFailed", { error: result.error }), {
       duration: 15_000,
-      action: { label: "Retry", onClick: () => void sendJob(job) },
+      action: { label: i18n.t("common:actions.retry"), onClick: () => void sendJob(job) },
     });
   }
 }

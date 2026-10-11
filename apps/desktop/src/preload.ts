@@ -58,11 +58,11 @@ interface Display {
 }
 
 type UpdateStatus =
-  | { state: "disabled"; reason: string }
+  | { state: "disabled"; reason: string; code: "dev-build" }
   | { state: "idle" | "checking" | "up-to-date"; checkedAt?: string }
   | { state: "downloading"; version: string; percent: number }
   | { state: "ready"; version: string }
-  | { state: "error"; error: string; checkedAt?: string };
+  | { state: "error"; error: string; code: "offline" | "damaged" | "none-published" | "other"; checkedAt?: string };
 
 type HardwareResult = { ok: true } | { ok: false; error: string };
 

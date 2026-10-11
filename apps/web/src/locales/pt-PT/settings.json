@@ -1,0 +1,73 @@
+{
+  "subtitle": "Os dados da sua empresa aparecem nos talões e nas faturas.",
+  "loadFailed": "Não foi possível carregar as definições. Verifique a ligação.",
+  "save": "Guardar definições",
+  "saved": "Definições guardadas",
+  "fields": {
+    "address": "Morada",
+    "phone": "Telefone"
+  },
+  "business": {
+    "title": "Empresa",
+    "description": "Dados da empresa para talões e faturas A4.",
+    "name": "Nome da empresa",
+    "fields": {
+      "legalName": "Denominação social",
+      "taxId": "NIF / número de contribuinte",
+      "registrationNumber": "Número de registo comercial",
+      "address": "Morada",
+      "phone": "Telefone",
+      "email": "Email",
+      "website": "Website"
+    },
+    "hints": {
+      "legalName": "Se for diferente do nome da empresa, por exemplo \"Café da Esquina, Lda.\"."
+    }
+  },
+  "money": {
+    "title": "Dinheiro",
+    "currency": "Moeda",
+    "example": "Exemplo: {{amount}}",
+    "defaultTax": "IVA predefinido %",
+    "defaultTaxHint": "Preenchido nos novos produtos. Os produtos existentes mantêm a sua taxa.",
+    "taxRange": "De 0 a 100"
+  },
+  "documents": {
+    "title": "Talões e faturas",
+    "language": "Idioma dos talões e faturas",
+    "languageHint": "Os talões, orçamentos, faturas, o ecrã do cliente e os talões por email usam este idioma. O ecrã de cada pessoa usa o seu próprio idioma.",
+    "receiptHeader": "Cabeçalho do talão",
+    "receiptHeaderPlaceholder": "ex.: Aberto todos os dias, 8h–20h",
+    "receiptFooter": "Rodapé do talão",
+    "receiptFooterPlaceholder": "Obrigado!",
+    "receiptFooterHint": "Se ficar em branco, mostra \"Obrigado!\".",
+    "invoiceFooter": "Rodapé da fatura",
+    "invoiceFooterPlaceholder": "IBAN, condições de pagamento…"
+  },
+  "logo": {
+    "title": "Logótipo",
+    "alt": "Logótipo da empresa",
+    "help": "Aparece nos talões e nas faturas. Um PNG com fundo transparente fica melhor; imagens grandes são reduzidas automaticamente.",
+    "upload": "Carregar logótipo",
+    "replace": "Substituir",
+    "uploading": "A carregar...",
+    "updated": "Logótipo atualizado",
+    "removed": "Logótipo removido",
+    "unreadable": "Não conseguimos ler esse ficheiro como imagem",
+    "wrongType": "Escolha uma imagem PNG, JPEG ou WebP",
+    "tooDetailed": "Essa imagem é demasiado detalhada para caber em 300 KB — experimente um logótipo mais simples"
+  },
+  "stores": {
+    "title": "Lojas",
+    "description": "A morada e o telefone de cada loja são impressos nos seus talões.",
+    "edit": "Editar loja",
+    "name": "Nome",
+    "store": "Loja",
+    "timezone": "Fuso horário",
+    "printedHint": "A morada e o telefone são impressos nos talões desta loja.",
+    "save": "Guardar loja",
+    "updated": "Loja atualizada",
+    "nameRequired": "O nome da loja é obrigatório",
+    "badTimezone": "Fuso horário desconhecido — use um nome como Europe/Lisbon"
+  }
+}

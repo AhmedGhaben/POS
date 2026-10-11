@@ -1,3 +1,5 @@
+import i18n from "@/i18n";
+
 const MAX_SIDE = 600;
 /** The API's limit is 300 KB decoded; stay under it with some margin. */
 const MAX_BYTES = 290 * 1024;
@@ -12,7 +14,7 @@ function loadImage(file: File): Promise<HTMLImageElement> {
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error("That file isn't an image we can read"));
+      reject(new Error(i18n.t("settings:logo.unreadable")));
     };
     img.src = url;
   });
@@ -31,7 +33,7 @@ function dataUrlBytes(dataUrl: string): number {
  */
 export async function resizeLogo(file: File): Promise<string> {
   if (!/^image\/(png|jpeg|webp|gif|bmp)$/.test(file.type)) {
-    throw new Error("Choose a PNG, JPEG or WebP image");
+    throw new Error(i18n.t("settings:logo.wrongType"));
   }
   const img = await loadImage(file);
   const scale = Math.min(1, MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
@@ -53,5 +55,5 @@ export async function resizeLogo(file: File): Promise<string> {
     if (!dataUrl.startsWith(`data:${type};`)) continue;
     if (dataUrlBytes(dataUrl) <= MAX_BYTES) return dataUrl;
   }
-  throw new Error("That image is too detailed to fit in 300 KB — try a simpler logo");
+  throw new Error(i18n.t("settings:logo.tooDetailed"));
 }

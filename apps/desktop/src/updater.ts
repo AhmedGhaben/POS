@@ -11,12 +11,17 @@ import { log } from "./logging";
  * POS_DESKTOP_UPDATE_URL points at another feed (a folder with latest.yml
  * and the installer) for testing.
  */
+/**
+ * `code` lets the app's screens show the message in their own language;
+ * `reason`/`error` is the English text (logs, older web builds).
+ */
+export type UpdateErrorCode = "offline" | "damaged" | "none-published" | "other";
 export type UpdateStatus =
-  | { state: "disabled"; reason: string }
+  | { state: "disabled"; reason: string; code: "dev-build" }
   | { state: "idle" | "checking" | "up-to-date"; checkedAt?: string }
   | { state: "downloading"; version: string; percent: number }
   | { state: "ready"; version: string }
-  | { state: "error"; error: string; checkedAt?: string };
+  | { state: "error"; error: string; code: UpdateErrorCode; checkedAt?: string };
 
 const CHECK_EVERY_MS = 4 * 60 * 60 * 1000;
 const FIRST_CHECK_AFTER_MS = 15_000;
@@ -38,7 +43,7 @@ export function getUpdateStatus(): UpdateStatus {
 export function initUpdater() {
   const testFeed = process.env.POS_DESKTOP_UPDATE_URL;
   if (!app.isPackaged && !testFeed) {
-    status = { state: "disabled", reason: "Updates only run in the installed app" };
+    status = { state: "disabled", reason: "Updates only run in the installed app", code: "dev-build" };
     return;
   }
   enabled = true;
@@ -70,7 +75,7 @@ export function initUpdater() {
     log.warn(`[update] ${err.message}`);
     // A ready update stays ready even if a later check fails.
     if (status.state !== "ready") {
-      setStatus({ state: "error", error: friendlyError(err.message), checkedAt: new Date().toISOString() });
+      setStatus({ state: "error", ...friendlyError(err.message), checkedAt: new Date().toISOString() });
     }
   });
 
@@ -78,11 +83,15 @@ export function initUpdater() {
   setInterval(() => void checkForUpdates(), CHECK_EVERY_MS).unref();
 }
 
-function friendlyError(message: string): string {
-  if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|net::ERR_/i.test(message)) return "Couldn't reach the update server (offline?)";
-  if (/sha512 checksum mismatch/i.test(message)) return "The download was damaged; it will be fetched again";
-  if (/404|Cannot find latest/i.test(message)) return "No published version found yet";
-  return message.split("\n")[0].slice(0, 200);
+function friendlyError(message: string): { error: string; code: UpdateErrorCode } {
+  if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|net::ERR_/i.test(message)) {
+    return { error: "Couldn't reach the update server (offline?)", code: "offline" };
+  }
+  if (/sha512 checksum mismatch/i.test(message)) {
+    return { error: "The download was damaged; it will be fetched again", code: "damaged" };
+  }
+  if (/404|Cannot find latest/i.test(message)) return { error: "No published version found yet", code: "none-published" };
+  return { error: message.split("\n")[0].slice(0, 200), code: "other" };
 }
 
 export async function checkForUpdates(): Promise<UpdateStatus> {
