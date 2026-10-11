@@ -18,6 +18,7 @@ import { BUSINESS_QUERY_KEY, fetchBusiness, updateBusiness } from "@/features/bu
 import { supportedCurrencies } from "@/features/business/currencies";
 import { LogoUploader } from "@/features/business/components/LogoUploader";
 import { StoresSettings } from "@/features/business/components/StoresSettings";
+import { TillsSettings } from "@/features/business/components/TillsSettings";
 import { formatMoney } from "@/lib/format";
 import { LANGUAGES } from "@/i18n";
 
@@ -364,6 +365,16 @@ export function SettingsPage() {
             </CardHeader>
             <CardContent>
               <StoresSettings />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">{t("tillsList.title")}</CardTitle>
+              <CardDescription>{t("tillsList.description")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TillsSettings />
             </CardContent>
           </Card>
         </>

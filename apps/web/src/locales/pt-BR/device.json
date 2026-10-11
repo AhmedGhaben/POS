@@ -180,5 +180,30 @@
     "minutes_one": "Depois de {{count}} minuto",
     "minutes_other": "Depois de {{count}} minutos",
     "setMyPin": "Definir meu PIN"
+  },
+  "setup": {
+    "title": "Configurar este caixa",
+    "steps": "Etapas da configuração",
+    "step": {
+      "till": "Código do caixa",
+      "printer": "Impressora de recibos",
+      "drawer": "Gaveta de dinheiro",
+      "display": "Visor do cliente",
+      "done": "Concluído"
+    },
+    "codeTitle": "Digite o código do caixa",
+    "codeDescription": "Na retaguarda, um proprietário abre Configurações → Caixas → Adicionar caixa e recebe um código de 6 dígitos. Digite aqui: este caixa fica registrado na loja certa sem a senha de ninguém.",
+    "code": "Código do caixa",
+    "connect": "Conectar",
+    "noCode": "Sem código? Um gerente pode entrar aqui e registrar o caixa em Este dispositivo.",
+    "skip": "Pular por agora e entrar",
+    "registeredTitle": "Este caixa está registrado",
+    "registered": "Este caixa é o {{till}}.",
+    "back": "Voltar",
+    "next": "Próximo",
+    "doneTitle": "Tudo pronto",
+    "doneDescription": "Os funcionários já podem entrar. Tudo isso pode ser alterado depois em Este dispositivo.",
+    "finish": "Ir para a entrada",
+    "runAgain": "Configurar de novo"
   }
 }

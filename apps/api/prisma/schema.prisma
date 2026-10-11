@@ -133,6 +133,7 @@ model Business {
   drawerEvents    DrawerEvent[]
   invoiceCounters InvoiceCounter[]
   shifts          Shift[]
+  pairingCodes    TerminalPairingCode[]
 
   @@map("businesses")
 }
@@ -815,4 +816,25 @@ model CashMovement {
 
   @@unique([shiftId, clientId])
   @@map("cash_movements")
+}
+
+/// A 6-digit code an owner creates to set up a new till without typing
+/// their password on it. Single use, valid for 10 minutes; only the hash
+/// is stored.
+model TerminalPairingCode {
+  id          String    @id @default(cuid())
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id])
+  storeId     String
+  /// The new till's name.
+  name        String
+  codeHash    String
+  createdById String
+  expiresAt   DateTime
+  usedAt      DateTime?
+  terminalId  String?
+  createdAt   DateTime  @default(now())
+
+  @@index([codeHash])
+  @@map("terminal_pairing_codes")
 }

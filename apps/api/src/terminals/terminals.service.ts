@@ -1,11 +1,14 @@
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { randomInt } from "crypto";
 import { Prisma, Role } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { PermissionsService } from "../common/permissions/permissions.service";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { generateOpaqueToken, hashToken } from "../common/utils/tokens";
 import type { TillTerminal } from "../till/till-auth.service";
-import { CreateTerminalDto, UpdateTerminalDto } from "./dto/terminal.dto";
+import { CreatePairingCodeDto, CreateTerminalDto, UpdateTerminalDto } from "./dto/terminal.dto";
+
+const PAIRING_TTL_MS = 10 * 60 * 1000;
 
 const TERMINAL_SELECT = {
   id: true,
@@ -79,6 +82,46 @@ export class TerminalsService {
       select: TERMINAL_SELECT,
     });
     if (!terminal) throw new NotFoundException("Terminal not found");
+    return terminal;
+  }
+
+  /**
+   * A 6-digit code for setting up a new till in a store. Typed on the new
+   * till, it registers it and gives it its key, so nobody's password is
+   * typed there. Single use, for 10 minutes.
+   */
+  async createPairingCode(user: AuthenticatedUser, dto: CreatePairingCodeDto) {
+    const expiresAt = new Date(Date.now() + PAIRING_TTL_MS);
+    for (;;) {
+      const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
+      const codeHash = hashToken(code);
+      // Two live codes must never be the same.
+      const clash = await this.prisma.terminalPairingCode.findFirst({
+        where: { codeHash, usedAt: null, expiresAt: { gt: new Date() } },
+        select: { id: true },
+      });
+      if (clash) continue;
+      await this.prisma.terminalPairingCode.create({
+        data: { businessId: user.businessId, storeId: dto.storeId, name: dto.name, codeHash, createdById: user.userId, expiresAt },
+      });
+      return { code, expiresAt, storeId: dto.storeId, name: dto.name };
+    }
+  }
+
+  /** The new till swaps its code for its registration and key. */
+  async pair(code: string) {
+    const pairing = await this.prisma.terminalPairingCode.findFirst({
+      where: { codeHash: hashToken(code), usedAt: null, expiresAt: { gt: new Date() } },
+    });
+    if (!pairing) throw new BadRequestException("That till code isn't valid or has expired");
+    const { count } = await this.prisma.terminalPairingCode.updateMany({
+      where: { id: pairing.id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+    if (count === 0) throw new BadRequestException("That till code isn't valid or has expired");
+
+    const terminal = await this.create(pairing.businessId, { storeId: pairing.storeId, name: pairing.name });
+    await this.prisma.terminalPairingCode.update({ where: { id: pairing.id }, data: { terminalId: terminal.id } });
     return terminal;
   }
 

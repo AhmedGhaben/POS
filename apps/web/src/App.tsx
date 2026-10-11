@@ -28,6 +28,7 @@ import { InvoicesPage } from "@/routes/invoices";
 import { DevicePage } from "@/routes/device";
 import { DrawerEventsPage } from "@/routes/drawer-events";
 import { ShiftsPage } from "@/routes/shifts";
+import { SetupPage } from "@/routes/setup";
 import { CustomerDisplayPage } from "@/routes/customer-display";
 
 /** Owner/Manager default to the back office; Cashier defaults straight to POS. */
@@ -51,6 +52,7 @@ export function App() {
         {/* The customer-facing screen: no sign-in of its own, it only shows
             what the POS on this computer broadcasts. */}
         <Route path="/customer-display" element={<CustomerDisplayPage />} />
+        <Route path="/setup" element={<SetupPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/welcome" element={<WelcomePage />} />
           <Route element={<PosShell />}>

@@ -8,7 +8,8 @@ import { Roles } from "../common/decorators/roles.decorator";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { StoreAccessGuard } from "../common/guards/store-access.guard";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
-import { CreateTerminalDto, UpdateTerminalDto } from "./dto/terminal.dto";
+import { Throttle } from "@nestjs/throttler";
+import { CreatePairingCodeDto, CreateTerminalDto, PairTerminalDto, UpdateTerminalDto } from "./dto/terminal.dto";
 import { TerminalsService } from "./terminals.service";
 
 /** Physical tills running the desktop app. Setting one up needs a manager. */
@@ -21,6 +22,22 @@ export class TerminalsController {
   @Roles(Role.OWNER, Role.MANAGER)
   create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateTerminalDto) {
     return this.terminalsService.create(user.businessId, dto);
+  }
+
+  /** A code for setting up a new till without a password (10 minutes, single use). */
+  @Post("pairing-codes")
+  @UseGuards(RolesGuard, StoreAccessGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  createPairingCode(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreatePairingCodeDto) {
+    return this.terminalsService.createPairingCode(user, dto);
+  }
+
+  /** The new till types its code: nobody is signed in there yet. */
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post("pair")
+  pair(@Body() dto: PairTerminalDto) {
+    return this.terminalsService.pair(dto.code);
   }
 
   @Get()

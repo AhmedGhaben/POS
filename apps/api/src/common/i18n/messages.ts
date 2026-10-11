@@ -50,6 +50,10 @@ const EXACT: Record<string, Translations> = {
     "pt-PT": "Não tem acesso à loja desta caixa",
     "pt-BR": "Você não tem acesso à loja deste caixa",
   },
+  "That till code isn't valid or has expired": {
+    "pt-PT": "Esse código da caixa não é válido ou expirou",
+    "pt-BR": "Esse código do caixa não é válido ou expirou",
+  },
   "This till isn't registered any more": {
     "pt-PT": "Esta caixa já não está registada",
     "pt-BR": "Este caixa não está mais registrado",

@@ -180,5 +180,30 @@
     "minutes_one": "After {{count}} minute",
     "minutes_other": "After {{count}} minutes",
     "setMyPin": "Set my PIN"
+  },
+  "setup": {
+    "title": "Set up this till",
+    "steps": "Setup steps",
+    "step": {
+      "till": "Till code",
+      "printer": "Receipt printer",
+      "drawer": "Cash drawer",
+      "display": "Customer display",
+      "done": "Done"
+    },
+    "codeTitle": "Enter the till code",
+    "codeDescription": "In the back office, an owner opens Settings → Tills → Add a till and gets a 6-digit code. Type it here: this till is registered to the right store without anyone's password.",
+    "code": "Till code",
+    "connect": "Connect",
+    "noCode": "No code? A manager can sign in here and register the till on This device instead.",
+    "skip": "Skip for now and sign in",
+    "registeredTitle": "This till is registered",
+    "registered": "This till is {{till}}.",
+    "back": "Back",
+    "next": "Next",
+    "doneTitle": "All set",
+    "doneDescription": "Staff can now sign in. Everything here can be changed later on This device.",
+    "finish": "Go to sign-in",
+    "runAgain": "Run setup again"
   }
 }

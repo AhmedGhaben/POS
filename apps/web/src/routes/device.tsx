@@ -1,7 +1,8 @@
 import * as React from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Download, FolderOpen, RefreshCw } from "lucide-react";
+import { Download, FolderOpen, RefreshCw, Wand2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ function TerminalSection() {
   const stores = useAuthStore((s) => s.stores);
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const canManage = role === "OWNER" || role === "MANAGER";
+  const navigate = useNavigate();
   const [name, setName] = React.useState("");
   const [storeId, setStoreId] = React.useState(currentStoreId ?? "");
 
@@ -140,6 +142,9 @@ function TerminalSection() {
         ) : (
           !terminal && <p className="text-sm text-muted-foreground">{t("terminal.askManager")}</p>
         )}
+        <Button variant="outline" className="gap-2" onClick={() => navigate("/setup")}>
+          <Wand2 className="h-4 w-4" /> {t("setup.runAgain")}
+        </Button>
       </CardContent>
     </Card>
   );

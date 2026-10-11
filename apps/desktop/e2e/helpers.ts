@@ -147,11 +147,18 @@ export async function login(page: Page, email = "owner@demo-store.test", passwor
   }
 }
 
-/** First-run setup: point the till at the (proxied) server. */
-export async function connect(page: Page, serverUrl: string) {
+/**
+ * First-run setup: point the till at the (proxied) server. A new till then
+ * offers the setup wizard; `skipSetup` (the default) goes straight to sign-in.
+ */
+export async function connect(page: Page, serverUrl: string, { skipSetup = true } = {}) {
   await page.getByLabel("Server address").fill(serverUrl);
   await page.getByRole("button", { name: "Connect" }).click();
-  await page.waitForURL(/^app:\/\/pos\/(login|$)/);
+  await page.waitForURL(/^app:\/\/pos\/(login|setup|$)/);
+  if (skipSetup && page.url().endsWith("/setup")) {
+    await page.getByRole("button", { name: "Skip for now and sign in" }).click();
+    await page.waitForURL(/^app:\/\/pos\/login/);
+  }
 }
 
 /** Opens the POS and selects the first category so products are on screen. */

@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
+import { IsBoolean, IsOptional, IsString, Matches, MaxLength, MinLength } from "class-validator";
 import { Transform } from "class-transformer";
 
 const trim = ({ value }: { value: unknown }) => (typeof value === "string" ? value.trim() : value);
@@ -29,4 +29,12 @@ export class UpdateTerminalDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+}
+
+/** A new till's name and store, for a pairing code. */
+export class CreatePairingCodeDto extends CreateTerminalDto {}
+
+export class PairTerminalDto {
+  @Matches(/^\d{6}$/, { message: "That till code isn't valid or has expired" })
+  code!: string;
 }

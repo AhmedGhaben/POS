@@ -56,6 +56,17 @@ useful on its own. All of this comes before launch item #4 (deploy).
     partial unique index, which Prisma can't express.
   - Tests: API e2e `shifts.e2e-spec.ts` (7), web unit `ledger.test.ts`
     (2), desktop e2e `till-shifts.spec.ts` (4).
+- **Part 5 (till codes, setup wizard) is built** (2026-10-11). All five
+  parts are done. Differences from the plan:
+  - Codes are created in Settings → Tills (owner), which also lists the
+    tills and turns them on or off. Managers can still register a till
+    by signing in on it (This device).
+  - The wizard opens right after the server address is entered, on a
+    till that isn't registered yet. "Skip for now and sign in" goes to
+    sign-in, and the wizard can be run again from This device.
+  - Tests: API e2e `terminal-pairing.e2e-spec.ts` (3), desktop e2e
+    `till-setup.spec.ts` (3). The desktop `connect()` helper skips the
+    wizard unless asked not to.
 
 **Why:** the app works end to end, but a real shop needs these on day one:
 - cashiers make mistakes and need to cancel a sale

@@ -78,5 +78,27 @@
     "title": "Tills",
     "shifts": "Count the cash at the start and end of each shift",
     "shiftsHint": "Tills ask for the opening float before the first sale, record cash in and out, and end each shift with a cash count and a report."
+  },
+  "tillsList": {
+    "title": "Tills",
+    "description": "The computers running the Windows app. Add a new one with a code, so nobody types the owner's password on it.",
+    "none": "No tills yet.",
+    "inactive": "Off",
+    "lastSeen": "last seen {{when}}",
+    "neverSeen": "not seen yet",
+    "deactivate": "Turn off",
+    "reactivate": "Turn on",
+    "add": "Add a till",
+    "addTitle": "Add a till",
+    "addDescription": "Name the new till and pick its store. You'll get a code to type on it.",
+    "name": "Till name",
+    "namePlaceholder": "e.g. Front till",
+    "store": "Store",
+    "getCode": "Get a code",
+    "codeHint": "On the new till, choose Enter the till code and type this. It works once.",
+    "expiresIn_one": "Valid for {{count}} more minute",
+    "expiresIn_other": "Valid for {{count}} more minutes",
+    "expired": "This code has expired. Get a new one.",
+    "close": "Close"
   }
 }

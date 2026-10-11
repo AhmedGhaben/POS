@@ -184,6 +184,18 @@ it they're printed to the API console, links included.
   - Every opening is recorded (offline too) and listed on the **Cash
     drawer** back-office page.
   - Optional ESC/POS paper cut after receipts.
+- **Setting up a new till with a code.** In Settings → Tills, the owner
+  clicks **Add a till** and gets a 6-digit code: single use, valid 10
+  minutes, only its hash stored. After connecting to the server, a new
+  till opens a setup wizard:
+  1. Enter the till code. The till registers to the right store and gets
+     its key, with nobody's password typed on it.
+  2. Receipt printer, cash drawer and customer display, each with its
+     test.
+  3. Then to sign-in, where staff use their PINs.
+
+  The wizard can be run again from This device. The Tills list also shows
+  each till's last contact and can turn a till off.
 - **PIN sign-in and quick cashier switching.** Staff tap their name on the
   till and type a 4-6 digit PIN. **Lock till** (and optional auto-lock when
   idle) hands the till to the next person; it works offline too.

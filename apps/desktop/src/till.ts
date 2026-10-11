@@ -79,11 +79,11 @@ export function addKeyHeader(headers: Headers) {
 }
 
 /**
- * POST /terminals and POST /terminals/:id/key answer with the till's new
+ * POST /terminals, /terminals/pair and /terminals/:id/key answer with the till's new
  * key. Keep it here and pass the rest of the answer on to the page.
  */
 export function isKeyResponse(method: string, apiPath: string): boolean {
-  return method === "POST" && /^\/terminals(?:\/[^/]+\/key)?$/.test(apiPath);
+  return method === "POST" && /^\/terminals(?:\/pair|\/[^/]+\/key)?$/.test(apiPath);
 }
 
 export function takeKeyFromBody(body: string): string {

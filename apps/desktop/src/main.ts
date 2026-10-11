@@ -186,7 +186,9 @@ function registerIpc() {
     updateConfig(changed ? { serverUrl, terminal: null } : { serverUrl });
     if (changed) setTerminalKey(null);
     log.info(`[setup] server set to ${serverUrl}`);
-    setTimeout(() => void mainWindow?.loadURL(`${APP_ORIGIN}/`), 0);
+    // A new till goes on to the setup wizard (till code, printer, drawer, display).
+    const next = getConfig().terminal ? "/" : "/setup";
+    setTimeout(() => void mainWindow?.loadURL(`${APP_ORIGIN}${next}`), 0);
     return { ok: true as const };
   });
 

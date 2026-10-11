@@ -78,5 +78,27 @@
     "title": "Caixas",
     "shifts": "Contar o dinheiro no início e no fim de cada turno",
     "shiftsHint": "Os caixas pedem o fundo de troco antes da primeira venda, registram suprimentos e sangrias e terminam cada turno com uma contagem e um relatório."
+  },
+  "tillsList": {
+    "title": "Caixas",
+    "description": "Os computadores com o aplicativo Windows. Adicione um novo com um código, para ninguém digitar a senha do proprietário nele.",
+    "none": "Ainda não há caixas.",
+    "inactive": "Desligado",
+    "lastSeen": "visto pela última vez {{when}}",
+    "neverSeen": "ainda não visto",
+    "deactivate": "Desligar",
+    "reactivate": "Ligar",
+    "add": "Adicionar caixa",
+    "addTitle": "Adicionar caixa",
+    "addDescription": "Dê um nome ao novo caixa e escolha a loja. Você recebe um código para digitar nele.",
+    "name": "Nome do caixa",
+    "namePlaceholder": "ex.: Caixa da frente",
+    "store": "Loja",
+    "getCode": "Gerar código",
+    "codeHint": "No novo caixa, escolha Digitar o código do caixa e digite este. Funciona uma vez.",
+    "expiresIn_one": "Válido por mais {{count}} minuto",
+    "expiresIn_other": "Válido por mais {{count}} minutos",
+    "expired": "Este código expirou. Gere um novo.",
+    "close": "Fechar"
   }
 }
