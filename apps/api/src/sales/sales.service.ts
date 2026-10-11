@@ -41,6 +41,22 @@ const SALE_INCLUDE = {
   payments: true,
 } satisfies Prisma.SaleInclude;
 
+/**
+ * Shows each line's product under the name and SKU it was sold with, so
+ * receipts, invoices and returns read the same after a product is renamed.
+ */
+export function withSoldNames<
+  T extends { lineItems: { productName: string; productSku: string; product: { name: string; sku: string } }[] },
+>(sale: T): T {
+  return {
+    ...sale,
+    lineItems: sale.lineItems.map((li) => ({
+      ...li,
+      product: { ...li.product, name: li.productName, sku: li.productSku },
+    })),
+  };
+}
+
 @Injectable()
 export class SalesService {
   private readonly logger = new Logger(SalesService.name);
@@ -50,13 +66,14 @@ export class SalesService {
     private readonly mail: MailService,
   ) {}
 
-  findByStore(storeId: string) {
-    return this.prisma.sale.findMany({
+  async findByStore(storeId: string) {
+    const sales = await this.prisma.sale.findMany({
       where: { storeId },
       include: SALE_INCLUDE,
       orderBy: { createdAt: "desc" },
       take: 50,
     });
+    return sales.map(withSoldNames);
   }
 
   async create(businessId: string, cashierId: string, dto: CreateSaleDto) {
@@ -100,6 +117,8 @@ export class SalesService {
 
       return {
         productId: product.id,
+        productName: product.name,
+        productSku: product.sku,
         quantity: li.quantity,
         unitPrice,
         taxAmount,
@@ -218,14 +237,15 @@ export class SalesService {
       this.logger.error(`Failed to email receipt for sale ${sale.id}: ${error}`);
     });
 
-    return sale;
+    return withSoldNames(sale);
   }
 
-  private findByClientId(storeId: string, clientId: string) {
-    return this.prisma.sale.findUnique({
+  private async findByClientId(storeId: string, clientId: string) {
+    const sale = await this.prisma.sale.findUnique({
       where: { storeId_clientId: { storeId, clientId } },
       include: SALE_INCLUDE,
     });
+    return sale && withSoldNames(sale);
   }
 
   /** A till that's been removed is ignored rather than failing a sale that
@@ -266,7 +286,7 @@ export class SalesService {
       currency: store?.business.currency ?? "USD",
       receiptNumber: sale.receiptNumber,
       items: sale.lineItems.map((li) => ({
-        name: li.product.name,
+        name: li.productName,
         quantity: li.quantity,
         unitPrice: li.unitPrice.toString(),
         lineTotal: li.lineTotal.toString(),

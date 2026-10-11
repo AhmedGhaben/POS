@@ -22,9 +22,10 @@ Prisma backend.
   returns, transfers between stores, low-stock alerts, and **CSV
   import/export** with a validating preview.
   - **Editing products**: owners and managers click a product to change its
-    name, SKU, barcode, category, prices or tax. A new price applies to
-    new sales only; past sales keep what was charged. Users who can't see
-    cost prices can't change them either.
+    name, SKU, barcode, category, prices or tax. Changes apply to new
+    sales only: past receipts and invoices keep the name, SKU and price
+    the product was sold with. Users who can't see cost prices can't
+    change them either.
   - **Archiving**: hides a product from the till and the list without
     touching past sales or reports. "Show archived products" lets you
     restore it.
@@ -58,8 +59,8 @@ Prisma backend.
 - `apps/api`: NestJS backend
 - `apps/web`: React (Vite) frontend
 - `apps/desktop`: Windows app (Electron) wrapping the web app: offline
-  till now; silent printing and POS hardware in progress (see
-  `docs/plans/DESKTOP_APP.md`)
+  selling, silent printing, cash drawer, customer displays and
+  auto-updates (see `docs/plans/DESKTOP_APP.md`)
 - `packages/shared`: shared TypeScript types/enums
 - `docs/plans/`: design docs per phase/feature, `LAUNCH_READINESS.md`
   (what's left before selling) and `PRODUCT_AND_DISTRIBUTION.md` (website,
@@ -109,10 +110,10 @@ it they're printed to the API console, links included.
 | `RESEND_API_KEY`, `MAIL_FROM` | Optional: send real email |
 | `ANTHROPIC_API_KEY` | Optional: enables AI insights |
 
-## Windows desktop app (in progress)
+## Windows desktop app
 
 `apps/desktop` is an Electron app for shop tills. Plan:
-`docs/plans/DESKTOP_APP.md`; done so far: A0 and part A.
+`docs/plans/DESKTOP_APP.md` (all parts built; released on GitHub Releases).
 
 **What it does:**
 - **Bundled web app.** Built with `--mode desktop` (no service worker) and

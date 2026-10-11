@@ -34,9 +34,6 @@ describe("Languages (e2e)", () => {
   afterAll(async () => {
     try {
       if (businessId) {
-        // The audit log is written just after each response; let the last
-        // request's entry land before deleting, or it blocks the business delete.
-        await new Promise((r) => setTimeout(r, 500));
         const userIds = (await prisma.user.findMany({ where: { businessId }, select: { id: true } })).map((u) => u.id);
         await prisma.$transaction([
           prisma.auditLog.deleteMany({ where: { businessId } }),

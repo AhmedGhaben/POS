@@ -177,6 +177,24 @@ describe("Product editing (e2e)", () => {
     expect(Number((await prisma.sale.findUnique({ where: { id: sale.body.id } }))!.total)).toBe(2);
   });
 
+  it("past sales keep the name and SKU they were sold under", async () => {
+    const before = (await prisma.product.findUnique({ where: { id: teaId } }))!;
+    const sale = await http()
+      .post("/sales")
+      .set(auth(ownerToken))
+      .send({ storeId, lineItems: [{ productId: teaId, quantity: 1 }], payments: [{ method: "CASH", amount: 9 }] })
+      .expect(201);
+    expect(sale.body.lineItems[0].product).toMatchObject({ name: before.name, sku: before.sku });
+
+    await patch(ownerToken, teaId, { name: "Jasmine tea", sku: "JAS-1" }).expect(200);
+    const sales = await http().get(`/sales/store/${storeId}`).set(auth(ownerToken)).expect(200);
+    const past = sales.body.find((s: { id: string }) => s.id === sale.body.id);
+    expect(past.lineItems[0].product).toMatchObject({ id: teaId, name: before.name, sku: before.sku });
+
+    // Put it back for the tests below.
+    await patch(ownerToken, teaId, { name: before.name, sku: before.sku }).expect(200);
+  });
+
   it("archiving hides a product from the till and the list; restoring brings it back", async () => {
     await patch(ownerToken, teaId, { barcode: "5601234" }).expect(200);
     await patch(ownerToken, teaId, { isActive: false }).expect(200);

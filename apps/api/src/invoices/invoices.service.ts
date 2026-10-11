@@ -4,6 +4,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { generateOpaqueToken } from "../common/utils/tokens";
 import { toBusinessSettings } from "../businesses/businesses.service";
+import { withSoldNames } from "../sales/sales.service";
 import { IssueInvoiceDto } from "./dto/issue-invoice.dto";
 import { ListInvoicesDto } from "./dto/list-invoices.dto";
 
@@ -15,6 +16,13 @@ const INVOICE_INCLUDE = {
     },
   },
 } satisfies Prisma.InvoiceInclude;
+
+type InvoiceWithSale = Prisma.InvoiceGetPayload<{ include: typeof INVOICE_INCLUDE }>;
+
+/** The invoice lists each product as it was sold. */
+function soldAs(invoice: InvoiceWithSale): InvoiceWithSale {
+  return { ...invoice, sale: withSoldNames(invoice.sale) };
+}
 
 /** What the A4 layout needs from the seller, frozen at issue time. */
 export interface SellerSnapshot {
@@ -69,7 +77,7 @@ export class InvoicesService {
    */
   async issueForSale(user: AuthenticatedUser, saleId: string, dto: IssueInvoiceDto) {
     const sale = await this.findSaleForUser(user, saleId);
-    if (sale.invoice) return sale.invoice;
+    if (sale.invoice) return soldAs(sale.invoice);
 
     const business = await this.prisma.business.findUniqueOrThrow({ where: { id: user.businessId } });
     const settings = toBusinessSettings(business);
@@ -91,7 +99,7 @@ export class InvoicesService {
     const year = yearInTimezone(issuedAt, sale.store.timezone);
 
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      const created = await this.prisma.$transaction(async (tx) => {
         // Upsert-and-increment in one statement. The row lock it takes is held
         // until commit, so concurrent invoices queue up and get consecutive
         // numbers; if anything below fails, the increment rolls back too.
@@ -132,13 +140,14 @@ export class InvoicesService {
           include: INVOICE_INCLUDE,
         });
       });
+      return soldAs(created);
     } catch (err) {
       // Two tills invoicing the same sale at once: the loser hits the unique
       // saleId; its transaction (and counter increment) rolled back, so
       // return the winner's invoice.
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
         const existing = await this.prisma.invoice.findUnique({ where: { saleId }, include: INVOICE_INCLUDE });
-        if (existing) return existing;
+        if (existing) return soldAs(existing);
       }
       throw err;
     }
@@ -179,6 +188,6 @@ export class InvoicesService {
     if (!invoice || invoice.businessId !== businessId) {
       throw new NotFoundException("Invoice not found");
     }
-    return invoice;
+    return soldAs(invoice);
   }
 }

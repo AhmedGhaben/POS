@@ -19,7 +19,7 @@ function buildService(sale: unknown = SALE) {
     business: {
       findUniqueOrThrow: jest.fn().mockResolvedValue({ id: "biz-1", name: "Cafe", currency: "EUR", logoUpdatedAt: null }),
     },
-    invoice: { create: jest.fn().mockImplementation(({ data }) => Promise.resolve(data)) },
+    invoice: { create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ ...data, sale: { lineItems: [] } })) },
     customer: { update: jest.fn() },
     $queryRaw: jest.fn().mockResolvedValue([{ next: 8 }]),
     $transaction: jest.fn(),
@@ -58,10 +58,10 @@ describe("InvoicesService.issueForSale", () => {
   });
 
   it("returns the existing invoice instead of issuing a second one", async () => {
-    const existing = { id: "inv-1", number: "INV-2026-0003" };
+    const existing = { id: "inv-1", number: "INV-2026-0003", sale: { lineItems: [] } };
     const { service, prisma } = buildService({ ...SALE, invoice: existing });
 
-    await expect(service.issueForSale(OWNER, "sale-1", { buyerName: "Acme" })).resolves.toBe(existing);
+    await expect(service.issueForSale(OWNER, "sale-1", { buyerName: "Acme" })).resolves.toEqual(existing);
     expect(prisma.$queryRaw).not.toHaveBeenCalled();
   });
 
