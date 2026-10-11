@@ -118,6 +118,16 @@ PORT=4000 npm run dev:api
 API_PORT=4000 npm run dev:web
 ```
 
+**Always-on API for the installed Windows app.** To use the installed app
+against your local data without keeping a terminal open, run the API as a
+container on :4000. Docker restarts it, it doesn't need a terminal, and it
+uses much less memory than the dev server:
+
+```bash
+docker compose --profile api up -d --build   # again after pulling new code
+docker compose stop api                      # before `npm run dev:api` on :4000
+```
+
 **Demo logins (from the seed):**
 
 - `owner@demo-store.test` / `OwnerPass123!`

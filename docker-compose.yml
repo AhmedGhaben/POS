@@ -11,5 +11,24 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  # Optional: the API as an always-on container on :4000 for the installed
+  # Windows app (`docker compose --profile api up -d --build`). Built code,
+  # restarted by Docker, independent of any terminal. Stop it
+  # (`docker compose stop api`) before running `npm run dev:api` on :4000.
+  api:
+    profiles: ["api"]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    env_file: apps/api/.env
+    environment:
+      DATABASE_URL: "postgresql://pos:pos@postgres:5432/pos?schema=public"
+      PORT: 4000
+    ports:
+      - "4000:4000"
+
 volumes:
   postgres_data:
