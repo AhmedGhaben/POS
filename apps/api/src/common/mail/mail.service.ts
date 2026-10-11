@@ -2,6 +2,8 @@ import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Resend } from "resend";
 import { formatMoney } from "../utils/currency";
+import type { Language } from "../i18n/languages";
+import { MAIL_TEXTS } from "./mail-texts";
 
 export interface ReceiptEmailItem {
   name: string;
@@ -73,47 +75,58 @@ export class MailService {
     }
   }
 
-  async sendPasswordResetEmail(to: string, resetToken: string): Promise<void> {
+  async sendPasswordResetEmail(to: string, resetToken: string, lang: Language = "en"): Promise<void> {
+    const t = MAIL_TEXTS[lang].reset;
     const link = `${this.appUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
     await this.send(
       to,
-      "Reset your password",
-      `<p>A password reset was requested for your account.</p>
-       <p><a href="${link}">Choose a new password</a> (link expires in 1 hour)</p>
-       <p>If you didn't request this, you can ignore this email.</p>`,
+      t.subject,
+      `<p>${t.requested}</p>
+       <p><a href="${link}">${t.link}</a> ${t.expires}</p>
+       <p>${t.ignore}</p>`,
     );
   }
 
-  async sendEmailVerificationEmail(to: string, firstName: string, verifyToken: string): Promise<void> {
+  async sendEmailVerificationEmail(
+    to: string,
+    firstName: string,
+    verifyToken: string,
+    lang: Language = "en",
+  ): Promise<void> {
+    const t = MAIL_TEXTS[lang].verify;
     const link = `${this.appUrl}/verify-email?token=${encodeURIComponent(verifyToken)}`;
     await this.send(
       to,
-      "Verify your email",
-      `<p>Hi ${escapeHtml(firstName)},</p>
-       <p>Thanks for signing up. Please confirm your email address:</p>
-       <p><a href="${link}">Verify my email</a> (link expires in 24 hours)</p>
-       <p>If you didn't create an account, you can ignore this email.</p>`,
+      t.subject,
+      `<p>${t.hi(escapeHtml(firstName))}</p>
+       <p>${t.thanks}</p>
+       <p><a href="${link}">${t.link}</a> ${t.expires}</p>
+       <p>${t.ignore}</p>`,
     );
   }
 
   async sendStaffInviteEmail(
     to: string,
     params: { firstName: string; businessName: string; token: string },
+    lang: Language = "en",
   ): Promise<void> {
+    const t = MAIL_TEXTS[lang].invite;
     const link = `${this.appUrl}/reset-password?token=${encodeURIComponent(params.token)}&invite=1`;
     const businessName = escapeHtml(params.businessName);
     await this.send(
       to,
-      `You've been added to ${businessName}`,
-      `<p>Hi ${escapeHtml(params.firstName)},</p>
-       <p>You've been given a login for <b>${businessName}</b>'s point of sale.</p>
-       <p><a href="${link}">Set your password</a> (link expires in 72 hours)</p>
-       <p>Then sign in with this email address: ${escapeHtml(to)}</p>`,
+      t.subject(businessName),
+      `<p>${t.hi(escapeHtml(params.firstName))}</p>
+       <p>${t.given(businessName)}</p>
+       <p><a href="${link}">${t.link}</a> ${t.expires}</p>
+       <p>${t.signInWith(escapeHtml(to))}</p>`,
     );
   }
 
-  async sendReceiptEmail(to: string, params: ReceiptEmailParams): Promise<void> {
-    const money = (value: string) => escapeHtml(formatMoney(value, params.currency));
+  /** In the business language: it goes to the shop's customer. */
+  async sendReceiptEmail(to: string, params: ReceiptEmailParams, lang: Language = "en"): Promise<void> {
+    const t = MAIL_TEXTS[lang].receipt;
+    const money = (value: string) => escapeHtml(formatMoney(value, params.currency, lang));
     const rows = params.items
       .map(
         (item) =>
@@ -123,19 +136,20 @@ export class MailService {
     const storeName = escapeHtml(params.storeName);
     await this.send(
       to,
-      `Receipt from ${storeName} — #${params.receiptNumber}`,
+      t.subject(storeName, params.receiptNumber),
       `<h2>${storeName}</h2>
-       <p>Receipt #${params.receiptNumber}</p>
+       <p>${t.number(params.receiptNumber)}</p>
        <table cellpadding="4" style="border-collapse: collapse; width: 100%;">
-         <thead><tr><th align="left">Item</th><th align="right">Qty</th><th align="right">Price</th><th align="right">Total</th></tr></thead>
+         <thead><tr><th align="left">${t.item}</th><th align="right">${t.qty}</th><th align="right">${t.price}</th><th align="right">${t.total}</th></tr></thead>
          <tbody>${rows}</tbody>
        </table>
-       <p>Subtotal: ${money(params.subtotal)}<br/>Tax: ${money(params.taxTotal)}<br/><b>Total: ${money(params.total)}</b></p>
-       <p>Thank you for your purchase!</p>`,
+       <p>${t.subtotal}: ${money(params.subtotal)}<br/>${t.tax}: ${money(params.taxTotal)}<br/><b>${t.total}: ${money(params.total)}</b></p>
+       <p>${t.thanks}</p>`,
     );
   }
 
-  async sendLowStockAlertEmail(to: string, params: LowStockEmailParams): Promise<void> {
+  async sendLowStockAlertEmail(to: string, params: LowStockEmailParams, lang: Language = "en"): Promise<void> {
+    const t = MAIL_TEXTS[lang].lowStock;
     const rows = params.items
       .map(
         (item) =>
@@ -145,11 +159,11 @@ export class MailService {
     const storeName = escapeHtml(params.storeName);
     await this.send(
       to,
-      `Low stock alert — ${storeName}`,
-      `<h2>Low stock at ${storeName}</h2>
-       <p>The following items are at or below their reorder level:</p>
+      t.subject(storeName),
+      `<h2>${t.heading(storeName)}</h2>
+       <p>${t.intro}</p>
        <table cellpadding="4" style="border-collapse: collapse; width: 100%;">
-         <thead><tr><th align="left">Product</th><th align="right">Quantity</th><th align="right">Reorder level</th></tr></thead>
+         <thead><tr><th align="left">${t.product}</th><th align="right">${t.quantity}</th><th align="right">${t.reorderLevel}</th></tr></thead>
          <tbody>${rows}</tbody>
        </table>`,
     );

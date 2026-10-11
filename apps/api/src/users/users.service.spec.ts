@@ -236,11 +236,11 @@ describe("UsersService", () => {
 
       await service.sendStaffInvite(BUSINESS_ID, CASHIER.id, "raw-token");
 
-      expect(mail.sendStaffInviteEmail).toHaveBeenCalledWith("cara@shop.test", {
-        firstName: "Cara",
-        businessName: "Corner Cafe",
-        token: "raw-token",
-      });
+      expect(mail.sendStaffInviteEmail).toHaveBeenCalledWith(
+        "cara@shop.test",
+        { firstName: "Cara", businessName: "Corner Cafe", token: "raw-token" },
+        "en",
+      );
     });
 
     it("swallows mail failures", async () => {

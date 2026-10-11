@@ -39,6 +39,18 @@ Prisma backend.
   details.
 - **Reports**: dashboard with KPIs, trends, top products, store
   comparison, CSV/PDF export, and optional AI insights (Anthropic API).
+- **Languages**: English, European Portuguese and Brazilian Portuguese
+  (see `docs/plans/I18N.md`).
+  - Each person picks their language (account menu, This device, or the
+    corner of the sign-in pages). It's saved to their account, and before
+    they choose it follows the computer's language.
+  - Receipts, quotes, invoices, the customer display and receipt emails
+    use the **business language** (Settings → Receipts & invoices).
+  - Numbers, money and dates follow the language; server error messages,
+    emails, AI insights, the Windows installer and its first-start screen
+    are translated too.
+  - Text lives in `apps/web/src/locales/<language>/*.json`. Adding a
+    language means adding a folder and one line in `src/i18n/index.ts`.
 - Audit log, rate-limited auth, `/health` endpoint.
 
 ## Structure

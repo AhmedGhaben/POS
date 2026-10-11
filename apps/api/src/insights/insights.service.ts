@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import { ReportsService } from "../reports/reports.service";
+import type { Language } from "../common/i18n/languages";
 import { ANTHROPIC_CLIENT } from "./anthropic-client.provider";
 
 const InsightsSchema = z.object({
@@ -36,6 +37,13 @@ briefing for a busy store owner from their point-of-sale data. Reference specifi
 from the data provided. Do not invent figures, trends, or products that aren't in the input. \
 If nothing noteworthy stands out, say so plainly rather than manufacturing an anomaly.`;
 
+/** Appended to the system prompt; product names stay as they are in the data. */
+const WRITE_IN: Record<Language, string> = {
+  en: "",
+  "pt-PT": "\n\nWrite every text field in European Portuguese (as spoken in Portugal and Angola). Keep product names exactly as given.",
+  "pt-BR": "\n\nWrite every text field in Brazilian Portuguese. Keep product names exactly as given.",
+};
+
 @Injectable()
 export class InsightsService {
   constructor(
@@ -43,7 +51,7 @@ export class InsightsService {
     @Inject(ANTHROPIC_CLIENT) private readonly anthropic: Anthropic | null,
   ) {}
 
-  async generate(storeId: string, days: number): Promise<BusinessInsights> {
+  async generate(storeId: string, days: number, language: Language = "en"): Promise<BusinessInsights> {
     if (!this.anthropic) {
       throw new ServiceUnavailableException(
         "AI insights are not configured — set ANTHROPIC_API_KEY on the server.",
@@ -73,7 +81,7 @@ export class InsightsService {
       model: "claude-opus-4-8",
       max_tokens: 2048,
       thinking: { type: "adaptive" },
-      system: SYSTEM_PROMPT,
+      system: SYSTEM_PROMPT + WRITE_IN[language],
       output_config: {
         effort: "medium",
         format: zodOutputFormat(InsightsSchema),

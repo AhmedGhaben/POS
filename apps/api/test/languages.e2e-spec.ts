@@ -82,6 +82,16 @@ describe("Languages (e2e)", () => {
     expect(login.body.business.language).toBe("pt-BR");
   });
 
+  it("error messages come back in the language the app sends", async () => {
+    const wrong = { email: EMAIL, password: "not-the-password" };
+    const pt = await http().post("/auth/login").set("X-Language", "pt-PT").send(wrong).expect(401);
+    expect(pt.body.message).toBe("Email ou palavra-passe incorretos");
+    const br = await http().post("/auth/login").set("X-Language", "pt-BR").send(wrong).expect(401);
+    expect(br.body.message).toBe("E-mail ou senha incorretos");
+    const en = await http().post("/auth/login").send(wrong).expect(401);
+    expect(en.body.message).toBe("Invalid credentials");
+  });
+
   it("the owner sets the business language", async () => {
     const res = await http().patch("/businesses/me").set(auth()).send({ language: "en" }).expect(200);
     expect(res.body.language).toBe("en");

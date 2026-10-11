@@ -10,6 +10,6 @@ export const SUPPORTED_CURRENCIES: string[] = Intl.supportedValuesOf("currency")
 );
 
 /** e.g. formatMoney("12.5", "EUR") → "€12.50"; used in server-rendered emails. */
-export function formatMoney(value: string | number, currency: string): string {
-  return new Intl.NumberFormat("en", { style: "currency", currency }).format(Number(value));
+export function formatMoney(value: string | number, currency: string, locale = "en"): string {
+  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(Number(value));
 }

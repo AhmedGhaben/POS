@@ -15,6 +15,14 @@ export const POLE_WIDTH = 20;
  * What the POS wants shown. Money is already formatted by the POS, so the
  * display never needs to know the currency rules.
  */
+/** The pole's fixed words in the business language; English when absent (older web builds). */
+export interface PoleLabels {
+  total: string;
+  paid: string;
+  change: string;
+  thanks: string;
+}
+
 export type CustomerDisplayState =
   | { mode: "idle"; message: string }
   | {
@@ -24,8 +32,11 @@ export type CustomerDisplayState =
       lines: { name: string; quantity: number; total: string }[];
       itemCount: number;
       total: string;
+      labels?: PoleLabels;
     }
-  | { mode: "paid"; total: string; paid: string; change: string | null };
+  | { mode: "paid"; total: string; paid: string; change: string | null; labels?: PoleLabels };
+
+const ENGLISH_LABELS: PoleLabels = { total: "TOTAL", paid: "PAID", change: "CHANGE", thanks: "THANK YOU" };
 
 /**
  * Pole displays only show plain ASCII: accents are stripped (Café → Cafe),
@@ -72,12 +83,14 @@ export function poleLines(state: CustomerDisplayState): [string, string] {
       const first = item
         ? leftRight(item.quantity > 1 ? `${item.quantity}x ${item.name}` : item.name, item.price)
         : " ".repeat(POLE_WIDTH);
-      return [first, leftRight("TOTAL", state.total)];
+      return [first, leftRight(toDisplayAscii((state.labels ?? ENGLISH_LABELS).total), state.total)];
     }
-    case "paid":
+    case "paid": {
+      const l = state.labels ?? ENGLISH_LABELS;
       return state.change !== null
-        ? [leftRight("PAID", state.paid), leftRight("CHANGE", state.change)]
-        : [leftRight("TOTAL", state.total), centered("THANK YOU")];
+        ? [leftRight(toDisplayAscii(l.paid), state.paid), leftRight(toDisplayAscii(l.change), state.change)]
+        : [leftRight(toDisplayAscii(l.total), state.total), centered(toDisplayAscii(l.thanks))];
+    }
   }
 }
 

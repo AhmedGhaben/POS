@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from "@nes
 import { Prisma, PaymentMethod } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
+import { emailLanguage } from "../common/i18n/languages";
 import { CreateSaleDto } from "./dto/create-sale.dto";
 
 /** How far an offline sale's clock may run ahead of the server's. */
@@ -256,9 +257,11 @@ export class SalesService {
 
     const store = await this.prisma.store.findUnique({
       where: { id: dto.storeId },
-      include: { business: { select: { currency: true } } },
+      include: { business: { select: { currency: true, language: true } } },
     });
-    await this.mail.sendReceiptEmail(email, {
+    await this.mail.sendReceiptEmail(
+      email,
+      {
       storeName: store?.name ?? "Store",
       currency: store?.business.currency ?? "USD",
       receiptNumber: sale.receiptNumber,
@@ -271,6 +274,9 @@ export class SalesService {
       subtotal: sale.subtotal.toString(),
       taxTotal: sale.taxTotal.toString(),
       total: sale.total.toString(),
-    });
+      },
+      // For the shop's customer: the business language.
+      emailLanguage(null, store?.business.language),
+    );
   }
 }

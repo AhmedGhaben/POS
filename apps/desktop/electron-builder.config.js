@@ -37,6 +37,9 @@ module.exports = {
     deleteAppDataOnUninstall: false,
     installerIcon: "build/icon.ico",
     uninstallerIcon: "build/icon.ico",
+    // Shown in the computer's language: English, European or Brazilian Portuguese.
+    multiLanguageInstaller: true,
+    installerLanguages: ["en_US", "pt_PT", "pt_BR"],
   },
   // Updates come from this repository's GitHub Releases (public, so the
   // app needs no token). latest.yml + the installer are uploaded there.

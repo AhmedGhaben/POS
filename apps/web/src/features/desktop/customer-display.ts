@@ -13,6 +13,14 @@ import { desktop, useDeviceStore } from "./bridge";
  * is formatted here so neither needs currency rules. Mirrors
  * apps/desktop/src/hardware/pole-display.ts.
  */
+/** The pole display's fixed words, in the business language. */
+export interface PoleLabels {
+  total: string;
+  paid: string;
+  change: string;
+  thanks: string;
+}
+
 export type CustomerDisplayState =
   | { mode: "idle"; message: string }
   | {
@@ -21,8 +29,9 @@ export type CustomerDisplayState =
       lines: { name: string; quantity: number; total: string }[];
       itemCount: number;
       total: string;
+      labels: PoleLabels;
     }
-  | { mode: "paid"; total: string; paid: string; change: string | null };
+  | { mode: "paid"; total: string; paid: string; change: string | null; labels: PoleLabels };
 
 export const CUSTOMER_DISPLAY_CHANNEL = "pos-customer-display";
 
@@ -91,7 +100,13 @@ export function useIdleMessageBroadcast() {
  * message otherwise. Coalesces bursts (scanning) into one update.
  */
 export function useCustomerDisplay(lines: CartLine[], total: number, completedSale: SaleDto | null) {
-  const { money } = useDocumentLanguage(); // the customer's screen: business language
+  const { money, t } = useDocumentLanguage(); // the customer's screen: business language
+  const labels: PoleLabels = {
+    total: t("pole.total"),
+    paid: t("pole.paid"),
+    change: t("pole.change"),
+    thanks: t("pole.thanks"),
+  };
   const idleMessage = useIdleMessage();
   const previous = React.useRef<Map<string, number>>(new Map());
   const lastItem = React.useRef<{ name: string; quantity: number; price: string } | null>(null);
@@ -119,6 +134,7 @@ export function useCustomerDisplay(lines: CartLine[], total: number, completedSa
       total: money(completedSale.total),
       paid: money(tendered ?? completedSale.total),
       change: completedSale.changeDue !== null ? money(completedSale.changeDue) : null,
+      labels,
     };
   } else if (lines.length > 0) {
     state = {
@@ -131,6 +147,7 @@ export function useCustomerDisplay(lines: CartLine[], total: number, completedSa
       })),
       itemCount: lines.reduce((n, l) => n + l.quantity, 0),
       total: money(total),
+      labels,
     };
   } else {
     state = { mode: "idle", message: idleMessage };

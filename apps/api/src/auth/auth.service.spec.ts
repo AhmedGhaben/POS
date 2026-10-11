@@ -280,7 +280,7 @@ describe("AuthService", () => {
       await service.forgotPassword("owner@demo.test");
 
       expect(prisma.passwordResetToken.create).toHaveBeenCalledTimes(1);
-      expect(mail.sendPasswordResetEmail).toHaveBeenCalledWith("owner@demo.test", expect.any(String));
+      expect(mail.sendPasswordResetEmail).toHaveBeenCalledWith("owner@demo.test", expect.any(String), "en");
     });
 
     it("silently no-ops for an unknown email (avoids user enumeration)", async () => {
@@ -315,7 +315,7 @@ describe("AuthService", () => {
 
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
       expect(prisma.business.create).toHaveBeenCalledWith({
-        data: { name: "Corner Cafe", plan: Plan.SIMPLE },
+        data: { name: "Corner Cafe", plan: Plan.SIMPLE, language: "en" },
       });
       expect(prisma.store.create).toHaveBeenCalledWith({
         data: { businessId: "biz-new", name: "Main Street", timezone: "Europe/Paris" },
@@ -336,6 +336,7 @@ describe("AuthService", () => {
         "new.owner@example.com",
         "New",
         expect.any(String),
+        "en",
       );
     });
 

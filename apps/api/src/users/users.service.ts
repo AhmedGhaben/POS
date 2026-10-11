@@ -11,6 +11,7 @@ import * as bcrypt from "bcrypt";
 import { PrismaService } from "../prisma/prisma.service";
 import { PermissionsService } from "../common/permissions/permissions.service";
 import { MailService } from "../common/mail/mail.service";
+import { emailLanguage } from "../common/i18n/languages";
 import { normalizeEmail } from "../common/transforms/normalize-email";
 import { generateOpaqueToken, hashToken } from "../common/utils/tokens";
 import { CreateUserDto } from "./dto/create-user.dto";
@@ -189,11 +190,11 @@ export class UsersService {
         this.prisma.user.findUniqueOrThrow({ where: { id: userId } }),
         this.prisma.business.findUniqueOrThrow({ where: { id: businessId } }),
       ]);
-      await this.mail.sendStaffInviteEmail(user.email, {
-        firstName: user.firstName,
-        businessName: business.name,
-        token: inviteToken,
-      });
+      await this.mail.sendStaffInviteEmail(
+        user.email,
+        { firstName: user.firstName, businessName: business.name, token: inviteToken },
+        emailLanguage(user.language, business.language),
+      );
     } catch (err) {
       this.logger.error(`Failed to send staff invite for user ${userId}: ${(err as Error).message}`);
     }

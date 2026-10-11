@@ -11,6 +11,7 @@ import { Plan, Role, User } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
+import { emailLanguage, type Language } from "../common/i18n/languages";
 import { parseDurationMs } from "../common/utils/duration";
 import { generateOpaqueToken, hashToken } from "../common/utils/tokens";
 import { normalizeEmail } from "../common/transforms/normalize-email";
@@ -129,7 +130,7 @@ export class AuthService {
     // Best-effort, after commit: a mail outage must not fail sign-up — the
     // owner can resend from the banner in the app.
     try {
-      await this.sendVerificationEmail(user);
+      await this.sendVerificationEmail(user, emailLanguage(dto.language, null));
     } catch (err) {
       this.logger.error(`Failed to send verification email to ${user.email}: ${(err as Error).message}`);
     }
@@ -230,7 +231,10 @@ export class AuthService {
 
   /** Always resolves the same way regardless of whether the email exists, to avoid user enumeration. */
   async forgotPassword(email: string): Promise<void> {
-    const user = await this.prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
+    const user = await this.prisma.user.findUnique({
+      where: { email: normalizeEmail(email) },
+      include: { business: { select: { language: true } } },
+    });
     if (!user || !user.isActive) return;
 
     const rawToken = generateOpaqueToken();
@@ -241,7 +245,7 @@ export class AuthService {
         expiresAt: new Date(Date.now() + PASSWORD_RESET_TTL_MS),
       },
     });
-    await this.mail.sendPasswordResetEmail(user.email, rawToken);
+    await this.mail.sendPasswordResetEmail(user.email, rawToken, emailLanguage(user.language, user.business?.language));
   }
 
   async resetPassword(rawToken: string, newPassword: string): Promise<void> {
@@ -266,7 +270,7 @@ export class AuthService {
     ]);
   }
 
-  private async sendVerificationEmail(user: Pick<User, "id" | "email" | "firstName">): Promise<void> {
+  private async sendVerificationEmail(user: Pick<User, "id" | "email" | "firstName">, lang: Language): Promise<void> {
     const rawToken = generateOpaqueToken();
     await this.prisma.emailVerificationToken.create({
       data: {
@@ -275,14 +279,17 @@ export class AuthService {
         expiresAt: new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS),
       },
     });
-    await this.mail.sendEmailVerificationEmail(user.email, user.firstName, rawToken);
+    await this.mail.sendEmailVerificationEmail(user.email, user.firstName, rawToken, lang);
   }
 
   /** No-op when the user is already verified, so a stale banner can't spam emails. */
   async resendVerification(userId: string): Promise<void> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { business: { select: { language: true } } },
+    });
     if (!user || !user.isActive || user.emailVerifiedAt) return;
-    await this.sendVerificationEmail(user);
+    await this.sendVerificationEmail(user, emailLanguage(user.language, user.business?.language));
   }
 
   /**

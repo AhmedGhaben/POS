@@ -51,5 +51,11 @@
     "total": "Total {{amount}}",
     "paid": "Paid {{amount}}",
     "change": "Change {{amount}}"
+  },
+  "pole": {
+    "total": "TOTAL",
+    "paid": "PAID",
+    "change": "CHANGE",
+    "thanks": "THANK YOU"
   }
 }

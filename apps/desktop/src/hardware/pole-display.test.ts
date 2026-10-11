@@ -41,6 +41,20 @@ describe("pole display text", () => {
     ]);
   });
 
+  it("uses the business language's words, folded to plain ASCII", () => {
+    const labels = { total: "TOTAL", paid: "PAGO", change: "TROCO", thanks: "OBRIGADO" };
+    assert.deepEqual(poleLines({ mode: "paid", total: "$5,98", paid: "$10,00", change: "$4,02", labels }), [
+      "PAGO          $10,00",
+      "TROCO          $4,02",
+    ]);
+    assert.deepEqual(poleLines({ mode: "paid", total: "$5,98", paid: "$5,98", change: null, labels }), [
+      "TOTAL          $5,98",
+      "      OBRIGADO      ",
+    ]);
+    // Accents can't be shown on a pole: they're dropped, not turned into "?".
+    assert.deepEqual(poleLines({ mode: "cart", lastItem: null, lines: [], itemCount: 0, total: "$1", labels: { ...labels, total: "TOTAL À PAGAR" } })[1], "TOTAL A PAGAR     $1");
+  });
+
   it("idle: a long welcome is split at a space", () => {
     assert.deepEqual(poleLines({ mode: "idle", message: "Welcome to Demo Retail Co." }), [
       "  Welcome to Demo   ",

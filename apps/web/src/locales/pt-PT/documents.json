@@ -51,5 +51,11 @@
     "total": "Total {{amount}}",
     "paid": "Pago {{amount}}",
     "change": "Troco {{amount}}"
+  },
+  "pole": {
+    "total": "TOTAL",
+    "paid": "PAGO",
+    "change": "TROCO",
+    "thanks": "OBRIGADO"
   }
 }

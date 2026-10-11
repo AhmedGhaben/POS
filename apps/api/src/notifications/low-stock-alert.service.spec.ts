@@ -37,10 +37,11 @@ describe("LowStockAlertService#sendDailyAlerts", () => {
 
     expect(reports.lowStock).toHaveBeenCalledWith("store-1");
     expect(mail.sendLowStockAlertEmail).toHaveBeenCalledTimes(2);
-    expect(mail.sendLowStockAlertEmail).toHaveBeenCalledWith("owner@test.com", {
-      storeName: "Main St",
-      items: [{ productName: "Widget", quantity: 1, reorderLevel: 5 }],
-    });
+    expect(mail.sendLowStockAlertEmail).toHaveBeenCalledWith(
+      "owner@test.com",
+      { storeName: "Main St", items: [{ productName: "Widget", quantity: 1, reorderLevel: 5 }] },
+      "en",
+    );
   });
 
   it("scopes recipients to OWNER (business-wide) or MANAGER assigned to the store", async () => {
@@ -58,7 +59,7 @@ describe("LowStockAlertService#sendDailyAlerts", () => {
         isActive: true,
         OR: [{ role: Role.OWNER }, { role: Role.MANAGER, storeUsers: { some: { storeId: "store-1" } } }],
       },
-      select: { email: true },
+      select: { email: true, language: true, business: { select: { language: true } } },
     });
   });
 

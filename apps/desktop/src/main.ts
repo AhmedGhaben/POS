@@ -171,13 +171,13 @@ function registerIpc() {
     try {
       serverUrl = normalizeServerUrl(input);
     } catch (err) {
-      return { ok: false as const, error: (err as Error).message || "Not a valid address" };
+      return { ok: false as const, code: "invalid" as const, error: (err as Error).message || "Not a valid address" };
     }
     try {
       await probeServer(serverUrl);
     } catch (err) {
       log.warn(`[setup] server check failed for ${serverUrl}: ${(err as Error).message}`);
-      return { ok: false as const, error: "Couldn't reach a POS server at that address" };
+      return { ok: false as const, code: "unreachable" as const, error: "Couldn't reach a POS server at that address" };
     }
     const changed = getConfig().serverUrl !== serverUrl;
     // A till registered with one server means nothing to another.

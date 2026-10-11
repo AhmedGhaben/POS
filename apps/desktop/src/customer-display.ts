@@ -17,6 +17,7 @@ import { APP_ORIGIN } from "./origin";
  */
 
 const text = (max: number) => z.string().max(max);
+const labels = z.object({ total: text(20), paid: text(20), change: text(20), thanks: text(20) }).optional();
 
 export const displayStateSchema: z.ZodType<CustomerDisplayState> = z.discriminatedUnion("mode", [
   z.object({ mode: z.literal("idle"), message: text(80) }),
@@ -26,8 +27,9 @@ export const displayStateSchema: z.ZodType<CustomerDisplayState> = z.discriminat
     lines: z.array(z.object({ name: text(200), quantity: z.number().int().min(0).max(100_000), total: text(40) })).max(500),
     itemCount: z.number().int().min(0).max(1_000_000),
     total: text(40),
+    labels,
   }),
-  z.object({ mode: z.literal("paid"), total: text(40), paid: text(40), change: text(40).nullable() }),
+  z.object({ mode: z.literal("paid"), total: text(40), paid: text(40), change: text(40).nullable(), labels }),
 ]);
 
 function poleTransport(settings: DisplaySettings): EscPosTransport | string {

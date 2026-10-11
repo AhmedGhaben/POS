@@ -75,10 +75,10 @@
   </head>
   <body>
     <main>
-      <h1>Connect this till</h1>
-      <p>Enter the address of your POS server. You only need to do this once on this computer.</p>
+      <h1 id="title">Connect this till</h1>
+      <p id="intro">Enter the address of your POS server. You only need to do this once on this computer.</p>
       <form id="form">
-        <label for="server">Server address</label>
+        <label id="label" for="server">Server address</label>
         <input id="server" name="server" type="url" placeholder="https://pos.example.com/api" required autofocus />
         <button id="submit" type="submit">Connect</button>
         <div id="error" role="alert"></div>

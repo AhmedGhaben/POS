@@ -87,7 +87,7 @@ const posDesktop = {
     get: (): Promise<Settings> => ipcRenderer.invoke("settings:get"),
     update: (patch: Partial<Pick<Settings, "kiosk" | "startWithWindows">>): Promise<Settings> =>
       ipcRenderer.invoke("settings:update", patch),
-    setServer: (url: string): Promise<{ ok: true } | { ok: false; error: string }> =>
+    setServer: (url: string): Promise<{ ok: true } | { ok: false; code: "invalid" | "unreachable"; error: string }> =>
       ipcRenderer.invoke("settings:set-server", url),
   },
   terminal: {
