@@ -1,7 +1,7 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { Request } from "express";
-import { Observable, tap } from "rxjs";
+import { mergeMap, Observable } from "rxjs";
 import { PrismaService } from "../../prisma/prisma.service";
 import { AuthenticatedUser } from "../types/authenticated-user";
 
@@ -41,9 +41,12 @@ export class AuditLogInterceptor implements NestInterceptor {
       return next.handle();
     }
 
+    // Written before the response goes out, so the entry exists as soon as
+    // the client sees success. record() never throws.
     return next.handle().pipe(
-      tap((responseBody: unknown) => {
-        void this.record(req, responseBody);
+      mergeMap(async (responseBody: unknown) => {
+        await this.record(req, responseBody);
+        return responseBody;
       }),
     );
   }
