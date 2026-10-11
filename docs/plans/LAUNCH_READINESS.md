@@ -73,6 +73,8 @@ Windows desktop app (`DESKTOP_APP.md`) was built before #4 and released as
   (12 of 14 stores in dev DB) and "e2e test transfer" rows in the dev DB.
 - [ ] Void a sale — `VOIDED` sale status is a dead enum value (see Phase 6
   notes in `ROADMAP.md`); build it, then gate it with a permission.
+  Planned with discounts, PIN login, shifts and till codes in
+  `TILL_ESSENTIALS.md` (2026-10-11), to be built before #4.
 - [ ] Hardware testing — receipts print via `window.print()`
   (`apps/web/src/routes/pos.tsx`, layout in `features/pos/components/Receipt.tsx`).
   Test on a real 80mm thermal printer and a USB barcode scanner.
