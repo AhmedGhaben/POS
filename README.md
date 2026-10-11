@@ -48,6 +48,19 @@ Prisma backend.
   - **Archiving**: hides a product from the till and the list without
     touching past sales or reports. "Show archived products" lets you
     restore it.
+- **Shifts and cash counts** (turned on in Settings → Tills):
+  - The till asks for the opening float before the first sale.
+  - **Cash in / out** records money added or taken out, with a reason
+    (needs OPEN_DRAWER).
+  - **Close the till** asks for a blind count, then shows the expected
+    cash, the count and the difference, and prints an end-of-shift report.
+    The report covers sales by payment method, discounts, cancels,
+    returns, cash in/out and each cashier.
+  - Expected cash = float + cash taken − cash refunds + cash in − cash
+    out. The server keeps its own figure and the till's, and works offline
+    through the outbox.
+  - A **Shifts** page in the back office lists every shift with its
+    difference.
 - **Staff**:
   - employees with optional logins (cashier or manager), limited to
     chosen stores

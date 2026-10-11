@@ -1,0 +1,83 @@
+{
+  "buttons": {
+    "cashInOut": "Cash in / out",
+    "close": "Close the till"
+  },
+  "open": {
+    "title": "Open the till",
+    "description": "Count the cash in the drawer to start the shift.",
+    "float": "Opening float",
+    "submit": "Open the till"
+  },
+  "movement": {
+    "title": "Cash in / out",
+    "description": "Money put into or taken out of the drawer. The drawer opens and it's recorded with your name.",
+    "kind": "In or out",
+    "in": "Cash in",
+    "out": "Cash out",
+    "amount": "Amount",
+    "reason": "Reason",
+    "note": "Note",
+    "noteOptional": "Note (optional)",
+    "submitIn": "Put cash in",
+    "submitOut": "Take cash out",
+    "addedIn": "{{amount}} put in",
+    "addedOut": "{{amount}} taken out"
+  },
+  "reasons": {
+    "CASH_PICKUP": "Cash pickup (to the safe)",
+    "PETTY_CASH": "Petty cash",
+    "CHANGE_TOPUP": "More change",
+    "OTHER": "Other"
+  },
+  "close": {
+    "title": "Close the till",
+    "description": "Count the cash in the drawer and type the total. You'll see what was expected afterwards.",
+    "counted": "Cash counted",
+    "note": "Note (optional)",
+    "submit": "Close the till",
+    "closing": "Closing…",
+    "done": "Till closed",
+    "balanced": "The cash matches.",
+    "over": "{{amount}} more than expected.",
+    "short": "{{amount}} short.",
+    "print": "Print report",
+    "finish": "Done"
+  },
+  "report": {
+    "title": "END OF SHIFT",
+    "titleOpen": "SHIFT SO FAR",
+    "opened": "Opened",
+    "closed": "Closed",
+    "sales_one": "{{count}} sale",
+    "sales_other": "{{count}} sales",
+    "discounts": "Discounts given",
+    "voided_one": "{{count}} cancelled",
+    "voided_other": "{{count}} cancelled",
+    "returns_one": "{{count}} return",
+    "returns_other": "{{count}} returns",
+    "float": "Opening float",
+    "cashSales": "Cash sales",
+    "cashRefunds": "Cash refunds",
+    "cashIn": "In",
+    "cashOut": "Out",
+    "expected": "Expected cash",
+    "tillExpected": "Till's own figure",
+    "counted": "Counted",
+    "difference": "Difference",
+    "byCashier": "By cashier"
+  },
+  "page": {
+    "description": "Each till shift with its cash count. Differences are shown in red.",
+    "opened": "Opened",
+    "till": "Till",
+    "openedBy": "Opened by",
+    "closed": "Closed",
+    "expected": "Expected",
+    "counted": "Counted",
+    "difference": "Difference",
+    "open": "Open",
+    "browser": "Browser",
+    "empty": "No shifts yet. Turn on cash counting in Settings."
+  }
+}

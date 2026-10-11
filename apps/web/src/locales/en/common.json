@@ -13,7 +13,8 @@
     "employees": "Employees",
     "settings": "Settings",
     "thisDevice": "This device",
-    "pointOfSale": "Point of Sale"
+    "pointOfSale": "Point of Sale",
+    "shifts": "Shifts"
   },
   "shell": {
     "openNavigation": "Open navigation",

@@ -81,8 +81,9 @@ test.describe.serial("Part A: terminal, outbox and sync", () => {
 
   test("the device page shows the server as unreachable", async () => {
     await page.goto("app://pos/device");
-    await expect(page.getByText("Unreachable", { exact: true })).toBeVisible();
-    await expect(page.getByText("Working offline", { exact: true })).toBeVisible();
+    const main = page.getByRole("main");
+    await expect(main.getByText("Unreachable", { exact: true })).toBeVisible();
+    await expect(main.getByText("Working offline", { exact: true })).toBeVisible();
   });
 
   test("a response lost after the server saved the sale still syncs exactly once", async () => {

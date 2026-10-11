@@ -38,6 +38,7 @@ const settingsSchema = z.object({
   maxDiscountPercent: z
     .string()
     .refine((v) => v.trim() === "" || (!Number.isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100), "settings:money.maxDiscountRange"),
+  shiftsEnabled: z.boolean(),
   receiptHeader: z.string().max(300),
   receiptFooter: z.string().max(300),
   invoiceFooter: z.string().max(1000),
@@ -59,6 +60,7 @@ function toFormValues(b: BusinessDto): SettingsValues {
     language: b.language ?? "en",
     defaultTaxRate: String(Number(b.defaultTaxRate)),
     maxDiscountPercent: b.maxDiscountPercent == null ? "" : String(Number(b.maxDiscountPercent)),
+    shiftsEnabled: !!b.shiftsEnabled,
     receiptHeader: b.receiptHeader ?? "",
     receiptFooter: b.receiptFooter ?? "",
     invoiceFooter: b.invoiceFooter ?? "",
@@ -229,6 +231,36 @@ export function SettingsPage() {
                         </FormControl>
                         <FormDescription>{t("money.maxDiscountHint")}</FormDescription>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">{t("tills.title")}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <FormField
+                    control={form.control}
+                    name="shiftsEnabled"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-start gap-3">
+                          <FormControl>
+                            <input
+                              type="checkbox"
+                              className="mt-1 h-4 w-4"
+                              checked={field.value}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                            />
+                          </FormControl>
+                          <div>
+                            <FormLabel>{t("tills.shifts")}</FormLabel>
+                            <FormDescription>{t("tills.shiftsHint")}</FormDescription>
+                          </div>
+                        </div>
                       </FormItem>
                     )}
                   />

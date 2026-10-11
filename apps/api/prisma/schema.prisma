@@ -67,6 +67,19 @@ enum DrawerOpenReason {
   MANUAL_OPEN
   /// A cash sale was cancelled and the money handed back.
   SALE_VOIDED
+  /// Opening the till (to put the float in) or closing it (to count).
+  SHIFT_OPEN
+  SHIFT_CLOSE
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+enum CashMovementType {
+  IN
+  OUT
 }
 
 model Business {
@@ -89,6 +102,8 @@ model Business {
   language           String   @default("en")
   /// Pre-fills the tax % of new products; each product keeps its own rate.
   defaultTaxRate     Decimal  @default(0) @db.Decimal(5, 2)
+  /// Tills count the cash at the start and end of each shift (docs/plans/TILL_ESSENTIALS.md, part 4).
+  shiftsEnabled      Boolean  @default(false)
   /// Largest discount (% of the sale or line) anyone but the owner may give; null = no limit.
   maxDiscountPercent Decimal? @db.Decimal(5, 2)
   receiptHeader      String?
@@ -117,6 +132,7 @@ model Business {
   terminals       Terminal[]
   drawerEvents    DrawerEvent[]
   invoiceCounters InvoiceCounter[]
+  shifts          Shift[]
 
   @@map("businesses")
 }
@@ -144,6 +160,7 @@ model Store {
   transfersIn    StockTransfer[] @relation("TransferTo")
   terminals      Terminal[]
   drawerEvents   DrawerEvent[]
+  shifts         Shift[]
 
   @@index([businessId])
   @@map("stores")
@@ -185,6 +202,9 @@ model User {
   auditLogs               AuditLog[]
   permissionOverrides     UserPermission[]
   transfersCreated        StockTransfer[]          @relation("TransferCreatedBy")
+  shiftsOpened            Shift[]                  @relation("ShiftOpenedBy")
+  shiftsClosed            Shift[]                  @relation("ShiftClosedBy")
+  cashMovements           CashMovement[]
   drawerEvents            DrawerEvent[]
 
   @@index([businessId])
@@ -295,6 +315,7 @@ model Terminal {
 
   sales        Sale[]
   drawerEvents DrawerEvent[]
+  shifts       Shift[]
 
   @@unique([businessId, sequence])
   @@index([storeId])
@@ -466,6 +487,9 @@ model Sale {
   createdOffline     Boolean       @default(false)
   terminalId         String?
   terminal           Terminal?     @relation(fields: [terminalId], references: [id])
+  /// The till shift it was rung up in, when the business counts shifts.
+  shiftId            String?
+  shift              Shift?        @relation(fields: [shiftId], references: [id])
 
   lineItems SaleLineItem[]
   payments  SalePayment[]
@@ -618,16 +642,20 @@ model Expense {
 /// original product directly (not the SaleLineItem) so a partial return of a
 /// multi-item sale is straightforward to validate and total.
 model Return {
-  id            String   @id @default(cuid())
+  id            String        @id @default(cuid())
   saleId        String
-  sale          Sale     @relation(fields: [saleId], references: [id])
+  sale          Sale          @relation(fields: [saleId], references: [id])
   storeId       String
-  store         Store    @relation(fields: [storeId], references: [id])
+  store         Store         @relation(fields: [storeId], references: [id])
   processedById String
-  processedBy   User     @relation("ReturnProcessedBy", fields: [processedById], references: [id])
+  processedBy   User          @relation("ReturnProcessedBy", fields: [processedById], references: [id])
   reason        String?
-  totalRefund   Decimal  @db.Decimal(10, 2)
-  createdAt     DateTime @default(now())
+  totalRefund   Decimal       @db.Decimal(10, 2)
+  /// How the money went back; a cash refund comes out of the shift's cash.
+  refundMethod  PaymentMethod @default(CASH)
+  shiftId       String?
+  shift         Shift?        @relation(fields: [shiftId], references: [id])
+  createdAt     DateTime      @default(now())
 
   lineItems ReturnLineItem[]
 
@@ -725,4 +753,66 @@ model Invoice {
   @@unique([businessId, year, sequence])
   @@index([businessId, issuedAt])
   @@map("invoices")
+}
+
+/// One till's shift: opened with a float, closed with a cash count. Sales,
+/// returns and cash movements made in it point here. Opened, moved and
+/// closed through the till's outbox, so it works offline (clientId).
+model Shift {
+  id               String      @id @default(cuid())
+  businessId       String
+  business         Business    @relation(fields: [businessId], references: [id])
+  storeId          String
+  store            Store       @relation(fields: [storeId], references: [id])
+  /// Null for a shift opened in a browser (one per person per store).
+  terminalId       String?
+  terminal         Terminal?   @relation(fields: [terminalId], references: [id])
+  status           ShiftStatus @default(OPEN)
+  openedById       String
+  openedBy         User        @relation("ShiftOpenedBy", fields: [openedById], references: [id])
+  openedAt         DateTime
+  openingFloat     Decimal     @db.Decimal(10, 2)
+  closedById       String?
+  closedBy         User?       @relation("ShiftClosedBy", fields: [closedById], references: [id])
+  closedAt         DateTime?
+  countedCash      Decimal?    @db.Decimal(10, 2)
+  /// What the server's records say should be in the drawer at close.
+  expectedCash     Decimal?    @db.Decimal(10, 2)
+  /// What the till worked out itself (it may know sales not uploaded yet).
+  tillExpectedCash Decimal?    @db.Decimal(10, 2)
+  difference       Decimal?    @db.Decimal(10, 2)
+  note             String?
+  clientId         String
+  createdOffline   Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+
+  sales         Sale[]
+  returns       Return[]
+  cashMovements CashMovement[]
+
+  @@unique([storeId, clientId])
+  @@index([storeId, openedAt])
+  @@index([terminalId, status])
+  @@map("shifts")
+}
+
+/// Cash put into (IN) or taken out of (OUT) the drawer during a shift.
+/// Reason: CASH_PICKUP, PETTY_CASH, CHANGE_TOPUP or OTHER.
+model CashMovement {
+  id             String           @id @default(cuid())
+  shiftId        String
+  shift          Shift            @relation(fields: [shiftId], references: [id])
+  type           CashMovementType
+  amount         Decimal          @db.Decimal(10, 2)
+  reason         String
+  note           String?
+  userId         String
+  user           User             @relation(fields: [userId], references: [id])
+  occurredAt     DateTime
+  clientId       String
+  createdOffline Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+
+  @@unique([shiftId, clientId])
+  @@map("cash_movements")
 }

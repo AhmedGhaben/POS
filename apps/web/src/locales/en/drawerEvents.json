@@ -19,5 +19,7 @@
   },
   "emptyManual": "No drawer openings without a sale.",
   "emptyAll": "No drawer openings recorded yet.",
-  "saleVoided": "Sale cancelled"
+  "saleVoided": "Sale cancelled",
+  "shiftOpen": "Till opened",
+  "shiftClose": "Till closed (cash count)"
 }

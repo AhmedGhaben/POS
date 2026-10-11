@@ -41,6 +41,21 @@ useful on its own. All of this comes before launch item #4 (deploy).
   - Tests: API e2e `till-pin.e2e-spec.ts` (10), API unit `pin.spec.ts`,
     desktop unit `pin-check.test.ts`, desktop e2e `till-pin.spec.ts`
     (4).
+- **Part 4 (shifts) is built** (2026-10-11). Differences from the plan:
+  - Cash in/out needs OPEN_DRAWER, because it opens the drawer without a
+    sale.
+  - The drawer opens when the till is opened and closed (new drawer
+    reasons SHIFT_OPEN and SHIFT_CLOSE).
+  - Returns record a refund method, default cash. The back-office Returns
+    page links a return to this device's open shift. There's no refund
+    method choice on screen yet.
+  - The till keeps its own record of the open shift (`features/shifts`).
+    It adopts an open shift found on the server, but never one it has
+    just closed.
+  - "One open shift per till" is checked in the service; there's no
+    partial unique index, which Prisma can't express.
+  - Tests: API e2e `shifts.e2e-spec.ts` (7), web unit `ledger.test.ts`
+    (2), desktop e2e `till-shifts.spec.ts` (4).
 
 **Why:** the app works end to end, but a real shop needs these on day one:
 - cashiers make mistakes and need to cancel a sale

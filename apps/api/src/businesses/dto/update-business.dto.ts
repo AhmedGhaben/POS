@@ -1,5 +1,5 @@
 import { Transform } from "class-transformer";
-import { IsEmail, IsIn, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength, ValidateIf } from "class-validator";
+import { IsBoolean, IsEmail, IsIn, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength, ValidateIf } from "class-validator";
 import { SUPPORTED_CURRENCIES } from "../../common/utils/currency";
 import { SUPPORTED_LANGUAGES } from "../../common/i18n/languages";
 
@@ -49,6 +49,11 @@ export class UpdateBusinessDto {
   @Min(0)
   @Max(100)
   defaultTaxRate?: number;
+
+  /** Tills count the cash at the start and end of each shift. */
+  @IsOptional()
+  @IsBoolean()
+  shiftsEnabled?: boolean;
 
   /** null removes the limit. */
   @IsOptional()

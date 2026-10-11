@@ -1,0 +1,83 @@
+{
+  "buttons": {
+    "cashInOut": "Entrada / saída",
+    "close": "Fechar caixa"
+  },
+  "open": {
+    "title": "Abrir caixa",
+    "description": "Conte o dinheiro da gaveta para começar o turno.",
+    "float": "Fundo de caixa",
+    "submit": "Abrir caixa"
+  },
+  "movement": {
+    "title": "Entrada / saída de dinheiro",
+    "description": "Dinheiro posto ou retirado da gaveta. A gaveta abre e fica registado com o seu nome.",
+    "kind": "Entrada ou saída",
+    "in": "Entrada",
+    "out": "Saída",
+    "amount": "Valor",
+    "reason": "Motivo",
+    "note": "Nota",
+    "noteOptional": "Nota (opcional)",
+    "submitIn": "Pôr dinheiro",
+    "submitOut": "Retirar dinheiro",
+    "addedIn": "{{amount}} posto na gaveta",
+    "addedOut": "{{amount}} retirado da gaveta"
+  },
+  "reasons": {
+    "CASH_PICKUP": "Recolha (para o cofre)",
+    "PETTY_CASH": "Despesas pequenas",
+    "CHANGE_TOPUP": "Mais trocos",
+    "OTHER": "Outro"
+  },
+  "close": {
+    "title": "Fechar caixa",
+    "description": "Conte o dinheiro da gaveta e escreva o total. Depois verá o valor esperado.",
+    "counted": "Dinheiro contado",
+    "note": "Nota (opcional)",
+    "submit": "Fechar caixa",
+    "closing": "A fechar…",
+    "done": "Caixa fechada",
+    "balanced": "O dinheiro está certo.",
+    "over": "{{amount}} a mais do que o esperado.",
+    "short": "Faltam {{amount}}.",
+    "print": "Imprimir relatório",
+    "finish": "Concluir"
+  },
+  "report": {
+    "title": "FECHO DE CAIXA",
+    "titleOpen": "TURNO ATÉ AGORA",
+    "opened": "Aberto",
+    "closed": "Fechado",
+    "sales_one": "{{count}} venda",
+    "sales_other": "{{count}} vendas",
+    "discounts": "Descontos",
+    "voided_one": "{{count}} anulada",
+    "voided_other": "{{count}} anuladas",
+    "returns_one": "{{count}} devolução",
+    "returns_other": "{{count}} devoluções",
+    "float": "Fundo de caixa",
+    "cashSales": "Vendas a dinheiro",
+    "cashRefunds": "Reembolsos em dinheiro",
+    "cashIn": "Entrada",
+    "cashOut": "Saída",
+    "expected": "Dinheiro esperado",
+    "tillExpected": "Valor da caixa",
+    "counted": "Contado",
+    "difference": "Diferença",
+    "byCashier": "Por operador"
+  },
+  "page": {
+    "description": "Cada turno de caixa com a contagem do dinheiro. As diferenças aparecem a vermelho.",
+    "opened": "Aberto",
+    "till": "Caixa",
+    "openedBy": "Aberto por",
+    "closed": "Fechado",
+    "expected": "Esperado",
+    "counted": "Contado",
+    "difference": "Diferença",
+    "open": "Aberto",
+    "browser": "Navegador",
+    "empty": "Ainda não há turnos. Ative a contagem de dinheiro nas Definições."
+  }
+}

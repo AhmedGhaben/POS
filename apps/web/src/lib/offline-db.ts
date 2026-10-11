@@ -1,5 +1,13 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
-import type { CreateDrawerEventDto, CreateSaleDto, SaleDto, VoidSaleDto } from "@pos/shared";
+import type {
+  CashMovementInputDto,
+  CloseShiftDto,
+  CreateDrawerEventDto,
+  CreateSaleDto,
+  OpenShiftDto,
+  SaleDto,
+  VoidSaleDto,
+} from "@pos/shared";
 
 /**
  * Durable local queue of things the till did that the server hasn't seen
@@ -24,7 +32,10 @@ export type OutboxEntry =
   /** `receipt`: the sale as printed, for Recent sales (absent on entries from older builds). */
   | (OutboxBase & { kind: "sale"; payload: CreateSaleDto; receipt?: SaleDto })
   | (OutboxBase & { kind: "drawer-event"; payload: CreateDrawerEventDto })
-  | (OutboxBase & { kind: "void-sale"; payload: VoidSaleDto });
+  | (OutboxBase & { kind: "void-sale"; payload: VoidSaleDto })
+  | (OutboxBase & { kind: "shift-open"; payload: OpenShiftDto })
+  | (OutboxBase & { kind: "cash-movement"; payload: CashMovementInputDto })
+  | (OutboxBase & { kind: "shift-close"; payload: CloseShiftDto });
 
 export type OutboxKind = OutboxEntry["kind"];
 

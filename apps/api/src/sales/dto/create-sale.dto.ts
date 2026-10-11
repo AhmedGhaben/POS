@@ -92,6 +92,11 @@ export class CreateSaleDto {
   @IsString()
   actingUserId?: string;
 
+  /** The till's id for the open shift, when the business counts shifts. */
+  @IsOptional()
+  @IsUUID()
+  shiftClientId?: string;
+
   @IsOptional()
   @ValidateNested()
   @Type(() => OfflineSaleInfoDto)

@@ -2,6 +2,7 @@ import { SaleStatus } from "@pos/shared";
 import type { CreateCustomerDto, CreateSaleDto, CustomerDto, ProductDto, SaleDto, VoidReason, VoidSaleDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
 import { useDeviceStore } from "@/features/desktop/bridge";
+import { useShiftStore } from "@/features/shifts/shift-store";
 import { apiClient, ApiError, isRetryableError, isUnreachableError } from "@/lib/api-client";
 import { addToOutbox } from "@/lib/offline-db";
 import { findSavedByBarcode } from "./catalog";
@@ -122,14 +123,19 @@ export async function voidSale(
     };
   };
 
-  if (sale.queued || isWorkingOffline()) return queue();
-  try {
-    const voided = await apiClient.post<SaleDto>("/sales/void", { ...base, saleId: sale.id }, { timeoutMs: SALE_TIMEOUT_MS });
-    return { sale: voided, queued: false };
-  } catch (err) {
-    if (isRetryableError(err) || (err instanceof ApiError && err.status === 401)) return queue();
-    throw err;
-  }
+  const result = await (async () => {
+    if (sale.queued || isWorkingOffline()) return queue();
+    try {
+      const voided = await apiClient.post<SaleDto>("/sales/void", { ...base, saleId: sale.id }, { timeoutMs: SALE_TIMEOUT_MS });
+      return { sale: voided, queued: false };
+    } catch (err) {
+      if (isRetryableError(err) || (err instanceof ApiError && err.status === 401)) return queue();
+      throw err;
+    }
+  })();
+  // Out of the open shift's expected cash too.
+  useShiftStore.getState().recordVoid(sale.clientId ?? sale.id);
+  return result;
 }
 
 export function searchCustomers(search: string) {

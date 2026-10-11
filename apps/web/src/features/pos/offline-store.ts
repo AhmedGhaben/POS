@@ -40,14 +40,13 @@ export const useOfflineStore = create<OfflineState>()(
       setSyncing: (isSyncing) => set({ isSyncing }),
       setLastSyncAt: (lastSyncAt) => set({ lastSyncAt }),
       refreshPendingCount: async () => {
-        const [sales, drawer, voids] = await Promise.all([
-          outboxCounts("sale"),
-          outboxCounts("drawer-event"),
-          outboxCounts("void-sale"),
-        ]);
+        const all = await outboxCounts();
+        const sales = await outboxCounts("sale");
+        const drawer = await outboxCounts("drawer-event");
         set({
           pendingCount: sales.pending + sales.syncing,
-          failedCount: sales.failed + drawer.failed + voids.failed,
+          // Anything refused, whatever its kind, needs a manager's look.
+          failedCount: all.failed,
           pendingDrawerCount: drawer.pending + drawer.syncing,
         });
       },

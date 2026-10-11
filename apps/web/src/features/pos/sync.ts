@@ -71,6 +71,13 @@ function uploadEntry(entry: OutboxEntry): Promise<{ id: string }> {
     case "void-sale":
       // Queued after its sale, so the sale is on the server by now.
       return apiClient.post<SaleDto>("/sales/void", entry.payload, { timeoutMs: 15_000 });
+    // Shift events: like drawer openings, needing a retry means it happened offline.
+    case "shift-open":
+      return apiClient.post<{ id: string }>("/shifts/open", { ...entry.payload, offline: entry.payload.offline || entry.attempts > 0 }, { timeoutMs: 15_000 });
+    case "cash-movement":
+      return apiClient.post<{ id: string }>("/shifts/cash-movements", { ...entry.payload, offline: entry.payload.offline || entry.attempts > 0 }, { timeoutMs: 15_000 });
+    case "shift-close":
+      return apiClient.post<{ id: string }>("/shifts/close", { ...entry.payload, offline: entry.payload.offline || entry.attempts > 0 }, { timeoutMs: 15_000 });
   }
 }
 

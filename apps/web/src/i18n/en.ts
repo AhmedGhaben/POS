@@ -12,6 +12,7 @@ import pos from "../locales/en/pos.json";
 import products from "../locales/en/products.json";
 import reports from "../locales/en/reports.json";
 import settings from "../locales/en/settings.json";
+import shifts from "../locales/en/shifts.json";
 import stock from "../locales/en/stock.json";
 
-export const en = { auth, backoffice, common, device, documents, drawerEvents, employees, invoices, pos, products, reports, settings, stock };
+export const en = { auth, backoffice, common, device, documents, drawerEvents, employees, invoices, pos, products, reports, settings, shifts, stock };

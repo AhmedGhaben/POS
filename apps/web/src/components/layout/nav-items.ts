@@ -12,6 +12,7 @@ import {
   Settings,
   MonitorCog,
   Vault,
+  Clock,
   type LucideIcon,
 } from "lucide-react";
 
@@ -32,6 +33,7 @@ export type NavLabel =
   | "returns"
   | "invoices"
   | "cashDrawer"
+  | "shifts"
   | "expenses"
   | "suppliers"
   | "employees"
@@ -47,6 +49,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/returns", label: "returns", icon: Undo2 },
   { to: "/invoices", label: "invoices", icon: FileText },
   { to: "/drawer-events", label: "cashDrawer", icon: Vault },
+  { to: "/shifts", label: "shifts", icon: Clock },
   { to: "/expenses", label: "expenses", icon: Receipt },
   { to: "/suppliers", label: "suppliers", icon: Truck },
   { to: "/employees", label: "employees", icon: Users },

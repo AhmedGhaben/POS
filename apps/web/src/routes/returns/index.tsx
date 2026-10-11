@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createReturn, fetchReturns } from "@/features/returns/api";
+import { useShiftStore } from "@/features/shifts/shift-store";
 import { fetchSalesByStore } from "@/features/sales/api";
 import { useAuthStore } from "@/features/auth/store";
 import { useMoney } from "@/features/business/use-money";
@@ -80,6 +81,9 @@ export function ReturnsPage() {
         storeId: currentStoreId!,
         saleId: values.saleId,
         reason: values.reason || undefined,
+        // A cash refund at a till with an open shift comes out of its cash.
+        shiftClientId:
+          useShiftStore.getState().current?.storeId === currentStoreId ? useShiftStore.getState().current?.clientId : undefined,
         lineItems: values.lines
           .filter((l) => l.quantity > 0)
           .map((l) => ({ productId: l.productId, quantity: l.quantity })),

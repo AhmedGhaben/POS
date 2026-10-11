@@ -19,5 +19,7 @@
   },
   "emptyManual": "Nenhuma abertura da gaveta sem venda.",
   "emptyAll": "Nenhuma abertura da gaveta registrada ainda.",
-  "saleVoided": "Venda cancelada"
+  "saleVoided": "Venda cancelada",
+  "shiftOpen": "Abertura de caixa",
+  "shiftClose": "Fechamento de caixa (contagem)"
 }

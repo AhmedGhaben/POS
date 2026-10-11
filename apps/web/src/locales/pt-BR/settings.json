@@ -73,5 +73,10 @@
     "updated": "Loja atualizada",
     "nameRequired": "O nome da loja é obrigatório",
     "badTimezone": "Fuso horário desconhecido — use um nome como America/Sao_Paulo"
+  },
+  "tills": {
+    "title": "Caixas",
+    "shifts": "Contar o dinheiro no início e no fim de cada turno",
+    "shiftsHint": "Os caixas pedem o fundo de troco antes da primeira venda, registram suprimentos e sangrias e terminam cada turno com uma contagem e um relatório."
   }
 }

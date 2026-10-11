@@ -26,6 +26,7 @@ import { InsightsModule } from "./insights/insights.module";
 import { HealthModule } from "./health/health.module";
 import { TerminalsModule } from "./terminals/terminals.module";
 import { DrawerEventsModule } from "./drawer-events/drawer-events.module";
+import { ShiftsModule } from "./shifts/shifts.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
@@ -60,6 +61,7 @@ import { TillAuthModule } from "./till/till-auth.module";
     SalesModule,
     TerminalsModule,
     DrawerEventsModule,
+    ShiftsModule,
     SuppliersModule,
     EmployeesModule,
     PurchasesModule,

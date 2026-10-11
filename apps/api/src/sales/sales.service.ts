@@ -191,6 +191,13 @@ export class SalesService {
     });
 
     const terminalId = await this.resolveTerminal(businessId, dto.terminalId);
+    // The shift was opened before this sale (the till uploads in order).
+    const shift = dto.shiftClientId
+      ? await this.prisma.shift.findUnique({
+          where: { storeId_clientId: { storeId: dto.storeId, clientId: dto.shiftClientId } },
+          select: { id: true },
+        })
+      : null;
     const createdAt = offline ? clampToNow(new Date(offline.createdAt)) : undefined;
 
     let sale: Prisma.SaleGetPayload<{ include: typeof SALE_INCLUDE }>;
@@ -248,6 +255,7 @@ export class SalesService {
             clientId: dto.clientId,
             createdOffline: !!offline,
             terminalId,
+            shiftId: shift?.id ?? null,
             ...(createdAt ? { createdAt } : {}),
             lineItems: { create: lineItemsData },
             payments: { create: paymentsData },
@@ -309,11 +317,19 @@ export class SalesService {
     }
     const sale = await this.prisma.sale.findFirst({
       where: { storeId: dto.storeId, ...(dto.saleId ? { id: dto.saleId } : { clientId: dto.saleClientId }) },
-      include: { lineItems: true, returns: { select: { id: true } }, invoice: { select: { id: true } } },
+      include: {
+        lineItems: true,
+        returns: { select: { id: true } },
+        invoice: { select: { id: true } },
+        shift: { select: { status: true } },
+      },
     });
     if (!sale) throw new NotFoundException("Sale not found for this store");
 
     if (sale.status === SaleStatus.COMPLETED) {
+      if (sale.shift?.status === "CLOSED") {
+        throw new BadRequestException("This sale's shift is closed. Use Returns instead.");
+      }
       if (sale.returns.length > 0) {
         throw new BadRequestException("This sale has a return, so it can't be cancelled. Use Returns instead.");
       }

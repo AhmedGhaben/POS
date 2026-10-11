@@ -1,6 +1,13 @@
 import * as React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { FileText, History, Percent, ShoppingCart, Vault } from "lucide-react";
+import { ArrowDownUp, FileText, History, LockKeyhole, Percent, ShoppingCart, Vault } from "lucide-react";
+import { useCurrentShift, useShiftStore } from "@/features/shifts/shift-store";
+import { adoptShift, fetchCurrentShift } from "@/features/shifts/api";
+import type { LocalShift } from "@/features/shifts/ledger";
+import { OpenShiftPanel } from "@/features/shifts/components/OpenShiftPanel";
+import { CashMovementDialog } from "@/features/shifts/components/CashMovementDialog";
+import { CloseShiftDialog } from "@/features/shifts/components/CloseShiftDialog";
+import { isWorkingOffline } from "@/features/pos/offline-store";
 import { useTranslation } from "react-i18next";
 import { DrawerOpenReason, PaymentMethod, Permission } from "@pos/shared";
 import type { CustomerDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
@@ -35,7 +42,7 @@ import { useCustomerDisplay } from "@/features/desktop/customer-display";
 import { useMoney } from "@/features/business/use-money";
 
 export function PosPage() {
-  const { t } = useTranslation("pos");
+  const { t } = useTranslation(["pos", "shifts"]);
   const money = useMoney();
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const stores = useAuthStore((s) => s.stores);
@@ -72,6 +79,24 @@ export function PosPage() {
   const [cartSheetOpen, setCartSheetOpen] = React.useState(false);
   const [quoteOpen, setQuoteOpen] = React.useState(false);
   const [recentOpen, setRecentOpen] = React.useState(false);
+
+  // Shifts (when the business counts the cash): no selling until the till is open.
+  const shiftsOn = useAuthStore((s) => !!s.business?.shiftsEnabled);
+  const shift = useCurrentShift(currentStoreId);
+  const needsShift = shiftsOn && !shift;
+  const [movementOpen, setMovementOpen] = React.useState(false);
+  // A copy, so the close dialog keeps it after the shift is cleared.
+  const [closing, setClosing] = React.useState<LocalShift | null>(null);
+  const terminalId = useDeviceStore((s) => s.terminal?.id ?? null);
+  React.useEffect(() => {
+    if (!shiftsOn || shift || !currentStoreId || isWorkingOffline()) return;
+    // Opened on another device, or this one lost its record: carry on with it.
+    fetchCurrentShift(currentStoreId, terminalId)
+      .then((open) => {
+        if (open && !useShiftStore.getState().current) adoptShift(open);
+      })
+      .catch(() => undefined);
+  }, [shiftsOn, shift, currentStoreId, terminalId]);
   // Kept separate from completedSale: only one dialog (and print area) is mounted at a time.
   const [invoiceFor, setInvoiceFor] = React.useState<{ sale: SaleDto; customer: CustomerDto | null } | null>(null);
   const queryClient = useQueryClient();
@@ -113,6 +138,7 @@ export function PosPage() {
           payments,
           lineItems: lines.map((l) => ({ productId: l.product.id, quantity: l.quantity, discount: l.discount ?? undefined })),
           discount: saleDiscount ?? undefined,
+          shiftClientId: shift?.clientId,
         },
         lines,
       ),
@@ -122,6 +148,8 @@ export function PosPage() {
       if (hasDrawer && openOnCash && sale.payments.some((p) => p.method === PaymentMethod.CASH)) {
         void openCashDrawer({ reason: DrawerOpenReason.SALE_CASH_PAYMENT, saleClientId: sale.clientId ?? undefined });
       }
+      const cashier = useAuthStore.getState().user;
+      useShiftStore.getState().recordSale(sale, cashier ? `${cashier.firstName} ${cashier.lastName}` : "");
       setCompletedSale(sale);
       setCompletedCustomer(customer);
       clear();
@@ -170,6 +198,10 @@ export function PosPage() {
       </div>
 
       <div className="space-y-3" ref={checkoutAreaRef}>
+        {needsShift ? (
+          <OpenShiftPanel storeId={currentStoreId} />
+        ) : (
+        <>
         <CustomerSearchCombobox selected={customer} onSelect={setCustomer} />
         <Input
           type="email"
@@ -202,6 +234,8 @@ export function PosPage() {
         >
           {saleMutation.isPending ? t("checkout.processing") : t("checkout.charge", { amount: money(totals.total) })}
         </Button>
+        </>
+        )}
         <div className="grid grid-cols-2 gap-2">
           <Button
             variant="outline"
@@ -226,6 +260,29 @@ export function PosPage() {
           >
             <History className="mr-2 h-4 w-4" /> {t("checkout.recentSales")}
           </Button>
+          {shift && canOpenDrawer && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCartSheetOpen(false);
+                setMovementOpen(true);
+              }}
+            >
+              <ArrowDownUp className="mr-2 h-4 w-4" /> {t("shifts:buttons.cashInOut")}
+            </Button>
+          )}
+          {shift && (
+            <Button
+              variant="outline"
+              className={canOpenDrawer ? undefined : "col-span-2"}
+              onClick={() => {
+                setCartSheetOpen(false);
+                setClosing(shift);
+              }}
+            >
+              <LockKeyhole className="mr-2 h-4 w-4" /> {t("shifts:buttons.close")}
+            </Button>
+          )}
           {hasDrawer && canOpenDrawer && (
             <Button
               variant="outline"
@@ -290,6 +347,8 @@ export function PosPage() {
       />
 
       <OpenDrawerDialog open={drawerDialogOpen} onOpenChange={setDrawerDialogOpen} />
+      {shift && <CashMovementDialog shift={shift} open={movementOpen} onOpenChange={setMovementOpen} />}
+      <CloseShiftDialog shift={closing} store={currentStore} open={!!closing} onOpenChange={(o) => !o && setClosing(null)} />
       <RecentSalesSheet open={recentOpen} onOpenChange={setRecentOpen} storeId={currentStoreId} store={currentStore} />
       <DiscountDialog
         open={discountFor !== null}

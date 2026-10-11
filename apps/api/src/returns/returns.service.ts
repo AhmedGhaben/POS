@@ -61,6 +61,13 @@ export class ReturnsService {
       };
     });
 
+    const shift = dto.shiftClientId
+      ? await this.prisma.shift.findUnique({
+          where: { storeId_clientId: { storeId: dto.storeId, clientId: dto.shiftClientId } },
+          select: { id: true, status: true },
+        })
+      : null;
+
     return this.prisma.$transaction(async (tx) => {
       for (const li of dto.lineItems) {
         await tx.inventoryItem.upsert({
@@ -77,6 +84,8 @@ export class ReturnsService {
           processedById,
           reason: dto.reason,
           totalRefund,
+          refundMethod: dto.refundMethod ?? "CASH",
+          shiftId: shift?.status === "OPEN" ? shift.id : null,
           lineItems: { create: lineItemsData },
         },
         include: { lineItems: { include: { product: true } } },

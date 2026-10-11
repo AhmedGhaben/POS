@@ -29,6 +29,8 @@ export interface BusinessDto {
   defaultTaxRate: string;
   /** Largest discount % anyone but the owner may give (decimal string); null = no limit. */
   maxDiscountPercent: string | null;
+  /** Tills count the cash at the start and end of each shift (absent on older sessions). */
+  shiftsEnabled?: boolean;
   receiptHeader: string | null;
   receiptFooter: string | null;
   invoiceFooter: string | null;
@@ -53,7 +55,7 @@ export type UpdateBusinessDto = Partial<
     | "receiptFooter"
     | "invoiceFooter"
   >
-> & { defaultTaxRate?: number; maxDiscountPercent?: number | null };
+> & { defaultTaxRate?: number; maxDiscountPercent?: number | null; shiftsEnabled?: boolean };
 
 export interface UpdateStoreDto {
   name?: string;
@@ -218,6 +220,8 @@ export interface CreateSaleDto {
   discount?: DiscountInput | null;
   /** Who was on the till (used when it uploads with the till's key). */
   actingUserId?: string;
+  /** The till's id for its open shift. */
+  shiftClientId?: string;
 }
 
 export interface SalePaymentDto {
@@ -420,6 +424,10 @@ export interface CreateReturnDto {
   saleId: string;
   reason?: string;
   lineItems: ReturnLineItemInputDto[];
+  /** Default cash. */
+  refundMethod?: PaymentMethod;
+  /** This till's open shift: a cash refund comes out of its cash. */
+  shiftClientId?: string;
 }
 
 export interface ReturnLineItemDto {
@@ -676,3 +684,77 @@ export interface DrawerEventDto {
 }
 
 export type PermissionMap = Partial<Record<Permission, boolean>>;
+
+export type CashMovementReason = "CASH_PICKUP" | "PETTY_CASH" | "CHANGE_TOPUP" | "OTHER";
+
+export interface OpenShiftDto {
+  storeId: string;
+  /** The till's own id for the shift. */
+  clientId: string;
+  terminalId?: string;
+  openingFloat: number;
+  openedAt?: string;
+  offline?: boolean;
+  actingUserId?: string;
+}
+
+export interface CashMovementInputDto {
+  storeId: string;
+  shiftClientId: string;
+  clientId: string;
+  type: "IN" | "OUT";
+  amount: number;
+  reason: CashMovementReason;
+  note?: string;
+  occurredAt?: string;
+  offline?: boolean;
+  actingUserId?: string;
+}
+
+export interface CloseShiftDto {
+  storeId: string;
+  shiftClientId: string;
+  countedCash: number;
+  tillExpectedCash?: number;
+  note?: string;
+  closedAt?: string;
+  offline?: boolean;
+  actingUserId?: string;
+}
+
+export interface ShiftSummaryDto {
+  salesCount: number;
+  salesTotal: string;
+  byMethod: Partial<Record<PaymentMethod, string>>;
+  discounts: string;
+  voided: { count: number; total: string };
+  returns: { count: number; total: string; cash: string };
+  cashIn: string;
+  cashOut: string;
+  movements: { id: string; type: "IN" | "OUT"; amount: string; reason: CashMovementReason; note: string | null; occurredAt: string; user: string }[];
+  byCashier: { id: string; name: string; count: number; total: string }[];
+  expectedCash: string;
+}
+
+export interface ShiftDto {
+  id: string;
+  storeId: string;
+  terminalId: string | null;
+  status: "OPEN" | "CLOSED";
+  openedAt: string;
+  openingFloat: string;
+  closedAt: string | null;
+  countedCash: string | null;
+  expectedCash: string | null;
+  tillExpectedCash: string | null;
+  difference: string | null;
+  note: string | null;
+  clientId: string;
+  createdOffline: boolean;
+  openedBy: PersonRefDto;
+  closedBy: PersonRefDto | null;
+  terminal: { id: string; name: string; code: string } | null;
+  store: { id: string; name: string };
+  /** On single-shift answers (open, close, current, report). */
+  summary?: ShiftSummaryDto;
+}

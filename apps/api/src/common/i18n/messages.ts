@@ -165,6 +165,16 @@ const EXACT: Record<string, Translations> = {
     "pt-PT": "Um desconto em percentagem não pode ser superior a 100%",
     "pt-BR": "Um desconto percentual não pode ser maior que 100%",
   },
+  "Shift not found": { "pt-PT": "Turno não encontrado", "pt-BR": "Turno não encontrado" },
+  "This shift is closed": { "pt-PT": "Este turno está fechado", "pt-BR": "Este turno está fechado" },
+  "This till already has an open shift": {
+    "pt-PT": "Esta caixa já tem um turno aberto",
+    "pt-BR": "Este caixa já tem um turno aberto",
+  },
+  "This sale's shift is closed. Use Returns instead.": {
+    "pt-PT": "O turno desta venda está fechado. Use as Devoluções.",
+    "pt-BR": "O turno desta venda está fechado. Use as Devoluções.",
+  },
   "Say which sale to cancel": { "pt-PT": "Indique a venda a anular", "pt-BR": "Informe a venda a cancelar" },
   "This sale was cancelled": { "pt-PT": "Esta venda foi anulada", "pt-BR": "Esta venda foi cancelada" },
   "This sale has a return, so it can't be cancelled. Use Returns instead.": {

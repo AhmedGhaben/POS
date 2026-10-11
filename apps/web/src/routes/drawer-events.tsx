@@ -21,6 +21,8 @@ function fetchDrawerEvents(page: number, reason: DrawerOpenReason | null) {
 function reasonLabel(e: DrawerEventDto, t: TFunction<["drawerEvents", "common"]>) {
   if (e.reason === DrawerOpenReason.SALE_CASH_PAYMENT) return t("cashSale");
   if (e.reason === DrawerOpenReason.SALE_VOIDED) return t("saleVoided");
+  if (e.reason === DrawerOpenReason.SHIFT_OPEN) return t("shiftOpen");
+  if (e.reason === DrawerOpenReason.SHIFT_CLOSE) return t("shiftClose");
   return t("noSale", { reason: t(`common:drawerReasons.${e.subReason ?? "OTHER"}`) });
 }
 

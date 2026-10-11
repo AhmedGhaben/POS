@@ -13,7 +13,8 @@
     "employees": "Funcionários",
     "settings": "Definições",
     "thisDevice": "Este dispositivo",
-    "pointOfSale": "Ponto de Venda"
+    "pointOfSale": "Ponto de Venda",
+    "shifts": "Turnos"
   },
   "shell": {
     "openNavigation": "Abrir navegação",

@@ -73,5 +73,10 @@
     "updated": "Loja atualizada",
     "nameRequired": "O nome da loja é obrigatório",
     "badTimezone": "Fuso horário desconhecido — use um nome como Europe/Lisbon"
+  },
+  "tills": {
+    "title": "Caixas",
+    "shifts": "Contar o dinheiro no início e no fim de cada turno",
+    "shiftsHint": "As caixas pedem o fundo de caixa antes da primeira venda, registam entradas e saídas de dinheiro e terminam cada turno com uma contagem e um relatório."
   }
 }

@@ -73,5 +73,10 @@
     "updated": "Store updated",
     "nameRequired": "Store name is required",
     "badTimezone": "Unknown timezone — use a name like Europe/Paris"
+  },
+  "tills": {
+    "title": "Tills",
+    "shifts": "Count the cash at the start and end of each shift",
+    "shiftsHint": "Tills ask for the opening float before the first sale, record cash in and out, and end each shift with a cash count and a report."
   }
 }
