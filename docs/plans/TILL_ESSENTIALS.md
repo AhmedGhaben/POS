@@ -13,6 +13,19 @@ useful on its own. All of this comes before launch item #4 (deploy).
   - Recent sales shows the store's last 50 sales, not only today's.
   - Tests: API e2e `sales-void.e2e-spec.ts` (5), web unit
     `recent-sales.test.ts` (3), desktop e2e `till-void.spec.ts` (4).
+- **Part 2 (discounts) is built** (2026-10-11).
+  - The API can't import `packages/shared` at runtime, so the pricing
+    lives in `packages/shared/src/pricing.ts` with a copy in
+    `apps/api/src/sales/pricing.ts`. `pricing.spec.ts` compares the two
+    on 2,000 random carts.
+  - Receipts and quotes list each item before discount, with its discount
+    underneath. The subtotal is after item discounts, then the sale
+    discount, tax and total, plus "You saved".
+  - The maximum applies to everyone but the owner. It's checked overall and
+    per line.
+  - Tests: API e2e `discounts.e2e-spec.ts` (7), web unit
+    `pricing.test.ts` (7), API unit `pricing.spec.ts`, desktop e2e
+    `till-discounts.spec.ts` (4).
 
 **Why:** the app works end to end, but a real shop needs these on day one:
 - cashiers make mistakes and need to cancel a sale

@@ -1,6 +1,6 @@
 import { PaymentMethod, SaleStatus } from "@pos/shared";
 import type { CreateSaleDto, SaleDto, SaleLineItemDto, SalePaymentDto } from "@pos/shared";
-import type { CartLine } from "./hooks/useCart";
+import { priceCart, type CartLine } from "./hooks/useCart";
 
 /**
  * Receipt number for a sale rung up offline. Must match the API's
@@ -15,32 +15,30 @@ export function offlineReceiptNumber(storeId: string, clientId: string): string 
 }
 
 /**
- * Builds a SaleDto-shaped receipt entirely client-side, mirroring
- * SalesService#create's math, for the "queued while offline" path — there's
- * no server response yet, but the cashier still needs a receipt to print/show.
- * The server stores the real record when the outbox syncs.
+ * Builds a SaleDto-shaped receipt entirely client-side, with the same
+ * pricing as SalesService#create (shared priceSale), for the "queued while
+ * offline" path — there's no server response yet, but the cashier still
+ * needs a receipt to print/show. The server stores the real record when the
+ * outbox syncs.
  */
 export function buildOfflineSale(localId: string, dto: CreateSaleDto, lines: CartLine[]): SaleDto {
-  let subtotal = 0;
-  let taxTotal = 0;
+  const priced = priceCart(lines, dto.discount ?? null);
   const lineItems: SaleLineItemDto[] = lines.map((line, i) => {
-    const unitPrice = Number(line.product.sellPrice);
-    const lineSubtotal = unitPrice * line.quantity;
-    const taxAmount = (lineSubtotal * Number(line.product.taxRate)) / 100;
-    subtotal += lineSubtotal;
-    taxTotal += taxAmount;
+    const p = priced.lines[i];
     return {
       id: `${localId}-${i}`,
       productId: line.product.id,
       product: line.product,
       quantity: line.quantity,
-      unitPrice: unitPrice.toFixed(2),
-      taxAmount: taxAmount.toFixed(2),
-      discountAmount: "0.00",
-      lineTotal: (lineSubtotal + taxAmount).toFixed(2),
+      unitPrice: Number(line.product.sellPrice).toFixed(2),
+      taxAmount: p.tax.toFixed(2),
+      discountAmount: p.discount.toFixed(2),
+      lineTotal: p.total.toFixed(2),
+      discountType: line.discount?.value ? line.discount.type : null,
+      discountValue: line.discount?.value ? line.discount.value.toFixed(2) : null,
+      lineDiscountAmount: p.lineDiscount.toFixed(2),
     };
   });
-  const total = subtotal + taxTotal;
 
   const cashLegs = dto.payments
     .filter((p) => p.method === PaymentMethod.CASH)
@@ -72,16 +70,20 @@ export function buildOfflineSale(localId: string, dto: CreateSaleDto, lines: Car
     };
   });
 
+  const saleDiscount = dto.discount?.value ? dto.discount : null;
   return {
     id: localId,
     storeId: dto.storeId,
     cashierId: "",
     customerId: dto.customerId ?? null,
     receiptNumber: offlineReceiptNumber(dto.storeId, localId),
-    subtotal: subtotal.toFixed(2),
-    taxTotal: taxTotal.toFixed(2),
-    discountTotal: "0.00",
-    total: total.toFixed(2),
+    subtotal: priced.subtotal.toFixed(2),
+    taxTotal: priced.taxTotal.toFixed(2),
+    discountTotal: priced.discountTotal.toFixed(2),
+    total: priced.total.toFixed(2),
+    discountType: saleDiscount?.type ?? null,
+    discountValue: saleDiscount ? saleDiscount.value.toFixed(2) : null,
+    saleDiscountAmount: priced.saleDiscount.toFixed(2),
     paymentMethod: dto.payments[0].method,
     amountTendered: amountTendered !== null ? amountTendered.toFixed(2) : null,
     changeDue: changeDue !== null ? changeDue.toFixed(2) : null,

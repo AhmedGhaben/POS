@@ -19,6 +19,8 @@ export interface ReceiptEmailParams {
   receiptNumber: string;
   items: ReceiptEmailItem[];
   subtotal: string;
+  /** Every discount on the sale; "0" or absent when there were none. */
+  discountTotal?: string;
   taxTotal: string;
   total: string;
 }
@@ -143,7 +145,7 @@ export class MailService {
          <thead><tr><th align="left">${t.item}</th><th align="right">${t.qty}</th><th align="right">${t.price}</th><th align="right">${t.total}</th></tr></thead>
          <tbody>${rows}</tbody>
        </table>
-       <p>${t.subtotal}: ${money(params.subtotal)}<br/>${t.tax}: ${money(params.taxTotal)}<br/><b>${t.total}: ${money(params.total)}</b></p>
+       <p>${t.subtotal}: ${money(params.subtotal)}<br/>${Number(params.discountTotal ?? 0) > 0 ? `${t.discount}: -${money(params.discountTotal!)}<br/>` : ""}${t.tax}: ${money(params.taxTotal)}<br/><b>${t.total}: ${money(params.total)}</b></p>
        <p>${t.thanks}</p>`,
     );
   }

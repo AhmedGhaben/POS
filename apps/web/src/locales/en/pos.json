@@ -3,7 +3,9 @@
   "totals": {
     "subtotal": "Subtotal",
     "tax": "Tax",
-    "total": "Total"
+    "total": "Total",
+    "discount": "Discount",
+    "saleDiscount": "Sale discount"
   },
   "search": {
     "placeholder": "Scan barcode or search by name / SKU..."
@@ -18,7 +20,10 @@
     "each": "{{price}} each",
     "decrease": "One less",
     "increase": "One more",
-    "remove": "Remove {{name}}"
+    "remove": "Remove {{name}}",
+    "discount": "Discount",
+    "discountNamed": "Discount on {{name}}",
+    "discountOff": "{{label}} off (-{{amount}})"
   },
   "customer": {
     "walkIn": "Walk-in customer",
@@ -51,7 +56,9 @@
     "printQuote": "Print quote",
     "clearCart": "Clear cart",
     "openDrawer": "Open drawer",
-    "recentSales": "Recent sales"
+    "recentSales": "Recent sales",
+    "saleDiscount": "Discount on the whole sale",
+    "changeSaleDiscount": "Change the sale discount"
   },
   "complete": {
     "title": "Sale complete",
@@ -121,5 +128,21 @@
     "doneOffline": "Sale cancelled. It will sync when the till is back online.",
     "handBack": "Hand back {{amount}} in cash.",
     "printSlip": "Print cancellation slip"
+  },
+  "discount": {
+    "titleSale": "Discount on the whole sale",
+    "titleLine": "Discount on {{name}}",
+    "description": "Comes off {{amount}}, before tax.",
+    "kind": "Kind of discount",
+    "percent": "Percentage",
+    "amount": "Amount",
+    "percentLabel": "Percentage off",
+    "amountLabel": "Amount off",
+    "preview": "{{off}} off: {{after}} before tax",
+    "percentTooBig": "A percentage can't be more than 100.",
+    "tooBig": "That's more than the price.",
+    "overMax": "You can give at most {{max}}% off.",
+    "apply": "Apply",
+    "remove": "Remove discount"
   }
 }

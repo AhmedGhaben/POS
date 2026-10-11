@@ -24,6 +24,7 @@ export interface MailTexts {
     price: string;
     total: string;
     subtotal: string;
+    discount: string;
     tax: string;
     thanks: string;
   };
@@ -70,6 +71,7 @@ export const MAIL_TEXTS: Record<Language, MailTexts> = {
       price: "Price",
       total: "Total",
       subtotal: "Subtotal",
+      discount: "Discount",
       tax: "Tax",
       thanks: "Thank you for your purchase!",
     },
@@ -114,6 +116,7 @@ export const MAIL_TEXTS: Record<Language, MailTexts> = {
       price: "Preço",
       total: "Total",
       subtotal: "Subtotal",
+      discount: "Desconto",
       tax: "IVA",
       thanks: "Obrigado pela sua compra!",
     },
@@ -158,6 +161,7 @@ export const MAIL_TEXTS: Record<Language, MailTexts> = {
       price: "Preço",
       total: "Total",
       subtotal: "Subtotal",
+      discount: "Desconto",
       tax: "Impostos",
       thanks: "Obrigado pela sua compra!",
     },

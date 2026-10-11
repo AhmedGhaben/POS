@@ -2,6 +2,7 @@ import { SaleStatus, type CustomerDto, type SaleDto, type StoreDto } from "@pos/
 import { useAuthStore } from "@/features/auth/store";
 import { SlipHeader } from "@/features/documents/components/SlipHeader";
 import { useDocumentLanguage } from "@/i18n/use-document-language";
+import { discountLabel } from "../discount-label";
 
 interface ReceiptProps {
   sale: SaleDto;
@@ -19,6 +20,7 @@ export function Receipt({ sale, store, customer, copy }: ReceiptProps) {
   const { t, money, dateTime } = useDocumentLanguage();
   const business = useAuthStore((s) => s.business);
   const changeDue = sale.changeDue !== null ? Number(sale.changeDue) : null;
+  const saleDiscount = Number(sale.saleDiscountAmount ?? 0);
   // Pre-migration sales have no payments rows; fall back to the legacy single-method field.
   const payments =
     sale.payments.length > 0
@@ -41,19 +43,42 @@ export function Receipt({ sale, store, customer, copy }: ReceiptProps) {
       <p className="text-center">{t("receipt.number", { number: sale.receiptNumber })}</p>
       {customer && <p className="text-center">{customer.name}</p>}
       <hr className="my-2 border-dashed" />
-      {sale.lineItems.map((line) => (
-        <div key={line.id} className="flex justify-between">
-          <span>
-            {line.quantity} x {line.product.name}
-          </span>
-          <span>{money(line.lineTotal)}</span>
-        </div>
-      ))}
+      {sale.lineItems.map((line) => {
+        const lineDiscount = Number(line.lineDiscountAmount ?? 0);
+        return (
+          <div key={line.id}>
+            <div className="flex justify-between">
+              <span>
+                {line.quantity} x {line.product.name}
+              </span>
+              <span>{money(Number(line.unitPrice) * line.quantity)}</span>
+            </div>
+            {lineDiscount > 0 && (
+              <div className="flex justify-between pl-3">
+                <span>
+                  {t("totals.discount")}
+                  {line.discountType === "PERCENT" && line.discountValue && ` ${discountLabel({ type: "PERCENT", value: line.discountValue }, money)}`}
+                </span>
+                <span>-{money(lineDiscount)}</span>
+              </div>
+            )}
+          </div>
+        );
+      })}
       <hr className="my-2 border-dashed" />
       <div className="flex justify-between">
         <span>{t("totals.subtotal")}</span>
-        <span>{money(sale.subtotal)}</span>
+        <span>{money(Number(sale.subtotal) - (Number(sale.discountTotal) - saleDiscount))}</span>
       </div>
+      {saleDiscount > 0 && (
+        <div className="flex justify-between">
+          <span>
+            {t("totals.saleDiscount")}
+            {sale.discountType === "PERCENT" && sale.discountValue && ` ${discountLabel({ type: "PERCENT", value: sale.discountValue }, money)}`}
+          </span>
+          <span>-{money(saleDiscount)}</span>
+        </div>
+      )}
       <div className="flex justify-between">
         <span>{t("totals.tax")}</span>
         <span>{money(sale.taxTotal)}</span>
@@ -80,6 +105,9 @@ export function Receipt({ sale, store, customer, copy }: ReceiptProps) {
           <span>{t("receipt.changeDue")}</span>
           <span>{money(changeDue)}</span>
         </div>
+      )}
+      {Number(sale.discountTotal) > 0 && (
+        <p className="mt-2 text-center">{t("receipt.saved", { amount: money(sale.discountTotal) })}</p>
       )}
       <p className="mt-2 whitespace-pre-line text-center">{business?.receiptFooter || t("receipt.thankYou")}</p>
     </div>

@@ -21,6 +21,16 @@ Prisma backend.
     too.
   - A sale with a return or an invoice, or older than 24 hours, is undone
     with a return instead.
+  - **Discounts**: a percentage or an amount off an item or the whole
+    sale. They need the APPLY_DISCOUNT permission (owners and managers by
+    default), and owners can set a maximum discount % for everyone else
+    in Settings.
+    - Tax is charged on the discounted amount.
+    - The till, offline receipts and the server use the same calculation
+      (`packages/shared/src/pricing.ts`, with a copy in the API that a test
+      keeps identical).
+    - Receipts, quotes and A4 invoices show each discount; reports count
+      revenue after discounts; returns refund what was actually paid.
 - **Documents**:
   - 80 mm receipts with logo and business details
   - **quotes** (slip or A4) printed without checking out

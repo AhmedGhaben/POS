@@ -1,8 +1,8 @@
 import * as React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { FileText, History, ShoppingCart, Vault } from "lucide-react";
+import { FileText, History, Percent, ShoppingCart, Vault } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { DrawerOpenReason, PaymentMethod } from "@pos/shared";
+import { DrawerOpenReason, PaymentMethod, Permission } from "@pos/shared";
 import type { CustomerDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,8 +19,11 @@ import { PrintQuoteDialog } from "@/features/pos/components/PrintQuoteDialog";
 import { IssueInvoiceDialog } from "@/features/invoices/components/IssueInvoiceDialog";
 import { PaymentPanel } from "@/features/pos/components/PaymentPanel";
 import { RecentSalesSheet } from "@/features/pos/components/RecentSalesSheet";
+import { DiscountDialog } from "@/features/pos/components/DiscountDialog";
+import { discountLabel } from "@/features/pos/discount-label";
+import { useHasPermission } from "@/features/auth/use-permission";
 import { CustomerSearchCombobox } from "@/features/pos/components/CustomerSearchCombobox";
-import { useCart } from "@/features/pos/hooks/useCart";
+import { useCart, type CartLine } from "@/features/pos/hooks/useCart";
 import { createSale } from "@/features/pos/api";
 import { useAuthStore } from "@/features/auth/store";
 import { ApiError } from "@/lib/api-client";
@@ -37,7 +40,20 @@ export function PosPage() {
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const stores = useAuthStore((s) => s.stores);
   const currentStore = stores.find((s) => s.id === currentStoreId);
-  const { lines, addProduct, setQuantity, removeLine, clear, totals } = useCart();
+  const {
+    lines,
+    priced,
+    saleDiscount,
+    addProduct,
+    setQuantity,
+    setLineDiscount,
+    setSaleDiscount,
+    removeLine,
+    clear,
+    totals,
+  } = useCart();
+  const canDiscount = useHasPermission(Permission.APPLY_DISCOUNT);
+  const [discountFor, setDiscountFor] = React.useState<CartLine | "sale" | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = React.useState<string | null>(null);
   const [payments, setPayments] = React.useState<SalePaymentInputDto[]>([]);
   const [paymentsValid, setPaymentsValid] = React.useState(true);
@@ -88,7 +104,8 @@ export function PosPage() {
           customerId: customer?.id ?? null,
           receiptEmail: receiptEmail.trim() || undefined,
           payments,
-          lineItems: lines.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
+          lineItems: lines.map((l) => ({ productId: l.product.id, quantity: l.quantity, discount: l.discount ?? undefined })),
+          discount: saleDiscount ?? undefined,
         },
         lines,
       ),
@@ -118,8 +135,18 @@ export function PosPage() {
       <div className="flex-1 space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-muted-foreground">{t("totals.subtotal")}</span>
-          <span>{money(totals.subtotal)}</span>
+          {/* After line discounts, so it adds up with the cart lines (as on the receipt). */}
+          <span>{money(totals.subtotal - (totals.discountTotal - totals.saleDiscount))}</span>
         </div>
+        {totals.saleDiscount > 0 && saleDiscount && (
+          <div className="flex justify-between text-emerald-700 dark:text-emerald-400">
+            <span>
+              {t("totals.saleDiscount")}
+              {saleDiscount.type === "PERCENT" && ` (${discountLabel(saleDiscount, money)})`}
+            </span>
+            <span>-{money(totals.saleDiscount)}</span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="text-muted-foreground">{t("totals.tax")}</span>
           <span>{money(totals.taxTotal)}</span>
@@ -128,6 +155,11 @@ export function PosPage() {
           <span>{t("totals.total")}</span>
           <span>{money(totals.total)}</span>
         </div>
+        {canDiscount && lines.length > 0 && (
+          <Button variant="ghost" size="sm" className="-ml-2 gap-2" onClick={() => setDiscountFor("sale")}>
+            <Percent className="h-3.5 w-3.5" /> {saleDiscount ? t("checkout.changeSaleDiscount") : t("checkout.saleDiscount")}
+          </Button>
+        )}
       </div>
 
       <div className="space-y-3" ref={checkoutAreaRef}>
@@ -210,7 +242,13 @@ export function PosPage() {
         <ProductSearchInput onSelect={addProduct} suppressRefocusRef={checkoutAreaRef} />
         <CategoryFilter selectedCategoryId={selectedCategoryId} onSelect={setSelectedCategoryId} />
         <ProductGrid categoryId={selectedCategoryId} onSelect={addProduct} />
-        <Cart lines={lines} onSetQuantity={setQuantity} onRemove={removeLine} />
+        <Cart
+          lines={lines}
+          priced={priced.lines}
+          onSetQuantity={setQuantity}
+          onRemove={removeLine}
+          onDiscount={canDiscount ? (line) => setDiscountFor(line) : undefined}
+        />
       </div>
 
       <div className="hidden w-96 flex-col p-4 lg:flex">{checkoutPanel}</div>
@@ -246,10 +284,30 @@ export function PosPage() {
 
       <OpenDrawerDialog open={drawerDialogOpen} onOpenChange={setDrawerDialogOpen} />
       <RecentSalesSheet open={recentOpen} onOpenChange={setRecentOpen} storeId={currentStoreId} store={currentStore} />
+      <DiscountDialog
+        open={discountFor !== null}
+        onOpenChange={(open) => !open && setDiscountFor(null)}
+        title={
+          discountFor === "sale" || discountFor === null
+            ? t("discount.titleSale")
+            : t("discount.titleLine", { name: discountFor.product.name })
+        }
+        base={
+          discountFor === "sale" || discountFor === null
+            ? totals.subtotal - (totals.discountTotal - totals.saleDiscount)
+            : Number(discountFor.product.sellPrice) * discountFor.quantity
+        }
+        current={discountFor === "sale" || discountFor === null ? saleDiscount : discountFor.discount}
+        onApply={(d) => {
+          if (discountFor === "sale") setSaleDiscount(d);
+          else if (discountFor) setLineDiscount(discountFor.product.id, d);
+        }}
+      />
       <PrintQuoteDialog
         open={quoteOpen}
         onOpenChange={setQuoteOpen}
         lines={lines}
+        saleDiscount={saleDiscount}
         store={currentStore}
         customer={customer}
       />

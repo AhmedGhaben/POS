@@ -35,6 +35,9 @@ const settingsSchema = z.object({
   defaultTaxRate: z
     .string()
     .refine((v) => v !== "" && !Number.isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100, "settings:money.taxRange"),
+  maxDiscountPercent: z
+    .string()
+    .refine((v) => v.trim() === "" || (!Number.isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100), "settings:money.maxDiscountRange"),
   receiptHeader: z.string().max(300),
   receiptFooter: z.string().max(300),
   invoiceFooter: z.string().max(1000),
@@ -55,6 +58,7 @@ function toFormValues(b: BusinessDto): SettingsValues {
     currency: b.currency,
     language: b.language ?? "en",
     defaultTaxRate: String(Number(b.defaultTaxRate)),
+    maxDiscountPercent: b.maxDiscountPercent == null ? "" : String(Number(b.maxDiscountPercent)),
     receiptHeader: b.receiptHeader ?? "",
     receiptFooter: b.receiptFooter ?? "",
     invoiceFooter: b.invoiceFooter ?? "",
@@ -96,7 +100,12 @@ export function SettingsPage() {
   }
 
   const saveMutation = useMutation({
-    mutationFn: (values: SettingsValues) => updateBusiness({ ...values, defaultTaxRate: Number(values.defaultTaxRate) }),
+    mutationFn: (values: SettingsValues) =>
+      updateBusiness({
+        ...values,
+        defaultTaxRate: Number(values.defaultTaxRate),
+        maxDiscountPercent: values.maxDiscountPercent.trim() === "" ? null : Number(values.maxDiscountPercent),
+      }),
     onSuccess: (business) => {
       saved(business);
       toast.success(t("saved"));
@@ -205,6 +214,20 @@ export function SettingsPage() {
                           <Input type="number" step="0.01" min="0" max="100" {...field} />
                         </FormControl>
                         <FormDescription>{t("money.defaultTaxHint")}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="maxDiscountPercent"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("money.maxDiscount")}</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.01" min="0" max="100" placeholder={t("money.noLimit")} {...field} />
+                        </FormControl>
+                        <FormDescription>{t("money.maxDiscountHint")}</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

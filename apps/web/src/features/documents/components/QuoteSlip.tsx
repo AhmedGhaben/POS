@@ -26,18 +26,32 @@ export function QuoteSlip({ store, lines, reference, issuedAt, forName }: QuoteS
       {forName && <p className="text-center">{t("quote.for", { name: forName })}</p>}
       <hr className="my-2 border-dashed" />
       {lines.map((line) => (
-        <div key={line.key} className="flex justify-between gap-2">
-          <span>
-            {line.quantity} x {line.name}
-          </span>
-          <span className="shrink-0">{money(line.gross)}</span>
+        <div key={line.key}>
+          <div className="flex justify-between gap-2">
+            <span>
+              {line.quantity} x {line.name}
+            </span>
+            <span className="shrink-0">{money(line.lineGross)}</span>
+          </div>
+          {line.lineDiscount > 0 && (
+            <div className="flex justify-between gap-2 pl-3">
+              <span>{t("totals.discount")}</span>
+              <span className="shrink-0">-{money(line.lineDiscount)}</span>
+            </div>
+          )}
         </div>
       ))}
       <hr className="my-2 border-dashed" />
       <div className="flex justify-between">
         <span>{t("totals.subtotal")}</span>
-        <span>{money(totals.net)}</span>
+        <span>{money(totals.subtotal - (totals.discount - totals.saleDiscount))}</span>
       </div>
+      {totals.saleDiscount > 0 && (
+        <div className="flex justify-between">
+          <span>{t("totals.saleDiscount")}</span>
+          <span>-{money(totals.saleDiscount)}</span>
+        </div>
+      )}
       <div className="flex justify-between">
         <span>{t("totals.tax")}</span>
         <span>{money(totals.tax)}</span>

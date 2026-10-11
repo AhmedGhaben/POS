@@ -30,7 +30,11 @@
     "example": "Exemplo: {{amount}}",
     "defaultTax": "IVA predefinido %",
     "defaultTaxHint": "Preenchido nos novos produtos. Os produtos existentes mantêm a sua taxa.",
-    "taxRange": "De 0 a 100"
+    "taxRange": "De 0 a 100",
+    "maxDiscount": "Desconto máximo %",
+    "maxDiscountHint": "O máximo que qualquer pessoa além de si pode descontar num artigo ou numa venda. Deixe em branco para não haver limite.",
+    "maxDiscountRange": "De 0 a 100, ou em branco",
+    "noLimit": "Sem limite"
   },
   "documents": {
     "title": "Talões e faturas",

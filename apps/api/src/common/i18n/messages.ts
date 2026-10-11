@@ -141,6 +141,14 @@ const EXACT: Record<string, Translations> = {
     "pt-BR": "As vendas sem internet precisam de um identificador",
   },
   "Invoice not found": { "pt-PT": "Fatura não encontrada", "pt-BR": "Fatura não encontrada" },
+  "You don't have permission to give discounts": {
+    "pt-PT": "Não tem permissão para fazer descontos",
+    "pt-BR": "Você não tem permissão para dar descontos",
+  },
+  "A percentage discount can't be more than 100%": {
+    "pt-PT": "Um desconto em percentagem não pode ser superior a 100%",
+    "pt-BR": "Um desconto percentual não pode ser maior que 100%",
+  },
   "Say which sale to cancel": { "pt-PT": "Indique a venda a anular", "pt-BR": "Informe a venda a cancelar" },
   "This sale was cancelled": { "pt-PT": "Esta venda foi anulada", "pt-BR": "Esta venda foi cancelada" },
   "This sale has a return, so it can't be cancelled. Use Returns instead.": {
@@ -178,6 +186,10 @@ const PATTERNS: { re: RegExp; t: Translations }[] = [
   {
     re: /^Insufficient stock for "(.+)"$/,
     t: { "pt-PT": 'Stock insuficiente de "$1"', "pt-BR": 'Estoque insuficiente de "$1"' },
+  },
+  {
+    re: /^Discounts can't be more than (\S+)% of the price$/,
+    t: { "pt-PT": "Os descontos não podem ser superiores a $1% do preço", "pt-BR": "Os descontos não podem passar de $1% do preço" },
   },
   {
     re: /^Product (\S+) was not part of this sale$/,

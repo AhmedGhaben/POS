@@ -4,7 +4,9 @@
   "totals": {
     "subtotal": "Subtotal",
     "tax": "Tax",
-    "total": "Total"
+    "total": "Total",
+    "discount": "Discount",
+    "saleDiscount": "Sale discount"
   },
   "receipt": {
     "number": "Receipt #{{number}}",
@@ -12,7 +14,8 @@
     "changeDue": "Change due",
     "thankYou": "Thank you!",
     "copy": "COPY",
-    "cancelled": "CANCELLED"
+    "cancelled": "CANCELLED",
+    "saved": "You saved {{amount}}"
   },
   "quote": {
     "slipTitle": "QUOTE",
@@ -34,7 +37,9 @@
     "unitPrice": "Unit price",
     "amount": "Amount",
     "subtotalExcl": "Subtotal (excl. tax)",
-    "taxOn": "Tax {{rate}}% on {{amount}}"
+    "taxOn": "Tax {{rate}}% on {{amount}}",
+    "discount": "Discount",
+    "beforeDiscount": "Total before discount"
   },
   "invoice": {
     "title": "INVOICE",

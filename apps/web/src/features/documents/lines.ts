@@ -1,5 +1,5 @@
-import type { SaleLineItemDto } from "@pos/shared";
-import type { CartLine } from "@/features/pos/hooks/useCart";
+import type { DiscountInput, SaleLineItemDto } from "@pos/shared";
+import { priceCart, type CartLine } from "@/features/pos/hooks/useCart";
 
 /** One row on a quote or invoice. Amounts are numbers in the business currency. */
 export interface DocumentLine {
@@ -10,12 +10,26 @@ export interface DocumentLine {
   unitPrice: number;
   /** Percent, e.g. 19. */
   taxRate: number;
+  /** unitPrice x quantity, before any discount. */
+  lineGross: number;
+  /** This line's own discount. */
+  lineDiscount: number;
+  /** Everything off this line, including its share of a whole-sale discount. */
+  discount: number;
+  /** After discounts, before tax. */
   net: number;
   tax: number;
   gross: number;
 }
 
 export interface DocumentTotals {
+  /** Before discounts, before tax. */
+  subtotal: number;
+  /** Every discount. */
+  discount: number;
+  /** The whole-sale discount alone. */
+  saleDiscount: number;
+  /** After discounts, before tax. */
   net: number;
   tax: number;
   gross: number;
@@ -23,14 +37,25 @@ export interface DocumentTotals {
   byRate: { rate: number; net: number; tax: number }[];
 }
 
-/** Same arithmetic as useCart's totals, so a quote matches the POS screen. */
-export function linesFromCart(lines: CartLine[]): DocumentLine[] {
-  return lines.map(({ product, quantity }) => {
-    const unitPrice = Number(product.sellPrice);
-    const taxRate = Number(product.taxRate);
-    const net = unitPrice * quantity;
-    const tax = (net * taxRate) / 100;
-    return { key: product.id, name: product.name, sku: product.sku, quantity, unitPrice, taxRate, net, tax, gross: net + tax };
+/** Same pricing as the POS screen and the server, so a quote matches the till. */
+export function linesFromCart(lines: CartLine[], saleDiscount: DiscountInput | null = null): DocumentLine[] {
+  const priced = priceCart(lines, saleDiscount);
+  return lines.map(({ product, quantity }, i) => {
+    const p = priced.lines[i];
+    return {
+      key: product.id,
+      name: product.name,
+      sku: product.sku,
+      quantity,
+      unitPrice: Number(product.sellPrice),
+      taxRate: Number(product.taxRate),
+      lineGross: p.gross,
+      lineDiscount: p.lineDiscount,
+      discount: p.discount,
+      net: p.net,
+      tax: p.tax,
+      gross: p.total,
+    };
   });
 }
 
@@ -41,7 +66,9 @@ export function linesFromCart(lines: CartLine[]): DocumentLine[] {
 export function linesFromSale(lines: SaleLineItemDto[]): DocumentLine[] {
   return lines.map((line) => {
     const unitPrice = Number(line.unitPrice);
-    const net = unitPrice * line.quantity;
+    const lineGross = unitPrice * line.quantity;
+    const discount = Number(line.discountAmount ?? 0);
+    const net = lineGross - discount;
     const tax = Number(line.taxAmount);
     const taxRate = net > 0 ? Math.round((tax / net) * 10_000) / 100 : 0;
     return {
@@ -51,6 +78,9 @@ export function linesFromSale(lines: SaleLineItemDto[]): DocumentLine[] {
       quantity: line.quantity,
       unitPrice,
       taxRate,
+      lineGross,
+      lineDiscount: Number(line.lineDiscountAmount ?? 0),
+      discount,
       net,
       tax,
       gross: Number(line.lineTotal),
@@ -60,9 +90,15 @@ export function linesFromSale(lines: SaleLineItemDto[]): DocumentLine[] {
 
 export function documentTotals(lines: DocumentLine[]): DocumentTotals {
   const rates = new Map<number, { rate: number; net: number; tax: number }>();
+  let subtotal = 0;
+  let discount = 0;
+  let lineDiscounts = 0;
   let net = 0;
   let tax = 0;
   for (const line of lines) {
+    subtotal += line.lineGross;
+    discount += line.discount;
+    lineDiscounts += line.lineDiscount;
     net += line.net;
     tax += line.tax;
     const row = rates.get(line.taxRate) ?? { rate: line.taxRate, net: 0, tax: 0 };
@@ -70,7 +106,15 @@ export function documentTotals(lines: DocumentLine[]): DocumentTotals {
     row.tax += line.tax;
     rates.set(line.taxRate, row);
   }
-  return { net, tax, gross: net + tax, byRate: [...rates.values()].sort((a, b) => a.rate - b.rate) };
+  return {
+    subtotal,
+    discount,
+    saleDiscount: discount - lineDiscounts,
+    net,
+    tax,
+    gross: net + tax,
+    byRate: [...rates.values()].sort((a, b) => a.rate - b.rate),
+  };
 }
 
 /** e.g. Q-A1B2-261008-1432: identifies a printed quote; quotes aren't stored. */

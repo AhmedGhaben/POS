@@ -68,7 +68,8 @@
       "VIEW_COST_PRICE": "Ver preço de custo e margem",
       "PROCESS_RETURN": "Processar devoluções / reembolsos",
       "OPEN_DRAWER": "Abrir a gaveta de dinheiro sem venda",
-      "VOID_SALE": "Anular vendas"
+      "VOID_SALE": "Anular vendas",
+      "APPLY_DISCOUNT": "Fazer descontos"
     }
   }
 }

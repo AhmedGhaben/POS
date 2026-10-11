@@ -30,7 +30,11 @@
     "example": "Exemplo: {{amount}}",
     "defaultTax": "Imposto padrão %",
     "defaultTaxHint": "Preenchido nos novos produtos. Os produtos existentes mantêm a sua alíquota.",
-    "taxRange": "De 0 a 100"
+    "taxRange": "De 0 a 100",
+    "maxDiscount": "Desconto máximo %",
+    "maxDiscountHint": "O máximo que qualquer pessoa, exceto você, pode descontar em um item ou em uma venda. Deixe em branco para não ter limite.",
+    "maxDiscountRange": "De 0 a 100, ou em branco",
+    "noLimit": "Sem limite"
   },
   "documents": {
     "title": "Recibos e faturas",

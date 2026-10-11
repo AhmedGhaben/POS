@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Printer } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { CustomerDto, StoreDto } from "@pos/shared";
+import type { CustomerDto, DiscountInput, StoreDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,7 @@ interface PrintQuoteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lines: CartLine[];
+  saleDiscount?: DiscountInput | null;
   store: StoreDto | undefined;
   customer: CustomerDto | null;
 }
@@ -30,7 +31,7 @@ const A4_PREVIEW_SCALE = 0.55;
  * Prints the cart as a quote without creating a sale, taking payment or
  * touching stock. Nothing is saved, so it works offline.
  */
-export function PrintQuoteDialog({ open, onOpenChange, lines, store, customer }: PrintQuoteDialogProps) {
+export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = null, store, customer }: PrintQuoteDialogProps) {
   const { t } = useTranslation("pos");
   // The printed quote is for the customer: business language.
   const doc = useDocumentLanguage();
@@ -45,7 +46,7 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, store, customer }:
     setForName(customer?.name ?? "");
   }, [open, customer]);
 
-  const docLines = React.useMemo(() => linesFromCart(lines), [lines]);
+  const docLines = React.useMemo(() => linesFromCart(lines, saleDiscount), [lines, saleDiscount]);
   const reference = quoteReference(store?.id ?? "0000", issuedAt);
   const name = forName.trim() || undefined;
   const date = doc.longDate(issuedAt);

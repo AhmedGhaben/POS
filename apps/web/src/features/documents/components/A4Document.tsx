@@ -52,6 +52,7 @@ export function A4Document({ title, meta, store, lines, seller, billTo, notes }:
   if (!from) return null;
 
   const totals = documentTotals(lines);
+  const anyDiscount = totals.discount > 0;
   const logo = logoSrc(from);
   const contact = [from.phone ?? store?.phone, from.email, from.website].filter(Boolean).join(" · ");
 
@@ -100,6 +101,7 @@ export function A4Document({ title, meta, store, lines, seller, billTo, notes }:
             <th className="py-1.5 pr-2 font-semibold">{t("a4.item")}</th>
             <th className="py-1.5 pr-2 text-right font-semibold">{t("a4.qty")}</th>
             <th className="py-1.5 pr-2 text-right font-semibold">{t("a4.unitPrice")}</th>
+            {anyDiscount && <th className="py-1.5 pr-2 text-right font-semibold">{t("a4.discount")}</th>}
             <th className="py-1.5 pr-2 text-right font-semibold">{t("totals.tax")}</th>
             <th className="py-1.5 text-right font-semibold">{t("a4.amount")}</th>
           </tr>
@@ -113,6 +115,9 @@ export function A4Document({ title, meta, store, lines, seller, billTo, notes }:
               </td>
               <td className="py-1.5 pr-2 text-right">{line.quantity}</td>
               <td className="py-1.5 pr-2 text-right">{money(line.unitPrice)}</td>
+              {anyDiscount && (
+                <td className="py-1.5 pr-2 text-right">{line.discount > 0 ? `-${money(line.discount)}` : ""}</td>
+              )}
               <td className="py-1.5 pr-2 text-right">{line.taxRate}%</td>
               <td className="py-1.5 text-right">{money(line.net)}</td>
             </tr>
@@ -123,6 +128,18 @@ export function A4Document({ title, meta, store, lines, seller, billTo, notes }:
       <section className="ml-auto mt-4 w-[80mm] break-inside-avoid">
         <table className="w-full">
           <tbody>
+            {anyDiscount && (
+              <>
+                <tr>
+                  <td className="py-0.5">{t("a4.beforeDiscount")}</td>
+                  <td className="py-0.5 text-right">{money(totals.subtotal)}</td>
+                </tr>
+                <tr>
+                  <td className="py-0.5">{t("a4.discount")}</td>
+                  <td className="py-0.5 text-right">-{money(totals.discount)}</td>
+                </tr>
+              </>
+            )}
             <tr>
               <td className="py-0.5">{t("a4.subtotalExcl")}</td>
               <td className="py-0.5 text-right">{money(totals.net)}</td>

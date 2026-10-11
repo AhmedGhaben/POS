@@ -58,6 +58,8 @@ enum Permission {
   OPEN_DRAWER
   /// Cancel a completed sale (stock goes back; reports drop it).
   VOID_SALE
+  /// Give discounts on items or on the whole sale at the till.
+  APPLY_DISCOUNT
 }
 
 enum DrawerOpenReason {
@@ -82,14 +84,16 @@ model Business {
   website            String?
 
   /// ISO 4217 code. Only currencies with 0-2 decimals: money columns are Decimal(10, 2).
-  currency       String  @default("USD")
+  currency           String   @default("USD")
   /// Language of receipts, quotes, invoices and customer emails: en, pt-PT, pt-BR.
-  language       String  @default("en")
+  language           String   @default("en")
   /// Pre-fills the tax % of new products; each product keeps its own rate.
-  defaultTaxRate Decimal @default(0) @db.Decimal(5, 2)
-  receiptHeader  String?
-  receiptFooter  String?
-  invoiceFooter  String?
+  defaultTaxRate     Decimal  @default(0) @db.Decimal(5, 2)
+  /// Largest discount (% of the sale or line) anyone but the owner may give; null = no limit.
+  maxDiscountPercent Decimal? @db.Decimal(5, 2)
+  receiptHeader      String?
+  receiptFooter      String?
+  invoiceFooter      String?
 
   /// Small (<= 300 KB, resized in the browser) so it lives in the row until
   /// object storage exists. logoUpdatedAt busts the browser cache.
@@ -175,10 +179,10 @@ model User {
   auditLogs               AuditLog[]
   permissionOverrides     UserPermission[]
   transfersCreated        StockTransfer[]          @relation("TransferCreatedBy")
+  drawerEvents            DrawerEvent[]
 
   @@index([businessId])
   @@map("users")
-  drawerEvents DrawerEvent[]
 }
 
 /// An explicit override of a permission for one user, in either direction.
@@ -265,17 +269,17 @@ model AuditLog {
 
 /// A physical till running the desktop app ("Front Till", POS-001).
 model Terminal {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   businessId String
-  business   Business @relation(fields: [businessId], references: [id])
+  business   Business  @relation(fields: [businessId], references: [id])
   storeId    String
-  store      Store    @relation(fields: [storeId], references: [id])
+  store      Store     @relation(fields: [storeId], references: [id])
   name       String
   /// Per-business running number behind the code (POS-001, POS-002, …).
   sequence   Int
   code       String
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
   lastSeenAt DateTime?
 
   sales        Sale[]
@@ -411,40 +415,46 @@ model Customer {
 }
 
 model Sale {
-  id             String        @id @default(cuid())
-  storeId        String
-  store          Store         @relation(fields: [storeId], references: [id])
-  cashierId      String
-  cashier        User          @relation("SaleCashier", fields: [cashierId], references: [id])
-  customerId     String?
-  customer       Customer?     @relation(fields: [customerId], references: [id])
-  receiptNumber  String        @unique
-  subtotal       Decimal       @db.Decimal(10, 2)
-  taxTotal       Decimal       @db.Decimal(10, 2)
-  discountTotal  Decimal       @default(0) @db.Decimal(10, 2)
-  total          Decimal       @db.Decimal(10, 2)
+  id                 String        @id @default(cuid())
+  storeId            String
+  store              Store         @relation(fields: [storeId], references: [id])
+  cashierId          String
+  cashier            User          @relation("SaleCashier", fields: [cashierId], references: [id])
+  customerId         String?
+  customer           Customer?     @relation(fields: [customerId], references: [id])
+  receiptNumber      String        @unique
+  /// Before any discount.
+  subtotal           Decimal       @db.Decimal(10, 2)
+  taxTotal           Decimal       @db.Decimal(10, 2)
+  /// Every discount: the lines' own plus the whole-sale one. total = subtotal - discountTotal + taxTotal.
+  discountTotal      Decimal       @default(0) @db.Decimal(10, 2)
+  /// The whole-sale discount as the cashier gave it (PERCENT or AMOUNT), and what it came to.
+  discountType       String?
+  discountValue      Decimal?      @db.Decimal(10, 2)
+  saleDiscountAmount Decimal       @default(0) @db.Decimal(10, 2)
+  total              Decimal       @db.Decimal(10, 2)
   /// Denormalized "first payment leg" — kept for back-compat with existing
   /// reports; payments[] is the authoritative source for tender details.
-  paymentMethod  PaymentMethod
-  amountTendered Decimal?      @db.Decimal(10, 2)
-  changeDue      Decimal?      @db.Decimal(10, 2)
-  status         SaleStatus    @default(COMPLETED)
+  paymentMethod      PaymentMethod
+  amountTendered     Decimal?      @db.Decimal(10, 2)
+  changeDue          Decimal?      @db.Decimal(10, 2)
+  status             SaleStatus    @default(COMPLETED)
   /// Set when the sale is cancelled (VOIDED). Reason: WRONG_ITEMS,
   /// CUSTOMER_CHANGED_MIND, PAYMENT_PROBLEM, TRAINING or OTHER.
-  voidedAt       DateTime?
-  voidedById     String?
-  voidedBy       User?         @relation("SaleVoidedBy", fields: [voidedById], references: [id])
-  voidReason     String?
-  voidNote       String?
-  createdAt      DateTime      @default(now())
+  voidedAt           DateTime?
+  voidedById         String?
+  voidedBy           User?         @relation("SaleVoidedBy", fields: [voidedById], references: [id])
+  voidReason         String?
+  voidNote           String?
+  createdAt          DateTime      @default(now())
   /// Idempotency key generated by the till before the first attempt. A retry
   /// with the same (storeId, clientId) returns the existing sale.
-  clientId       String?
+  clientId           String?
   /// Rung up while the till couldn't reach the server, then synced. Such
   /// sales keep the till's prices/time and may take stock below zero.
-  createdOffline Boolean       @default(false)
-  terminalId     String?
-  terminal       Terminal?     @relation(fields: [terminalId], references: [id])
+  createdOffline     Boolean       @default(false)
+  terminalId         String?
+  terminal           Terminal?     @relation(fields: [terminalId], references: [id])
 
   lineItems SaleLineItem[]
   payments  SalePayment[]
@@ -457,20 +467,26 @@ model Sale {
 }
 
 model SaleLineItem {
-  id             String  @id @default(cuid())
-  saleId         String
-  sale           Sale    @relation(fields: [saleId], references: [id])
-  productId      String
-  product        Product @relation(fields: [productId], references: [id])
+  id                 String   @id @default(cuid())
+  saleId             String
+  sale               Sale     @relation(fields: [saleId], references: [id])
+  productId          String
+  product            Product  @relation(fields: [productId], references: [id])
   /// The product's name and SKU when sold, so renaming a product doesn't
   /// change past receipts and invoices.
-  productName    String
-  productSku     String
-  quantity       Int
-  unitPrice      Decimal @db.Decimal(10, 2)
-  taxAmount      Decimal @default(0) @db.Decimal(10, 2)
-  discountAmount Decimal @default(0) @db.Decimal(10, 2)
-  lineTotal      Decimal @db.Decimal(10, 2)
+  productName        String
+  productSku         String
+  quantity           Int
+  unitPrice          Decimal  @db.Decimal(10, 2)
+  taxAmount          Decimal  @default(0) @db.Decimal(10, 2)
+  /// This line's own discount as given (PERCENT or AMOUNT), and what it came to.
+  discountType       String?
+  discountValue      Decimal? @db.Decimal(10, 2)
+  lineDiscountAmount Decimal  @default(0) @db.Decimal(10, 2)
+  /// Everything taken off this line: its own discount plus its share of the
+  /// whole-sale one. Tax is on unitPrice x quantity - discountAmount.
+  discountAmount     Decimal  @default(0) @db.Decimal(10, 2)
+  lineTotal          Decimal  @db.Decimal(10, 2)
 
   @@index([saleId])
   @@map("sale_line_items")

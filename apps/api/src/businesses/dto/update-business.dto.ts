@@ -1,5 +1,5 @@
 import { Transform } from "class-transformer";
-import { IsEmail, IsIn, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength } from "class-validator";
+import { IsEmail, IsIn, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength, ValidateIf } from "class-validator";
 import { SUPPORTED_CURRENCIES } from "../../common/utils/currency";
 import { SUPPORTED_LANGUAGES } from "../../common/i18n/languages";
 
@@ -49,6 +49,14 @@ export class UpdateBusinessDto {
   @Min(0)
   @Max(100)
   defaultTaxRate?: number;
+
+  /** null removes the limit. */
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  maxDiscountPercent?: number | null;
 
   @IsOptional() @BlankToNull() @IsString() @MaxLength(300)
   receiptHeader?: string | null;

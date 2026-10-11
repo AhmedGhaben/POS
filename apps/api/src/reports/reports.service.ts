@@ -44,13 +44,13 @@ export class ReportsService {
     const rows = await this.prisma.$queryRaw<PeriodTotals[]>(Prisma.sql`
       WITH line_profit AS (
         SELECT sli."saleId" as sale_id,
-               SUM(sli.quantity * (sli."unitPrice" - p."costPrice"))::float8 as profit
+               SUM(sli.quantity * (sli."unitPrice" - p."costPrice") - sli."discountAmount")::float8 as profit
         FROM sale_line_items sli
         JOIN products p ON p.id = sli."productId"
         GROUP BY sli."saleId"
       )
       SELECT
-        COALESCE(SUM(s.subtotal), 0)::float8 as revenue,
+        COALESCE(SUM(s.subtotal - s."discountTotal"), 0)::float8 as revenue,
         COUNT(DISTINCT s.id)::int as "orderCount",
         COALESCE(SUM(lp.profit), 0)::float8 as profit
       FROM sales s
@@ -92,7 +92,7 @@ export class ReportsService {
     return this.prisma.$queryRaw<SalesTrendRow[]>(Prisma.sql`
       SELECT
         to_char(gs, 'YYYY-MM-DD') as date,
-        COALESCE(SUM(s.subtotal), 0)::float8 as revenue,
+        COALESCE(SUM(s.subtotal - s."discountTotal"), 0)::float8 as revenue,
         COUNT(DISTINCT s.id)::int as "orderCount"
       FROM generate_series(
         (CURRENT_DATE - ((${days}::int) - 1)), CURRENT_DATE, interval '1 day'
@@ -139,7 +139,7 @@ export class ReportsService {
     return this.prisma.$queryRaw<StoreComparisonRow[]>(Prisma.sql`
       WITH line_profit AS (
         SELECT sli."saleId" as sale_id,
-               SUM(sli.quantity * (sli."unitPrice" - p."costPrice"))::float8 as profit
+               SUM(sli.quantity * (sli."unitPrice" - p."costPrice") - sli."discountAmount")::float8 as profit
         FROM sale_line_items sli
         JOIN products p ON p.id = sli."productId"
         GROUP BY sli."saleId"
@@ -147,7 +147,7 @@ export class ReportsService {
       SELECT
         st.id as "storeId",
         st.name as "storeName",
-        COALESCE(SUM(s.subtotal), 0)::float8 as revenue,
+        COALESCE(SUM(s.subtotal - s."discountTotal"), 0)::float8 as revenue,
         COALESCE(SUM(lp.profit), 0)::float8 as profit,
         COUNT(DISTINCT s.id)::int as "orderCount"
       FROM stores st

@@ -48,9 +48,9 @@ export class ReturnsService {
         );
       }
 
-      const taxPerUnit = saleLine.taxAmount.div(saleLine.quantity);
+      // What the customer actually paid per item: after discounts, with tax.
       const unitPrice = saleLine.unitPrice;
-      const lineTotal = unitPrice.add(taxPerUnit).mul(li.quantity);
+      const lineTotal = saleLine.lineTotal.div(saleLine.quantity).mul(li.quantity).toDecimalPlaces(2);
       totalRefund = totalRefund.add(lineTotal);
 
       return {

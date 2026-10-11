@@ -3,6 +3,7 @@ import {
   ArrayMinSize,
   IsEmail,
   IsEnum,
+  IsIn,
   IsInt,
   IsISO8601,
   IsNumber,
@@ -14,6 +15,16 @@ import {
   ValidateNested,
 } from "class-validator";
 import { PaymentMethod } from "@prisma/client";
+
+/** A discount as the cashier gave it: a percentage or an amount off. */
+export class DiscountDto {
+  @IsIn(["PERCENT", "AMOUNT"])
+  type!: "PERCENT" | "AMOUNT";
+
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  value!: number;
+}
 
 export class SaleLineItemInputDto {
   @IsString()
@@ -35,6 +46,12 @@ export class SaleLineItemInputDto {
   @Min(0)
   @Max(100)
   taxRate?: number;
+
+  /** Off this line. */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DiscountDto)
+  discount?: DiscountDto;
 }
 
 /** Present when the till rang the sale up without reaching the server. */
@@ -92,4 +109,10 @@ export class CreateSaleDto {
   @Type(() => SaleLineItemInputDto)
   @ArrayMinSize(1)
   lineItems!: SaleLineItemInputDto[];
+
+  /** Off the whole sale, after the lines' own discounts. */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DiscountDto)
+  discount?: DiscountDto;
 }

@@ -1,10 +1,12 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
-import { Prisma, PaymentMethod, SaleStatus } from "@prisma/client";
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { Permission, Prisma, PaymentMethod, Role, SaleStatus } from "@prisma/client";
+import { PermissionsService } from "../common/permissions/permissions.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { emailLanguage } from "../common/i18n/languages";
 import { CreateSaleDto } from "./dto/create-sale.dto";
 import { VoidSaleDto } from "./dto/void-sale.dto";
+import { priceSaleCents, type DiscountInput, type PricedSale } from "./pricing";
 
 /** How far an offline sale's clock may run ahead of the server's. */
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
@@ -29,6 +31,13 @@ function isUniqueViolation(error: unknown, field: string): boolean {
     error.code === "P2002" &&
     JSON.stringify(error.meta?.target ?? "").includes(field)
   );
+}
+
+const fromCents = (cents: number) => new Prisma.Decimal(cents).div(100);
+
+/** A discount worth recording, or null. */
+function given(discount: DiscountInput | undefined): DiscountInput | null {
+  return discount && discount.value > 0 ? discount : null;
 }
 
 function clampToNow(date: Date): Date {
@@ -71,6 +80,7 @@ export class SalesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
+    private readonly permissions: PermissionsService,
   ) {}
 
   async findByStore(storeId: string) {
@@ -83,7 +93,7 @@ export class SalesService {
     return sales.map(withSoldNames);
   }
 
-  async create(businessId: string, cashierId: string, dto: CreateSaleDto) {
+  async create(businessId: string, cashierId: string, dto: CreateSaleDto, role: Role = Role.CASHIER) {
     const offline = dto.offline;
     if (offline && !dto.clientId) {
       throw new BadRequestException("Offline sales need a clientId");
@@ -104,36 +114,53 @@ export class SalesService {
     }
     const productById = new Map(products.map((p) => [p.id, p]));
 
-    let subtotal = new Prisma.Decimal(0);
-    let taxTotal = new Prisma.Decimal(0);
-    const lineItemsData = dto.lineItems.map((li) => {
+    for (const discount of [dto.discount, ...dto.lineItems.map((li) => li.discount)]) {
+      if (discount?.type === "PERCENT" && discount.value > 100) {
+        throw new BadRequestException("A percentage discount can't be more than 100%");
+      }
+    }
+
+    // An offline sale records what already happened at the till, so it
+    // keeps the price, tax and discounts the cashier gave even if they've
+    // changed on the server since (or the cashier wasn't allowed to).
+    const unitPrices = dto.lineItems.map((li) => {
       const product = productById.get(li.productId)!;
-      // An offline sale records what already happened at the till, so it
-      // keeps the price and tax the cashier charged even if they've changed
-      // on the server since.
-      const unitPrice =
-        offline && li.unitPrice !== undefined ? new Prisma.Decimal(li.unitPrice) : product.sellPrice;
-      const taxRate =
-        offline && li.taxRate !== undefined ? new Prisma.Decimal(li.taxRate) : product.taxRate;
-      const lineSubtotal = unitPrice.mul(li.quantity);
-      const taxAmount = lineSubtotal.mul(taxRate).div(100);
-      const lineTotal = lineSubtotal.add(taxAmount);
+      return offline && li.unitPrice !== undefined ? new Prisma.Decimal(li.unitPrice) : product.sellPrice;
+    });
+    const priced = priceSaleCents(
+      dto.lineItems.map((li, i) => {
+        const product = productById.get(li.productId)!;
+        const taxRate = offline && li.taxRate !== undefined ? li.taxRate : Number(product.taxRate);
+        return { unitPrice: Number(unitPrices[i]), quantity: li.quantity, taxRate, discount: given(li.discount) };
+      }),
+      given(dto.discount),
+    );
+    if (priced.discountTotal > 0 && !offline) {
+      await this.checkDiscount(businessId, cashierId, role, priced);
+    }
 
-      subtotal = subtotal.add(lineSubtotal);
-      taxTotal = taxTotal.add(taxAmount);
-
+    const lineItemsData = dto.lineItems.map((li, i) => {
+      const product = productById.get(li.productId)!;
+      const line = priced.lines[i];
+      const discount = given(li.discount);
       return {
         productId: product.id,
         productName: product.name,
         productSku: product.sku,
         quantity: li.quantity,
-        unitPrice,
-        taxAmount,
-        discountAmount: new Prisma.Decimal(0),
-        lineTotal,
+        unitPrice: unitPrices[i],
+        taxAmount: fromCents(line.tax),
+        discountType: discount?.type ?? null,
+        discountValue: discount ? new Prisma.Decimal(discount.value) : null,
+        lineDiscountAmount: fromCents(line.lineDiscount),
+        discountAmount: fromCents(line.discount),
+        lineTotal: fromCents(line.total),
       };
     });
-    const total = subtotal.add(taxTotal);
+    const saleDiscount = given(dto.discount);
+    const subtotal = fromCents(priced.subtotal);
+    const taxTotal = fromCents(priced.taxTotal);
+    const total = fromCents(priced.total);
     const receiptNumber = offline
       ? offlineReceiptNumber(dto.storeId, dto.clientId!)
       : `${dto.storeId.slice(-4).toUpperCase()}-${Date.now()}`;
@@ -210,7 +237,10 @@ export class SalesService {
             receiptNumber,
             subtotal,
             taxTotal,
-            discountTotal: new Prisma.Decimal(0),
+            discountTotal: fromCents(priced.discountTotal),
+            discountType: saleDiscount?.type ?? null,
+            discountValue: saleDiscount ? new Prisma.Decimal(saleDiscount.value) : null,
+            saleDiscountAmount: fromCents(priced.saleDiscount),
             total,
             paymentMethod: dto.payments[0].method,
             amountTendered,
@@ -245,6 +275,27 @@ export class SalesService {
     });
 
     return withSoldNames(sale);
+  }
+
+  /**
+   * Discounts need APPLY_DISCOUNT, and (for everyone but the owner) must stay
+   * within the business's maximum, both overall and on each line.
+   */
+  private async checkDiscount(businessId: string, userId: string, role: Role, priced: PricedSale) {
+    if (!(await this.permissions.hasPermission(userId, role, Permission.APPLY_DISCOUNT))) {
+      throw new ForbiddenException("You don't have permission to give discounts");
+    }
+    if (role === Role.OWNER) return;
+    const business = await this.prisma.business.findUnique({
+      where: { id: businessId },
+      select: { maxDiscountPercent: true },
+    });
+    if (business?.maxDiscountPercent == null) return;
+    const max = Number(business.maxDiscountPercent);
+    const limit = (base: number) => Math.round((base * max) / 100);
+    const over =
+      priced.discountTotal > limit(priced.subtotal) || priced.lines.some((l) => l.lineDiscount > limit(l.gross));
+    if (over) throw new BadRequestException(`Discounts can't be more than ${max}% of the price`);
   }
 
   /**
@@ -354,6 +405,7 @@ export class SalesService {
         lineTotal: li.lineTotal.toString(),
       })),
       subtotal: sale.subtotal.toString(),
+      discountTotal: sale.discountTotal.toString(),
       taxTotal: sale.taxTotal.toString(),
       total: sale.total.toString(),
       },

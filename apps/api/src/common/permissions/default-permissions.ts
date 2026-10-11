@@ -6,7 +6,19 @@ import { Permission, Role } from "@prisma/client";
  * diff rather than hidden in seed data.
  */
 export const DEFAULT_PERMISSIONS: Record<Role, Permission[]> = {
-  [Role.OWNER]: [Permission.VIEW_COST_PRICE, Permission.PROCESS_RETURN, Permission.OPEN_DRAWER, Permission.VOID_SALE],
-  [Role.MANAGER]: [Permission.VIEW_COST_PRICE, Permission.PROCESS_RETURN, Permission.OPEN_DRAWER, Permission.VOID_SALE],
+  [Role.OWNER]: [
+    Permission.VIEW_COST_PRICE,
+    Permission.PROCESS_RETURN,
+    Permission.OPEN_DRAWER,
+    Permission.VOID_SALE,
+    Permission.APPLY_DISCOUNT,
+  ],
+  [Role.MANAGER]: [
+    Permission.VIEW_COST_PRICE,
+    Permission.PROCESS_RETURN,
+    Permission.OPEN_DRAWER,
+    Permission.VOID_SALE,
+    Permission.APPLY_DISCOUNT,
+  ],
   [Role.CASHIER]: [],
 };

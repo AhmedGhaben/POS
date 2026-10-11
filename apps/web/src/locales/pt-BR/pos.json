@@ -3,7 +3,9 @@
   "totals": {
     "subtotal": "Subtotal",
     "tax": "Impostos",
-    "total": "Total"
+    "total": "Total",
+    "discount": "Desconto",
+    "saleDiscount": "Desconto na venda"
   },
   "search": {
     "placeholder": "Leia o código de barras ou busque por nome / código..."
@@ -18,7 +20,10 @@
     "each": "{{price}} cada",
     "decrease": "Menos um",
     "increase": "Mais um",
-    "remove": "Remover {{name}}"
+    "remove": "Remover {{name}}",
+    "discount": "Desconto",
+    "discountNamed": "Desconto em {{name}}",
+    "discountOff": "{{label}} de desconto (-{{amount}})"
   },
   "customer": {
     "walkIn": "Consumidor final",
@@ -51,7 +56,9 @@
     "printQuote": "Imprimir orçamento",
     "clearCart": "Limpar carrinho",
     "openDrawer": "Abrir gaveta",
-    "recentSales": "Vendas recentes"
+    "recentSales": "Vendas recentes",
+    "saleDiscount": "Desconto na venda toda",
+    "changeSaleDiscount": "Alterar o desconto da venda"
   },
   "complete": {
     "title": "Venda concluída",
@@ -121,5 +128,21 @@
     "doneOffline": "Venda cancelada. Será sincronizada quando o caixa voltar a ter conexão.",
     "handBack": "Devolva {{amount}} em dinheiro.",
     "printSlip": "Imprimir comprovante de cancelamento"
+  },
+  "discount": {
+    "titleSale": "Desconto na venda toda",
+    "titleLine": "Desconto em {{name}}",
+    "description": "Sai de {{amount}}, antes dos impostos.",
+    "kind": "Tipo de desconto",
+    "percent": "Porcentagem",
+    "amount": "Valor",
+    "percentLabel": "Porcentagem de desconto",
+    "amountLabel": "Valor do desconto",
+    "preview": "{{off}} de desconto: {{after}} antes dos impostos",
+    "percentTooBig": "Uma porcentagem não pode passar de 100.",
+    "tooBig": "É mais do que o preço.",
+    "overMax": "Você pode dar no máximo {{max}}% de desconto.",
+    "apply": "Aplicar",
+    "remove": "Remover desconto"
   }
 }

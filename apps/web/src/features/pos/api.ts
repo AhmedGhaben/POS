@@ -63,6 +63,7 @@ async function queueSaleOffline(sale: CreateSaleDto, lines: CartLine[]): Promise
       quantity: l.quantity,
       unitPrice: Number(l.product.sellPrice),
       taxRate: Number(l.product.taxRate),
+      discount: l.discount ?? undefined,
     })),
   };
   const receipt = { ...buildOfflineSale(sale.clientId!, payload, lines), ...currentCashier() };

@@ -3,7 +3,7 @@ import type { SaleDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
 import i18n, { DEFAULT_LANGUAGE, isLanguage } from "@/i18n";
 import { useDocumentLanguage } from "@/i18n/use-document-language";
-import type { CartLine } from "@/features/pos/hooks/useCart";
+import { priceCart, type CartLine } from "@/features/pos/hooks/useCart";
 import { desktop, useDeviceStore } from "./bridge";
 
 /**
@@ -111,18 +111,18 @@ export function useCustomerDisplay(lines: CartLine[], total: number, completedSa
   const previous = React.useRef<Map<string, number>>(new Map());
   const lastItem = React.useRef<{ name: string; quantity: number; price: string } | null>(null);
 
+  // Each line after its own discount, as the cart shows it.
+  const priced = priceCart(lines, null).lines;
+  const lineAmount = (i: number) => money(priced[i].gross - priced[i].lineDiscount);
+
   // The item that just changed: new, or its quantity went up.
   const quantities = new Map(lines.map((l) => [l.product.id, l.quantity]));
-  for (const line of lines) {
+  lines.forEach((line, i) => {
     const before = previous.current.get(line.product.id) ?? 0;
     if (line.quantity > before) {
-      lastItem.current = {
-        name: line.product.name,
-        quantity: line.quantity,
-        price: money(Number(line.product.sellPrice) * line.quantity),
-      };
+      lastItem.current = { name: line.product.name, quantity: line.quantity, price: lineAmount(i) };
     }
-  }
+  });
   if (lastItem.current && !lines.some((l) => l.product.name === lastItem.current!.name)) lastItem.current = null;
   previous.current = quantities;
 
@@ -140,11 +140,7 @@ export function useCustomerDisplay(lines: CartLine[], total: number, completedSa
     state = {
       mode: "cart",
       lastItem: lastItem.current,
-      lines: lines.map((l) => ({
-        name: l.product.name,
-        quantity: l.quantity,
-        total: money(Number(l.product.sellPrice) * l.quantity),
-      })),
+      lines: lines.map((l, i) => ({ name: l.product.name, quantity: l.quantity, total: lineAmount(i) })),
       itemCount: lines.reduce((n, l) => n + l.quantity, 0),
       total: money(total),
       labels,

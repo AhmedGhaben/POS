@@ -3,7 +3,9 @@
   "totals": {
     "subtotal": "Subtotal",
     "tax": "IVA",
-    "total": "Total"
+    "total": "Total",
+    "discount": "Desconto",
+    "saleDiscount": "Desconto na venda"
   },
   "search": {
     "placeholder": "Leia o código de barras ou procure por nome / referência..."
@@ -18,7 +20,10 @@
     "each": "{{price}} cada",
     "decrease": "Menos um",
     "increase": "Mais um",
-    "remove": "Remover {{name}}"
+    "remove": "Remover {{name}}",
+    "discount": "Desconto",
+    "discountNamed": "Desconto em {{name}}",
+    "discountOff": "{{label}} de desconto (-{{amount}})"
   },
   "customer": {
     "walkIn": "Cliente de balcão",
@@ -51,7 +56,9 @@
     "printQuote": "Imprimir orçamento",
     "clearCart": "Limpar carrinho",
     "openDrawer": "Abrir gaveta",
-    "recentSales": "Vendas recentes"
+    "recentSales": "Vendas recentes",
+    "saleDiscount": "Desconto na venda toda",
+    "changeSaleDiscount": "Alterar o desconto da venda"
   },
   "complete": {
     "title": "Venda concluída",
@@ -101,7 +108,7 @@
     "description": "As últimas vendas desta loja, incluindo as que aguardam envio.",
     "localOnly": "Sem ligação ao servidor. A mostrar as vendas que esta caixa conhece.",
     "empty": "Ainda não há vendas.",
-    "you": "você",
+    "you": "eu",
     "cancelled": "Anulada",
     "waiting": "A aguardar envio",
     "reprint": "Reimprimir talão",
@@ -121,5 +128,21 @@
     "doneOffline": "Venda anulada. Será sincronizada quando a caixa voltar a ter ligação.",
     "handBack": "Devolva {{amount}} em dinheiro.",
     "printSlip": "Imprimir comprovativo de anulação"
+  },
+  "discount": {
+    "titleSale": "Desconto na venda toda",
+    "titleLine": "Desconto em {{name}}",
+    "description": "Sai de {{amount}}, antes do IVA.",
+    "kind": "Tipo de desconto",
+    "percent": "Percentagem",
+    "amount": "Valor",
+    "percentLabel": "Percentagem de desconto",
+    "amountLabel": "Valor do desconto",
+    "preview": "{{off}} de desconto: {{after}} antes do IVA",
+    "percentTooBig": "Uma percentagem não pode ser superior a 100.",
+    "tooBig": "É mais do que o preço.",
+    "overMax": "Pode dar no máximo {{max}}% de desconto.",
+    "apply": "Aplicar",
+    "remove": "Retirar desconto"
   }
 }

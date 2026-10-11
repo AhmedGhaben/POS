@@ -21,7 +21,7 @@ export class SalesController {
   @Post()
   @UseGuards(StoreAccessGuard)
   create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateSaleDto) {
-    return this.salesService.create(user.businessId, user.userId, dto);
+    return this.salesService.create(user.businessId, user.userId, dto, user.role);
   }
 
   /** Cancels a sale; repeating it returns the cancelled sale. */

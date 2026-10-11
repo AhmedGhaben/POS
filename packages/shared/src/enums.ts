@@ -42,6 +42,7 @@ export enum Permission {
   PROCESS_RETURN = "PROCESS_RETURN",
   OPEN_DRAWER = "OPEN_DRAWER",
   VOID_SALE = "VOID_SALE",
+  APPLY_DISCOUNT = "APPLY_DISCOUNT",
 }
 
 export enum DrawerOpenReason {

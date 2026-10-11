@@ -30,7 +30,11 @@
     "example": "Example: {{amount}}",
     "defaultTax": "Default tax %",
     "defaultTaxHint": "Pre-filled on new products. Existing products keep their rate.",
-    "taxRange": "0 to 100"
+    "taxRange": "0 to 100",
+    "maxDiscount": "Maximum discount %",
+    "maxDiscountHint": "The most anyone except you can take off an item or a sale. Leave blank for no limit.",
+    "maxDiscountRange": "0 to 100, or blank",
+    "noLimit": "No limit"
   },
   "documents": {
     "title": "Receipts & invoices",

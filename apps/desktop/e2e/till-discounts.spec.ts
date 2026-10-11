@@ -1,0 +1,120 @@
+import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
+import {
+  API_URL,
+  connect,
+  launch,
+  login,
+  openPosWithProducts,
+  outbox,
+  restock,
+  serverSales,
+  SwitchableProxy,
+  tempUserData,
+} from "./helpers";
+
+/**
+ * Discounts at the till (docs/plans/TILL_ESSENTIALS.md, part 2): a line
+ * discount and a whole-sale discount, the receipt shows them, and the server
+ * records exactly what the till charged, online and offline.
+ */
+interface SaleRow {
+  id: string;
+  createdOffline: boolean;
+  total: string;
+  discountTotal: string;
+  saleDiscountAmount: string;
+}
+
+const sales = (page: Page) => serverSales(page) as unknown as Promise<SaleRow[]>;
+
+/** The total on the Charge button, as a number. */
+async function chargeAmount(page: Page) {
+  const text = (await page.getByRole("button", { name: /^Charge/ }).textContent()) ?? "";
+  return Number(text.replace(/[^\d.,]/g, "").replace(/,/g, ""));
+}
+
+test.describe.serial("Till: discounts", () => {
+  const proxy = new SwitchableProxy(new URL(API_URL));
+  const userData = tempUserData();
+  let app: ElectronApplication;
+  let page: Page;
+
+  async function discountedCart() {
+    const first = page.locator("div.grid > button.text-left").first();
+    await first.click();
+    await first.click();
+    await page.getByRole("button", { name: /^Discount on / }).first().click();
+    await page.getByRole("radio", { name: "Percentage" }).click();
+    await page.getByLabel("Percentage off").fill("10");
+    await page.getByRole("button", { name: "Apply" }).click();
+    await expect(page.getByText(/10% off \(-/)).toBeVisible();
+
+    await page.getByRole("button", { name: "Discount on the whole sale" }).click();
+    await page.getByRole("radio", { name: "Amount" }).click();
+    await page.getByLabel("Amount off").fill("1");
+    await page.getByRole("button", { name: "Apply" }).click();
+    await expect(page.getByText("Sale discount", { exact: true })).toBeVisible();
+  }
+
+  test.beforeAll(async () => {
+    await proxy.up();
+    ({ app, page } = await launch(userData));
+    await connect(page, proxy.url);
+    await login(page);
+    await restock(page);
+    await openPosWithProducts(page);
+  });
+
+  test.afterAll(async () => {
+    await app?.close().catch(() => {});
+    await proxy.down();
+  });
+
+  test("online: line and sale discounts reach the receipt and the server", async () => {
+    await discountedCart();
+    const shown = await chargeAmount(page);
+    await page.getByRole("button", { name: /^Charge/ }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("Sale complete");
+    await expect(dialog).toContainText("Sale discount");
+    await expect(dialog).toContainText(/You saved/);
+    await page.keyboard.press("Escape");
+
+    const [latest] = await sales(page);
+    expect(Number(latest.total)).toBeCloseTo(shown, 2);
+    expect(Number(latest.saleDiscountAmount)).toBe(1);
+    expect(Number(latest.discountTotal)).toBeGreaterThan(1);
+  });
+
+  test("the cart starts again without discounts", async () => {
+    await page.locator("div.grid > button.text-left").first().click();
+    await expect(page.getByText(/% off \(-/)).toHaveCount(0);
+    await page.getByRole("button", { name: "Clear cart" }).click();
+  });
+
+  test("offline: the server records the same total the till charged", async () => {
+    await proxy.down();
+    await discountedCart();
+    const shown = await chargeAmount(page);
+    await page.getByRole("button", { name: /^Charge/ }).click();
+    await expect(page.getByRole("dialog")).toContainText("Saved offline");
+    await page.keyboard.press("Escape");
+
+    await proxy.up();
+    await expect
+      .poll(async () => (await outbox(page)).filter((e) => e.state !== "synced").length, { timeout: 70_000 })
+      .toBe(0);
+    const [latest] = await sales(page);
+    expect(latest.createdOffline).toBe(true);
+    expect(Number(latest.total)).toBeCloseTo(shown, 2);
+  });
+
+  test("a cashier without the permission sees no discount buttons", async () => {
+    await page.getByRole("button", { name: "Log out" }).click();
+    await login(page, "cashier@demo-store.test", "CashierPass123!");
+    await openPosWithProducts(page);
+    await page.locator("div.grid > button.text-left").first().click();
+    await expect(page.getByRole("button", { name: /^Discount on / })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Discount on the whole sale" })).toHaveCount(0);
+  });
+});

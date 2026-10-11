@@ -4,7 +4,9 @@
   "totals": {
     "subtotal": "Subtotal",
     "tax": "Impostos",
-    "total": "Total"
+    "total": "Total",
+    "discount": "Desconto",
+    "saleDiscount": "Desconto na venda"
   },
   "receipt": {
     "number": "Recibo nº {{number}}",
@@ -12,7 +14,8 @@
     "changeDue": "Troco",
     "thankYou": "Obrigado!",
     "copy": "2ª VIA",
-    "cancelled": "CANCELADA"
+    "cancelled": "CANCELADA",
+    "saved": "Você economizou {{amount}}"
   },
   "quote": {
     "slipTitle": "ORÇAMENTO",
@@ -34,7 +37,9 @@
     "unitPrice": "Preço unitário",
     "amount": "Valor",
     "subtotalExcl": "Subtotal (sem impostos)",
-    "taxOn": "Imposto {{rate}}% sobre {{amount}}"
+    "taxOn": "Imposto {{rate}}% sobre {{amount}}",
+    "discount": "Desconto",
+    "beforeDiscount": "Total antes do desconto"
   },
   "invoice": {
     "title": "FATURA",

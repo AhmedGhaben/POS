@@ -4,7 +4,9 @@
   "totals": {
     "subtotal": "Subtotal",
     "tax": "IVA",
-    "total": "Total"
+    "total": "Total",
+    "discount": "Desconto",
+    "saleDiscount": "Desconto na venda"
   },
   "receipt": {
     "number": "Talão n.º {{number}}",
@@ -12,7 +14,8 @@
     "changeDue": "Troco",
     "thankYou": "Obrigado!",
     "copy": "2.ª VIA",
-    "cancelled": "ANULADA"
+    "cancelled": "ANULADA",
+    "saved": "Poupou {{amount}}"
   },
   "quote": {
     "slipTitle": "ORÇAMENTO",
@@ -34,7 +37,9 @@
     "unitPrice": "Preço unitário",
     "amount": "Valor",
     "subtotalExcl": "Subtotal (sem IVA)",
-    "taxOn": "IVA {{rate}}% sobre {{amount}}"
+    "taxOn": "IVA {{rate}}% sobre {{amount}}",
+    "discount": "Desconto",
+    "beforeDiscount": "Total antes do desconto"
   },
   "invoice": {
     "title": "FATURA",

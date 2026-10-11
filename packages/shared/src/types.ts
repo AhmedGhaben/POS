@@ -1,3 +1,4 @@
+import type { DiscountInput, DiscountType } from "./pricing";
 import type {
   Plan,
   Role,
@@ -26,6 +27,8 @@ export interface BusinessDto {
   language: string;
   /** Decimal string, e.g. "19". */
   defaultTaxRate: string;
+  /** Largest discount % anyone but the owner may give (decimal string); null = no limit. */
+  maxDiscountPercent: string | null;
   receiptHeader: string | null;
   receiptFooter: string | null;
   invoiceFooter: string | null;
@@ -50,7 +53,7 @@ export type UpdateBusinessDto = Partial<
     | "receiptFooter"
     | "invoiceFooter"
   >
-> & { defaultTaxRate?: number };
+> & { defaultTaxRate?: number; maxDiscountPercent?: number | null };
 
 export interface UpdateStoreDto {
   name?: string;
@@ -186,6 +189,8 @@ export interface SaleLineItemInputDto {
   /** Offline sales only: the price and tax rate (%) the till used. */
   unitPrice?: number;
   taxRate?: number;
+  /** Off this line. */
+  discount?: DiscountInput | null;
 }
 
 export interface SalePaymentInputDto {
@@ -209,6 +214,8 @@ export interface CreateSaleDto {
   terminalId?: string;
   /** Set when the sale was rung up without reaching the server. */
   offline?: { createdAt: string };
+  /** Off the whole sale, after the lines' own discounts. */
+  discount?: DiscountInput | null;
 }
 
 export interface SalePaymentDto {
@@ -226,8 +233,13 @@ export interface SaleLineItemDto {
   quantity: number;
   unitPrice: string;
   taxAmount: string;
+  /** Everything taken off the line: its own discount plus its share of the sale's. */
   discountAmount: string;
   lineTotal: string;
+  /** The line's own discount as given, and what it came to (absent on older sales). */
+  discountType?: DiscountType | null;
+  discountValue?: string | null;
+  lineDiscountAmount?: string;
 }
 
 export interface SupplierDto {
@@ -488,10 +500,15 @@ export interface SaleDto {
   cashierId: string;
   customerId: string | null;
   receiptNumber: string;
+  /** Before any discount. total = subtotal - discountTotal + taxTotal. */
   subtotal: string;
   taxTotal: string;
   discountTotal: string;
   total: string;
+  /** The whole-sale discount as given, and what it came to (absent on older sales). */
+  discountType?: DiscountType | null;
+  discountValue?: string | null;
+  saleDiscountAmount?: string;
   paymentMethod: PaymentMethod;
   amountTendered: string | null;
   changeDue: string | null;
