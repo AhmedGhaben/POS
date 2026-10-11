@@ -20,6 +20,8 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # A test that hangs fails the run instead of holding it for hours.
+    timeout-minutes: 20
 
     services:
       postgres:

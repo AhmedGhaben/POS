@@ -32,19 +32,26 @@ describe("Languages (e2e)", () => {
   });
 
   afterAll(async () => {
-    if (businessId) {
-      const userIds = (await prisma.user.findMany({ where: { businessId }, select: { id: true } })).map((u) => u.id);
-      await prisma.$transaction([
-        prisma.auditLog.deleteMany({ where: { businessId } }),
-        prisma.storeUser.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.emailVerificationToken.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.user.deleteMany({ where: { businessId } }),
-        prisma.store.deleteMany({ where: { businessId } }),
-        prisma.business.delete({ where: { id: businessId } }),
-      ]);
+    try {
+      if (businessId) {
+        // The audit log is written just after each response; let the last
+        // request's entry land before deleting, or it blocks the business delete.
+        await new Promise((r) => setTimeout(r, 500));
+        const userIds = (await prisma.user.findMany({ where: { businessId }, select: { id: true } })).map((u) => u.id);
+        await prisma.$transaction([
+          prisma.auditLog.deleteMany({ where: { businessId } }),
+          prisma.storeUser.deleteMany({ where: { userId: { in: userIds } } }),
+          prisma.emailVerificationToken.deleteMany({ where: { userId: { in: userIds } } }),
+          prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } }),
+          prisma.user.deleteMany({ where: { businessId } }),
+          prisma.store.deleteMany({ where: { businessId } }),
+          prisma.business.delete({ where: { id: businessId } }),
+        ]);
+      }
+    } finally {
+      // Always, so a failed clean-up can't leave Jest hanging.
+      await app.close();
     }
-    await app.close();
   });
 
   it("signing up in Brazilian Portuguese sets the owner's and the business's language", async () => {
