@@ -122,12 +122,25 @@ export function refreshStatus(page: Page) {
   });
 }
 
-/** Signs in on the login page. */
+/**
+ * Signs in on the login page. The server allows 5 sign-ins a minute, and the
+ * whole suite signs in more often than that, so a "too many requests" answer
+ * waits and tries again.
+ */
 export async function login(page: Page, email = "owner@demo-store.test", password = "OwnerPass123!") {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL((url) => !url.pathname.startsWith("/login"));
+  for (let attempt = 0; ; attempt++) {
+    await page.getByRole("button", { name: "Sign in" }).click();
+    const outcome = await Promise.race([
+      page.waitForURL((url) => !url.pathname.startsWith("/login")).then(() => "in" as const, (e: Error) => e),
+      page.getByText(/Too Many Requests/i).waitFor().then(() => "throttled" as const, () => new Promise<never>(() => {})),
+    ]);
+    if (outcome instanceof Error) throw outcome;
+    if (outcome === "in") return;
+    if (attempt >= 6) throw new Error("Sign-in still rate limited");
+    await page.waitForTimeout(15_000);
+  }
 }
 
 /** First-run setup: point the till at the (proxied) server. */

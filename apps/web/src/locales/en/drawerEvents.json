@@ -18,5 +18,6 @@
     "offline": "Offline"
   },
   "emptyManual": "No drawer openings without a sale.",
-  "emptyAll": "No drawer openings recorded yet."
+  "emptyAll": "No drawer openings recorded yet.",
+  "saleVoided": "Sale cancelled"
 }

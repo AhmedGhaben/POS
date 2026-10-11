@@ -10,7 +10,9 @@
     "number": "Talão n.º {{number}}",
     "tendered": "Entregue",
     "changeDue": "Troco",
-    "thankYou": "Obrigado!"
+    "thankYou": "Obrigado!",
+    "copy": "2.ª VIA",
+    "cancelled": "ANULADA"
   },
   "quote": {
     "slipTitle": "ORÇAMENTO",

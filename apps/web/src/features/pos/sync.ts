@@ -68,6 +68,9 @@ function uploadEntry(entry: OutboxEntry): Promise<{ id: string }> {
         { ...entry.payload, offline: entry.payload.offline || entry.attempts > 0 },
         { timeoutMs: 15_000 },
       );
+    case "void-sale":
+      // Queued after its sale, so the sale is on the server by now.
+      return apiClient.post<SaleDto>("/sales/void", entry.payload, { timeoutMs: 15_000 });
   }
 }
 

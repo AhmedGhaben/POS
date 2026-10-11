@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma, Role } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
@@ -78,6 +78,7 @@ export class InvoicesService {
   async issueForSale(user: AuthenticatedUser, saleId: string, dto: IssueInvoiceDto) {
     const sale = await this.findSaleForUser(user, saleId);
     if (sale.invoice) return soldAs(sale.invoice);
+    if (sale.status === "VOIDED") throw new BadRequestException("This sale was cancelled");
 
     const business = await this.prisma.business.findUniqueOrThrow({ where: { id: user.businessId } });
     const settings = toBusinessSettings(business);

@@ -50,7 +50,8 @@
     "charge": "Cobrar {{amount}}",
     "printQuote": "Imprimir orçamento",
     "clearCart": "Limpar carrinho",
-    "openDrawer": "Abrir gaveta"
+    "openDrawer": "Abrir gaveta",
+    "recentSales": "Vendas recentes"
   },
   "complete": {
     "title": "Venda concluída",
@@ -94,5 +95,31 @@
     "failed_one": "{{count}} venda não sincronizou",
     "failed_other": "{{count}} vendas não sincronizaram",
     "retry": "Sincronizar agora"
+  },
+  "recent": {
+    "title": "Vendas recentes",
+    "description": "As últimas vendas desta loja, incluindo as que aguardam envio.",
+    "localOnly": "Sem conexão com o servidor. Mostrando as vendas que este caixa conhece.",
+    "empty": "Ainda não há vendas.",
+    "you": "você",
+    "cancelled": "Cancelada",
+    "waiting": "Aguardando envio",
+    "reprint": "Reimprimir recibo",
+    "cancel": "Cancelar venda"
+  },
+  "void": {
+    "title": "Cancelar a venda {{number}}?",
+    "description": "{{amount}}. A venda sai dos relatórios e o estoque volta para a prateleira. Fica registrado com o seu nome.",
+    "reason": "Motivo",
+    "note": "Observação",
+    "noteOptional": "Observação (opcional)",
+    "keep": "Manter venda",
+    "confirm": "Cancelar venda",
+    "cancelling": "Cancelando…",
+    "failed": "Não foi possível cancelar a venda",
+    "done": "Venda cancelada",
+    "doneOffline": "Venda cancelada. Será sincronizada quando o caixa voltar a ter conexão.",
+    "handBack": "Devolva {{amount}} em dinheiro.",
+    "printSlip": "Imprimir comprovante de cancelamento"
   }
 }

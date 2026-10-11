@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { FileText, ShoppingCart, Vault } from "lucide-react";
+import { FileText, History, ShoppingCart, Vault } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DrawerOpenReason, PaymentMethod } from "@pos/shared";
 import type { CustomerDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
@@ -18,6 +18,7 @@ import { PrintArea } from "@/components/print/PrintArea";
 import { PrintQuoteDialog } from "@/features/pos/components/PrintQuoteDialog";
 import { IssueInvoiceDialog } from "@/features/invoices/components/IssueInvoiceDialog";
 import { PaymentPanel } from "@/features/pos/components/PaymentPanel";
+import { RecentSalesSheet } from "@/features/pos/components/RecentSalesSheet";
 import { CustomerSearchCombobox } from "@/features/pos/components/CustomerSearchCombobox";
 import { useCart } from "@/features/pos/hooks/useCart";
 import { createSale } from "@/features/pos/api";
@@ -47,6 +48,7 @@ export function PosPage() {
   const [paymentPanelKey, setPaymentPanelKey] = React.useState(0);
   const [cartSheetOpen, setCartSheetOpen] = React.useState(false);
   const [quoteOpen, setQuoteOpen] = React.useState(false);
+  const [recentOpen, setRecentOpen] = React.useState(false);
   // Kept separate from completedSale: only one dialog (and print area) is mounted at a time.
   const [invoiceFor, setInvoiceFor] = React.useState<{ sale: SaleDto; customer: CustomerDto | null } | null>(null);
   const queryClient = useQueryClient();
@@ -175,6 +177,16 @@ export function PosPage() {
           <Button variant="outline" disabled={lines.length === 0} onClick={clear}>
             {t("checkout.clearCart")}
           </Button>
+          <Button
+            variant="outline"
+            className="col-span-2"
+            onClick={() => {
+              setCartSheetOpen(false);
+              setRecentOpen(true);
+            }}
+          >
+            <History className="mr-2 h-4 w-4" /> {t("checkout.recentSales")}
+          </Button>
           {hasDrawer && canOpenDrawer && (
             <Button
               variant="outline"
@@ -233,6 +245,7 @@ export function PosPage() {
       />
 
       <OpenDrawerDialog open={drawerDialogOpen} onOpenChange={setDrawerDialogOpen} />
+      <RecentSalesSheet open={recentOpen} onOpenChange={setRecentOpen} storeId={currentStoreId} store={currentStore} />
       <PrintQuoteDialog
         open={quoteOpen}
         onOpenChange={setQuoteOpen}

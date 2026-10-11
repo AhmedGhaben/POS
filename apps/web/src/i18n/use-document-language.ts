@@ -6,7 +6,7 @@ import { DEFAULT_LANGUAGE, isLanguage, type Language } from "./index";
 
 /**
  * Receipts, quotes, invoices and the customer display are for the shop's
- * customers, so they use the business language (Settings → Business), not
+ * customers, so they use the business language (Settings → Receipts & invoices), not
  * the cashier's. Same for their money and date formats.
  */
 export function useDocumentLanguage(currency?: string) {

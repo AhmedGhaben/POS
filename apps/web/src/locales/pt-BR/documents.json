@@ -10,7 +10,9 @@
     "number": "Recibo nº {{number}}",
     "tendered": "Recebido",
     "changeDue": "Troco",
-    "thankYou": "Obrigado!"
+    "thankYou": "Obrigado!",
+    "copy": "2ª VIA",
+    "cancelled": "CANCELADA"
   },
   "quote": {
     "slipTitle": "ORÇAMENTO",

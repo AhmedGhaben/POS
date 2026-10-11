@@ -5,6 +5,15 @@ executing"). Built in the order below, one part at a time; each part is
 committed and pushed with the README updated, and released when it's
 useful on its own. All of this comes before launch item #4 (deploy).
 
+**Progress:**
+- **Part 1 (cancel a sale) is built** (2026-10-11). It's as planned
+  except:
+  - The cancellation slip is the receipt reprinted with "CANCELLED", the
+    reason and the time.
+  - Recent sales shows the store's last 50 sales, not only today's.
+  - Tests: API e2e `sales-void.e2e-spec.ts` (5), web unit
+    `recent-sales.test.ts` (3), desktop e2e `till-void.spec.ts` (4).
+
 **Why:** the app works end to end, but a real shop needs these on day one:
 - cashiers make mistakes and need to cancel a sale
 - almost every shop gives discounts

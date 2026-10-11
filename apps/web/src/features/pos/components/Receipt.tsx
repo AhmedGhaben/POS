@@ -1,4 +1,4 @@
-import type { CustomerDto, SaleDto, StoreDto } from "@pos/shared";
+import { SaleStatus, type CustomerDto, type SaleDto, type StoreDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
 import { SlipHeader } from "@/features/documents/components/SlipHeader";
 import { useDocumentLanguage } from "@/i18n/use-document-language";
@@ -9,11 +9,13 @@ interface ReceiptProps {
   /** Passed from POS checkout state rather than round-tripped through the
    * API — the receipt only needs the name for this same-session display. */
   customer?: CustomerDto | null;
+  /** A reprint: marked COPY so it can't pass for a second sale. */
+  copy?: boolean;
 }
 
 
 /** 80 mm slip, in the business language. Shown as a preview on screen; wrap a copy in <PrintArea> to print it. */
-export function Receipt({ sale, store, customer }: ReceiptProps) {
+export function Receipt({ sale, store, customer, copy }: ReceiptProps) {
   const { t, money, dateTime } = useDocumentLanguage();
   const business = useAuthStore((s) => s.business);
   const changeDue = sale.changeDue !== null ? Number(sale.changeDue) : null;
@@ -27,6 +29,14 @@ export function Receipt({ sale, store, customer }: ReceiptProps) {
     <div className="receipt-slip mx-auto w-[300px] font-mono text-xs">
       <SlipHeader store={store} />
       <hr className="my-2 border-dashed" />
+      {sale.status === SaleStatus.VOIDED && (
+        <div className="mb-2 text-center">
+          <p className="text-base font-bold">*** {t("receipt.cancelled")} ***</p>
+          {sale.voidReason && <p>{t(`common:voidReasons.${sale.voidReason}`)}</p>}
+          {sale.voidedAt && <p>{dateTime(sale.voidedAt)}</p>}
+        </div>
+      )}
+      {copy && <p className="text-center font-bold">{t("receipt.copy")}</p>}
       <p className="text-center">{dateTime(sale.createdAt)}</p>
       <p className="text-center">{t("receipt.number", { number: sale.receiptNumber })}</p>
       {customer && <p className="text-center">{customer.name}</p>}

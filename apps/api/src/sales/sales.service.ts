@@ -1,12 +1,15 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
-import { Prisma, PaymentMethod } from "@prisma/client";
+import { Prisma, PaymentMethod, SaleStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { emailLanguage } from "../common/i18n/languages";
 import { CreateSaleDto } from "./dto/create-sale.dto";
+import { VoidSaleDto } from "./dto/void-sale.dto";
 
 /** How far an offline sale's clock may run ahead of the server's. */
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
+/** After this, a sale is undone with a return instead of being cancelled. */
+const VOID_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Receipt number for a sale rung up offline. The till prints the same value
@@ -36,9 +39,13 @@ function clampToNow(date: Date): Date {
   return date;
 }
 
+const PERSON = { select: { id: true, firstName: true, lastName: true } } as const;
+
 const SALE_INCLUDE = {
   lineItems: { include: { product: true } },
   payments: true,
+  cashier: PERSON,
+  voidedBy: PERSON,
 } satisfies Prisma.SaleInclude;
 
 /**
@@ -238,6 +245,61 @@ export class SalesService {
     });
 
     return withSoldNames(sale);
+  }
+
+  /**
+   * Cancels a completed sale: it drops out of reports and its stock goes back
+   * on the shelf. A sale with a return or an invoice, or older than 24 hours,
+   * is undone with a return instead. Cancelling twice returns the same sale.
+   */
+  async void(userId: string, dto: VoidSaleDto) {
+    if (!dto.saleId && !dto.saleClientId) {
+      throw new BadRequestException("Say which sale to cancel");
+    }
+    const sale = await this.prisma.sale.findFirst({
+      where: { storeId: dto.storeId, ...(dto.saleId ? { id: dto.saleId } : { clientId: dto.saleClientId }) },
+      include: { lineItems: true, returns: { select: { id: true } }, invoice: { select: { id: true } } },
+    });
+    if (!sale) throw new NotFoundException("Sale not found for this store");
+
+    if (sale.status === SaleStatus.COMPLETED) {
+      if (sale.returns.length > 0) {
+        throw new BadRequestException("This sale has a return, so it can't be cancelled. Use Returns instead.");
+      }
+      if (sale.invoice) {
+        throw new BadRequestException("An invoice was issued for this sale, so it can't be cancelled");
+      }
+      // A cancel queued offline counts from when the cashier did it.
+      const voidedAt = dto.occurredAt ? clampToNow(new Date(dto.occurredAt)) : new Date();
+      if (voidedAt.getTime() - sale.createdAt.getTime() > VOID_WINDOW_MS) {
+        throw new BadRequestException("Sales older than 24 hours can't be cancelled. Use Returns instead.");
+      }
+
+      await this.prisma.$transaction(async (tx) => {
+        // Only one cancel wins, so the stock goes back once.
+        const { count } = await tx.sale.updateMany({
+          where: { id: sale.id, status: SaleStatus.COMPLETED },
+          data: {
+            status: SaleStatus.VOIDED,
+            voidedAt: voidedAt < sale.createdAt ? sale.createdAt : voidedAt,
+            voidedById: userId,
+            voidReason: dto.reason,
+            voidNote: dto.note?.trim() || null,
+          },
+        });
+        if (count === 0) return;
+        for (const li of sale.lineItems) {
+          await tx.inventoryItem.upsert({
+            where: { storeId_productId: { storeId: sale.storeId, productId: li.productId } },
+            update: { quantity: { increment: li.quantity } },
+            create: { storeId: sale.storeId, productId: li.productId, quantity: li.quantity },
+          });
+        }
+      });
+    }
+
+    const voided = await this.prisma.sale.findUniqueOrThrow({ where: { id: sale.id }, include: SALE_INCLUDE });
+    return withSoldNames(voided);
   }
 
   private async findByClientId(storeId: string, clientId: string) {

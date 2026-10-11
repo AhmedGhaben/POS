@@ -18,5 +18,6 @@
     "offline": "Sem internet"
   },
   "emptyManual": "Não há aberturas da gaveta sem venda.",
-  "emptyAll": "Ainda não há aberturas da gaveta registadas."
+  "emptyAll": "Ainda não há aberturas da gaveta registadas.",
+  "saleVoided": "Venda anulada"
 }

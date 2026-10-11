@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
-import type { CreateDrawerEventDto, CreateSaleDto } from "@pos/shared";
+import type { CreateDrawerEventDto, CreateSaleDto, SaleDto, VoidSaleDto } from "@pos/shared";
 
 /**
  * Durable local queue of things the till did that the server hasn't seen
@@ -21,8 +21,10 @@ interface OutboxBase {
 }
 
 export type OutboxEntry =
-  | (OutboxBase & { kind: "sale"; payload: CreateSaleDto })
-  | (OutboxBase & { kind: "drawer-event"; payload: CreateDrawerEventDto });
+  /** `receipt`: the sale as printed, for Recent sales (absent on entries from older builds). */
+  | (OutboxBase & { kind: "sale"; payload: CreateSaleDto; receipt?: SaleDto })
+  | (OutboxBase & { kind: "drawer-event"; payload: CreateDrawerEventDto })
+  | (OutboxBase & { kind: "void-sale"; payload: VoidSaleDto });
 
 export type OutboxKind = OutboxEntry["kind"];
 
@@ -93,9 +95,8 @@ function getDb() {
   return dbPromise;
 }
 
-type NewOutboxEntry =
-  | Pick<Extract<OutboxEntry, { kind: "sale" }>, "clientId" | "kind" | "payload" | "createdAt">
-  | Pick<Extract<OutboxEntry, { kind: "drawer-event" }>, "clientId" | "kind" | "payload" | "createdAt">;
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
+type NewOutboxEntry = DistributiveOmit<OutboxEntry, "state" | "attempts" | "lastError" | "syncedAt" | "serverId">;
 
 export async function addToOutbox(entry: NewOutboxEntry): Promise<OutboxEntry> {
   const db = await getDb();

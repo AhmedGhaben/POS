@@ -505,6 +505,34 @@ export interface SaleDto {
   queued?: boolean;
   lineItems: SaleLineItemDto[];
   payments: SalePaymentDto[];
+  /** Who rang it up (sales from the server). */
+  cashier?: PersonRefDto;
+  /** Set once the sale is cancelled (status VOIDED). */
+  voidedAt?: string | null;
+  voidReason?: VoidReason | null;
+  voidNote?: string | null;
+  voidedBy?: PersonRefDto | null;
+}
+
+export interface PersonRefDto {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
+export type VoidReason = "WRONG_ITEMS" | "CUSTOMER_CHANGED_MIND" | "PAYMENT_PROBLEM" | "TRAINING" | "OTHER";
+
+export const VOID_REASONS: VoidReason[] = ["WRONG_ITEMS", "CUSTOMER_CHANGED_MIND", "PAYMENT_PROBLEM", "TRAINING", "OTHER"];
+
+/** Cancels a sale, named by id or (when it may not have synced yet) by its clientId. */
+export interface VoidSaleDto {
+  storeId: string;
+  saleId?: string;
+  saleClientId?: string;
+  reason: VoidReason;
+  note?: string;
+  /** When the cashier cancelled it, for a cancel queued offline. */
+  occurredAt?: string;
 }
 
 /** Seller details frozen when an invoice is issued. */

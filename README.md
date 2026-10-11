@@ -12,6 +12,15 @@ Prisma backend.
 - **POS**: product grid and search, barcode scanning, split payments,
   customers, emailed receipts. Works **offline**: sales are queued on the
   device and sync automatically, exactly once, when the server is back.
+  - **Recent sales** on the till: the store's latest sales, including ones
+    waiting to upload. Reprint a receipt (marked COPY) or **cancel a
+    sale**.
+  - Cancelling needs the VOID_SALE permission (owners and managers by
+    default) and a reason. The stock goes back, reports drop the sale, and
+    a cash sale opens the drawer to hand the money back. It works offline
+    too.
+  - A sale with a return or an invoice, or older than 24 hours, is undone
+    with a return instead.
 - **Documents**:
   - 80 mm receipts with logo and business details
   - **quotes** (slip or A4) printed without checking out

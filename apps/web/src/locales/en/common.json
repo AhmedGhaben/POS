@@ -85,5 +85,12 @@
     "OWNER": "Owner",
     "MANAGER": "Manager",
     "CASHIER": "Cashier"
+  },
+  "voidReasons": {
+    "WRONG_ITEMS": "Wrong items or price",
+    "CUSTOMER_CHANGED_MIND": "Customer changed their mind",
+    "PAYMENT_PROBLEM": "Payment problem",
+    "TRAINING": "Training or test",
+    "OTHER": "Other"
   }
 }

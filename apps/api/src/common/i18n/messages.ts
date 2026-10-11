@@ -141,6 +141,20 @@ const EXACT: Record<string, Translations> = {
     "pt-BR": "As vendas sem internet precisam de um identificador",
   },
   "Invoice not found": { "pt-PT": "Fatura não encontrada", "pt-BR": "Fatura não encontrada" },
+  "Say which sale to cancel": { "pt-PT": "Indique a venda a anular", "pt-BR": "Informe a venda a cancelar" },
+  "This sale was cancelled": { "pt-PT": "Esta venda foi anulada", "pt-BR": "Esta venda foi cancelada" },
+  "This sale has a return, so it can't be cancelled. Use Returns instead.": {
+    "pt-PT": "Esta venda tem uma devolução, por isso não pode ser anulada. Use as Devoluções.",
+    "pt-BR": "Esta venda tem uma devolução, por isso não pode ser cancelada. Use as Devoluções.",
+  },
+  "An invoice was issued for this sale, so it can't be cancelled": {
+    "pt-PT": "Foi emitida uma fatura para esta venda, por isso não pode ser anulada",
+    "pt-BR": "Foi emitida uma fatura para esta venda, por isso não pode ser cancelada",
+  },
+  "Sales older than 24 hours can't be cancelled. Use Returns instead.": {
+    "pt-PT": "As vendas com mais de 24 horas não podem ser anuladas. Use as Devoluções.",
+    "pt-BR": "Vendas com mais de 24 horas não podem ser canceladas. Use as Devoluções.",
+  },
   "Buyer name is required": {
     "pt-PT": "O nome do comprador é obrigatório",
     "pt-BR": "O nome do comprador é obrigatório",

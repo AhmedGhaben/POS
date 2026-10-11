@@ -85,5 +85,12 @@
     "OWNER": "Proprietário",
     "MANAGER": "Gerente",
     "CASHIER": "Operador de caixa"
+  },
+  "voidReasons": {
+    "WRONG_ITEMS": "Itens ou preço errados",
+    "CUSTOMER_CHANGED_MIND": "O cliente desistiu",
+    "PAYMENT_PROBLEM": "Problema no pagamento",
+    "TRAINING": "Treinamento ou teste",
+    "OTHER": "Outro"
   }
 }

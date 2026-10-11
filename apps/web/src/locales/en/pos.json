@@ -50,7 +50,8 @@
     "charge": "Charge {{amount}}",
     "printQuote": "Print quote",
     "clearCart": "Clear cart",
-    "openDrawer": "Open drawer"
+    "openDrawer": "Open drawer",
+    "recentSales": "Recent sales"
   },
   "complete": {
     "title": "Sale complete",
@@ -94,5 +95,31 @@
     "failed_one": "{{count}} sale failed to sync",
     "failed_other": "{{count}} sales failed to sync",
     "retry": "Retry sync"
+  },
+  "recent": {
+    "title": "Recent sales",
+    "description": "This store's latest sales, including any waiting to upload.",
+    "localOnly": "Can't reach the server. Showing the sales this till knows about.",
+    "empty": "No sales yet.",
+    "you": "you",
+    "cancelled": "Cancelled",
+    "waiting": "Waiting to upload",
+    "reprint": "Reprint receipt",
+    "cancel": "Cancel sale"
+  },
+  "void": {
+    "title": "Cancel sale {{number}}?",
+    "description": "{{amount}}. The sale comes out of the reports and its stock goes back on the shelf. This is recorded with your name.",
+    "reason": "Reason",
+    "note": "Note",
+    "noteOptional": "Note (optional)",
+    "keep": "Keep sale",
+    "confirm": "Cancel sale",
+    "cancelling": "Cancelling…",
+    "failed": "Couldn't cancel the sale",
+    "done": "Sale cancelled",
+    "doneOffline": "Sale cancelled. It will sync when the till is back online.",
+    "handBack": "Hand back {{amount}} in cash.",
+    "printSlip": "Print cancellation slip"
   }
 }

@@ -24,6 +24,9 @@ export class ReturnsService {
     if (!sale || sale.storeId !== dto.storeId) {
       throw new NotFoundException("Sale not found for this store");
     }
+    if (sale.status === "VOIDED") {
+      throw new BadRequestException("This sale was cancelled");
+    }
 
     const alreadyReturned = new Map<string, number>();
     for (const ret of sale.returns) {

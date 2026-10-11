@@ -10,7 +10,9 @@
     "number": "Receipt #{{number}}",
     "tendered": "Tendered",
     "changeDue": "Change due",
-    "thankYou": "Thank you!"
+    "thankYou": "Thank you!",
+    "copy": "COPY",
+    "cancelled": "CANCELLED"
   },
   "quote": {
     "slipTitle": "QUOTE",

@@ -67,7 +67,8 @@
     "labels": {
       "VIEW_COST_PRICE": "View cost price & margin",
       "PROCESS_RETURN": "Process returns / refunds",
-      "OPEN_DRAWER": "Open the cash drawer without a sale"
+      "OPEN_DRAWER": "Open the cash drawer without a sale",
+      "VOID_SALE": "Cancel sales"
     }
   }
 }

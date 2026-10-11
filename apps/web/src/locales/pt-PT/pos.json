@@ -50,7 +50,8 @@
     "charge": "Cobrar {{amount}}",
     "printQuote": "Imprimir orçamento",
     "clearCart": "Limpar carrinho",
-    "openDrawer": "Abrir gaveta"
+    "openDrawer": "Abrir gaveta",
+    "recentSales": "Vendas recentes"
   },
   "complete": {
     "title": "Venda concluída",
@@ -94,5 +95,31 @@
     "failed_one": "{{count}} venda não sincronizou",
     "failed_other": "{{count}} vendas não sincronizaram",
     "retry": "Sincronizar agora"
+  },
+  "recent": {
+    "title": "Vendas recentes",
+    "description": "As últimas vendas desta loja, incluindo as que aguardam envio.",
+    "localOnly": "Sem ligação ao servidor. A mostrar as vendas que esta caixa conhece.",
+    "empty": "Ainda não há vendas.",
+    "you": "você",
+    "cancelled": "Anulada",
+    "waiting": "A aguardar envio",
+    "reprint": "Reimprimir talão",
+    "cancel": "Anular venda"
+  },
+  "void": {
+    "title": "Anular a venda {{number}}?",
+    "description": "{{amount}}. A venda sai dos relatórios e o stock volta à prateleira. Fica registado com o seu nome.",
+    "reason": "Motivo",
+    "note": "Nota",
+    "noteOptional": "Nota (opcional)",
+    "keep": "Manter venda",
+    "confirm": "Anular venda",
+    "cancelling": "A anular…",
+    "failed": "Não foi possível anular a venda",
+    "done": "Venda anulada",
+    "doneOffline": "Venda anulada. Será sincronizada quando a caixa voltar a ter ligação.",
+    "handBack": "Devolva {{amount}} em dinheiro.",
+    "printSlip": "Imprimir comprovativo de anulação"
   }
 }
