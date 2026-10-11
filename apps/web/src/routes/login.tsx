@@ -8,6 +8,9 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { useAuthStore } from "@/features/auth/store";
 import { login } from "@/features/auth/api";
 import { ApiError } from "@/lib/api-client";
+import { useDeviceStore } from "@/features/desktop/bridge";
+import { useTillMode } from "@/features/till/lock-store";
+import { PinSignIn } from "@/features/till/components/PinSignIn";
 
 export function LoginPage() {
   const { t } = useTranslation("auth");
@@ -22,6 +25,12 @@ export function LoginPage() {
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  // On a till with PINs, the name buttons come first.
+  const tillMode = useTillMode();
+  const [useEmail, setUseEmail] = React.useState(false);
+  React.useEffect(() => {
+    void useDeviceStore.getState().load();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,6 +60,14 @@ export function LoginPage() {
         </>
       }
     >
+      {tillMode && !useEmail ? (
+        <div className="space-y-4">
+          <PinSignIn onSignedIn={(user) => navigate(user.role === "CASHIER" ? "/pos" : "/dashboard")} />
+          <Button type="button" variant="link" className="w-full" onClick={() => setUseEmail(true)}>
+            {t("pin.useEmail")}
+          </Button>
+        </div>
+      ) : (
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">{t("fields.email")}</Label>
@@ -83,7 +100,13 @@ export function LoginPage() {
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? t("login.submitting") : t("login.submit")}
         </Button>
+        {tillMode && (
+          <Button type="button" variant="link" className="w-full" onClick={() => setUseEmail(false)}>
+            {t("pin.usePin")}
+          </Button>
+        )}
       </form>
+      )}
     </AuthLayout>
   );
 }

@@ -50,7 +50,7 @@ test.describe.serial("A0: desktop shell, auth and offline", () => {
     expect(env).toEqual({
       require: "undefined",
       process: "undefined",
-      bridge: ["app", "display", "drawer", "hardware", "log", "printers", "printing", "settings", "terminal", "updates"],
+      bridge: ["app", "display", "drawer", "hardware", "log", "pin", "printers", "printing", "settings", "staff", "terminal", "updates"],
     });
   });
 

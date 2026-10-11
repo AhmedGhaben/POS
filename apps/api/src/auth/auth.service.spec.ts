@@ -88,7 +88,7 @@ function buildService(prisma: ReturnType<typeof buildPrismaMock>) {
     sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
     sendEmailVerificationEmail: jest.fn().mockResolvedValue(undefined),
   };
-  const service = new AuthService(prisma as any, jwt as any, config as any, mail as any);
+  const service = new AuthService(prisma as any, jwt as any, config as any, mail as any, {} as any);
   return { service, jwt, mail };
 }
 

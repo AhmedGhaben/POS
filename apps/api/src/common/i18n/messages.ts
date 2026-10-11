@@ -38,6 +38,22 @@ const EXACT: Record<string, Translations> = {
     "pt-PT": "Este link de verificação é inválido ou expirou",
     "pt-BR": "Este link de verificação é inválido ou expirou",
   },
+  "Wrong PIN": { "pt-PT": "PIN errado", "pt-BR": "PIN incorreto" },
+  "Wrong password": { "pt-PT": "Palavra-passe errada", "pt-BR": "Senha incorreta" },
+  "A PIN is 4 to 6 digits": { "pt-PT": "O PIN tem 4 a 6 algarismos", "pt-BR": "O PIN tem de 4 a 6 dígitos" },
+  "Too many wrong PINs. Try again in a few minutes.": {
+    "pt-PT": "Demasiados PIN errados. Tente novamente daqui a alguns minutos.",
+    "pt-BR": "Muitos PINs incorretos. Tente de novo em alguns minutos.",
+  },
+  "Sign in again with your PIN": { "pt-PT": "Inicie sessão novamente com o seu PIN", "pt-BR": "Entre novamente com o seu PIN" },
+  "You don't have access to this till's store": {
+    "pt-PT": "Não tem acesso à loja desta caixa",
+    "pt-BR": "Você não tem acesso à loja deste caixa",
+  },
+  "This till isn't registered any more": {
+    "pt-PT": "Esta caixa já não está registada",
+    "pt-BR": "Este caixa não está mais registrado",
+  },
   "User not found": { "pt-PT": "Utilizador não encontrado", "pt-BR": "Usuário não encontrado" },
   "Unsupported language": { "pt-PT": "Idioma não suportado", "pt-BR": "Idioma não suportado" },
   // Staff

@@ -171,6 +171,20 @@ it they're printed to the API console, links included.
   - Every opening is recorded (offline too) and listed on the **Cash
     drawer** back-office page.
   - Optional ESC/POS paper cut after receipts.
+- **PIN sign-in and quick cashier switching.** Staff tap their name on the
+  till and type a 4-6 digit PIN. **Lock till** (and optional auto-lock when
+  idle) hands the till to the next person; it works offline too.
+  - Registering a till gives it a secret key. The Windows app keeps it
+    (encrypted with DPAPI), sends it with every request, and the page
+    never sees it. Older tills get theirs when a manager next signs in.
+  - The owner sets staff PINs on the Employees page; anyone can set their
+    own (account menu or This device). Five wrong PINs lock that person
+    for 5 minutes.
+  - Offline, the till checks PINs against its saved staff list and the
+    person works with their saved permissions. Their server session
+    follows when the server is back.
+  - Queued sales, cancels and drawer openings upload with the till's key
+    and are recorded under whoever was on the till.
 - **Customer display.** Either:
   - a 2×20 **pole display** (COM port or network; Epson, CD5220 or plain
     commands), or

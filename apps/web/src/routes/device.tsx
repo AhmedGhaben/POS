@@ -22,6 +22,7 @@ import { listOutbox } from "@/lib/offline-db";
 import { ApiError } from "@/lib/api-client";
 import { LanguagePicker } from "@/components/layout/LanguagePicker";
 import { currentLanguage } from "@/i18n";
+import { TillSignInSection } from "@/features/till/components/TillSignInSection";
 
 function formatTime(iso: string | null | undefined, t: TFunction<"device">) {
   if (!iso) return t("never");
@@ -336,6 +337,7 @@ export function DevicePage() {
         </CardContent>
       </Card>
       {isDesktop && <TerminalSection />}
+      {isDesktop && <TillSignInSection />}
       <SyncSection />
       {isDesktop && <PrintersSection />}
       {isDesktop && <DrawerSection />}

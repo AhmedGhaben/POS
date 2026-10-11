@@ -161,6 +161,12 @@ model User {
   isActive        Boolean   @default(true)
   /// The language this person's screens are in; null until they choose (en, pt-PT, pt-BR).
   language        String?
+  /// 4-6 digit PIN for signing in on a registered till, as
+  /// "pbkdf2-sha256$<rounds>$<salt>$<hash>"; null = no PIN. Tills keep a copy
+  /// to check it offline. Too many wrong tries lock it for a few minutes.
+  pinHash         String?
+  pinFailedCount  Int       @default(0)
+  pinLockedUntil  DateTime?
   /// Null until the user clicks the link in their verification email.
   emailVerifiedAt DateTime?
   createdAt       DateTime  @default(now())
@@ -269,18 +275,23 @@ model AuditLog {
 
 /// A physical till running the desktop app ("Front Till", POS-001).
 model Terminal {
-  id         String    @id @default(cuid())
-  businessId String
-  business   Business  @relation(fields: [businessId], references: [id])
-  storeId    String
-  store      Store     @relation(fields: [storeId], references: [id])
-  name       String
+  id          String    @id @default(cuid())
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id])
+  storeId     String
+  store       Store     @relation(fields: [storeId], references: [id])
+  name        String
   /// Per-business running number behind the code (POS-001, POS-002, …).
-  sequence   Int
-  code       String
-  isActive   Boolean   @default(true)
-  createdAt  DateTime  @default(now())
-  lastSeenAt DateTime?
+  sequence    Int
+  code        String
+  isActive    Boolean   @default(true)
+  /// sha256 of the till's secret key. The Windows app sends the key with
+  /// every request (X-Terminal-Key); it lets cashiers sign in with a PIN and
+  /// lets queued work upload under whoever did it.
+  keyHash     String?   @unique
+  keyIssuedAt DateTime?
+  createdAt   DateTime  @default(now())
+  lastSeenAt  DateTime?
 
   sales        Sale[]
   drawerEvents DrawerEvent[]

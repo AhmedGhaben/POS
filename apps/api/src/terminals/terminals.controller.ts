@@ -1,4 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Public } from "../common/decorators/public.decorator";
+import { CurrentTerminal, TerminalKeyGuard } from "../till/terminal-key.guard";
+import type { TillTerminal } from "../till/till-auth.service";
 import { Role } from "@prisma/client";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -25,6 +28,22 @@ export class TerminalsController {
   @Roles(Role.OWNER, Role.MANAGER)
   findAll(@CurrentUser() user: AuthenticatedUser, @Query("storeId") storeId?: string) {
     return this.terminalsService.findAll(user, storeId);
+  }
+
+  /** The till's PIN sign-in list (till key, nobody signed in). */
+  @Public()
+  @UseGuards(TerminalKeyGuard)
+  @Get("me/staff")
+  staff(@CurrentTerminal() terminal: TillTerminal) {
+    return this.terminalsService.staffForTill(terminal);
+  }
+
+  /** A new key for the till (the old one stops working). */
+  @Post(":terminalId/key")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  rotateKey(@CurrentUser() user: AuthenticatedUser, @Param("terminalId") id: string) {
+    return this.terminalsService.rotateKey(user, id);
   }
 
   /** Any signed-in user of the business: the till shows its own name. */

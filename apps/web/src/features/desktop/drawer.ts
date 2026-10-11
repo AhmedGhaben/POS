@@ -56,6 +56,7 @@ export async function openCashDrawer(options: OpenDrawerOptions): Promise<boolea
           error: result.ok ? undefined : result.error.slice(0, 300),
           offline: isWorkingOffline(),
           occurredAt,
+          actingUserId: useAuthStore.getState().user?.id,
         },
       });
       await useOfflineStore.getState().refreshPendingCount();

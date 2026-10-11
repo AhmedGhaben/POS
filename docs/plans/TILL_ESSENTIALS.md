@@ -26,6 +26,21 @@ useful on its own. All of this comes before launch item #4 (deploy).
   - Tests: API e2e `discounts.e2e-spec.ts` (7), web unit
     `pricing.test.ts` (7), API unit `pricing.spec.ts`, desktop e2e
     `till-discounts.spec.ts` (4).
+- **Part 3 (till key, PIN sign-in) is built** (2026-10-11). Differences
+  from the plan:
+  - The key never passes through the page at all. The Windows app's API
+    forwarder takes it out of the `POST /terminals` and
+    `POST /terminals/:id/key` answers (`apps/desktop/src/till.ts`).
+  - Only the owner sets other people's PINs, like logins and passwords.
+    Anyone sets their own with their password.
+  - A PIN sign-in while offline removes the previous person's refresh
+    cookie, so their session can't be picked up by mistake.
+  - Till uploads: on `@TillUpload()` routes (sales, cancels, drawer
+    openings), the till's key plus `actingUserId` stands in for a session
+    (`apps/api/src/common/guards/jwt-auth.guard.ts`).
+  - Tests: API e2e `till-pin.e2e-spec.ts` (10), API unit `pin.spec.ts`,
+    desktop unit `pin-check.test.ts`, desktop e2e `till-pin.spec.ts`
+    (4).
 
 **Why:** the app works end to end, but a real shop needs these on day one:
 - cashiers make mistakes and need to cancel a sale

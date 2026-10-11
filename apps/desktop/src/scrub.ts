@@ -7,7 +7,7 @@ const SECRET_PATTERNS: [RegExp, string][] = [
   [/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, "Bearer [redacted]"],
   [/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, "[jwt]"],
   [
-    /("?(?:password|accessToken|refreshToken|refresh_token|token|authorization|cookie)"?\s*[:=]\s*)("[^"]*"|[^\s,;}&]+)/gi,
+    /("?(?:password|accessToken|refreshToken|refresh_token|token|authorization|cookie|pin|terminalKey|x-terminal-key)"?\s*[:=]\s*)("[^"]*"|[^\s,;}&]+)/gi,
     "$1[redacted]",
   ],
 ];

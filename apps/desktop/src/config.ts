@@ -138,6 +138,16 @@ const configSchema = z.object({
   serverUrl: z.string().url().optional().catch(undefined),
   /** This till, once registered with the server. */
   terminal: terminalSchema.nullable().optional().catch(undefined),
+  /** The till's secret key, protected with DPAPI (see till.ts). */
+  terminalKey: z.string().max(2000).nullable().optional().catch(undefined),
+  /** Someone signed in with their PIN while offline; the server session follows. */
+  pinResume: z
+    .object({ userId: z.string().min(1).max(64), verifiedAt: z.string().datetime() })
+    .nullable()
+    .optional()
+    .catch(undefined),
+  /** Lock the till after this many idle minutes (0 = never). */
+  autoLockMinutes: z.number().int().min(0).max(120).optional().catch(undefined),
   /** Fullscreen till mode with no window frame. */
   kiosk: z.boolean().optional().catch(undefined),
   startWithWindows: z.boolean().optional().catch(undefined),
@@ -155,6 +165,7 @@ export const settingsPatchSchema = z
   .object({
     kiosk: z.boolean(),
     startWithWindows: z.boolean(),
+    autoLockMinutes: z.number().int().min(0).max(120),
   })
   .partial()
   .strict();

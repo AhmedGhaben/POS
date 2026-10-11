@@ -48,6 +48,18 @@ function reportServerStatus(reachable: boolean) {
 
 let refreshPromise: Promise<string | null> | null = null;
 
+type OfflineSessionResume = () => Promise<"resumed" | "unreachable" | "rejected">;
+let resumeOfflineSession: OfflineSessionResume | null = null;
+
+/**
+ * Set by features/till/session.ts: how to get a server session for someone
+ * who signed in with a PIN while offline. Their refresh cookie doesn't
+ * exist (or is someone else's), so a 401 must not try a refresh.
+ */
+export function setOfflineSessionResume(fn: OfflineSessionResume) {
+  resumeOfflineSession = fn;
+}
+
 async function refreshAccessToken(): Promise<string | null> {
   if (!refreshPromise) {
     refreshPromise = fetch(`${BASE_URL}/auth/refresh`, {
@@ -99,7 +111,11 @@ async function request<T>(path: string, options: RequestOptions = {}, isRetry = 
   }
   reportServerStatus(!SERVER_DOWN_STATUSES.has(res.status));
 
-  if (res.status === 401 && !skipAuth && !isRetry) {
+  if (res.status === 401 && !skipAuth && !isRetry && useAuthStore.getState().offline && resumeOfflineSession) {
+    const outcome = await resumeOfflineSession();
+    if (outcome === "resumed") return request<T>(path, options, true);
+    if (outcome === "unreachable") throw new TypeError("Server unreachable");
+  } else if (res.status === 401 && !skipAuth && !isRetry) {
     const newToken = await refreshAccessToken();
     if (newToken) {
       useAuthStore.getState().setAccessToken(newToken);

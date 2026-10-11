@@ -166,5 +166,19 @@
     "screenOpened": "Tela do cliente aberta",
     "testFailed": "O teste da tela falhou: {{error}}",
     "saveFailed": "Não foi possível salvar as configurações da tela. Confira os valores."
+  },
+  "pinSignIn": {
+    "title": "Entrada com PIN",
+    "description": "Os funcionários tocam no nome e digitam o PIN. Funciona sem internet, e cada venda fica registrada em nome de quem está no caixa.",
+    "registerFirst": "Registre este caixa primeiro.",
+    "noKey": "Concluindo a configuração: um proprietário ou gerente precisa entrar neste caixa uma vez, com internet.",
+    "noPins": "Pronto. Ninguém tem PIN ainda: defina na página Funcionários, ou defina o seu abaixo.",
+    "ready_one": "Pronto: {{count}} pessoa pode entrar aqui com PIN.",
+    "ready_other": "Pronto: {{count}} pessoas podem entrar aqui com PIN.",
+    "autoLock": "Bloquear o caixa quando ocioso",
+    "never": "Nunca",
+    "minutes_one": "Depois de {{count}} minuto",
+    "minutes_other": "Depois de {{count}} minutos",
+    "setMyPin": "Definir meu PIN"
   }
 }

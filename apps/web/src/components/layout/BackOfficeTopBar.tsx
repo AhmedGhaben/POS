@@ -1,5 +1,7 @@
 import * as React from "react";
-import { Check, Moon, Sun, LogOut, Menu, User as UserIcon } from "lucide-react";
+import { Check, KeyRound, Lock, Moon, Sun, LogOut, Menu, User as UserIcon } from "lucide-react";
+import { useLockStore, useTillMode } from "@/features/till/lock-store";
+import { SetPinDialog } from "@/features/till/components/SetPinDialog";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,9 @@ export function BackOfficeTopBar() {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
+  const [pinOpen, setPinOpen] = React.useState(false);
+  const tillMode = useTillMode();
+  const lock = useLockStore((s) => s.lock);
 
   async function handleLogout() {
     await logout().catch(() => {});
@@ -81,12 +86,23 @@ export function BackOfficeTopBar() {
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setPinOpen(true)}>
+              <KeyRound className="h-4 w-4" />
+              {t("shell.setMyPin")}
+            </DropdownMenuItem>
+            {tillMode && (
+              <DropdownMenuItem onClick={lock}>
+                <Lock className="h-4 w-4" />
+                {t("shell.lock")}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="h-4 w-4" />
               {t("shell.logOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <SetPinDialog open={pinOpen} onOpenChange={setPinOpen} />
       </div>
     </header>
   );

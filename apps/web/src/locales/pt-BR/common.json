@@ -29,7 +29,9 @@
     "selectStore": "Selecionar loja",
     "offlineReady": "Aplicativo pronto para funcionar sem internet",
     "newVersion": "Uma nova versão está disponível",
-    "reload": "Recarregar"
+    "reload": "Recarregar",
+    "lock": "Bloquear caixa",
+    "setMyPin": "Definir meu PIN"
   },
   "language": {
     "label": "Idioma"

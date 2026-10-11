@@ -16,6 +16,9 @@ const REDACTED_KEYS = new Set([
   "refreshToken",
   "accessToken",
   "tokenHash",
+  "pin",
+  "pinHash",
+  "key",
 ]);
 
 function redact(body: unknown): Prisma.InputJsonValue | undefined {

@@ -31,4 +31,9 @@ export class VoidSaleDto {
   @IsOptional()
   @IsISO8601()
   occurredAt?: string;
+
+  /** Till uploads: who was on the till (see @TillUpload). */
+  @IsOptional()
+  @IsString()
+  actingUserId?: string;
 }

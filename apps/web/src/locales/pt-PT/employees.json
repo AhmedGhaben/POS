@@ -58,7 +58,13 @@
     "reactivate": "Reativar acesso",
     "deactivated": "{{email}} já não pode iniciar sessão",
     "reactivated": "{{email}} pode voltar a iniciar sessão",
-    "updated": "Acesso atualizado"
+    "updated": "Acesso atualizado",
+    "pin": "PIN da caixa",
+    "hasPin": "Tem PIN para iniciar sessão nas caixas.",
+    "noPin": "Ainda sem PIN.",
+    "pinHint": "Com um PIN, toca no seu nome numa caixa registada e escreve-o, mesmo sem internet.",
+    "setPin": "Definir PIN",
+    "changePin": "Alterar ou retirar o PIN"
   },
   "permissions": {
     "allowed": "Permitido",

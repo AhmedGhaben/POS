@@ -98,7 +98,30 @@ export interface DesktopSettings {
   serverUrl: string | null;
   kiosk: boolean;
   startWithWindows: boolean;
+  /** Absent before 0.2.3. */
+  autoLockMinutes?: number;
 }
+
+/** Someone who can sign in on this till with a PIN. */
+export interface TillStaffMember {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role: "OWNER" | "MANAGER" | "CASHIER";
+}
+
+export type PinSignInResult =
+  | { ok: true; mode: "online"; session: unknown }
+  | {
+      ok: true;
+      mode: "offline";
+      user: TillStaffMember & { language?: string | null; permissions: Record<string, boolean> };
+    }
+  | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user" | "not-registered"; error: string };
+
+export type PinResumeResult =
+  | { ok: true; session: unknown }
+  | { ok: false; code: "unreachable" | "rejected" | "nothing"; error?: string };
 
 /**
  * What the Windows app's preload exposes (apps/desktop/src/preload.ts).
@@ -111,12 +134,23 @@ export interface PosDesktopApi {
   };
   settings: {
     get(): Promise<DesktopSettings>;
-    update(patch: Partial<Pick<DesktopSettings, "kiosk" | "startWithWindows">>): Promise<DesktopSettings>;
+    update(patch: Partial<Pick<DesktopSettings, "kiosk" | "startWithWindows" | "autoLockMinutes">>): Promise<DesktopSettings>;
     setServer(url: string): Promise<{ ok: true } | { ok: false; error: string }>;
   };
   terminal: {
     get(): Promise<DesktopTerminal | null>;
     set(terminal: DesktopTerminal | null): Promise<void>;
+    /** Absent before 0.2.3. */
+    hasKey?(): Promise<boolean>;
+  };
+  /** PIN sign-in (absent before 0.2.3). */
+  staff?: {
+    list(): Promise<TillStaffMember[]>;
+    refresh(): Promise<{ ok: boolean; count: number }>;
+  };
+  pin?: {
+    signIn(userId: string, pin: string): Promise<PinSignInResult>;
+    resume(userId: string): Promise<PinResumeResult>;
   };
   printers: {
     list(): Promise<DesktopPrinter[]>;
@@ -174,6 +208,11 @@ export function desktopLog(level: "info" | "warn" | "error", message: string) {
 
 interface DeviceState {
   terminal: DesktopTerminal | null;
+  /** This till has its key, so PIN sign-in can work. */
+  hasKey: boolean;
+  /** Who can sign in here with a PIN (saved on the till). */
+  staff: TillStaffMember[];
+  autoLockMinutes: number;
   /** Null in the browser, where printing goes through the print dialog. */
   printing: PrintingSettings | null;
   drawer: DrawerSettings | null;
@@ -185,12 +224,18 @@ interface DeviceState {
   setPrinting: (printing: PrintingSettings) => Promise<void>;
   setDrawer: (drawer: DrawerSettings) => Promise<void>;
   setDisplay: (display: DisplaySettings) => Promise<void>;
+  /** Re-reads the key and the staff list, fetching a fresh list when online. */
+  refreshTill: (fetch?: boolean) => Promise<void>;
+  setAutoLockMinutes: (minutes: number) => Promise<void>;
 }
 
 let unsubscribeUpdates: (() => void) | null = null;
 
-export const useDeviceStore = create<DeviceState>((set) => ({
+export const useDeviceStore = create<DeviceState>((set, get) => ({
   terminal: null,
+  hasKey: false,
+  staff: [],
+  autoLockMinutes: 0,
   printing: null,
   drawer: null,
   display: null,
@@ -198,19 +243,33 @@ export const useDeviceStore = create<DeviceState>((set) => ({
   loaded: !isDesktop,
   load: async () => {
     if (!desktop) return;
-    const [terminal, printing, drawer, display, update] = await Promise.all([
+    const [terminal, printing, drawer, display, update, settings] = await Promise.all([
       desktop.terminal.get(),
       desktop.printing.get(),
       desktop.drawer.get(),
       desktop.display.get(),
       desktop.updates.status(),
+      desktop.settings.get(),
     ]);
-    set({ terminal, printing, drawer, display, update, loaded: true });
+    set({ terminal, printing, drawer, display, update, autoLockMinutes: settings.autoLockMinutes ?? 0, loaded: true });
+    await get().refreshTill(false);
     if (!unsubscribeUpdates) unsubscribeUpdates = desktop.updates.onStatus((s) => set({ update: s }));
   },
   setTerminal: async (terminal) => {
     await desktop?.terminal.set(terminal);
     set({ terminal });
+    await get().refreshTill(true);
+  },
+  refreshTill: async (fetch = true) => {
+    if (!desktop?.terminal.hasKey || !desktop.staff) return;
+    if (fetch) await desktop.staff.refresh().catch(() => undefined);
+    const [hasKey, staff] = await Promise.all([desktop.terminal.hasKey(), desktop.staff.list()]);
+    set({ hasKey, staff });
+  },
+  setAutoLockMinutes: async (minutes) => {
+    if (!desktop) return;
+    const settings = await desktop.settings.update({ autoLockMinutes: minutes });
+    set({ autoLockMinutes: settings.autoLockMinutes ?? 0 });
   },
   setPrinting: async (printing) => {
     if (!desktop) return;

@@ -7,6 +7,7 @@ import { StoreAccessGuard } from "../common/guards/store-access.guard";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { CreateDrawerEventDto, ListDrawerEventsQuery } from "./dto/drawer-event.dto";
 import { DrawerEventsService } from "./drawer-events.service";
+import { TillUpload } from "../till/terminal-key.guard";
 
 @Controller("drawer-events")
 export class DrawerEventsController {
@@ -14,6 +15,7 @@ export class DrawerEventsController {
 
   /** Any signed-in user at a till they have store access to. */
   @Post()
+  @TillUpload()
   @UseGuards(StoreAccessGuard)
   record(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateDrawerEventDto) {
     return this.drawerEvents.record(user, dto);

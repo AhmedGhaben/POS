@@ -87,6 +87,11 @@ export class CreateSaleDto {
   @IsString()
   terminalId?: string;
 
+  /** Till uploads: who was on the till (see @TillUpload). */
+  @IsOptional()
+  @IsString()
+  actingUserId?: string;
+
   @IsOptional()
   @ValidateNested()
   @Type(() => OfflineSaleInfoDto)

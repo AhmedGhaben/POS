@@ -29,7 +29,9 @@
     "selectStore": "Select store",
     "offlineReady": "App ready to work offline",
     "newVersion": "A new version is available",
-    "reload": "Reload"
+    "reload": "Reload",
+    "lock": "Lock till",
+    "setMyPin": "Set my PIN"
   },
   "language": {
     "label": "Language"

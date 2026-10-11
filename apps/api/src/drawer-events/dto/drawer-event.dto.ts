@@ -58,6 +58,11 @@ export class CreateDrawerEventDto {
 
   @IsISO8601()
   occurredAt!: string;
+
+  /** Till uploads: who was on the till (see @TillUpload). */
+  @IsOptional()
+  @IsString()
+  actingUserId?: string;
 }
 
 export class ListDrawerEventsQuery {

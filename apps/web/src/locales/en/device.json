@@ -166,5 +166,19 @@
     "screenOpened": "Customer screen opened",
     "testFailed": "Display test failed: {{error}}",
     "saveFailed": "Couldn't save the display settings. Check the values."
+  },
+  "pinSignIn": {
+    "title": "PIN sign-in",
+    "description": "Staff tap their name and type their PIN. It works offline, and every sale is recorded under whoever is on the till.",
+    "registerFirst": "Register this till first.",
+    "noKey": "Finishing setup: an owner or manager needs to sign in on this till once while it's online.",
+    "noPins": "Ready. Nobody has a PIN yet: set them on the Employees page, or set your own below.",
+    "ready_one": "Ready: {{count}} person can sign in here with a PIN.",
+    "ready_other": "Ready: {{count}} people can sign in here with a PIN.",
+    "autoLock": "Lock the till when idle",
+    "never": "Never",
+    "minutes_one": "After {{count}} minute",
+    "minutes_other": "After {{count}} minutes",
+    "setMyPin": "Set my PIN"
   }
 }

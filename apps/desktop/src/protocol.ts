@@ -5,6 +5,7 @@ import log from "electron-log/main";
 import { getConfig } from "./config";
 import { APP_HOST, APP_ORIGIN, APP_SCHEME } from "./origin";
 import { takePrintPage } from "./printing";
+import { addKeyHeader, isKeyResponse, takeKeyFromBody } from "./till";
 
 export { APP_ORIGIN };
 
@@ -110,7 +111,8 @@ async function forwardToServer(request: Request, url: URL): Promise<Response> {
   const target = `${serverUrl}${url.pathname.slice("/api".length)}${url.search}`;
 
   const headers = new Headers(request.headers);
-  for (const h of ["origin", "referer", "cookie", "host"]) headers.delete(h);
+  for (const h of ["origin", "referer", "cookie", "host", "x-terminal-key"]) headers.delete(h);
+  addKeyHeader(headers);
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
   let res: Response;
@@ -130,6 +132,13 @@ async function forwardToServer(request: Request, url: URL): Promise<Response> {
 
   const outHeaders = new Headers(res.headers);
   outHeaders.delete("set-cookie");
+  const apiPath = url.pathname.slice("/api".length);
+  if (res.ok && isKeyResponse(request.method, apiPath)) {
+    // The till's new key stays in this process; the page gets the rest.
+    const body = takeKeyFromBody(await res.text());
+    outHeaders.delete("content-length");
+    return new Response(body, { status: res.status, statusText: res.statusText, headers: outHeaders });
+  }
   return new Response(NULL_BODY_STATUSES.has(res.status) ? null : res.body, {
     status: res.status,
     statusText: res.statusText,

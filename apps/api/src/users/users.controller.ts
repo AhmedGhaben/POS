@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { Roles } from "../common/decorators/roles.decorator";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -8,6 +8,7 @@ import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserPermissionDto } from "./dto/update-user-permission.dto";
 import { UpdateStaffAccessDto } from "./dto/update-staff-access.dto";
 import { UpdateMyLanguageDto } from "./dto/update-my-language.dto";
+import { SetMyPinDto, SetPinDto } from "./dto/set-pin.dto";
 import { UsersService } from "./users.service";
 
 @Controller("users")
@@ -49,6 +50,25 @@ export class UsersController {
   @Patch("me/language")
   setMyLanguage(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateMyLanguageDto) {
     return this.usersService.setLanguage(user.userId, dto.language);
+  }
+
+  /** Your own till PIN, any role (needs your password). */
+  @Put("me/pin")
+  setMyPin(@CurrentUser() user: AuthenticatedUser, @Body() dto: SetMyPinDto) {
+    return this.usersService.setMyPin(user.userId, dto.password, dto.pin);
+  }
+
+  /** Someone's till PIN: the owner sets them, like passwords. */
+  @Put(":userId/pin")
+  @Roles(Role.OWNER)
+  setPin(@CurrentUser() user: AuthenticatedUser, @Param("userId") userId: string, @Body() dto: SetPinDto) {
+    return this.usersService.setPin(user.businessId, userId, dto.pin);
+  }
+
+  @Delete(":userId/pin")
+  @Roles(Role.OWNER)
+  clearPin(@CurrentUser() user: AuthenticatedUser, @Param("userId") userId: string) {
+    return this.usersService.setPin(user.businessId, userId, null);
   }
 
   /** Granting/revoking permissions is authority-escalation — Owner only,

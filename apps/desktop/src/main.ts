@@ -28,6 +28,7 @@ import { listComPorts, stopRawPrintHelper, warmRawPrintHelper } from "./hardware
 import { closePrintWindow, listPrinters, printJob, printJobSchema } from "./printing";
 import { checkForUpdates, getUpdateStatus, initUpdater, installUpdateNow } from "./updater";
 import { APP_ORIGIN, handleAppScheme, registerAppScheme } from "./protocol";
+import { hasTerminalKey, listStaff, pinSignIn, refreshStaff, resumeSession, setTerminalKey } from "./till";
 
 // Tests (and a second profile on one PC) point the app at another data folder.
 if (process.env.POS_DESKTOP_USER_DATA) {
@@ -142,6 +143,7 @@ function publicSettings() {
     serverUrl: config.serverUrl ?? null,
     kiosk: !!config.kiosk,
     startWithWindows: !!config.startWithWindows,
+    autoLockMinutes: config.autoLockMinutes ?? 0,
   };
 }
 
@@ -182,6 +184,7 @@ function registerIpc() {
     const changed = getConfig().serverUrl !== serverUrl;
     // A till registered with one server means nothing to another.
     updateConfig(changed ? { serverUrl, terminal: null } : { serverUrl });
+    if (changed) setTerminalKey(null);
     log.info(`[setup] server set to ${serverUrl}`);
     setTimeout(() => void mainWindow?.loadURL(`${APP_ORIGIN}/`), 0);
     return { ok: true as const };
@@ -191,8 +194,19 @@ function registerIpc() {
 
   handle("terminal:set", z.tuple([terminalSchema.nullable()]), (terminal) => {
     updateConfig({ terminal });
+    if (!terminal) setTerminalKey(null);
     log.info(terminal ? `[terminal] this till is ${terminal.code} "${terminal.name}"` : "[terminal] cleared");
   });
+
+  handle("till:has-key", z.tuple([]), hasTerminalKey);
+
+  handle("staff:list", z.tuple([]), listStaff);
+
+  handle("staff:refresh", z.tuple([]), refreshStaff);
+
+  handle("pin:sign-in", z.tuple([z.string().min(1).max(64), z.string().min(1).max(12)]), pinSignIn);
+
+  handle("pin:resume", z.tuple([z.string().min(1).max(64)]), resumeSession);
 
   handle("printers:list", z.tuple([]), listPrinters);
 

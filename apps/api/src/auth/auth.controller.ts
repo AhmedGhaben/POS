@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res, UnauthorizedException } from "@nestjs/common";
+import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res, UnauthorizedException, UseGuards } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import { Request, Response } from "express";
 import { Public } from "../common/decorators/public.decorator";
@@ -10,6 +10,9 @@ import { RegisterDto } from "./dto/register.dto";
 import { VerifyEmailDto } from "./dto/verify-email.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
+import { PinLoginDto, PinResumeDto } from "./dto/pin-login.dto";
+import { CurrentTerminal, TerminalKeyGuard } from "../till/terminal-key.guard";
+import type { TillTerminal } from "../till/till-auth.service";
 
 const REFRESH_COOKIE = "refresh_token";
 const REFRESH_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -36,6 +39,38 @@ export class AuthController {
 
     this.setRefreshCookie(res, refreshToken);
 
+    return session;
+  }
+
+  /** PIN sign-in on a registered till (its key is required). */
+  @Public()
+  @UseGuards(TerminalKeyGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post("pin")
+  @HttpCode(HttpStatus.OK)
+  async pinLogin(
+    @CurrentTerminal() terminal: TillTerminal,
+    @Body() dto: PinLoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { refreshToken, ...session } = await this.authService.pinLogin(terminal, dto.userId, dto.pin);
+    this.setRefreshCookie(res, refreshToken);
+    return session;
+  }
+
+  /** After an offline PIN check on the till: a session, now the server is back. */
+  @Public()
+  @UseGuards(TerminalKeyGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post("pin/resume")
+  @HttpCode(HttpStatus.OK)
+  async pinResume(
+    @CurrentTerminal() terminal: TillTerminal,
+    @Body() dto: PinResumeDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { refreshToken, ...session } = await this.authService.resumeTillSession(terminal, dto.userId, dto.verifiedAt);
+    this.setRefreshCookie(res, refreshToken);
     return session;
   }
 

@@ -8,9 +8,13 @@ import { fetchMyPermissions, MY_PERMISSIONS_QUERY_KEY } from "@/features/users/a
 import { startSyncEngine } from "@/features/pos/sync";
 import { startCustomerDisplayChannel, useIdleMessageBroadcast } from "@/features/desktop/customer-display";
 import { CommandPalette } from "./CommandPalette";
+import { LockOverlay } from "@/features/till/components/LockOverlay";
+import { useTillUpkeep } from "@/features/till/use-till";
 
 export function ProtectedRoute() {
   const accessToken = useAuthStore((s) => s.accessToken);
+  // Signed in with a PIN while offline: no token until the server is back.
+  const offline = useAuthStore((s) => s.offline);
   const setBusiness = useAuthStore((s) => s.setBusiness);
   // Refresh the cached settings on load, so a change made on another device
   // (or a session persisted before settings existed) catches up. Offline,
@@ -41,21 +45,24 @@ export function ProtectedRoute() {
   React.useEffect(() => startCustomerDisplayChannel(), []);
   useIdleMessageBroadcast();
 
+  useTillUpkeep();
+
   // Background sync of offline sales and the saved catalog, on every page.
-  const signedIn = !!accessToken;
+  const signedIn = !!accessToken || offline;
   React.useEffect(() => {
     if (!signedIn) return;
     void useDeviceStore.getState().load();
     return startSyncEngine();
   }, [signedIn]);
 
-  if (!accessToken) {
+  if (!signedIn) {
     return <Navigate to="/login" replace />;
   }
   return (
     <>
       <CommandPalette />
       <Outlet />
+      <LockOverlay />
     </>
   );
 }

@@ -12,3 +12,8 @@ export function fetchTerminal(id: string) {
 export function updateTerminal(id: string, dto: UpdateTerminalDto) {
   return apiClient.patch<TerminalDto>(`/terminals/${id}`, dto);
 }
+
+/** A new key for this till; the Windows app keeps it (the page never sees it). */
+export function rotateTerminalKey(id: string) {
+  return apiClient.post<TerminalDto>(`/terminals/${id}/key`);
+}

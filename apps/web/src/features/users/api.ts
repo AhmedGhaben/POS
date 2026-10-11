@@ -22,6 +22,20 @@ export function updateStaffAccess(userId: string, dto: UpdateStaffAccessDto) {
   return apiClient.patch<StaffAccessDto>(`/users/${userId}/access`, dto);
 }
 
+/** Someone's till PIN (owner only). */
+export function setUserPin(userId: string, pin: string) {
+  return apiClient.put<{ hasPin: boolean }>(`/users/${userId}/pin`, { pin });
+}
+
+export function clearUserPin(userId: string) {
+  return apiClient.delete<{ hasPin: boolean }>(`/users/${userId}/pin`);
+}
+
+/** Your own till PIN; needs your password. */
+export function setMyPin(pin: string, password: string) {
+  return apiClient.put<{ hasPin: boolean }>("/users/me/pin", { pin, password });
+}
+
 export const MY_PERMISSIONS_QUERY_KEY = ["my-permissions"] as const;
 
 /** The signed-in user's own effective permissions (any role). */

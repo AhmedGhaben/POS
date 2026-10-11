@@ -1,4 +1,5 @@
-import { Moon, Sun, LogOut, LayoutDashboard, MonitorCog, Download } from "lucide-react";
+import { Moon, Sun, LogOut, LayoutDashboard, MonitorCog, Download, Lock } from "lucide-react";
+import { useLockStore, useTillMode } from "@/features/till/lock-store";
 import { useTranslation } from "react-i18next";
 import { useDeviceStore } from "@/features/desktop/bridge";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
@@ -36,6 +37,8 @@ export function PosShell() {
   const role = useAuthStore((s) => s.user?.role);
   const clearSession = useAuthStore((s) => s.clearSession);
   const navigate = useNavigate();
+  const tillMode = useTillMode();
+  const lock = useLockStore((s) => s.lock);
 
   async function handleLogout() {
     await logout().catch(() => {});
@@ -74,6 +77,11 @@ export function PosShell() {
           <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={t("shell.toggleTheme")}>
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
+          {tillMode && (
+            <Button variant="ghost" size="icon" onClick={lock} aria-label={t("shell.lock")} title={t("shell.lock")}>
+              <Lock className="h-4 w-4" />
+            </Button>
+          )}
           <Button variant="ghost" size="icon" onClick={handleLogout} aria-label={t("shell.logOut")}>
             <LogOut className="h-4 w-4" />
           </Button>

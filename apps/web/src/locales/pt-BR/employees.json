@@ -58,7 +58,13 @@
     "reactivate": "Reativar login",
     "deactivated": "{{email}} não pode mais entrar",
     "reactivated": "{{email}} pode entrar novamente",
-    "updated": "Acesso atualizado"
+    "updated": "Acesso atualizado",
+    "pin": "PIN do caixa",
+    "hasPin": "Tem PIN para entrar nos caixas.",
+    "noPin": "Ainda sem PIN.",
+    "pinHint": "Com um PIN, a pessoa toca no nome em um caixa registrado e digita o PIN, mesmo sem internet.",
+    "setPin": "Definir PIN",
+    "changePin": "Alterar ou remover o PIN"
   },
   "permissions": {
     "allowed": "Permitido",

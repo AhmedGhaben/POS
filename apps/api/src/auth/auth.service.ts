@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   UnauthorizedException,
@@ -17,11 +18,18 @@ import { generateOpaqueToken, hashToken } from "../common/utils/tokens";
 import { normalizeEmail } from "../common/transforms/normalize-email";
 import { RegisterDto } from "./dto/register.dto";
 import { BusinessSettings, toBusinessSettings } from "../businesses/businesses.service";
+import { verifyPin } from "../common/utils/pin";
+import { TillAuthService, type TillTerminal } from "../till/till-auth.service";
 
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 /** Same cost as UsersService and resetPassword. */
 const SALT_ROUNDS = 12;
+/** Wrong PINs in a row before that person's PIN is locked for PIN_LOCK_MS. */
+const PIN_MAX_TRIES = 5;
+const PIN_LOCK_MS = 5 * 60 * 1000;
+/** How long after an offline PIN check the till may pick the session up. */
+const PIN_RESUME_WINDOW_MS = 12 * 60 * 60 * 1000;
 
 interface LoginResult {
   accessToken: string;
@@ -51,6 +59,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly mail: MailService,
+    private readonly till: TillAuthService,
   ) {}
 
   private signAccessToken(user: { id: string; businessId: string; role: Role }): string {
@@ -88,6 +97,56 @@ export class AuthService {
     }
 
     return this.buildSession(user);
+  }
+
+  /**
+   * Signs someone in on a registered till with their PIN. Five wrong PINs in
+   * a row lock that person's PIN for a few minutes.
+   */
+  async pinLogin(terminal: TillTerminal, userId: string, pin: string): Promise<LoginResult> {
+    const user = await this.tillUser(terminal, userId);
+    if (user.pinLockedUntil && user.pinLockedUntil > new Date()) {
+      throw new ForbiddenException("Too many wrong PINs. Try again in a few minutes.");
+    }
+    if (!(await verifyPin(pin, user.pinHash!))) {
+      const failed = user.pinFailedCount + 1;
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data:
+          failed >= PIN_MAX_TRIES
+            ? { pinFailedCount: 0, pinLockedUntil: new Date(Date.now() + PIN_LOCK_MS) }
+            : { pinFailedCount: failed },
+      });
+      throw new UnauthorizedException("Wrong PIN");
+    }
+    if (user.pinFailedCount > 0 || user.pinLockedUntil) {
+      await this.prisma.user.update({ where: { id: user.id }, data: { pinFailedCount: 0, pinLockedUntil: null } });
+    }
+    return this.buildSession(user);
+  }
+
+  /**
+   * The till checked this person's PIN while it was offline; now the server
+   * is back, it gets them a session. Only for a recent check, and only if
+   * they can still use the till.
+   */
+  async resumeTillSession(terminal: TillTerminal, userId: string, verifiedAt: string): Promise<LoginResult> {
+    const at = new Date(verifiedAt).getTime();
+    const now = Date.now();
+    if (Number.isNaN(at) || at > now + 5 * 60 * 1000 || now - at > PIN_RESUME_WINDOW_MS) {
+      throw new UnauthorizedException("Sign in again with your PIN");
+    }
+    return this.buildSession(await this.tillUser(terminal, userId));
+  }
+
+  /** Someone who may sign in on this till with a PIN. */
+  private async tillUser(terminal: TillTerminal, userId: string): Promise<User> {
+    const user = await this.prisma.user.findFirst({ where: { id: userId, businessId: terminal.businessId } });
+    if (!user || !user.isActive || !user.pinHash) throw new UnauthorizedException("Wrong PIN");
+    if (!(await this.till.canUseStore(user, terminal.storeId))) {
+      throw new ForbiddenException("You don't have access to this till's store");
+    }
+    return user;
   }
 
   /**

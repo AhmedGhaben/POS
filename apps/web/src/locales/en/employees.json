@@ -58,7 +58,13 @@
     "reactivate": "Reactivate login",
     "deactivated": "{{email}} can no longer sign in",
     "reactivated": "{{email}} can sign in again",
-    "updated": "Access updated"
+    "updated": "Access updated",
+    "pin": "Till PIN",
+    "hasPin": "Has a PIN for signing in on tills.",
+    "noPin": "No PIN yet.",
+    "pinHint": "With a PIN they tap their name on a registered till and type it, even when the internet is down.",
+    "setPin": "Set a PIN",
+    "changePin": "Change or remove the PIN"
   },
   "permissions": {
     "allowed": "Allowed",

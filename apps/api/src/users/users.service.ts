@@ -14,6 +14,7 @@ import { MailService } from "../common/mail/mail.service";
 import { emailLanguage } from "../common/i18n/languages";
 import { normalizeEmail } from "../common/transforms/normalize-email";
 import { generateOpaqueToken, hashToken } from "../common/utils/tokens";
+import { hashPin } from "../common/utils/pin";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { StaffLoginDto } from "./dto/staff-login.dto";
 import { UpdateStaffAccessDto } from "./dto/update-staff-access.dto";
@@ -55,6 +56,25 @@ export class UsersService {
       throw new NotFoundException("User not found");
     }
     return user;
+  }
+
+  /** Sets (or with null, removes) someone's till PIN; clears any lockout. */
+  async setPin(businessId: string, userId: string, pin: string | null) {
+    await this.findInBusiness(businessId, userId);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { pinHash: pin ? await hashPin(pin) : null, pinFailedCount: 0, pinLockedUntil: null },
+    });
+    return { hasPin: !!pin };
+  }
+
+  /** Your own PIN, after checking your password. */
+  async setMyPin(userId: string, password: string, pin: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+      throw new BadRequestException("Wrong password");
+    }
+    return this.setPin(user.businessId, userId, pin);
   }
 
   async setLanguage(userId: string, language: string) {
@@ -123,7 +143,7 @@ export class UsersService {
         emailVerifiedAt: new Date(),
       },
     });
-    const { passwordHash: _omit, ...safeUser } = user;
+    const { passwordHash: _omit, pinHash: _pin, pinFailedCount: _tries, pinLockedUntil: _locked, ...safeUser } = user;
     return safeUser;
   }
 

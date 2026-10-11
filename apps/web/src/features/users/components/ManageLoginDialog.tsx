@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/features/auth/store";
 import { updateStaffAccess } from "@/features/users/api";
 import { PermissionsPanel } from "./PermissionsPanel";
+import { SetPinDialog } from "@/features/till/components/SetPinDialog";
 import { StoreCheckboxes } from "./StoreCheckboxes";
 
 interface ManageLoginDialogProps {
@@ -27,6 +28,7 @@ export function ManageLoginDialog({ employee, onClose }: ManageLoginDialogProps)
   const [role, setRole] = React.useState<StaffRole>("CASHIER");
   const [storeIds, setStoreIds] = React.useState<string[]>([]);
   const [error, setError] = React.useState<string | null>(null);
+  const [pinOpen, setPinOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!user) return;
@@ -71,6 +73,7 @@ export function ManageLoginDialog({ employee, onClose }: ManageLoginDialogProps)
             <TabsList className="mb-4">
               <TabsTrigger value="access">{t("manage.access")}</TabsTrigger>
               <TabsTrigger value="permissions">{t("manage.permissions")}</TabsTrigger>
+              <TabsTrigger value="pin">{t("manage.pin")}</TabsTrigger>
             </TabsList>
             <TabsContent value="access">
               {user.isActive ? (
@@ -128,6 +131,22 @@ export function ManageLoginDialog({ employee, onClose }: ManageLoginDialogProps)
             </TabsContent>
             <TabsContent value="permissions">
               <PermissionsPanel userId={user.id} />
+            </TabsContent>
+            <TabsContent value="pin" className="space-y-3">
+              <p className="text-sm text-muted-foreground">{user.hasPin ? t("manage.hasPin") : t("manage.noPin")}</p>
+              <p className="text-sm text-muted-foreground">{t("manage.pinHint")}</p>
+              <Button className="w-full" onClick={() => setPinOpen(true)}>
+                {user.hasPin ? t("manage.changePin") : t("manage.setPin")}
+              </Button>
+              <SetPinDialog
+                open={pinOpen}
+                onOpenChange={setPinOpen}
+                user={{ id: user.id, name: `${employee?.firstName ?? ""} ${employee?.lastName ?? ""}`.trim(), hasPin: !!user.hasPin }}
+                onSaved={() => {
+                  void queryClient.invalidateQueries({ queryKey: ["employees"] });
+                  onClose();
+                }}
+              />
             </TabsContent>
           </Tabs>
         )}

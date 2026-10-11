@@ -128,10 +128,14 @@ export function refreshStatus(page: Page) {
  * waits and tries again.
  */
 export async function login(page: Page, email = "owner@demo-store.test", password = "OwnerPass123!") {
+  // A till with PINs shows name buttons first.
+  const emailLink = page.getByRole("button", { name: "Sign in with email instead" });
+  await Promise.race([page.getByLabel("Email").waitFor(), emailLink.waitFor()]);
+  if (await emailLink.isVisible()) await emailLink.click();
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   for (let attempt = 0; ; attempt++) {
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
     const outcome = await Promise.race([
       page.waitForURL((url) => !url.pathname.startsWith("/login")).then(() => "in" as const, (e: Error) => e),
       page.getByText(/Too Many Requests/i).waitFor().then(() => "throttled" as const, () => new Promise<never>(() => {})),

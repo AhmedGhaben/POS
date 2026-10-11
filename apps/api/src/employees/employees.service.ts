@@ -19,6 +19,7 @@ const EMPLOYEE_INCLUDE = {
       email: true,
       role: true,
       isActive: true,
+      pinHash: true,
       storeUsers: { select: { storeId: true } },
     },
   },
@@ -26,12 +27,12 @@ const EMPLOYEE_INCLUDE = {
 
 type EmployeeWithUser = Prisma.EmployeeGetPayload<{ include: typeof EMPLOYEE_INCLUDE }>;
 
-/** Flattens `user.storeUsers` into `user.storeIds` for the web app. */
+/** Flattens `user.storeUsers` into `user.storeIds`, and the PIN into `hasPin`, for the web app. */
 function toEmployeeResponse(employee: EmployeeWithUser) {
   const { user, ...rest } = employee;
   if (!user) return { ...rest, user: null };
-  const { storeUsers, ...userRest } = user;
-  return { ...rest, user: { ...userRest, storeIds: storeUsers.map((su) => su.storeId) } };
+  const { storeUsers, pinHash, ...userRest } = user;
+  return { ...rest, user: { ...userRest, hasPin: !!pinHash, storeIds: storeUsers.map((su) => su.storeId) } };
 }
 
 @Injectable()

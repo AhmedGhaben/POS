@@ -73,6 +73,7 @@ describe("EmployeesService", () => {
         email: "cara@shop.test",
         role: Role.CASHIER,
         isActive: true,
+        hasPin: false,
         storeIds: ["store-1"],
       });
       expect(usersService.sendStaffInvite).not.toHaveBeenCalled();

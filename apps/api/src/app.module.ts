@@ -31,6 +31,7 @@ import { RolesGuard } from "./common/guards/roles.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
 import { AuditLogInterceptor } from "./common/interceptors/audit-log.interceptor";
 import { PermissionsModule } from "./common/permissions/permissions.module";
+import { TillAuthModule } from "./till/till-auth.module";
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { PermissionsModule } from "./common/permissions/permissions.module";
     }),
     PrismaModule,
     PermissionsModule,
+    TillAuthModule,
     AuthModule,
     BusinessesModule,
     StoresModule,

@@ -166,5 +166,19 @@
     "screenOpened": "Ecrã do cliente aberto",
     "testFailed": "O teste do ecrã falhou: {{error}}",
     "saveFailed": "Não foi possível guardar as definições do ecrã. Verifique os valores."
+  },
+  "pinSignIn": {
+    "title": "Início de sessão com PIN",
+    "description": "Os funcionários tocam no nome e escrevem o PIN. Funciona sem internet, e cada venda fica registada em nome de quem está na caixa.",
+    "registerFirst": "Registe primeiro esta caixa.",
+    "noKey": "A concluir a configuração: um proprietário ou gerente tem de iniciar sessão nesta caixa uma vez, com internet.",
+    "noPins": "Pronto. Ninguém tem PIN ainda: defina-os na página Funcionários, ou defina o seu abaixo.",
+    "ready_one": "Pronto: {{count}} pessoa pode iniciar sessão aqui com PIN.",
+    "ready_other": "Pronto: {{count}} pessoas podem iniciar sessão aqui com PIN.",
+    "autoLock": "Bloquear a caixa quando inativa",
+    "never": "Nunca",
+    "minutes_one": "Após {{count}} minuto",
+    "minutes_other": "Após {{count}} minutos",
+    "setMyPin": "Definir o meu PIN"
   }
 }

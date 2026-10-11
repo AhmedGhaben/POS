@@ -10,6 +10,8 @@ describe("log scrubbing", () => {
     assert.equal(scrub(`token ${jwt} here`), "token [jwt] here");
     assert.equal(scrub('{"password":"hunter2","name":"x"}'), '{"password":[redacted],"name":"x"}');
     assert.equal(scrub("refreshToken=abc123; path=/"), "refreshToken=[redacted]; path=/");
+    assert.equal(scrub('{"userId":"u1","pin":"2468"}'), '{"userId":"u1","pin":[redacted]}');
+    assert.equal(scrub("X-Terminal-Key: abcdef0123"), "X-Terminal-Key: [redacted]");
   });
 
   it("removes card numbers but keeps barcodes and timestamps", () => {

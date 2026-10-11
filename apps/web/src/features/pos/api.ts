@@ -38,6 +38,8 @@ export async function createSale(dto: CreateSaleDto, lines: CartLine[]): Promise
     // One key for every attempt at this sale, online or later from the queue.
     clientId: crypto.randomUUID(),
     terminalId: useDeviceStore.getState().terminal?.id,
+    // Uploaded later with the till's key, it stays this person's sale.
+    actingUserId: useAuthStore.getState().user?.id,
   };
   if (isWorkingOffline()) {
     return queueSaleOffline(sale, lines);
@@ -94,7 +96,12 @@ export async function voidSale(
   reason: VoidReason,
   note?: string,
 ): Promise<{ sale: SaleDto; queued: boolean }> {
-  const base: VoidSaleDto = { storeId: sale.storeId, reason, note: note?.trim() || undefined };
+  const base: VoidSaleDto = {
+    storeId: sale.storeId,
+    reason,
+    note: note?.trim() || undefined,
+    actingUserId: useAuthStore.getState().user?.id,
+  };
 
   const queue = async () => {
     const occurredAt = new Date().toISOString();

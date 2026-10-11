@@ -70,7 +70,26 @@ interface Settings {
   serverUrl: string | null;
   kiosk: boolean;
   startWithWindows: boolean;
+  autoLockMinutes: number;
 }
+
+interface StaffMember {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role: "OWNER" | "MANAGER" | "CASHIER";
+}
+
+type PinSignInResult =
+  | { ok: true; mode: "online"; session: unknown }
+  | {
+      ok: true;
+      mode: "offline";
+      user: StaffMember & { language?: string | null; permissions: Record<string, boolean> };
+    }
+  | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user" | "not-registered"; error: string };
+
+type ResumeResult = { ok: true; session: unknown } | { ok: false; code: "unreachable" | "rejected" | "nothing"; error?: string };
 
 /**
  * The only bridge between the page and the desktop layer. Each operation is
@@ -85,7 +104,7 @@ const posDesktop = {
   },
   settings: {
     get: (): Promise<Settings> => ipcRenderer.invoke("settings:get"),
-    update: (patch: Partial<Pick<Settings, "kiosk" | "startWithWindows">>): Promise<Settings> =>
+    update: (patch: Partial<Pick<Settings, "kiosk" | "startWithWindows" | "autoLockMinutes">>): Promise<Settings> =>
       ipcRenderer.invoke("settings:update", patch),
     setServer: (url: string): Promise<{ ok: true } | { ok: false; code: "invalid" | "unreachable"; error: string }> =>
       ipcRenderer.invoke("settings:set-server", url),
@@ -93,6 +112,18 @@ const posDesktop = {
   terminal: {
     get: (): Promise<Terminal | null> => ipcRenderer.invoke("terminal:get"),
     set: (terminal: Terminal | null): Promise<void> => ipcRenderer.invoke("terminal:set", terminal),
+    /** Whether this till has its key (kept in the main process, never shown). */
+    hasKey: (): Promise<boolean> => ipcRenderer.invoke("till:has-key"),
+  },
+  staff: {
+    /** Who can sign in on this till with a PIN (saved for offline use). */
+    list: (): Promise<StaffMember[]> => ipcRenderer.invoke("staff:list"),
+    refresh: (): Promise<{ ok: boolean; count: number }> => ipcRenderer.invoke("staff:refresh"),
+  },
+  pin: {
+    signIn: (userId: string, pin: string): Promise<PinSignInResult> => ipcRenderer.invoke("pin:sign-in", userId, pin),
+    /** After an offline PIN sign-in, once the server is back. */
+    resume: (userId: string): Promise<ResumeResult> => ipcRenderer.invoke("pin:resume", userId),
   },
   printers: {
     list: (): Promise<{ name: string; displayName: string; isDefault: boolean; description: string }[]> =>

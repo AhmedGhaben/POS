@@ -53,6 +53,13 @@ export function PosPage() {
     totals,
   } = useCart();
   const canDiscount = useHasPermission(Permission.APPLY_DISCOUNT);
+  // Someone else took over the till (PIN): their own cart, not the last person's.
+  const userId = useAuthStore((s) => s.user?.id);
+  const cartOwner = React.useRef(userId);
+  React.useEffect(() => {
+    if (cartOwner.current !== userId) clear();
+    cartOwner.current = userId;
+  }, [userId, clear]);
   const [discountFor, setDiscountFor] = React.useState<CartLine | "sale" | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = React.useState<string | null>(null);
   const [payments, setPayments] = React.useState<SalePaymentInputDto[]>([]);

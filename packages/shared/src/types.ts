@@ -216,6 +216,8 @@ export interface CreateSaleDto {
   offline?: { createdAt: string };
   /** Off the whole sale, after the lines' own discounts. */
   discount?: DiscountInput | null;
+  /** Who was on the till (used when it uploads with the till's key). */
+  actingUserId?: string;
 }
 
 export interface SalePaymentDto {
@@ -309,6 +311,8 @@ export interface StaffAccessDto {
   role: Role;
   isActive: boolean;
   storeIds: string[];
+  /** Can sign in on a till with a PIN (employee lists only). */
+  hasPin?: boolean;
 }
 
 export interface UpdateStaffAccessDto {
@@ -550,6 +554,8 @@ export interface VoidSaleDto {
   note?: string;
   /** When the cashier cancelled it, for a cancel queued offline. */
   occurredAt?: string;
+  /** Who was on the till (used when it uploads with the till's key). */
+  actingUserId?: string;
 }
 
 /** Seller details frozen when an invoice is issued. */
@@ -645,6 +651,8 @@ export interface CreateDrawerEventDto {
   error?: string;
   offline: boolean;
   occurredAt: string;
+  /** Who was on the till (used when it uploads with the till's key). */
+  actingUserId?: string;
 }
 
 export interface DrawerEventDto {
