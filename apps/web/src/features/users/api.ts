@@ -36,7 +36,10 @@ export function setMyPin(pin: string, password: string) {
   return apiClient.put<{ hasPin: boolean }>("/users/me/pin", { pin, password });
 }
 
-export const MY_PERMISSIONS_QUERY_KEY = ["my-permissions"] as const;
+/** Keyed by person, so one person's cached rights can't be read for another. */
+export function myPermissionsQueryKey(userId: string | undefined) {
+  return ["my-permissions", userId ?? null] as const;
+}
 
 /** The signed-in user's own effective permissions (any role). */
 export function fetchMyPermissions() {

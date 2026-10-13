@@ -6,7 +6,10 @@ import "./i18n";
 import { App } from "./App";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { queryClient } from "./lib/query-client";
+import { startUserScopedCache } from "./features/auth/user-scope";
 import "./styles/globals.css";
+
+startUserScopedCache();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

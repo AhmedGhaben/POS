@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/features/auth/store";
 import { BUSINESS_QUERY_KEY, fetchBusiness } from "@/features/business/api";
 import { useDeviceStore } from "@/features/desktop/bridge";
-import { fetchMyPermissions, MY_PERMISSIONS_QUERY_KEY } from "@/features/users/api";
+import { fetchMyPermissions, myPermissionsQueryKey } from "@/features/users/api";
 import { startSyncEngine } from "@/features/pos/sync";
 import { startCustomerDisplayChannel, useIdleMessageBroadcast } from "@/features/desktop/customer-display";
 import { CommandPalette } from "./CommandPalette";
@@ -29,17 +29,19 @@ export function ProtectedRoute() {
     if (businessQuery.data) setBusiness(businessQuery.data);
   }, [businessQuery.data, setBusiness]);
 
-  // Same for the user's own permissions (kept for offline use).
+  // Same for the user's own permissions (kept for offline use). Keyed by
+  // person, and only copied into the store if it's still that person.
+  const userId = useAuthStore((s) => s.user?.id);
   const setPermissions = useAuthStore((s) => s.setPermissions);
   const permissionsQuery = useQuery({
-    queryKey: MY_PERMISSIONS_QUERY_KEY,
+    queryKey: myPermissionsQueryKey(userId),
     queryFn: fetchMyPermissions,
-    enabled: !!accessToken,
+    enabled: !!accessToken && !!userId,
     staleTime: 5 * 60_000,
   });
   React.useEffect(() => {
-    if (permissionsQuery.data) setPermissions(permissionsQuery.data);
-  }, [permissionsQuery.data, setPermissions]);
+    if (permissionsQuery.data && useAuthStore.getState().user?.id === userId) setPermissions(permissionsQuery.data);
+  }, [permissionsQuery.data, userId, setPermissions]);
 
   // Customer screens can ask what to show from any page.
   React.useEffect(() => startCustomerDisplayChannel(), []);
