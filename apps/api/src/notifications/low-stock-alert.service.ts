@@ -48,8 +48,8 @@ export class LowStockAlertService {
       storeName,
       items: lowStockItems.map((item) => ({
         productName: item.product.name,
-        quantity: item.quantity,
-        reorderLevel: item.reorderLevel,
+        quantity: Number(item.quantity),
+        reorderLevel: Number(item.reorderLevel),
       })),
     };
 

@@ -29,7 +29,8 @@ import { useMoney } from "@/features/business/use-money";
 
 const lineSchema = z.object({
   productId: z.string().min(1, "validation.required"),
-  quantity: z.coerce.number().int("validation.wholeNumber").min(1, "validation.atLeast1"),
+  // Up to 3 decimals for products sold by weight; the server keeps "un" products whole.
+  quantity: z.coerce.number().positive("validation.positive"),
   unitCost: z.coerce.number().min(0, "validation.nonNegative"),
 });
 
@@ -161,7 +162,8 @@ export function PurchasesPage() {
                             <FormControl>
                               <Input
                                 type="number"
-                                min={1}
+                                min={0}
+                                step="any"
                                 placeholder={t("qty")}
                                 className="w-20"
                                 {...field}

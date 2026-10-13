@@ -20,7 +20,13 @@
     "reorderLevel": "Stock mínimo",
     "lowStock": "Stock baixo",
     "updated": "Stock atualizado",
-    "empty": "Ainda não há stock nesta loja."
+    "empty": "Ainda não há stock nesta loja.",
+    "bookValue": "Valor contabilístico (custo médio ponderado): {{value}}",
+    "unit": "Unidade",
+    "averageCost": "Custo médio",
+    "value": "Valor",
+    "countFor": "Quantidade contada de {{name}}",
+    "historyFor": "Histórico de stock de {{name}}"
   },
   "transfers": {
     "title": "Transferências de stock",
@@ -67,5 +73,34 @@
     "cashNeedsShift": "Reembolsos em dinheiro saem de uma gaveta: faça-os numa caixa com o seu turno aberto, ou reembolse de outra forma.",
     "approval": "Fazer uma devolução / nota de crédito",
     "notApproved": "A devolução não foi autorizada."
+  },
+  "stockAt": {
+    "title": "Stock numa data",
+    "hint": "O stock e o seu valor no fim de um dia, ao custo médio ponderado. Use 31 de dezembro para o inventário anual. O histórico começa no dia em que os movimentos de stock passaram a ser registados.",
+    "date": "Data",
+    "show": "Mostrar",
+    "exportFile": "stock-{{date}}.csv",
+    "productType": "Tipo de produto",
+    "inventoryType": "Tipo de inventário",
+    "empty": "Sem stock no fim desse dia.",
+    "total": "Valor contabilístico total"
+  },
+  "history": {
+    "title": "Histórico de stock: {{name}}",
+    "hint": "Todas as alterações ao stock deste produto nesta loja, das mais recentes para as mais antigas.",
+    "when": "Quando",
+    "what": "O quê",
+    "balance": "Stock depois",
+    "empty": "Ainda não há movimentos.",
+    "types": {
+      "OPENING": "Stock inicial",
+      "SALE": "Venda",
+      "SALE_VOID": "Venda cancelada",
+      "RETURN": "Devolução",
+      "PURCHASE": "Compra",
+      "TRANSFER_IN": "Transferência recebida",
+      "TRANSFER_OUT": "Transferência enviada",
+      "ADJUSTMENT": "Acerto de contagem"
+    }
   }
 }

@@ -35,7 +35,7 @@ test.describe.serial("Angola phase 3: checkout at the till", () => {
 
   test("a quantity can be typed on a line, or added with 3* in the search", async () => {
     await openPosWithProducts(page);
-    const name = (await firstTile().locator("p").first().textContent())!.trim();
+    const name = (await firstTile().locator(".font-medium").first().textContent())!.trim();
     await firstTile().click();
     const qty = page.getByLabel(`Quantity of ${name}`);
     await qty.fill("4");
@@ -71,7 +71,7 @@ test.describe.serial("Angola phase 3: checkout at the till", () => {
     await logOut(page);
     await login(page, "cashier@demo-store.test", "CashierPass123!");
     await openPosWithProducts(page);
-    const name = (await firstTile().locator("p").first().textContent())!.trim();
+    const name = (await firstTile().locator(".font-medium").first().textContent())!.trim();
     await firstTile().click();
     await page.getByRole("button", { name: `Change the price of ${name}` }).click();
     await page.getByLabel("New price (each)").fill("0.50");

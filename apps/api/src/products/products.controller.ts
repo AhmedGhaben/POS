@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from "@nestjs/common";
 import { Permission, Role } from "@prisma/client";
 import { Roles } from "../common/decorators/roles.decorator";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -7,6 +7,7 @@ import { PermissionsService } from "../common/permissions/permissions.service";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
+import { ProductPhotoDto } from "./dto/product-photo.dto";
 import { ProductsService } from "./products.service";
 import { ImportProductsDto } from "./dto/import-products.dto";
 import { ProductsImportService } from "./products-import.service";
@@ -69,6 +70,23 @@ export class ProductsController {
   @Roles(Role.OWNER, Role.MANAGER)
   import(@CurrentUser() user: AuthenticatedUser, @Body() dto: ImportProductsDto) {
     return this.productsImportService.import(user, dto);
+  }
+
+  /** A photo as a data URL (the browser resizes it first). */
+  @Put(":productId/photo")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  async setPhoto(@CurrentUser() user: AuthenticatedUser, @Param("productId") productId: string, @Body() dto: ProductPhotoDto) {
+    const product = await this.productsService.setPhoto(user.businessId, productId, dto.dataUrl);
+    return { id: product.id, photoId: product.photoId };
+  }
+
+  @Delete(":productId/photo")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  async removePhoto(@CurrentUser() user: AuthenticatedUser, @Param("productId") productId: string) {
+    const product = await this.productsService.removePhoto(user.businessId, productId);
+    return { id: product.id, photoId: product.photoId };
   }
 
   @Patch(":productId")

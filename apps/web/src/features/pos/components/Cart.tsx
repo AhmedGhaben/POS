@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Minus, Percent, Plus, Tag, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { PricedLine } from "@pos/shared";
+import { fromCents, lineGrossCents, roundQuantity, unitDecimals, type PricedLine } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { linePrice, type CartLine } from "@/features/pos/hooks/useCart";
 import { useMoney } from "@/features/business/use-money";
@@ -24,12 +24,14 @@ interface CartProps {
  * A line's quantity, typed straight in: Enter or leaving the field applies
  * it, Esc or anything that isn't a quantity puts the old one back.
  */
-function QuantityField({ value, label, onCommit }: { value: number; label: string; onCommit: (quantity: number) => void }) {
+function QuantityField({ value, unit, label, onCommit }: { value: number; unit: string; label: string; onCommit: (quantity: number) => void }) {
   const [text, setText] = React.useState(String(value));
   React.useEffect(() => setText(String(value)), [value]);
+  // Weighed and measured products take up to 3 decimals (0,765 kg).
+  const decimals = unitDecimals(unit);
 
   function commit() {
-    const quantity = parseQuantity(text);
+    const quantity = parseQuantity(text, decimals);
     if (quantity === null || quantity === value) setText(String(value));
     else onCommit(quantity);
   }
@@ -37,9 +39,9 @@ function QuantityField({ value, label, onCommit }: { value: number; label: strin
   return (
     <input
       data-keep-focus
-      inputMode="numeric"
+      inputMode={decimals > 0 ? "decimal" : "numeric"}
       aria-label={label}
-      className="h-7 w-12 rounded-md border border-input bg-background text-center text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+      className={`h-7 ${decimals > 0 ? "w-16" : "w-12"} rounded-md border border-input bg-background text-center text-sm focus:outline-none focus:ring-2 focus:ring-ring`}
       value={text}
       onFocus={(e) => e.target.select()}
       onChange={(e) => setText(e.target.value)}
@@ -76,7 +78,9 @@ export function Cart({ lines, priced, onSetQuantity, onRemove, onDiscount, onCha
             <div className="flex-1">
               <p className="text-sm font-medium">{line.product.name}</p>
               <p className="text-xs text-muted-foreground">
-                {t("cart.each", { price: money(linePrice(line)) })}
+                {line.product.unit && line.product.unit !== "un"
+                  ? t("cart.perUnit", { price: money(linePrice(line)), unit: line.product.unit })
+                  : t("cart.each", { price: money(linePrice(line)) })}
                 {line.unitPrice != null && (
                   <span className="ml-1 text-amber-700 dark:text-amber-400">
                     {t("cart.priceChanged", { price: money(line.product.sellPrice) })}
@@ -95,12 +99,13 @@ export function Cart({ lines, priced, onSetQuantity, onRemove, onDiscount, onCha
                 variant="outline"
                 className="h-7 w-7"
                 aria-label={t("cart.decrease")}
-                onClick={() => onSetQuantity(line.product.id, line.quantity - 1)}
+                onClick={() => onSetQuantity(line.product.id, roundQuantity(line.quantity - 1, line.product.unit))}
               >
                 <Minus className="h-3 w-3" />
               </Button>
               <QuantityField
                 value={line.quantity}
+                unit={line.product.unit ?? "un"}
                 label={t("cart.quantityFor", { name: line.product.name })}
                 onCommit={(quantity) => onSetQuantity(line.product.id, quantity)}
               />
@@ -109,7 +114,7 @@ export function Cart({ lines, priced, onSetQuantity, onRemove, onDiscount, onCha
                 variant="outline"
                 className="h-7 w-7"
                 aria-label={t("cart.increase")}
-                onClick={() => onSetQuantity(line.product.id, line.quantity + 1)}
+                onClick={() => onSetQuantity(line.product.id, roundQuantity(line.quantity + 1, line.product.unit))}
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -118,7 +123,7 @@ export function Cart({ lines, priced, onSetQuantity, onRemove, onDiscount, onCha
               {discounted && (
                 <p className="text-xs text-muted-foreground line-through">{money(p.gross)}</p>
               )}
-              <p className="text-sm font-medium">{money(p ? p.gross - p.lineDiscount : linePrice(line) * line.quantity)}</p>
+              <p className="text-sm font-medium">{money(p ? p.gross - p.lineDiscount : fromCents(lineGrossCents(linePrice(line), line.quantity)))}</p>
             </div>
             {onChangePrice && (
               <Button

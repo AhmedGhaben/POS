@@ -102,7 +102,15 @@ export class CompanyService {
       })),
       skipDuplicates: true,
     });
-    return this.prisma.taxRate.findMany({ where: { businessId }, orderBy: [{ isDefault: "desc" }, { percentage: "desc" }] });
+    const rates = await this.prisma.taxRate.findMany({ where: { businessId }, orderBy: [{ isDefault: "desc" }, { percentage: "desc" }] });
+    // Products from before rates were picked by name: link the rate with the same percentage.
+    for (const r of rates.filter((x) => x.region === config.code && x.taxType === "IVA")) {
+      await this.prisma.product.updateMany({
+        where: { businessId, taxRateId: null, taxRate: r.percentage, NOT: { taxRate: 0 } },
+        data: { taxRateId: r.id, taxCode: r.taxCode },
+      });
+    }
+    return rates;
   }
 
   async createTaxRate(businessId: string, dto: CreateTaxRateDto) {
@@ -129,6 +137,11 @@ export class CompanyService {
     if (dto.active === false && (dto.isDefault || rate.isDefault)) throw new BadRequestException("The default rate can't be turned off");
     return this.prisma.$transaction(async (tx) => {
       if (dto.isDefault) await tx.taxRate.updateMany({ where: { businessId, isDefault: true }, data: { isDefault: false } });
+      // Products charge the rate they picked: a new percentage applies to them
+      // from the next sale (past sales keep what they were charged).
+      if (dto.percentage !== undefined && !rate.percentage.equals(dto.percentage)) {
+        await tx.product.updateMany({ where: { businessId, taxRateId: id }, data: { taxRate: new Prisma.Decimal(dto.percentage) } });
+      }
       return tx.taxRate.update({
         where: { id },
         data: {

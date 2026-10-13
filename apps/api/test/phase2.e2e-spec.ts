@@ -82,7 +82,7 @@ describe("POS API Phase 2 (e2e)", () => {
       .get(`/stores/${STORE_ID}/inventory`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
-    const beforeQty = before.body.find((i: { productId: string }) => i.productId === product.id).quantity;
+    const beforeQty = Number(before.body.find((i: { productId: string }) => i.productId === product.id).quantity);
 
     await request(app.getHttpServer())
       .post("/purchases")
@@ -98,7 +98,7 @@ describe("POS API Phase 2 (e2e)", () => {
       .get(`/stores/${STORE_ID}/inventory`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
-    const afterQty = after.body.find((i: { productId: string }) => i.productId === product.id).quantity;
+    const afterQty = Number(after.body.find((i: { productId: string }) => i.productId === product.id).quantity);
 
     expect(afterQty).toBe(beforeQty + 15);
   });
@@ -112,12 +112,12 @@ describe("POS API Phase 2 (e2e)", () => {
       .expect(200);
     const product = productsRes.body[0];
 
-    const stockBeforeSale = (
+    const stockBeforeSale = Number((
       await request(app.getHttpServer())
         .get(`/stores/${STORE_ID}/inventory`)
         .set("Authorization", `Bearer ${token}`)
         .expect(200)
-    ).body.find((i: { productId: string }) => i.productId === product.id).quantity;
+    ).body.find((i: { productId: string }) => i.productId === product.id).quantity);
 
     const quantity = 6;
     const lineSubtotal = Number(product.sellPrice) * quantity;
@@ -136,12 +136,12 @@ describe("POS API Phase 2 (e2e)", () => {
     const saleId = saleRes.body.id;
     const shiftClientId = await ensureShift(app, token, STORE_ID);
 
-    const stockAfterSale = (
+    const stockAfterSale = Number((
       await request(app.getHttpServer())
         .get(`/stores/${STORE_ID}/inventory`)
         .set("Authorization", `Bearer ${token}`)
         .expect(200)
-    ).body.find((i: { productId: string }) => i.productId === product.id).quantity;
+    ).body.find((i: { productId: string }) => i.productId === product.id).quantity);
     expect(stockAfterSale).toBe(stockBeforeSale - 6);
 
     await request(app.getHttpServer())
@@ -150,12 +150,12 @@ describe("POS API Phase 2 (e2e)", () => {
       .send({ storeId: STORE_ID, saleId, shiftClientId, reason: "e2e test", lineItems: [{ productId: product.id, quantity: 2 }] })
       .expect(201);
 
-    const stockAfterReturn = (
+    const stockAfterReturn = Number((
       await request(app.getHttpServer())
         .get(`/stores/${STORE_ID}/inventory`)
         .set("Authorization", `Bearer ${token}`)
         .expect(200)
-    ).body.find((i: { productId: string }) => i.productId === product.id).quantity;
+    ).body.find((i: { productId: string }) => i.productId === product.id).quantity);
     expect(stockAfterReturn).toBe(stockAfterSale + 2);
 
     // Only 4 of the original 6 remain returnable (2 already returned) — asking for 5 must fail.

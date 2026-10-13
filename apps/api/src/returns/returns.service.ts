@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { PaymentMethod, Prisma, ShiftStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateReturnDto } from "./dto/create-return.dto";
+import { recordMovement } from "../stock/stock";
 
 @Injectable()
 export class ReturnsService {
@@ -28,10 +29,10 @@ export class ReturnsService {
       throw new BadRequestException("This sale was cancelled");
     }
 
-    const alreadyReturned = new Map<string, number>();
+    const alreadyReturned = new Map<string, Prisma.Decimal>();
     for (const ret of sale.returns) {
       for (const li of ret.lineItems) {
-        alreadyReturned.set(li.productId, (alreadyReturned.get(li.productId) ?? 0) + li.quantity);
+        alreadyReturned.set(li.productId, (alreadyReturned.get(li.productId) ?? new Prisma.Decimal(0)).add(li.quantity));
       }
     }
 
@@ -41,8 +42,11 @@ export class ReturnsService {
       if (!saleLine) {
         throw new BadRequestException(`Product ${li.productId} was not part of this sale`);
       }
-      const returnedSoFar = alreadyReturned.get(li.productId) ?? 0;
-      if (returnedSoFar + li.quantity > saleLine.quantity) {
+      if (saleLine.unit === "un" && !Number.isInteger(li.quantity)) {
+        throw new BadRequestException(`"${saleLine.productName}" is sold in whole units`);
+      }
+      const returnedSoFar = alreadyReturned.get(li.productId) ?? new Prisma.Decimal(0);
+      if (returnedSoFar.add(li.quantity).gt(saleLine.quantity)) {
         throw new BadRequestException(
           `Cannot return more than was sold for one of the products`,
         );
@@ -77,20 +81,12 @@ export class ReturnsService {
 
     const products = await this.prisma.product.findMany({
       where: { id: { in: dto.lineItems.map((li) => li.productId) } },
-      select: { id: true, trackStock: true },
+      select: { id: true, name: true, costPrice: true, trackStock: true },
     });
-    const tracked = new Set(products.filter((p) => p.trackStock).map((p) => p.id));
+    const productById = new Map(products.map((p) => [p.id, p]));
 
     return this.prisma.$transaction(async (tx) => {
-      for (const li of dto.lineItems.filter((l) => tracked.has(l.productId))) {
-        await tx.inventoryItem.upsert({
-          where: { storeId_productId: { storeId: dto.storeId, productId: li.productId } },
-          create: { storeId: dto.storeId, productId: li.productId, quantity: li.quantity },
-          update: { quantity: { increment: li.quantity } },
-        });
-      }
-
-      return tx.return.create({
+      const created = await tx.return.create({
         data: {
           saleId: dto.saleId,
           storeId: dto.storeId,
@@ -103,6 +99,22 @@ export class ReturnsService {
         },
         include: { lineItems: { include: { product: true } } },
       });
+      // Back on the shelf at what it left at.
+      for (const li of dto.lineItems) {
+        const product = productById.get(li.productId);
+        if (!product?.trackStock) continue;
+        await recordMovement(tx, {
+          storeId: dto.storeId,
+          product,
+          type: "RETURN",
+          quantity: li.quantity,
+          unitCost: sale.lineItems.find((sl) => sl.productId === li.productId)?.unitCost,
+          returnId: created.id,
+          saleId: sale.id,
+          userId: processedById,
+        });
+      }
+      return created;
     });
   }
 }

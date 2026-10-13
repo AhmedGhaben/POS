@@ -1,5 +1,5 @@
 import type { DiscountInput, DiscountType } from "./pricing";
-import type { IvaRegime } from "./countries/types";
+import type { IvaRegime, SaftProductType } from "./countries/types";
 import type {
   Plan,
   Role,
@@ -208,6 +208,14 @@ export interface CategoryDto {
   id: string;
   businessId: string;
   name: string;
+  /** How many products it has (archived ones included). */
+  _count?: { products: number };
+}
+
+export interface CategoryDeleteResultDto {
+  deleted: string;
+  moved: number;
+  reassignTo: string | null;
 }
 
 export interface ProductDto {
@@ -219,8 +227,24 @@ export interface ProductDto {
   name: string;
   description: string | null;
   costPrice: string;
+  /** Per unit; with or without IVA as the store's pricesIncludeTax says. */
   sellPrice: string;
+  /** The rate charged (0 when exempt). */
   taxRate: string;
+  /** The tax rate picked by name; null when exempt or not chosen yet (absent on older cached catalogs). */
+  taxRateId?: string | null;
+  /** NOR, RED, INT, ISE... */
+  taxCode?: string | null;
+  /** Why it's exempt (M10...) when the rate is 0. */
+  exemptionCode?: string | null;
+  /** un, kg, g, l, m, cx (absent on older cached catalogs = "un"). */
+  unit?: string;
+  /** SAF-T product type. */
+  productType?: SaftProductType;
+  /** Inventory product type (M, P, A, S, T); null for services. */
+  inventoryType?: string | null;
+  /** The photo's id (GET /product-photos/:id); null without one. */
+  photoId?: string | null;
   /** False for services etc.: always sellable, never moves stock (absent on older cached catalogs = true). */
   trackStock?: boolean;
   isActive: boolean;
@@ -234,7 +258,14 @@ export interface CreateProductDto {
   description?: string | null;
   costPrice: number;
   sellPrice: number;
+  /** The tax by name: a tax rate, or exempt with a reason. */
+  taxRateId?: string | null;
+  exemptionCode?: string | null;
+  /** Older way: a percentage (linked to the rate with that percentage). */
   taxRate?: number;
+  unit?: string;
+  productType?: SaftProductType;
+  inventoryType?: string | null;
   /** False for services etc.; defaults to true. */
   trackStock?: boolean;
 }
@@ -247,13 +278,63 @@ export interface InventoryItemDto {
   storeId: string;
   productId: string;
   product: ProductDto;
-  quantity: number;
-  reorderLevel: number;
+  /** A decimal string with up to 3 places ("2", "0.765"). */
+  quantity: string;
+  reorderLevel: string;
+  /** Weighted average cost per unit; only for people who may see costs. */
+  averageCost?: string;
 }
 
 export interface AdjustStockDto {
   quantity: number;
   reorderLevel?: number;
+  /** Why the count changed (in the stock history). */
+  note?: string;
+}
+
+export type StockMovementType =
+  | "OPENING"
+  | "SALE"
+  | "SALE_VOID"
+  | "RETURN"
+  | "PURCHASE"
+  | "TRANSFER_IN"
+  | "TRANSFER_OUT"
+  | "ADJUSTMENT";
+
+export interface StockMovementDto {
+  id: string;
+  storeId: string;
+  productId: string;
+  type: StockMovementType;
+  /** Positive in, negative out. */
+  quantity: string;
+  /** Stock right after it. */
+  balance: string;
+  /** Costs: only for people who may see them. */
+  unitCost?: string;
+  averageCost?: string;
+  saleId: string | null;
+  returnId: string | null;
+  purchaseId: string | null;
+  transferId: string | null;
+  userId: string | null;
+  note: string | null;
+  occurredAt: string;
+}
+
+/** GET /stores/:id/inventory/at?date=YYYY-MM-DD: stock and book value at the end of that day. */
+export interface StockAtDateRowDto {
+  productId: string;
+  sku: string;
+  name: string;
+  unit: string;
+  productType: SaftProductType;
+  inventoryType: string | null;
+  quantity: string;
+  /** Only for people who may see costs. */
+  averageCost?: string;
+  value?: string;
 }
 
 export interface CreateCustomerDto extends Omit<AddressFields, "address"> {
@@ -319,8 +400,8 @@ export interface CreateSaleDto {
   clientId?: string;
   /** The desktop till that rang the sale up. */
   terminalId?: string;
-  /** Set when the sale was rung up without reaching the server. */
-  offline?: { createdAt: string };
+  /** Rung up offline: when, and whether the till's prices included tax. */
+  offline?: { createdAt: string; pricesIncludeTax?: boolean };
   /** Off the whole sale, after the lines' own discounts. */
   discount?: DiscountInput | null;
   /** Who was on the till (used when it uploads with the till's key). */
@@ -380,8 +461,15 @@ export interface SaleLineItemDto {
   id: string;
   productId: string;
   product: ProductDto;
-  quantity: number;
+  /** A decimal string with up to 3 places ("2", "0.765"). */
+  quantity: string;
+  /** un, kg... (absent on older sales = "un"). */
+  unit?: string;
   unitPrice: string;
+  /** The tax as charged (null on sales from before it was recorded per line). */
+  taxRate?: string | null;
+  taxCode?: string | null;
+  exemptionCode?: string | null;
   taxAmount: string;
   /** Everything taken off the line: its own discount plus its share of the sale's. */
   discountAmount: string;
@@ -492,7 +580,8 @@ export interface PurchaseLineItemDto {
   id: string;
   productId: string;
   product: ProductDto;
-  quantity: number;
+  /** A decimal string with up to 3 places ("2", "0.765"). */
+  quantity: string;
   unitCost: string;
   lineTotal: string;
 }
@@ -527,7 +616,8 @@ export interface TransferLineItemDto {
   id: string;
   productId: string;
   product: ProductDto;
-  quantity: number;
+  /** A decimal string with up to 3 places ("2", "0.765"). */
+  quantity: string;
 }
 
 export interface TransferStoreSummaryDto {
@@ -585,7 +675,8 @@ export interface ReturnLineItemDto {
   id: string;
   productId: string;
   product: ProductDto;
-  quantity: number;
+  /** A decimal string with up to 3 places ("2", "0.765"). */
+  quantity: string;
   unitPrice: string;
   lineTotal: string;
 }
@@ -629,8 +720,9 @@ export interface LowStockReportItemDto {
   storeId: string;
   productId: string;
   product: ProductDto;
-  quantity: number;
-  reorderLevel: number;
+  /** A decimal string with up to 3 places ("2", "0.765"). */
+  quantity: string;
+  reorderLevel: string;
 }
 
 export interface InsightHighlightDto {
@@ -663,7 +755,7 @@ export interface SaleDto {
   cashierId: string;
   customerId: string | null;
   receiptNumber: string;
-  /** Before any discount. total = subtotal - discountTotal + taxTotal. */
+  /** Before any discount. total = subtotal - discountTotal + taxTotal, or subtotal - discountTotal when pricesIncludeTax. */
   subtotal: string;
   taxTotal: string;
   discountTotal: string;
@@ -678,6 +770,8 @@ export interface SaleDto {
   status: SaleStatus;
   createdAt: string;
   createdOffline?: boolean;
+  /** The prices included IVA: the tax is part of the subtotal (absent on older sales = false). */
+  pricesIncludeTax?: boolean;
   terminalId?: string | null;
   /** The till's idempotency key for this sale. */
   clientId?: string | null;

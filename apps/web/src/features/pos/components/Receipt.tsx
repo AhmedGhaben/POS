@@ -1,4 +1,4 @@
-import { SaleStatus, type CustomerDto, type SaleDto, type StoreDto } from "@pos/shared";
+import { fromCents, lineGrossCents, SaleStatus, type CustomerDto, type SaleDto, type StoreDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
 import { SlipHeader } from "@/features/documents/components/SlipHeader";
 import { useDocumentLanguage } from "@/i18n/use-document-language";
@@ -17,7 +17,7 @@ interface ReceiptProps {
 
 /** 80 mm slip, in the business language. Shown as a preview on screen; wrap a copy in <PrintArea> to print it. */
 export function Receipt({ sale, store, customer, copy }: ReceiptProps) {
-  const { t, money, dateTime } = useDocumentLanguage();
+  const { t, money, qty, dateTime } = useDocumentLanguage();
   const business = useAuthStore((s) => s.business);
   const changeDue = sale.changeDue !== null ? Number(sale.changeDue) : null;
   const saleDiscount = Number(sale.saleDiscountAmount ?? 0);
@@ -49,10 +49,13 @@ export function Receipt({ sale, store, customer, copy }: ReceiptProps) {
           <div key={line.id}>
             <div className="flex justify-between">
               <span>
-                {line.quantity} x {line.product.name}
+                {qty(line.quantity, line.unit)} x {line.product.name}
               </span>
-              <span>{money(Number(line.unitPrice) * line.quantity)}</span>
+              <span>{money(fromCents(lineGrossCents(Number(line.unitPrice), Number(line.quantity))))}</span>
             </div>
+            {line.unit && line.unit !== "un" && (
+              <div className="pl-3">{t("receipt.perUnit", { price: money(line.unitPrice), unit: line.unit })}</div>
+            )}
             {lineDiscount > 0 && (
               <div className="flex justify-between pl-3">
                 <span>
@@ -80,7 +83,7 @@ export function Receipt({ sale, store, customer, copy }: ReceiptProps) {
         </div>
       )}
       <div className="flex justify-between">
-        <span>{t("totals.tax")}</span>
+        <span>{sale.pricesIncludeTax ? t("totals.taxIncluded") : t("totals.tax")}</span>
         <span>{money(sale.taxTotal)}</span>
       </div>
       <div className="flex justify-between font-semibold">

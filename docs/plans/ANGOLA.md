@@ -80,6 +80,34 @@ commit and push.
   - Tests: API unit 146 (config, IBAN, pt-AO), API e2e incl.
     `angola-phase7.e2e-spec.ts` (8), web unit 101 (spelling), desktop e2e
     `angola-phase7.spec.ts` (5).
+- **Phase 6 (products, tax, units, stock) is built** (2026-10-14).
+  Migration `20261014090000_angola_phase6_products`. Notes:
+  - Pricing (`packages/shared/src/pricing.ts`, byte-identical API copy):
+    `taxIncluded` option, tax per line rounded up (decision 6), quantities
+    counted in thousandths. This also changed the rounding for stores
+    pricing without tax (round → ceil, as decided). `Sale.pricesIncludeTax`
+    records the mode; with it, total = subtotal − discounts. Revenue in
+    reports is now `total − taxTotal` (net in both modes).
+  - Tax per line: `lineTax()` in the country helpers (regime exemption
+    beats the product). Product keeps `taxRate` in step with its
+    `taxRateId`; sale lines snapshot rate, code, exemption, unit, unit cost.
+    Offline uploads send `offline.pricesIncludeTax`; older tills that don't
+    get the store's setting.
+  - Stock: every change goes through `stock/stock.ts#recordMovement` (row
+    lock, weighted average in `stock/costing.ts`, `StockMovement` row with
+    unit cost, balance and average after). Existing stock got an OPENING
+    movement at its cost price when the migration ran; stock at earlier
+    dates isn't known. FIFO later: lots can hang off movements.
+  - Quantities are `Decimal(14,3)` and come back from the API as strings.
+  - Photos: `ProductPhoto` (bytea), served publicly at
+    `/product-photos/:id` by a random id that changes on every upload.
+  - Still open: weight/price-embedded scale barcodes (decision 8: later);
+    a Unit column in the CSV import; the AGT inventory types (draft).
+  - Tests: API unit 161 (pricing parity incl. tax-in, costing, sales tax
+    and units, transfers at average cost), API e2e 156 incl.
+    `angola-phase6.e2e-spec.ts` (18), web unit 110 (pricing with IVA,
+    decimal quantities, product tax choice), desktop e2e
+    `angola-phase6.spec.ts` (5).
 
 ## Decisions (from the owner, 2026-10-13)
 

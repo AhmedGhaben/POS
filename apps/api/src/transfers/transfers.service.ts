@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
+import { recordMovement } from "../stock/stock";
+import { unitDecimals } from "../sales/pricing";
 
 const TRANSFER_INCLUDE = {
   lineItems: { include: { product: true } },
@@ -46,32 +48,15 @@ export class TransfersService {
       throw new BadRequestException(`"${untracked.name}" doesn't track stock, so it can't be transferred`);
     }
 
+    for (const li of dto.lineItems) {
+      const product = productById.get(li.productId)!;
+      if (unitDecimals(product.unit) === 0 && !Number.isInteger(li.quantity)) {
+        throw new BadRequestException(`"${product.name}" is sold in whole units`);
+      }
+    }
+
     return this.prisma.$transaction(async (tx) => {
-      for (const li of dto.lineItems) {
-        const inventoryItem = await tx.inventoryItem.findUnique({
-          where: { storeId_productId: { storeId: dto.fromStoreId, productId: li.productId } },
-        });
-        if (!inventoryItem || inventoryItem.quantity < li.quantity) {
-          const product = productById.get(li.productId)!;
-          throw new BadRequestException(
-            `Insufficient stock for "${product.name}" at the source store`,
-          );
-        }
-      }
-
-      for (const li of dto.lineItems) {
-        await tx.inventoryItem.update({
-          where: { storeId_productId: { storeId: dto.fromStoreId, productId: li.productId } },
-          data: { quantity: { decrement: li.quantity } },
-        });
-        await tx.inventoryItem.upsert({
-          where: { storeId_productId: { storeId: dto.toStoreId, productId: li.productId } },
-          create: { storeId: dto.toStoreId, productId: li.productId, quantity: li.quantity },
-          update: { quantity: { increment: li.quantity } },
-        });
-      }
-
-      return tx.stockTransfer.create({
+      const transfer = await tx.stockTransfer.create({
         data: {
           businessId,
           fromStoreId: dto.fromStoreId,
@@ -84,6 +69,30 @@ export class TransfersService {
         },
         include: TRANSFER_INCLUDE,
       });
+      // Leaves at the sending store's average cost and arrives at that cost.
+      for (const li of dto.lineItems) {
+        const product = productById.get(li.productId)!;
+        const out = await recordMovement(tx, {
+          storeId: dto.fromStoreId,
+          product,
+          type: "TRANSFER_OUT",
+          quantity: -li.quantity,
+          requireStock: true,
+          insufficientMessage: `Insufficient stock for "${product.name}" at the source store`,
+          transferId: transfer.id,
+          userId: transferredById,
+        });
+        await recordMovement(tx, {
+          storeId: dto.toStoreId,
+          product,
+          type: "TRANSFER_IN",
+          quantity: li.quantity,
+          unitCost: out.unitCost,
+          transferId: transfer.id,
+          userId: transferredById,
+        });
+      }
+      return transfer;
     });
   }
 }

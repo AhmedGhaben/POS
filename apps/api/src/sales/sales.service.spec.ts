@@ -4,15 +4,20 @@ import { offlineReceiptNumber, SalesService } from "./sales.service";
 
 const SHIFT = "9b1c3a52-4c1e-4d6f-9a77-2f1b0c3d4e5f";
 
-function buildProduct(sellPrice: number, taxRate = 0, trackStock = true) {
+function buildProduct(sellPrice: number, taxRate = 0, trackStock = true, extra: Record<string, unknown> = {}) {
   return {
     id: "prod-1",
     businessId: "biz-1",
     name: "Widget",
     sku: "W-1",
     sellPrice: new Prisma.Decimal(sellPrice),
+    costPrice: new Prisma.Decimal(6),
     taxRate: new Prisma.Decimal(taxRate),
+    taxCode: taxRate > 0 ? "NOR" : "ISE",
+    exemptionCode: null as string | null,
+    unit: "un",
     trackStock,
+    ...extra,
   };
 }
 
@@ -23,9 +28,13 @@ function buildMailMock() {
 interface MockOptions {
   stockQty?: number;
   shift?: { id: string; status: ShiftStatus; openedById: string; terminalId: string | null } | null;
+  store?: { country: string; ivaRegime: string; pricesIncludeTax: boolean };
 }
 
-function buildPrismaMock(product: ReturnType<typeof buildProduct>, { stockQty = 5, shift }: MockOptions = {}) {
+function buildPrismaMock(
+  product: ReturnType<typeof buildProduct>,
+  { stockQty = 5, shift, store = { country: "AO", ivaRegime: "GERAL", pricesIncludeTax: false } }: MockOptions = {},
+) {
   // Mimics what Prisma actually returns for a nested `{ create: [...] }` write
   // under `include`: the resolved rows, not the write-input wrapper.
   const saleCreate = jest.fn().mockImplementation(({ data }) => ({
@@ -38,12 +47,18 @@ function buildPrismaMock(product: ReturnType<typeof buildProduct>, { stockQty = 
     inventoryItem: {
       findUnique: jest.fn().mockResolvedValue({ quantity: stockQty }),
       update: jest.fn().mockResolvedValue({}),
-      upsert: jest.fn().mockResolvedValue({}),
+      // The locked row recordMovement reads: stock and its average cost.
+      upsert: jest.fn().mockResolvedValue({ quantity: new Prisma.Decimal(stockQty), averageCost: new Prisma.Decimal(7.5) }),
+    },
+    stockMovement: {
+      create: jest.fn(({ data }) => ({ id: "mov-1", ...data })),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
     sale: { create: saleCreate },
   };
   return {
     product: { findMany: jest.fn().mockResolvedValue([product]) },
+    store: { findFirst: jest.fn().mockResolvedValue(store) },
     sale: { findUnique: jest.fn().mockResolvedValue(null), findFirst: jest.fn().mockResolvedValue(null) },
     shift: {
       findUnique: jest
@@ -185,8 +200,83 @@ describe("SalesService#create", () => {
     const prisma = buildPrismaMock(buildProduct(10, 0, false), { stockQty: 0 });
     const { service } = buildService(prisma);
     await service.create("biz-1", "cashier-1", saleDto());
-    expect(prisma.__tx.inventoryItem.findUnique).not.toHaveBeenCalled();
+    expect(prisma.__tx.inventoryItem.upsert).not.toHaveBeenCalled();
     expect(prisma.__tx.inventoryItem.update).not.toHaveBeenCalled();
+    expect(prisma.__tx.stockMovement.create).not.toHaveBeenCalled();
+  });
+
+  it("records the stock movement at the average cost and links it to the sale", async () => {
+    const prisma = buildPrismaMock(buildProduct(10));
+    const { service } = buildService(prisma);
+    const sale = await service.create("biz-1", "cashier-1", saleDto({ lineItems: [{ productId: "prod-1", quantity: 2 }], payments: [{ method: PaymentMethod.CASH, amount: 20 }] }));
+    const movement = prisma.__tx.stockMovement.create.mock.calls[0][0].data;
+    expect(movement).toMatchObject({ type: "SALE", storeId: "store-1", productId: "prod-1" });
+    expect(movement.quantity.toNumber()).toBe(-2);
+    expect(movement.balance.toNumber()).toBe(3);
+    expect(prisma.__tx.stockMovement.updateMany).toHaveBeenCalledWith({ where: { id: { in: ["mov-1"] } }, data: { saleId: "sale-1" } });
+    expect(String((sale as any).lineItems[0].unitCost)).toBe("7.5");
+  });
+
+  describe("tax and units (Angola phase 6)", () => {
+    it("prices with IVA: the total is the shelf price and the tax is worked out of it, rounded up", async () => {
+      const prisma = buildPrismaMock(buildProduct(10, 14), { store: { country: "AO", ivaRegime: "GERAL", pricesIncludeTax: true } });
+      const { service } = buildService(prisma);
+      const sale = (await service.create("biz-1", "cashier-1", saleDto())) as any;
+      // 10.00 x 14/114 = 1.228 -> 1.23
+      expect(String(sale.total)).toBe("10");
+      expect(String(sale.taxTotal)).toBe("1.23");
+      expect(sale.pricesIncludeTax).toBe(true);
+      expect(sale.lineItems[0]).toMatchObject({ taxCode: "NOR", exemptionCode: null, unit: "un" });
+      expect(String(sale.lineItems[0].taxRate)).toBe("14");
+    });
+
+    it("Regime Simplificado: every line is exempt with M00, whatever the product's rate", async () => {
+      const prisma = buildPrismaMock(buildProduct(10, 14), { store: { country: "AO", ivaRegime: "SIMPLIFICADO", pricesIncludeTax: true } });
+      const { service } = buildService(prisma);
+      const sale = (await service.create("biz-1", "cashier-1", saleDto())) as any;
+      expect(String(sale.taxTotal)).toBe("0");
+      expect(sale.lineItems[0]).toMatchObject({ taxCode: "ISE", exemptionCode: "M00" });
+    });
+
+    it("an exempt product carries its exemption reason", async () => {
+      const prisma = buildPrismaMock(buildProduct(10, 0, true, { exemptionCode: "M10" }));
+      const { service } = buildService(prisma);
+      const sale = (await service.create("biz-1", "cashier-1", saleDto())) as any;
+      expect(sale.lineItems[0]).toMatchObject({ taxCode: "ISE", exemptionCode: "M10" });
+    });
+
+    it("decimal quantities for products sold by weight, whole numbers for 'un'", async () => {
+      const kg = buildService(buildPrismaMock(buildProduct(1250, 0, true, { unit: "kg" })));
+      const sale = (await kg.service.create(
+        "biz-1",
+        "cashier-1",
+        saleDto({ lineItems: [{ productId: "prod-1", quantity: 0.765 }], payments: [{ method: PaymentMethod.CASH, amount: 956.25 }] }),
+      )) as any;
+      expect(String(sale.total)).toBe("956.25");
+      expect(sale.lineItems[0].unit).toBe("kg");
+      expect(String(sale.lineItems[0].quantity)).toBe("0.765");
+
+      const un = buildService(buildPrismaMock(buildProduct(10)));
+      await expect(un.service.create("biz-1", "cashier-1", saleDto({ lineItems: [{ productId: "prod-1", quantity: 1.5 }] }))).rejects.toThrow(
+        '"Widget" is sold in whole units',
+      );
+    });
+
+    it("an offline sale keeps whether the till's prices included tax", async () => {
+      const prisma = buildPrismaMock(buildProduct(10, 14), { store: { country: "AO", ivaRegime: "GERAL", pricesIncludeTax: true } });
+      const { service } = buildService(prisma);
+      const sale = (await service.create(
+        "biz-1",
+        "cashier-1",
+        saleDto({
+          clientId: "1f0e2d3c-4b5a-4968-8776-655443322119",
+          offline: { createdAt: new Date().toISOString(), pricesIncludeTax: false },
+          payments: [{ method: PaymentMethod.CASH, amount: 11.4 }],
+        }),
+      )) as any;
+      expect(String(sale.total)).toBe("11.4");
+      expect(sale.pricesIncludeTax).toBe(false);
+    });
   });
 
   describe("price changes and manager approvals", () => {

@@ -29,7 +29,7 @@ describe("Cancelling a sale (e2e)", () => {
   const http = () => request(app.getHttpServer());
   const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
   const stock = async () =>
-    (await prisma.inventoryItem.findUnique({ where: { storeId_productId: { storeId, productId: teaId } } }))!.quantity;
+    (await prisma.inventoryItem.findUnique({ where: { storeId_productId: { storeId, productId: teaId } } }))!.quantity.toNumber();
   const sell = async (token = ownerToken, extra: object = {}) =>
     http()
       .post("/sales")

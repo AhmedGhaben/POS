@@ -168,4 +168,22 @@ export const AO: CountryConfig = {
     // SAF-T de Inventários: stock at 31 Dec, by 15 February.
     { key: "saftInventory", kind: "yearly", month: 2, day: 15, when: "always", regimes: ["GERAL", "SIMPLIFICADO"] },
   ],
+  // SAF-T (AO) 1.01 ProductType.
+  productTypes: [
+    { code: "P", name: "Produtos" },
+    { code: "S", name: "Serviços" },
+    { code: "O", name: "Outros" },
+    { code: "E", name: "Impostos Especiais de Consumo" },
+    { code: "I", name: "Impostos, taxas e encargos parafiscais" },
+  ],
+  // Draft: the codes of the Portuguese SAF-T inventory file, until AGT's
+  // Circular n.º 05/GACA/GJ/DSF/AGT/2026 gives Angola's (docs/saft-ao/README.md).
+  inventoryTypes: [
+    { code: "M", name: "Mercadorias" },
+    { code: "P", name: "Matérias-primas, subsidiárias e de consumo" },
+    { code: "A", name: "Produtos acabados e intermédios" },
+    { code: "S", name: "Subprodutos, desperdícios e refugos" },
+    { code: "T", name: "Produtos e trabalhos em curso" },
+  ],
+  inventoryTypesDraft: true,
 };

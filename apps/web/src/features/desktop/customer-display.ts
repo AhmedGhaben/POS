@@ -26,7 +26,7 @@ export type CustomerDisplayState =
   | {
       mode: "cart";
       lastItem: { name: string; quantity: number; price: string } | null;
-      lines: { name: string; quantity: number; total: string }[];
+      lines: { name: string; quantity: number; unit?: string; total: string }[];
       itemCount: number;
       total: string;
       labels: PoleLabels;
@@ -140,8 +140,9 @@ export function useCustomerDisplay(lines: CartLine[], total: number, completedSa
     state = {
       mode: "cart",
       lastItem: lastItem.current,
-      lines: lines.map((l, i) => ({ name: l.product.name, quantity: l.quantity, total: lineAmount(i) })),
-      itemCount: lines.reduce((n, l) => n + l.quantity, 0),
+      lines: lines.map((l, i) => ({ name: l.product.name, quantity: l.quantity, unit: l.product.unit ?? "un", total: lineAmount(i) })),
+      // Something weighed counts as one item.
+      itemCount: lines.reduce((n, l) => n + ((l.product.unit ?? "un") === "un" ? l.quantity : 1), 0),
       total: money(total),
       labels,
     };

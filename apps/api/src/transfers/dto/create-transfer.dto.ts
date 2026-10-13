@@ -1,12 +1,12 @@
 import { Type } from "class-transformer";
-import { ArrayMinSize, IsInt, IsOptional, IsString, Min, ValidateNested } from "class-validator";
+import { ArrayMinSize, IsNumber, IsOptional, IsString, Min, ValidateNested } from "class-validator";
 
 export class TransferLineItemInputDto {
   @IsString()
   productId!: string;
 
-  @IsInt()
-  @Min(1)
+  @IsNumber({ maxDecimalPlaces: 3 })
+  @Min(0.001)
   quantity!: number;
 }
 

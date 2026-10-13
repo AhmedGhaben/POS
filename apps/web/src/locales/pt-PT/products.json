@@ -16,7 +16,8 @@
     "costPrice": "Preço de custo",
     "sellPrice": "Preço de venda",
     "taxRate": "IVA %",
-    "stock": "Stock"
+    "stock": "Stock",
+    "tax": "Imposto"
   },
   "form": {
     "editTitle": "Editar produto",
@@ -31,7 +32,26 @@
     "restore": "Repor produto",
     "archiveNote": "Arquivar esconde-o da caixa e desta lista. As vendas e relatórios anteriores mantêm-no.",
     "trackStock": "Controlar stock",
-    "trackStockHint": "Desligue para serviços e outros artigos sem stock: podem ser sempre vendidos e nunca aparecem no stock nem nos alertas de stock baixo."
+    "trackStockHint": "Desligue para serviços e outros artigos sem stock: podem ser sempre vendidos e nunca aparecem no stock nem nos alertas de stock baixo.",
+    "barcodePlaceholder": "Leia ou escreva",
+    "barcodeTaken": "Já usado por \"{{name}}\"",
+    "unit": "Unidade",
+    "pricePer": "Preço por {{unit}}",
+    "priceWithTax": "Com IVA, como na prateleira.",
+    "priceWithoutTax": "Sem IVA: é acrescentado na caixa.",
+    "tax": "Imposto",
+    "verifyRate": "confirme que ainda se aplica",
+    "legacyRate": "{{rate}}% (como antes)",
+    "legacyRateHint": "Escolha uma taxa pelo nome",
+    "exempt": "Isento",
+    "exemptionReason": "Motivo de isenção",
+    "chooseReason": "Escolha o motivo",
+    "productType": "Tipo de produto (SAF-T)",
+    "inventoryType": "Tipo de inventário",
+    "inventoryTypeDraft": "Lista provisória até a AGT publicar a de Angola.",
+    "addPhoto": "Adicionar fotografia",
+    "changePhoto": "Mudar a fotografia",
+    "removePhoto": "Remover"
   },
   "import": {
     "title": "Importar produtos de CSV",
@@ -83,5 +103,40 @@
       "over100": "{{field}} é superior a 100",
       "stock": "{{field}} \"{{value}}\" tem de ser um número inteiro, 0 ou mais"
     }
+  },
+  "exemptCode": "Isento ({{code}})",
+  "exemptNoReason": "Isento, sem motivo indicado",
+  "checkTax": "Escolha o imposto deste produto pelo nome: abra-o e escolha uma taxa, ou isento com o motivo.",
+  "categories": {
+    "manage": "Categorias",
+    "title": "Categorias",
+    "hint": "Adicione, mude o nome ou apague categorias. Ao apagar uma, os produtos passam para outra categoria ou ficam sem categoria.",
+    "newPlaceholder": "Nova categoria",
+    "newName": "Nome da nova categoria",
+    "add": "Adicionar",
+    "created": "Categoria adicionada",
+    "renamed": "Nome da categoria alterado",
+    "deleted_one": "Categoria apagada; {{count}} produto mudou de categoria",
+    "deleted_other": "Categoria apagada; {{count}} produtos mudaram de categoria",
+    "productCount_one": "{{count}} produto",
+    "productCount_other": "{{count}} produtos",
+    "rename": "Mudar o nome de {{name}}",
+    "renameTo": "Novo nome para {{name}}",
+    "delete": "Apagar {{name}}",
+    "empty": "Ainda não há categorias.",
+    "deleteTitle": "Apagar \"{{name}}\"?",
+    "moveTo_one": "Passar o seu {{count}} produto para",
+    "moveTo_other": "Passar os seus {{count}} produtos para",
+    "moveToLabel": "Passar os produtos para",
+    "leaveUncategorized": "Deixá-los sem categoria",
+    "confirmDelete": "Apagar categoria"
+  },
+  "units": {
+    "un": "Unidade",
+    "kg": "Quilograma",
+    "g": "Grama",
+    "l": "Litro",
+    "m": "Metro",
+    "cx": "Caixa"
   }
 }

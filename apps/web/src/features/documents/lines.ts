@@ -1,15 +1,24 @@
 import type { DiscountInput, SaleLineItemDto } from "@pos/shared";
-import { priceCart, type CartLine } from "@/features/pos/hooks/useCart";
+import { currentTaxContext, linePrice, priceCart, productTax, type CartLine, type TaxContext } from "@/features/pos/hooks/useCart";
 
-/** One row on a quote or invoice. Amounts are numbers in the business currency. */
+/**
+ * One row on a quote or invoice. Amounts are numbers in the business
+ * currency, without tax: when the shop's prices include IVA they're worked
+ * out of them (decision 6), so net + tax is still what the customer pays.
+ */
 export interface DocumentLine {
   key: string;
   name: string;
   sku: string | null;
   quantity: number;
+  /** un, kg... */
+  unit: string;
+  /** Per unit, without tax. */
   unitPrice: number;
-  /** Percent, e.g. 19. */
+  /** Percent, e.g. 14. */
   taxRate: number;
+  /** Why it's exempt (M10...) when the rate is 0. */
+  exemptionCode: string | null;
   /** unitPrice x quantity, before any discount. */
   lineGross: number;
   /** This line's own discount. */
@@ -37,54 +46,113 @@ export interface DocumentTotals {
   byRate: { rate: number; net: number; tax: number }[];
 }
 
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+interface PricedRow {
+  key: string;
+  name: string;
+  sku: string | null;
+  quantity: number;
+  unit: string;
+  taxRate: number;
+  exemptionCode: string | null;
+  /** As priced: with tax when prices include it. */
+  unitPrice: number;
+  gross: number;
+  lineDiscount: number;
+  discount: number;
+  net: number;
+  tax: number;
+  total: number;
+}
+
+/**
+ * A line on a document. With prices that include tax, the discounts and the
+ * unit price are shown without it, in proportion to the line's base, so
+ * the columns add up to the base the tax was charged on.
+ */
+export function documentLine(row: PricedRow, taxIncluded: boolean): DocumentLine {
+  const common = { key: row.key, name: row.name, sku: row.sku, quantity: row.quantity, unit: row.unit, taxRate: row.taxRate, exemptionCode: row.exemptionCode };
+  if (!taxIncluded) {
+    return { ...common, unitPrice: row.unitPrice, lineGross: row.gross, lineDiscount: row.lineDiscount, discount: row.discount, net: row.net, tax: row.tax, gross: row.total };
+  }
+  const paid = row.gross - row.discount;
+  const ratio = paid > 0 ? row.net / paid : 100 / (100 + row.taxRate);
+  const discount = round2(row.discount * ratio);
+  const lineGross = round2(row.net + discount);
+  return {
+    ...common,
+    unitPrice: row.quantity > 0 ? lineGross / row.quantity : 0,
+    lineGross,
+    lineDiscount: Math.min(discount, round2(row.lineDiscount * ratio)),
+    discount,
+    net: row.net,
+    tax: row.tax,
+    gross: row.total,
+  };
+}
+
 /** Same pricing as the POS screen and the server, so a quote matches the till. */
-export function linesFromCart(lines: CartLine[], saleDiscount: DiscountInput | null = null): DocumentLine[] {
-  const priced = priceCart(lines, saleDiscount);
-  return lines.map(({ product, quantity }, i) => {
+export function linesFromCart(lines: CartLine[], saleDiscount: DiscountInput | null = null, ctx: TaxContext = currentTaxContext()): DocumentLine[] {
+  const priced = priceCart(lines, saleDiscount, ctx);
+  return lines.map((line, i) => {
     const p = priced.lines[i];
-    return {
-      key: product.id,
-      name: product.name,
-      sku: product.sku,
-      quantity,
-      unitPrice: Number(product.sellPrice),
-      taxRate: Number(product.taxRate),
-      lineGross: p.gross,
-      lineDiscount: p.lineDiscount,
-      discount: p.discount,
-      net: p.net,
-      tax: p.tax,
-      gross: p.total,
-    };
+    const tax = productTax(line.product, ctx);
+    return documentLine(
+      {
+        key: line.product.id,
+        name: line.product.name,
+        sku: line.product.sku,
+        quantity: line.quantity,
+        unit: line.product.unit ?? "un",
+        taxRate: tax.rate,
+        exemptionCode: tax.exemptionCode,
+        unitPrice: linePrice(line),
+        gross: p.gross,
+        lineDiscount: p.lineDiscount,
+        discount: p.discount,
+        net: p.net,
+        tax: p.tax,
+        total: p.total,
+      },
+      priced.taxIncluded,
+    );
   });
 }
 
 /**
- * From a completed sale. The rate is derived from the stored tax amount, not
- * the product's current rate, which may have changed since the sale.
+ * From a completed sale. The rate is the one recorded on the line; older
+ * sales didn't record it, so it's worked out from the tax amount (not the
+ * product's current rate, which may have changed since).
  */
-export function linesFromSale(lines: SaleLineItemDto[]): DocumentLine[] {
+export function linesFromSale(lines: SaleLineItemDto[], taxIncluded = false): DocumentLine[] {
   return lines.map((line) => {
+    const quantity = Number(line.quantity);
     const unitPrice = Number(line.unitPrice);
-    const lineGross = unitPrice * line.quantity;
-    const discount = Number(line.discountAmount ?? 0);
-    const net = lineGross - discount;
+    const total = Number(line.lineTotal);
     const tax = Number(line.taxAmount);
-    const taxRate = net > 0 ? Math.round((tax / net) * 10_000) / 100 : 0;
-    return {
-      key: line.id,
-      name: line.product.name,
-      sku: line.product.sku,
-      quantity: line.quantity,
-      unitPrice,
-      taxRate,
-      lineGross,
-      lineDiscount: Number(line.lineDiscountAmount ?? 0),
-      discount,
-      net,
-      tax,
-      gross: Number(line.lineTotal),
-    };
+    const net = round2(total - tax);
+    const taxRate =
+      line.taxRate !== undefined && line.taxRate !== null ? Number(line.taxRate) : net > 0 ? Math.round((tax / net) * 10_000) / 100 : 0;
+    return documentLine(
+      {
+        key: line.id,
+        name: line.product.name,
+        sku: line.product.sku,
+        quantity,
+        unit: line.unit ?? "un",
+        taxRate,
+        exemptionCode: line.exemptionCode ?? null,
+        unitPrice,
+        gross: round2(unitPrice * quantity),
+        lineDiscount: Number(line.lineDiscountAmount ?? 0),
+        discount: Number(line.discountAmount ?? 0),
+        net,
+        tax,
+        total,
+      },
+      taxIncluded,
+    );
   });
 }
 

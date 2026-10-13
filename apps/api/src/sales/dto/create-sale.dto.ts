@@ -1,10 +1,10 @@
 import { Type } from "class-transformer";
 import {
   ArrayMinSize,
+  IsBoolean,
   IsEmail,
   IsEnum,
   IsIn,
-  IsInt,
   IsISO8601,
   IsNumber,
   IsOptional,
@@ -39,8 +39,9 @@ export class SaleLineItemInputDto {
   @IsString()
   productId!: string;
 
-  @IsInt()
-  @Min(1)
+  /** Up to 3 decimals (kg, litres...); whole for products sold by the unit. */
+  @IsNumber({ maxDecimalPlaces: 3 })
+  @Min(0.001)
   quantity!: number;
 
   /** Offline sales only: the price the till charged. */
@@ -67,6 +68,11 @@ export class SaleLineItemInputDto {
 export class OfflineSaleInfoDto {
   @IsISO8601()
   createdAt!: string;
+
+  /** Whether the till's prices included tax (the store's setting as the till had it). */
+  @IsOptional()
+  @IsBoolean()
+  pricesIncludeTax?: boolean;
 }
 
 export class SalePaymentInputDto {

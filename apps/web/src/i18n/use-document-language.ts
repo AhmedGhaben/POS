@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/features/auth/store";
-import { formatDate, formatDateTime, formatMoney } from "@/lib/format";
+import { formatDate, formatDateTime, formatMoney, formatQuantity } from "@/lib/format";
 import { DEFAULT_LANGUAGE, isLanguage, type Language } from "./index";
 
 /**
@@ -19,6 +19,7 @@ export function useDocumentLanguage(currency?: string) {
       t,
       lang,
       money: (value: number | string) => formatMoney(value, cur, lang),
+      qty: (value: number | string, unit?: string | null) => formatQuantity(value, unit, lang),
       dateTime: (value: string | Date) => formatDateTime(value, lang),
       date: (value: string | Date) => formatDate(value, lang),
       longDate: (value: string | Date) => formatDate(value, lang, true),

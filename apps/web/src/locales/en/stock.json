@@ -20,7 +20,13 @@
     "reorderLevel": "Reorder level",
     "lowStock": "Low stock",
     "updated": "Stock updated",
-    "empty": "No inventory yet for this store."
+    "empty": "No inventory yet for this store.",
+    "bookValue": "Book value (weighted average cost): {{value}}",
+    "unit": "Unit",
+    "averageCost": "Average cost",
+    "value": "Value",
+    "countFor": "Counted quantity of {{name}}",
+    "historyFor": "Stock history of {{name}}"
   },
   "transfers": {
     "title": "Stock transfers",
@@ -67,5 +73,34 @@
     "cashNeedsShift": "Cash refunds come out of a drawer: do them at a till with your shift open, or refund another way.",
     "approval": "Process a return / credit note",
     "notApproved": "The return wasn't approved."
+  },
+  "stockAt": {
+    "title": "Stock at a date",
+    "hint": "The stock and its value at the end of a day, at weighted average cost. Use 31 December for the yearly inventory. The history starts on the day stock movements began being recorded.",
+    "date": "Date",
+    "show": "Show",
+    "exportFile": "stock-{{date}}.csv",
+    "productType": "Product type",
+    "inventoryType": "Inventory type",
+    "empty": "No stock at the end of that day.",
+    "total": "Total book value"
+  },
+  "history": {
+    "title": "Stock history: {{name}}",
+    "hint": "Every change to this product's stock in this store, newest first.",
+    "when": "When",
+    "what": "What",
+    "balance": "Stock after",
+    "empty": "No movements yet.",
+    "types": {
+      "OPENING": "Opening stock",
+      "SALE": "Sale",
+      "SALE_VOID": "Cancelled sale",
+      "RETURN": "Return",
+      "PURCHASE": "Purchase",
+      "TRANSFER_IN": "Transfer in",
+      "TRANSFER_OUT": "Transfer out",
+      "ADJUSTMENT": "Count adjustment"
+    }
   }
 }

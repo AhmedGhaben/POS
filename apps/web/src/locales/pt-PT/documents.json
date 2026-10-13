@@ -6,7 +6,8 @@
     "tax": "IVA",
     "total": "Total",
     "discount": "Desconto",
-    "saleDiscount": "Desconto na venda"
+    "saleDiscount": "Desconto na venda",
+    "taxIncluded": "IVA incluído"
   },
   "receipt": {
     "number": "Talão n.º {{number}}",
@@ -15,7 +16,8 @@
     "thankYou": "Obrigado!",
     "copy": "2.ª VIA",
     "cancelled": "ANULADA",
-    "saved": "Poupou {{amount}}"
+    "saved": "Poupou {{amount}}",
+    "perUnit": "a {{price}}/{{unit}}"
   },
   "quote": {
     "slipTitle": "ORÇAMENTO",

@@ -56,6 +56,8 @@ describe("Discounts (e2e)", () => {
     businessId = reg.body.user.businessId;
     ownerToken = reg.body.accessToken;
     storeId = reg.body.stores[0].id;
+    // These tests price without tax (added at the till); new stores price with IVA in.
+    await prisma.store.updateMany({ where: { businessId }, data: { pricesIncludeTax: false } });
 
     const product = (sku: string, sellPrice: number, taxRate: number) =>
       http().post("/products").set(auth(ownerToken)).send({ sku, name: sku, costPrice: 1, sellPrice, taxRate }).expect(201);

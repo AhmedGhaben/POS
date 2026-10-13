@@ -1,6 +1,6 @@
 import { PaymentMethod, SaleStatus } from "@pos/shared";
 import type { CreateSaleDto, SaleDto, SaleLineItemDto, SalePaymentDto } from "@pos/shared";
-import { linePrice, priceCart, type CartLine } from "./hooks/useCart";
+import { currentTaxContext, linePrice, priceCart, productTax, type CartLine } from "./hooks/useCart";
 
 /**
  * Receipt number for a sale rung up offline. Must match the API's
@@ -22,15 +22,22 @@ export function offlineReceiptNumber(storeId: string, clientId: string): string 
  * outbox syncs.
  */
 export function buildOfflineSale(localId: string, dto: CreateSaleDto, lines: CartLine[]): SaleDto {
-  const priced = priceCart(lines, dto.discount ?? null);
+  // Priced with the store's settings as the till has them (sent with the sale).
+  const ctx = { ...currentTaxContext(), ...(dto.offline?.pricesIncludeTax !== undefined ? { taxIncluded: dto.offline.pricesIncludeTax } : {}) };
+  const priced = priceCart(lines, dto.discount ?? null, ctx);
   const lineItems: SaleLineItemDto[] = lines.map((line, i) => {
     const p = priced.lines[i];
+    const tax = productTax(line.product, ctx);
     return {
       id: `${localId}-${i}`,
       productId: line.product.id,
       product: line.product,
-      quantity: line.quantity,
+      quantity: String(line.quantity),
+      unit: line.product.unit ?? "un",
       unitPrice: linePrice(line).toFixed(2),
+      taxRate: tax.rate.toFixed(2),
+      taxCode: tax.taxCode,
+      exemptionCode: tax.exemptionCode,
       taxAmount: p.tax.toFixed(2),
       discountAmount: p.discount.toFixed(2),
       lineTotal: p.total.toFixed(2),
@@ -90,6 +97,7 @@ export function buildOfflineSale(localId: string, dto: CreateSaleDto, lines: Car
     status: SaleStatus.COMPLETED,
     createdAt: dto.offline?.createdAt ?? new Date().toISOString(),
     createdOffline: true,
+    pricesIncludeTax: priced.taxIncluded,
     queued: true,
     clientId: localId,
     lineItems,

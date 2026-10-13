@@ -70,6 +70,36 @@ Prisma backend.
     sales only: past receipts and invoices keep the name, SKU and price
     the product was sold with. Users who can't see cost prices can't
     change them either.
+  - **Tax by name**: each product picks a tax rate ("Taxa geral 14%") or is
+    exempt with the AGT reason (M10...). Changing a rate's percentage
+    moves its products from the next sale. In Regime Simplificado or
+    Exclusão every line is exempt with M00 / M04 whatever the product says.
+    Products whose tax wasn't picked by name are flagged in the list.
+  - **Prices with IVA** (the store setting): the tax is worked out of the
+    shelf price and rounded up to the cent, so base + tax is always the
+    shelf price; without the setting the tax is added (also rounded up).
+    Receipts say "IVA incluído"; A4 documents show the amounts without
+    tax. Every sale line records its rate, code and exemption reason.
+  - **Units**: un, kg, g, l, m, cx; everything but "un" takes up to 3
+    decimals (0,765 kg). At the till, type the quantity on the line or
+    scan "0,5*" before the barcode.
+  - **SAF-T fields**: product type (P, S, O, E, I) and inventory type (a
+    provisional list until AGT publishes Angola's).
+  - **Categories**: add, rename and delete; deleting moves its products to
+    another category or leaves them uncategorized.
+  - **Barcodes** are unique among active products (checked while typing and
+    on the server); a scanner's Enter in the barcode field doesn't save the
+    form.
+  - **Photos**: resized in the browser, shown in the product list and on
+    the till's tiles.
+  - **Stock history and value**: every stock change (sale, cancel, return,
+    purchase, transfer, count) is a movement with its unit cost. Stock is
+    valued at the **weighted average cost** per store (purchases
+    re-average it; everything else moves at it), shown to people who may
+    see costs. Inventory shows each product's history and the **stock at a
+    date** with its book value (31 December for the yearly inventory),
+    exportable as CSV. Reports count revenue without tax and profit at the
+    average cost.
   - **Archiving**: hides a product from the till and the list without
     touching past sales or reports. "Show archived products" lets you
     restore it.

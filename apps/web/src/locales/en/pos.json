@@ -27,7 +27,8 @@
     "quantityFor": "Quantity of {{name}}",
     "priceChanged": "(was {{price}})",
     "price": "Change price",
-    "priceNamed": "Change the price of {{name}}"
+    "priceNamed": "Change the price of {{name}}",
+    "perUnit": "{{price}}/{{unit}}"
   },
   "customer": {
     "walkIn": "Walk-in customer",

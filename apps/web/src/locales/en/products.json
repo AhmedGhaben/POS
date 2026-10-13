@@ -16,7 +16,8 @@
     "costPrice": "Cost price",
     "sellPrice": "Sell price",
     "taxRate": "Tax %",
-    "stock": "Stock"
+    "stock": "Stock",
+    "tax": "Tax"
   },
   "form": {
     "editTitle": "Edit product",
@@ -31,7 +32,26 @@
     "restore": "Restore product",
     "archiveNote": "Archiving hides it from the till and this list. Past sales and reports keep it.",
     "trackStock": "Track stock",
-    "trackStockHint": "Turn off for services and other things with no stock: they can always be sold and never show in stock or low-stock alerts."
+    "trackStockHint": "Turn off for services and other things with no stock: they can always be sold and never show in stock or low-stock alerts.",
+    "barcodePlaceholder": "Scan or type",
+    "barcodeTaken": "Already used by \"{{name}}\"",
+    "unit": "Unit",
+    "pricePer": "Price per {{unit}}",
+    "priceWithTax": "With IVA, as on the shelf.",
+    "priceWithoutTax": "Without IVA: it's added at the till.",
+    "tax": "Tax",
+    "verifyRate": "check it still applies",
+    "legacyRate": "{{rate}}% (as before)",
+    "legacyRateHint": "Pick a tax rate by name",
+    "exempt": "Exempt (Isento)",
+    "exemptionReason": "Exemption reason",
+    "chooseReason": "Choose the reason",
+    "productType": "Product type (SAF-T)",
+    "inventoryType": "Inventory type",
+    "inventoryTypeDraft": "Provisional list until AGT publishes Angola's.",
+    "addPhoto": "Add a photo",
+    "changePhoto": "Change the photo",
+    "removePhoto": "Remove"
   },
   "import": {
     "title": "Import products from CSV",
@@ -83,5 +103,40 @@
       "over100": "{{field}} is over 100",
       "stock": "{{field}} \"{{value}}\" must be a whole number, 0 or more"
     }
+  },
+  "exemptCode": "Exempt ({{code}})",
+  "exemptNoReason": "Exempt, no reason given",
+  "checkTax": "Choose this product's tax by name: open it and pick a tax rate, or exempt with a reason.",
+  "categories": {
+    "manage": "Categories",
+    "title": "Categories",
+    "hint": "Add, rename or delete categories. Deleting one moves its products to another category, or leaves them without one.",
+    "newPlaceholder": "New category",
+    "newName": "New category name",
+    "add": "Add",
+    "created": "Category added",
+    "renamed": "Category renamed",
+    "deleted_one": "Category deleted; {{count}} product moved",
+    "deleted_other": "Category deleted; {{count}} products moved",
+    "productCount_one": "{{count}} product",
+    "productCount_other": "{{count}} products",
+    "rename": "Rename {{name}}",
+    "renameTo": "New name for {{name}}",
+    "delete": "Delete {{name}}",
+    "empty": "No categories yet.",
+    "deleteTitle": "Delete \"{{name}}\"?",
+    "moveTo_one": "Move its {{count}} product to",
+    "moveTo_other": "Move its {{count}} products to",
+    "moveToLabel": "Move products to",
+    "leaveUncategorized": "Leave them uncategorized",
+    "confirmDelete": "Delete category"
+  },
+  "units": {
+    "un": "Unit",
+    "kg": "Kilogram",
+    "g": "Gram",
+    "l": "Litre",
+    "m": "Metre",
+    "cx": "Box"
   }
 }

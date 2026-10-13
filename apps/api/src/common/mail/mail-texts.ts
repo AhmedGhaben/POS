@@ -27,6 +27,7 @@ export interface MailTexts {
     subtotal: string;
     discount: string;
     tax: string;
+    taxIncluded: string;
     thanks: string;
   };
   lowStock: {
@@ -74,6 +75,7 @@ const TEXTS: Record<Exclude<Language, "pt-AO">, MailTexts> = {
       subtotal: "Subtotal",
       discount: "Discount",
       tax: "Tax",
+      taxIncluded: "Tax included",
       thanks: "Thank you for your purchase!",
     },
     lowStock: {
@@ -119,6 +121,7 @@ const TEXTS: Record<Exclude<Language, "pt-AO">, MailTexts> = {
       subtotal: "Subtotal",
       discount: "Desconto",
       tax: "IVA",
+      taxIncluded: "IVA incluído",
       thanks: "Obrigado pela sua compra!",
     },
     lowStock: {
@@ -164,6 +167,7 @@ const TEXTS: Record<Exclude<Language, "pt-AO">, MailTexts> = {
       subtotal: "Subtotal",
       discount: "Desconto",
       tax: "Impostos",
+      taxIncluded: "Impostos inclusos",
       thanks: "Obrigado pela sua compra!",
     },
     lowStock: {

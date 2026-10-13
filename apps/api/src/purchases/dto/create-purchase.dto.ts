@@ -1,12 +1,12 @@
 import { Type } from "class-transformer";
-import { ArrayMinSize, IsInt, IsNumber, IsString, Min, ValidateNested } from "class-validator";
+import { ArrayMinSize, IsNumber, IsString, Min, ValidateNested } from "class-validator";
 
 export class PurchaseLineItemInputDto {
   @IsString()
   productId!: string;
 
-  @IsInt()
-  @Min(1)
+  @IsNumber({ maxDecimalPlaces: 3 })
+  @Min(0.001)
   quantity!: number;
 
   @IsNumber()

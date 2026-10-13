@@ -290,6 +290,24 @@ const EXACT: Record<string, Translations> = {
     "pt-PT": "Só o operador que abriu este turno, ou um gerente, o pode fechar",
     "pt-BR": "Só o operador que abriu este turno, ou um gerente, pode fechá-lo",
   },
+  // Products, categories and stock
+  "Choose a different category to move the products to": {
+    "pt-PT": "Escolha outra categoria para onde mover os produtos",
+    "pt-BR": "Escolha outra categoria para onde mover os produtos",
+  },
+  "That tax rate is turned off": { "pt-PT": "Essa taxa está desativada", "pt-BR": "Essa alíquota está desativada" },
+  "Unknown exemption reason": { "pt-PT": "Motivo de isenção desconhecido", "pt-BR": "Motivo de isenção desconhecido" },
+  "Unknown inventory type": { "pt-PT": "Tipo de inventário desconhecido", "pt-BR": "Tipo de inventário desconhecido" },
+  "Send the photo as a JPEG, PNG or WebP image": {
+    "pt-PT": "Envie a fotografia em JPEG, PNG ou WebP",
+    "pt-BR": "Envie a foto em JPEG, PNG ou WebP",
+  },
+  "The photo is too big (512 KB at most)": {
+    "pt-PT": "A fotografia é demasiado grande (máximo 512 KB)",
+    "pt-BR": "A foto é grande demais (máximo 512 KB)",
+  },
+  "Photo not found": { "pt-PT": "Fotografia não encontrada", "pt-BR": "Foto não encontrada" },
+  "Give the date as YYYY-MM-DD": { "pt-PT": "Indique a data como AAAA-MM-DD", "pt-BR": "Informe a data como AAAA-MM-DD" },
 };
 
 /** Messages with a value inside; `$1` is the captured value. */
@@ -301,6 +319,18 @@ const PATTERNS: { re: RegExp; t: Translations }[] = [
   {
     re: /^Insufficient stock for "(.+)"$/,
     t: { "pt-PT": 'Stock insuficiente de "$1"', "pt-BR": 'Estoque insuficiente de "$1"' },
+  },
+  {
+    re: /^"(.+)" is sold in whole units$/,
+    t: { "pt-PT": '"$1" vende-se à unidade (sem casas decimais)', "pt-BR": '"$1" é vendido por unidade (sem casas decimais)' },
+  },
+  {
+    re: /^This barcode is already used by "(.+)"$/,
+    t: { "pt-PT": 'Este código de barras já é usado por "$1"', "pt-BR": 'Este código de barras já é usado por "$1"' },
+  },
+  {
+    re: /^Barcode already used by "(.+)"$/,
+    t: { "pt-PT": 'Código de barras já usado por "$1"', "pt-BR": 'Código de barras já usado por "$1"' },
   },
   {
     re: /^Discounts can't be more than (\S+)% of the price$/,

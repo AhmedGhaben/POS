@@ -1,13 +1,13 @@
 import { Type } from "class-transformer";
-import { ArrayMinSize, IsEnum, IsInt, IsOptional, IsString, IsUUID, Min, ValidateNested } from "class-validator";
+import { ArrayMinSize, IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min, ValidateNested } from "class-validator";
 import { PaymentMethod } from "@prisma/client";
 
 export class ReturnLineItemInputDto {
   @IsString()
   productId!: string;
 
-  @IsInt()
-  @Min(1)
+  @IsNumber({ maxDecimalPlaces: 3 })
+  @Min(0.001)
   quantity!: number;
 }
 

@@ -1,8 +1,9 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { Role } from "@prisma/client";
+import { Prisma, Role } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { ImportProductsDto } from "./dto/import-products.dto";
+import { recordMovement } from "../stock/stock";
 
 export interface ImportResult {
   created: number;
@@ -28,12 +29,27 @@ export class ProductsImportService {
 
     const business = await this.prisma.business.findUniqueOrThrow({ where: { id: user.businessId } });
     const skus = [...new Set(dto.rows.map((r) => r.sku.trim()))];
-    const [existingProducts, categories] = await Promise.all([
+    const barcodes = [...new Set(dto.rows.map((r) => r.barcode?.trim()).filter((b): b is string => !!b))];
+    const [existingProducts, categories, taxRates, barcodeOwners] = await Promise.all([
       this.prisma.product.findMany({ where: { businessId: user.businessId, sku: { in: skus } } }),
       this.prisma.category.findMany({ where: { businessId: user.businessId } }),
+      this.prisma.taxRate.findMany({ where: { businessId: user.businessId, active: true, taxType: "IVA" }, orderBy: { isDefault: "desc" } }),
+      this.prisma.product.findMany({
+        where: { businessId: user.businessId, isActive: true, barcode: { in: barcodes } },
+        select: { sku: true, name: true, barcode: true },
+      }),
     ]);
     const productsBySku = new Map(existingProducts.map((p) => [p.sku, p]));
     const categoryIds = new Map(categories.map((c) => [c.name.trim().toLowerCase(), c.id]));
+    // Who has each barcode: other products, then earlier rows of this file.
+    const barcodeOwner = new Map(barcodeOwners.map((p) => [p.barcode!, { sku: p.sku, name: p.name }]));
+    // A percentage picks the business's rate with that percentage (by name on screen).
+    const taxFields = (rate: number | Prisma.Decimal) => {
+      const percentage = new Prisma.Decimal(rate);
+      if (percentage.isZero()) return { taxRate: percentage, taxRateId: null, taxCode: "ISE" };
+      const match = taxRates.find((r) => r.percentage.equals(percentage));
+      return { taxRate: percentage, taxRateId: match?.id ?? null, taxCode: match?.taxCode ?? "NOR" };
+    };
 
     const result: ImportResult = { created: 0, updated: 0, skipped: [] };
     const seen = new Set<string>();
@@ -73,13 +89,21 @@ export class ProductsImportService {
             }
           }
 
+          const barcode = row.barcode?.trim();
+          const owner = barcode ? barcodeOwner.get(barcode) : undefined;
+          if (owner && owner.sku !== sku) {
+            skip(`Barcode already used by "${owner.name}"`);
+            continue;
+          }
+          if (barcode) barcodeOwner.set(barcode, { sku, name: row.name.trim() });
+
           const fields = {
             name: row.name.trim(),
             sellPrice: row.sellPrice,
-            ...(row.barcode ? { barcode: row.barcode.trim() } : {}),
+            ...(barcode ? { barcode } : {}),
             ...(categoryId ? { categoryId } : {}),
             ...(row.costPrice !== undefined ? { costPrice: row.costPrice } : {}),
-            ...(row.taxRate !== undefined ? { taxRate: row.taxRate } : {}),
+            ...(row.taxRate !== undefined ? taxFields(row.taxRate) : {}),
           };
           const product = existing
             ? // Re-importing a deactivated product brings it back.
@@ -89,19 +113,30 @@ export class ProductsImportService {
                   businessId: user.businessId,
                   sku,
                   costPrice: 0,
-                  taxRate: business.defaultTaxRate,
+                  ...taxFields(business.defaultTaxRate),
+                  inventoryType: "M",
                   ...fields,
                 },
               });
           if (existing) result.updated++;
           else result.created++;
 
-          if (row.stock !== undefined && dto.storeId) {
-            await tx.inventoryItem.upsert({
+          // Sets the count: the difference goes in the stock history.
+          if (row.stock !== undefined && dto.storeId && product.trackStock) {
+            const current = await tx.inventoryItem.findUnique({
               where: { storeId_productId: { storeId: dto.storeId, productId: product.id } },
-              create: { storeId: dto.storeId, productId: product.id, quantity: row.stock },
-              update: { quantity: row.stock },
             });
+            const difference = new Prisma.Decimal(row.stock).sub(current?.quantity ?? 0);
+            if (!difference.isZero()) {
+              await recordMovement(tx, {
+                storeId: dto.storeId,
+                product,
+                type: current ? "ADJUSTMENT" : "OPENING",
+                quantity: difference,
+                userId: user.userId,
+                note: "CSV import",
+              });
+            }
           }
         }
       },

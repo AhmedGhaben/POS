@@ -24,11 +24,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { createTransfer, fetchTransfers } from "@/features/transfers/api";
 import { fetchProducts } from "@/features/products/api";
 import { useAuthStore } from "@/features/auth/store";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatQuantity } from "@/lib/format";
 
 const transferLineSchema = z.object({
   productId: z.string().min(1, "validation.required"),
-  quantity: z.coerce.number().int("validation.wholeNumber").min(1, "validation.atLeast1"),
+  // Up to 3 decimals for products sold by weight; the server keeps "un" products whole.
+  quantity: z.coerce.number().positive("validation.positive"),
 });
 
 const transferSchema = z
@@ -185,7 +186,8 @@ export function TransfersPage() {
                             <FormControl>
                               <Input
                                 type="number"
-                                min={1}
+                                min={0}
+                                step="any"
                                 placeholder={t("qty")}
                                 className="w-20"
                                 {...field}
@@ -262,7 +264,7 @@ export function TransfersPage() {
                   <TableCell>{transfer.fromStore.name}</TableCell>
                   <TableCell>{transfer.toStore.name}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {transfer.lineItems.map((li) => `${li.quantity} × ${li.product.name}`).join(", ")}
+                    {transfer.lineItems.map((li) => `${formatQuantity(li.quantity, li.product.unit)} × ${li.product.name}`).join(", ")}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{transfer.note ?? "—"}</TableCell>
                 </TableRow>

@@ -21,7 +21,7 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceDto }) {
       ]}
       seller={seller}
       store={seller.store}
-      lines={linesFromSale(sale.lineItems)}
+      lines={linesFromSale(sale.lineItems, sale.pricesIncludeTax)}
       billTo={{
         name: invoice.buyerName,
         address: invoice.buyerAddress,

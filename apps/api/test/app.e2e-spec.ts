@@ -121,7 +121,7 @@ describe("POS API (e2e)", () => {
     const after = inventoryAfter.body.find(
       (i: { productId: string }) => i.productId === product.id,
     );
-    expect(after.quantity).toBe(before.quantity - 2);
+    expect(Number(after.quantity)).toBe(Number(before.quantity) - 2);
   });
 
   it("rejects a sale that would drive stock negative with 400", async () => {

@@ -117,7 +117,7 @@ describe("Product CSV import (e2e)", () => {
     expect(await prisma.category.count({ where: { businessId } })).toBe(2);
 
     const stock = await prisma.inventoryItem.findMany({ where: { storeId } });
-    expect(Object.fromEntries(stock.map((i) => [i.productId, i.quantity]))).toEqual({
+    expect(Object.fromEntries(stock.map((i) => [i.productId, i.quantity.toNumber()]))).toEqual({
       [existingId]: 12,
       [bySku["COF-1"].id]: 5,
     });

@@ -6,7 +6,7 @@ import { useShiftStore } from "@/features/shifts/shift-store";
 import { apiClient, ApiError, isRetryableError, isUnreachableError } from "@/lib/api-client";
 import { addToOutbox } from "@/lib/offline-db";
 import { findSavedByBarcode } from "./catalog";
-import { linePrice, type CartLine } from "./hooks/useCart";
+import { currentTaxContext, linePrice, productTax, type CartLine } from "./hooks/useCart";
 import { approvalHeaders, type Approval } from "@/features/overrides/approval";
 import { buildOfflineSale } from "./offline-sale";
 import { isWorkingOffline, useOfflineStore } from "./offline-store";
@@ -62,9 +62,10 @@ export async function createSale(dto: CreateSaleDto, lines: CartLine[], approval
 
 async function queueSaleOffline(sale: CreateSaleDto, lines: CartLine[], approvals: Approval[]): Promise<SaleDto> {
   const createdAt = new Date().toISOString();
+  const ctx = currentTaxContext();
   const payload: CreateSaleDto = {
     ...sale,
-    offline: { createdAt },
+    offline: { createdAt, pricesIncludeTax: ctx.taxIncluded },
     overrides: undefined,
     offlineOverrides: approvals.map((a) => ({ approverId: a.approverId, permission: a.permission })),
     // The server records these prices, not whatever they are by sync time.
@@ -72,7 +73,7 @@ async function queueSaleOffline(sale: CreateSaleDto, lines: CartLine[], approval
       productId: l.product.id,
       quantity: l.quantity,
       unitPrice: linePrice(l),
-      taxRate: Number(l.product.taxRate),
+      taxRate: productTax(l.product, ctx).rate,
       discount: l.discount ?? undefined,
     })),
   };

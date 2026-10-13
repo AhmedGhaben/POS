@@ -1,7 +1,8 @@
-import { IsString, MinLength } from "class-validator";
+import { IsString, Matches, MaxLength } from "class-validator";
 
 export class CreateCategoryDto {
   @IsString()
-  @MinLength(1)
+  @Matches(/\S/)
+  @MaxLength(60)
   name!: string;
 }

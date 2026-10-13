@@ -7,7 +7,8 @@ import { MAIL_TEXTS } from "./mail-texts";
 
 export interface ReceiptEmailItem {
   name: string;
-  quantity: number;
+  /** Up to 3 decimals, with its unit when it isn't "un" (e.g. "1.25 kg"). */
+  quantity: number | string;
   unitPrice: string;
   lineTotal: string;
 }
@@ -23,12 +24,14 @@ export interface ReceiptEmailParams {
   discountTotal?: string;
   taxTotal: string;
   total: string;
+  /** Prices included tax: the tax is shown as part of the total, not added to it. */
+  taxIncluded?: boolean;
 }
 
 export interface LowStockEmailItem {
   productName: string;
-  quantity: number;
-  reorderLevel: number;
+  quantity: number | string;
+  reorderLevel: number | string;
 }
 
 export interface LowStockEmailParams {
@@ -145,7 +148,7 @@ export class MailService {
          <thead><tr><th align="left">${t.item}</th><th align="right">${t.qty}</th><th align="right">${t.price}</th><th align="right">${t.total}</th></tr></thead>
          <tbody>${rows}</tbody>
        </table>
-       <p>${t.subtotal}: ${money(params.subtotal)}<br/>${Number(params.discountTotal ?? 0) > 0 ? `${t.discount}: -${money(params.discountTotal!)}<br/>` : ""}${t.tax}: ${money(params.taxTotal)}<br/><b>${t.total}: ${money(params.total)}</b></p>
+       <p>${t.subtotal}: ${money(params.subtotal)}<br/>${Number(params.discountTotal ?? 0) > 0 ? `${t.discount}: -${money(params.discountTotal!)}<br/>` : ""}${params.taxIncluded ? t.taxIncluded : t.tax}: ${money(params.taxTotal)}<br/><b>${t.total}: ${money(params.total)}</b></p>
        <p>${t.thanks}</p>`,
     );
   }

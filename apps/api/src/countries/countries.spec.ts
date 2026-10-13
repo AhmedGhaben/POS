@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { activeExemptions, AO, countryConfig, findExemption, ratesForStore } from "./index";
+import { activeExemptions, AO, countryConfig, findExemption, lineTax, ratesForStore } from "./index";
 
 const API_DIR = __dirname;
 const SHARED_DIR = path.resolve(__dirname, "../../../../packages/shared/src/countries");
@@ -79,6 +79,23 @@ describe("country config", () => {
       expect(AO.documentQrUrl("000415195LA035", "FR QN2024/11")).toBe(
         "https://quiosqueagt.minfin.gov.ao/facturacao-eletronica/consultar-fe?emissor=000415195LA035&document=FR%20QN2024/11",
       );
+    });
+
+    it("line tax: the product's in Regime Geral, exempt with the regime's code otherwise", () => {
+      const reduced = { taxRate: "5.00", taxCode: "RED", exemptionCode: null };
+      expect(lineTax(AO, "GERAL", reduced)).toEqual({ taxType: "IVA", taxCode: "RED", rate: 5, exemptionCode: null });
+      expect(lineTax(AO, "SIMPLIFICADO", reduced)).toEqual({ taxType: "IVA", taxCode: "ISE", rate: 0, exemptionCode: "M00" });
+      expect(lineTax(AO, "EXCLUSAO", reduced)).toEqual({ taxType: "IVA", taxCode: "ISE", rate: 0, exemptionCode: "M04" });
+      // An exempt product keeps its own reason; an old product with only a rate counts as the general code.
+      expect(lineTax(AO, "GERAL", { taxRate: 0, exemptionCode: "M10" })).toEqual({ taxType: "IVA", taxCode: "ISE", rate: 0, exemptionCode: "M10" });
+      expect(lineTax(AO, "GERAL", { taxRate: "14" })).toMatchObject({ taxCode: "NOR", rate: 14 });
+      expect(lineTax(null, null, { taxRate: 19 })).toMatchObject({ taxCode: "NOR", rate: 19 });
+    });
+
+    it("has the SAF-T product types and draft inventory types", () => {
+      expect(AO.productTypes.map((t) => t.code)).toEqual(["P", "S", "O", "E", "I"]);
+      expect(AO.inventoryTypes.map((t) => t.code)).toContain("M");
+      expect(AO.inventoryTypesDraft).toBe(true);
     });
   });
 });

@@ -72,6 +72,8 @@ describe("Invoices (e2e)", () => {
     storeA = reg.body.stores[0].id;
     storeB = (await http().post("/stores").set(auth(ownerToken)).send({ name: "E2E Invoice Store B" }).expect(201))
       .body.id;
+    // These tests price without tax (added at the till); new stores price with IVA in.
+    await prisma.store.updateMany({ where: { businessId }, data: { pricesIncludeTax: false } });
 
     await http()
       .patch("/businesses/me")

@@ -123,12 +123,12 @@ describe("POS API Phase 7 (e2e)", () => {
       .expect(200);
     const product = productsRes.body[0];
 
-    const beforeA = (
+    const beforeA = Number((
       await request(app.getHttpServer())
         .get(`/stores/${STORE_A}/inventory`)
         .set("Authorization", `Bearer ${ownerAuthToken}`)
         .expect(200)
-    ).body.find((i: { productId: string }) => i.productId === product.id).quantity;
+    ).body.find((i: { productId: string }) => i.productId === product.id).quantity);
 
     const transferRes = await request(app.getHttpServer())
       .post("/transfers")
@@ -144,20 +144,20 @@ describe("POS API Phase 7 (e2e)", () => {
     expect(transferRes.body.toStore.id).toBe(storeB);
     expect(transferRes.body.lineItems).toHaveLength(1);
 
-    const afterA = (
+    const afterA = Number((
       await request(app.getHttpServer())
         .get(`/stores/${STORE_A}/inventory`)
         .set("Authorization", `Bearer ${ownerAuthToken}`)
         .expect(200)
-    ).body.find((i: { productId: string }) => i.productId === product.id).quantity;
+    ).body.find((i: { productId: string }) => i.productId === product.id).quantity);
     expect(afterA).toBe(beforeA - 3);
 
-    const afterB = (
+    const afterB = Number((
       await request(app.getHttpServer())
         .get(`/stores/${storeB}/inventory`)
         .set("Authorization", `Bearer ${ownerAuthToken}`)
         .expect(200)
-    ).body.find((i: { productId: string }) => i.productId === product.id).quantity;
+    ).body.find((i: { productId: string }) => i.productId === product.id).quantity);
     expect(afterB).toBe(3);
 
     const historyRes = await request(app.getHttpServer())

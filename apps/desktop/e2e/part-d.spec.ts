@@ -83,7 +83,7 @@ test.describe.serial("Part D: customer displays", () => {
     await openPosWithProducts(page);
     await poleShows(/Hello from Demo/);
     const first = page.locator("div.grid > button.text-left").first();
-    productName = (await first.locator("p").first().textContent())!;
+    productName = (await first.locator(".font-medium").first().textContent())!;
     await first.click();
     const text = await poleShows(/TOTAL/);
     expect(text).toContain(productName.slice(0, 10));

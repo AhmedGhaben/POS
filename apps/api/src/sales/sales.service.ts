@@ -8,7 +8,9 @@ import { MailService } from "../common/mail/mail.service";
 import { emailLanguage } from "../common/i18n/languages";
 import { CreateSaleDto } from "./dto/create-sale.dto";
 import { VoidSaleDto } from "./dto/void-sale.dto";
-import { priceSaleCents, type DiscountInput, type PricedSale } from "./pricing";
+import { priceSaleCents, unitDecimals, type DiscountInput, type PricedSale } from "./pricing";
+import { countryConfig, lineTax, type IvaRegime, type LineTax } from "../countries";
+import { recordMovement } from "../stock/stock";
 
 /** How far an offline sale's clock may run ahead of the server's. */
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
@@ -116,12 +118,35 @@ export class SalesService {
       throw new NotFoundException("One or more products were not found");
     }
     const productById = new Map(products.map((p) => [p.id, p]));
+    const store = await this.prisma.store.findFirst({
+      where: { id: dto.storeId, businessId },
+      select: { country: true, ivaRegime: true, pricesIncludeTax: true },
+    });
+    if (!store) throw new NotFoundException("Store not found");
 
     for (const discount of [dto.discount, ...dto.lineItems.map((li) => li.discount)]) {
       if (discount?.type === "PERCENT" && discount.value > 100) {
         throw new BadRequestException("A percentage discount can't be more than 100%");
       }
     }
+    for (const li of dto.lineItems) {
+      const product = productById.get(li.productId)!;
+      if (unitDecimals(product.unit) === 0 && !Number.isInteger(li.quantity)) {
+        throw new BadRequestException(`"${product.name}" is sold in whole units`);
+      }
+    }
+
+    // The tax on each line: the product's, unless the store's regime makes
+    // everything exempt. An offline sale keeps the rate the till charged.
+    const config = countryConfig(store.country);
+    const taxes: LineTax[] = dto.lineItems.map((li) => {
+      const tax = lineTax(config, store.ivaRegime as IvaRegime, productById.get(li.productId)!);
+      if (!offline || li.taxRate === undefined || li.taxRate === tax.rate) return tax;
+      return li.taxRate > 0
+        ? { ...tax, taxCode: tax.rate > 0 ? tax.taxCode : "NOR", rate: li.taxRate, exemptionCode: null }
+        : { ...tax, taxCode: "ISE", rate: 0 };
+    });
+    const taxIncluded = offline?.pricesIncludeTax ?? store.pricesIncludeTax;
 
     // An offline sale records what already happened at the till, so it
     // keeps the price, tax and discounts the cashier gave even if they've
@@ -133,12 +158,14 @@ export class SalesService {
     });
     const priceChanged = dto.lineItems.map((li, i) => !unitPrices[i].equals(productById.get(li.productId)!.sellPrice));
     const priced = priceSaleCents(
-      dto.lineItems.map((li, i) => {
-        const product = productById.get(li.productId)!;
-        const taxRate = offline && li.taxRate !== undefined ? li.taxRate : Number(product.taxRate);
-        return { unitPrice: Number(unitPrices[i]), quantity: li.quantity, taxRate, discount: given(li.discount) };
-      }),
+      dto.lineItems.map((li, i) => ({
+        unitPrice: Number(unitPrices[i]),
+        quantity: li.quantity,
+        taxRate: taxes[i].rate,
+        discount: given(li.discount),
+      })),
       given(dto.discount),
+      { taxIncluded },
     );
 
     // What the cashier may not do alone needs a manager's approval, used
@@ -172,8 +199,14 @@ export class SalesService {
         productId: product.id,
         productName: product.name,
         productSku: product.sku,
-        quantity: li.quantity,
+        quantity: new Prisma.Decimal(li.quantity),
+        unit: product.unit,
         unitPrice: unitPrices[i],
+        taxRate: new Prisma.Decimal(taxes[i].rate),
+        taxCode: taxes[i].taxCode,
+        exemptionCode: taxes[i].exemptionCode,
+        // Services: their cost price; stock: the store's average, filled in when it moves.
+        unitCost: product.costPrice as Prisma.Decimal | null,
         // A price the cashier changed (offline, only when a manager's approval came with it).
         originalUnitPrice: priceChanged[i] && (!offline || offlineApproved(Permission.CHANGE_PRICE)) ? product.sellPrice : null,
         taxAmount: fromCents(line.tax),
@@ -222,49 +255,37 @@ export class SalesService {
     const shift = await this.saleShift(dto, cashierId, terminalId);
     const customerId = dto.customerId || (await this.finalConsumerId(businessId));
     const createdAt = offline ? clampToNow(new Date(offline.createdAt)) : undefined;
-    // Services and the like don't move stock.
-    const stockLines = dto.lineItems.filter((li) => productById.get(li.productId)!.trackStock);
-
     let sale: Prisma.SaleGetPayload<{ include: typeof SALE_INCLUDE }>;
     try {
       sale = await this.prisma.$transaction(async (tx) => {
         for (const approval of approvals) {
           await this.overrides.consume(approval.token, { userId: cashierId, businessId }, approval.permission, tx);
         }
-        if (offline) {
-          // The goods already left the shop: record the sale even if the
-          // server's stock count says there weren't enough.
-          for (const li of stockLines) {
-            await tx.inventoryItem.upsert({
-              where: { storeId_productId: { storeId: dto.storeId, productId: li.productId } },
-              update: { quantity: { decrement: li.quantity } },
-              create: { storeId: dto.storeId, productId: li.productId, quantity: -li.quantity },
-            });
-          }
-        } else {
-          for (const li of stockLines) {
-            const inventoryItem = await tx.inventoryItem.findUnique({
-              where: { storeId_productId: { storeId: dto.storeId, productId: li.productId } },
-            });
-            if (!inventoryItem || inventoryItem.quantity < li.quantity) {
-              const product = productById.get(li.productId)!;
-              throw new BadRequestException(`Insufficient stock for "${product.name}"`);
-            }
-          }
-
-          for (const li of stockLines) {
-            await tx.inventoryItem.update({
-              where: { storeId_productId: { storeId: dto.storeId, productId: li.productId } },
-              data: { quantity: { decrement: li.quantity } },
-            });
-          }
+        // Services and the like don't move stock. Offline, the goods already
+        // left the shop: the sale is recorded even if the server's count says
+        // there weren't enough. Online there must be enough.
+        const movementIds: string[] = [];
+        for (const [i, li] of dto.lineItems.entries()) {
+          const product = productById.get(li.productId)!;
+          if (!product.trackStock) continue;
+          const movement = await recordMovement(tx, {
+            storeId: dto.storeId,
+            product,
+            type: "SALE",
+            quantity: -li.quantity,
+            requireStock: !offline,
+            userId: cashierId,
+            occurredAt: createdAt,
+          });
+          movementIds.push(movement.id);
+          lineItemsData[i].unitCost = movement.unitCost;
         }
 
         if (terminalId) {
           await tx.terminal.update({ where: { id: terminalId }, data: { lastSeenAt: new Date() } });
         }
 
-        return tx.sale.create({
+        const created = await tx.sale.create({
           data: {
             storeId: dto.storeId,
             cashierId,
@@ -284,12 +305,17 @@ export class SalesService {
             createdOffline: !!offline,
             terminalId,
             shiftId: shift?.id ?? null,
+            pricesIncludeTax: taxIncluded,
             ...(createdAt ? { createdAt } : {}),
             lineItems: { create: lineItemsData },
             payments: { create: paymentsData },
           },
           include: SALE_INCLUDE,
         });
+        if (movementIds.length > 0) {
+          await tx.stockMovement.updateMany({ where: { id: { in: movementIds } }, data: { saleId: created.id } });
+        }
+        return created;
       });
     } catch (error) {
       // Two copies of the same sale raced and the other one won. Usually a
@@ -415,7 +441,7 @@ export class SalesService {
     const sale = await this.prisma.sale.findFirst({
       where: { storeId: dto.storeId, ...(dto.saleId ? { id: dto.saleId } : { clientId: dto.saleClientId }) },
       include: {
-        lineItems: true,
+        lineItems: { include: { product: true } },
         returns: { select: { id: true } },
         invoice: { select: { id: true } },
         shift: { select: { status: true } },
@@ -453,10 +479,16 @@ export class SalesService {
         });
         if (count === 0) return;
         for (const li of sale.lineItems) {
-          await tx.inventoryItem.upsert({
-            where: { storeId_productId: { storeId: sale.storeId, productId: li.productId } },
-            update: { quantity: { increment: li.quantity } },
-            create: { storeId: sale.storeId, productId: li.productId, quantity: li.quantity },
+          if (!li.product.trackStock) continue;
+          await recordMovement(tx, {
+            storeId: sale.storeId,
+            product: li.product,
+            type: "SALE_VOID",
+            quantity: li.quantity,
+            // Back at what it left at.
+            unitCost: li.unitCost,
+            saleId: sale.id,
+            userId,
           });
         }
       });
@@ -513,7 +545,7 @@ export class SalesService {
       receiptNumber: sale.receiptNumber,
       items: sale.lineItems.map((li) => ({
         name: li.productName,
-        quantity: li.quantity,
+        quantity: li.unit === "un" ? li.quantity.toNumber() : `${li.quantity.toNumber()} ${li.unit}`,
         unitPrice: li.unitPrice.toString(),
         lineTotal: li.lineTotal.toString(),
       })),
@@ -521,6 +553,7 @@ export class SalesService {
       discountTotal: sale.discountTotal.toString(),
       taxTotal: sale.taxTotal.toString(),
       total: sale.total.toString(),
+      taxIncluded: sale.pricesIncludeTax,
       },
       // For the shop's customer: the business language.
       emailLanguage(null, store?.business.language),

@@ -31,29 +31,43 @@ function dataUrlBytes(dataUrl: string): number {
  * the 300 KB limit. PNG keeps transparency; falls back to WebP, then JPEG
  * at decreasing quality if it's still too big.
  */
-export async function resizeLogo(file: File): Promise<string> {
-  if (!/^image\/(png|jpeg|webp|gif|bmp)$/.test(file.type)) {
-    throw new Error(i18n.t("settings:logo.wrongType"));
-  }
-  const img = await loadImage(file);
-  const scale = Math.min(1, MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
-  canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
-  canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-  const attempts: [string, number?][] = [
+export function resizeLogo(file: File): Promise<string> {
+  return resizeImage(file, MAX_SIDE, MAX_BYTES, [
     ["image/png"],
     ["image/webp", 0.9],
     ["image/webp", 0.75],
     ["image/jpeg", 0.85],
     ["image/jpeg", 0.65],
-  ];
+  ]);
+}
+
+/** Product photos: 400x400 at most, as WebP or JPEG (no transparency needed), under 200 KB. */
+export function resizePhoto(file: File): Promise<string> {
+  return resizeImage(file, 400, 200 * 1024, [
+    ["image/webp", 0.85],
+    ["image/jpeg", 0.85],
+    ["image/webp", 0.7],
+    ["image/jpeg", 0.65],
+  ]);
+}
+
+/** Fits the image in maxSide x maxSide and tries each encoding until one is small enough. */
+async function resizeImage(file: File, maxSide: number, maxBytes: number, attempts: [string, number?][]): Promise<string> {
+  if (!/^image\/(png|jpeg|webp|gif|bmp)$/.test(file.type)) {
+    throw new Error(i18n.t("settings:logo.wrongType"));
+  }
+  const img = await loadImage(file);
+  const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+  canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+
   for (const [type, quality] of attempts) {
     const dataUrl = canvas.toDataURL(type, quality);
     // Browsers without WebP encoding silently return PNG; skip those.
     if (!dataUrl.startsWith(`data:${type};`)) continue;
-    if (dataUrlBytes(dataUrl) <= MAX_BYTES) return dataUrl;
+    if (dataUrlBytes(dataUrl) <= maxBytes) return dataUrl;
   }
   throw new Error(i18n.t("settings:logo.tooDetailed"));
 }

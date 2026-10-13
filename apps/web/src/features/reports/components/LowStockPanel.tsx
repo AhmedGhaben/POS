@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { LowStockReportItemDto } from "@pos/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatQuantity } from "@/lib/format";
 
 interface LowStockPanelProps {
   items: LowStockReportItemDto[];
@@ -11,7 +12,7 @@ interface LowStockPanelProps {
 /** Status conveyed via icon + label together — never color alone. */
 function StockBadge({ quantity }: { quantity: number }) {
   const { t } = useTranslation("reports");
-  const isOut = quantity === 0;
+  const isOut = quantity <= 0;
   return (
     <span
       className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
@@ -50,10 +51,10 @@ export function LowStockPanel({ items }: LowStockPanelProps) {
                 <TableRow key={item.id}>
                   <TableCell>{item.product.name}</TableCell>
                   <TableCell>
-                    <StockBadge quantity={item.quantity} />
+                    <StockBadge quantity={Number(item.quantity)} />
                   </TableCell>
-                  <TableCell className="text-right font-medium">{item.quantity}</TableCell>
-                  <TableCell className="text-right text-muted-foreground">{item.reorderLevel}</TableCell>
+                  <TableCell className="text-right font-medium">{formatQuantity(item.quantity, item.product.unit)}</TableCell>
+                  <TableCell className="text-right text-muted-foreground">{formatQuantity(item.reorderLevel, item.product.unit)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -16,7 +16,7 @@ import {
  */
 export function CustomerDisplayPage() {
   const business = useAuthStore((s) => s.business);
-  const { t } = useDocumentLanguage();
+  const { t, qty } = useDocumentLanguage();
   const [state, setState] = React.useState<CustomerDisplayState>({ mode: "idle", message: welcomeText(business) });
   const listRef = React.useRef<HTMLUListElement>(null);
 
@@ -60,7 +60,9 @@ export function CustomerDisplayPage() {
                 }`}
               >
                 <span className="min-w-0 [overflow-wrap:anywhere]">
-                  {line.quantity > 1 && <span className="text-white/60">{line.quantity} × </span>}
+                  {(line.quantity > 1 || (line.unit && line.unit !== "un")) && (
+                    <span className="text-white/60">{qty(line.quantity, line.unit)} × </span>
+                  )}
                   {line.name}
                 </span>
                 <span className="shrink-0 tabular-nums">{line.total}</span>

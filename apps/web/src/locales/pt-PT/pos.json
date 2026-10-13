@@ -27,7 +27,8 @@
     "quantityFor": "Quantidade de {{name}}",
     "priceChanged": "(era {{price}})",
     "price": "Alterar preço",
-    "priceNamed": "Alterar o preço de {{name}}"
+    "priceNamed": "Alterar o preço de {{name}}",
+    "perUnit": "{{price}}/{{unit}}"
   },
   "customer": {
     "walkIn": "Consumidor final",

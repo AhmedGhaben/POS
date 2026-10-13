@@ -23,8 +23,8 @@ export const displayStateSchema: z.ZodType<CustomerDisplayState> = z.discriminat
   z.object({ mode: z.literal("idle"), message: text(80) }),
   z.object({
     mode: z.literal("cart"),
-    lastItem: z.object({ name: text(200), quantity: z.number().int().min(0).max(100_000), price: text(40) }).nullable(),
-    lines: z.array(z.object({ name: text(200), quantity: z.number().int().min(0).max(100_000), total: text(40) })).max(500),
+    lastItem: z.object({ name: text(200), quantity: z.number().min(0).max(100_000), price: text(40) }).nullable(),
+    lines: z.array(z.object({ name: text(200), quantity: z.number().min(0).max(100_000), unit: text(4).optional(), total: text(40) })).max(500),
     itemCount: z.number().int().min(0).max(1_000_000),
     total: text(40),
     labels,

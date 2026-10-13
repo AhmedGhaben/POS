@@ -48,7 +48,7 @@ interface A4DocumentProps {
 export function A4Document({ title, meta, store, lines, seller, billTo, notes }: A4DocumentProps) {
   const liveBusiness = useAuthStore((s) => s.business);
   const from = seller ?? liveBusiness;
-  const { t, money } = useDocumentLanguage(from?.currency);
+  const { t, money, qty } = useDocumentLanguage(from?.currency);
   if (!from) return null;
 
   const totals = documentTotals(lines);
@@ -113,7 +113,7 @@ export function A4Document({ title, meta, store, lines, seller, billTo, notes }:
                 {line.name}
                 {line.sku && <span className="block text-[8pt] text-neutral-600">{line.sku}</span>}
               </td>
-              <td className="py-1.5 pr-2 text-right">{line.quantity}</td>
+              <td className="py-1.5 pr-2 text-right">{qty(line.quantity, line.unit)}</td>
               <td className="py-1.5 pr-2 text-right">{money(line.unitPrice)}</td>
               {anyDiscount && (
                 <td className="py-1.5 pr-2 text-right">{line.discount > 0 ? `-${money(line.discount)}` : ""}</td>

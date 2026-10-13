@@ -1,5 +1,5 @@
 import { AO } from "./ao";
-import type { CountryConfig, IvaRegime, TaxExemption, TaxRateDefault } from "./types";
+import type { CountryConfig, IvaRegime, LineTax, TaxCode, TaxExemption, TaxRateDefault } from "./types";
 
 export * from "./types";
 export { AO } from "./ao";
@@ -40,4 +40,30 @@ export function ratesForStore<T extends Pick<TaxRateDefault, "region">>(
 
 export function regimeConfig(config: CountryConfig, regime: IvaRegime) {
   return config.ivaRegimes.find((r) => r.code === regime) ?? null;
+}
+
+/** What a product carries: its rate and, for 0%, why. */
+export interface ProductTaxFields {
+  /** A number, a decimal string, or a Prisma Decimal. */
+  taxRate: number | string | { toString(): string };
+  taxCode?: string | null;
+  exemptionCode?: string | null;
+}
+
+/**
+ * The tax on a line sold in a store. In Regime Geral it's the product's own;
+ * the Simplificado and Exclusão regimes make every line exempt (0%, ISE, with
+ * the regime's code, M00 / M04: decision 1), whatever the product says.
+ */
+export function lineTax(config: CountryConfig | null, regime: IvaRegime | null | undefined, product: ProductTaxFields): LineTax {
+  const exempting = config && regime ? regimeConfig(config, regime) : null;
+  if (exempting && !exempting.perProductRates) {
+    return { taxType: "IVA", taxCode: "ISE", rate: 0, exemptionCode: exempting.exemptionCode };
+  }
+  const rate = Number(product.taxRate) || 0;
+  if (rate <= 0) {
+    return { taxType: "IVA", taxCode: "ISE", rate: 0, exemptionCode: product.exemptionCode ?? null };
+  }
+  const code = (product.taxCode ?? "NOR") as TaxCode;
+  return { taxType: "IVA", taxCode: code === "ISE" ? "NOR" : code, rate, exemptionCode: null };
 }

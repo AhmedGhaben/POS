@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { ProductDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { posFetchProducts } from "@/features/pos/catalog";
+import { productPhotoSrc } from "@/features/products/api";
 import { useMoney } from "@/features/business/use-money";
 import { cn } from "@/lib/utils";
 
@@ -70,10 +71,18 @@ export function ProductGrid({ categoryId, onSelect }: ProductGridProps) {
               key={product.id}
               type="button"
               onClick={() => onSelect(product)}
-              className="rounded-md border p-2 text-left text-sm hover:bg-accent"
+              className="flex items-center gap-2 rounded-md border p-2 text-left text-sm hover:bg-accent"
             >
-              <p className="truncate font-medium">{product.name}</p>
-              <p className="text-muted-foreground">{money(product.sellPrice)}</p>
+              {productPhotoSrc(product) && (
+                <img src={productPhotoSrc(product)!} alt="" loading="lazy" className="h-10 w-10 shrink-0 rounded object-cover" />
+              )}
+              <span className="min-w-0">
+                <span className="block truncate font-medium">{product.name}</span>
+                <span className="block text-muted-foreground">
+                  {money(product.sellPrice)}
+                  {product.unit && product.unit !== "un" && `/${product.unit}`}
+                </span>
+              </span>
             </button>
           ))}
         </div>
@@ -88,7 +97,10 @@ export function ProductGrid({ categoryId, onSelect }: ProductGridProps) {
             >
               <span className="min-w-0 flex-1 truncate font-medium">{product.name}</span>
               <span className="shrink-0 text-xs text-muted-foreground">{product.sku}</span>
-              <span className="w-24 shrink-0 text-right">{money(product.sellPrice)}</span>
+              <span className="w-28 shrink-0 text-right">
+                {money(product.sellPrice)}
+                {product.unit && product.unit !== "un" && `/${product.unit}`}
+              </span>
             </button>
           ))}
         </div>

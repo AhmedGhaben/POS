@@ -13,7 +13,7 @@ interface QuoteSlipProps {
 
 /** 80 mm quote. Deliberately different from a receipt: no payment section, a clear disclaimer. */
 export function QuoteSlip({ store, lines, reference, issuedAt, forName }: QuoteSlipProps) {
-  const { t, money, dateTime, date } = useDocumentLanguage();
+  const { t, money, qty, dateTime, date } = useDocumentLanguage();
   const totals = documentTotals(lines);
 
   return (
@@ -29,7 +29,7 @@ export function QuoteSlip({ store, lines, reference, issuedAt, forName }: QuoteS
         <div key={line.key}>
           <div className="flex justify-between gap-2">
             <span>
-              {line.quantity} x {line.name}
+              {qty(line.quantity, line.unit)} x {line.name}
             </span>
             <span className="shrink-0">{money(line.lineGross)}</span>
           </div>

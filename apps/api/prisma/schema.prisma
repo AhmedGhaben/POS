@@ -104,6 +104,33 @@ enum CashMovementType {
   OUT
 }
 
+/// SAF-T ProductType: P products, S services, O other, E excise duties, I other taxes.
+enum SaftProductType {
+  P
+  S
+  O
+  E
+  I
+}
+
+/// How stock is valued. Weighted average only for now; movements keep their
+/// own unit cost so FIFO lots can be added later.
+enum CostingMethod {
+  WEIGHTED_AVERAGE
+}
+
+enum StockMovementType {
+  /// Stock that was already there when movements started being recorded.
+  OPENING
+  SALE
+  SALE_VOID
+  RETURN
+  PURCHASE
+  TRANSFER_IN
+  TRANSFER_OUT
+  ADJUSTMENT
+}
+
 model Business {
   id   String @id @default(cuid())
   name String
@@ -219,15 +246,17 @@ model TaxRate {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  products Product[]
+
   @@unique([businessId, key])
   @@index([businessId])
   @@map("tax_rates")
 }
 
 model Store {
-  id               String    @id @default(cuid())
+  id               String        @id @default(cuid())
   businessId       String
-  business         Business  @relation(fields: [businessId], references: [id])
+  business         Business      @relation(fields: [businessId], references: [id])
   name             String
   address          String?
   city             String?
@@ -235,16 +264,18 @@ model Store {
   /// Province code from the country config (e.g. LA, CA = Cabinda).
   province         String?
   /// The country config that applies here (taxes, documents, money).
-  country          String    @default("AO")
+  country          String        @default("AO")
   /// Only the owner changes it; it's logged and printed on documents.
-  ivaRegime        IvaRegime @default(GERAL)
+  ivaRegime        IvaRegime     @default(GERAL)
   /// Shelf prices include IVA; documents show the net price worked out from them.
-  pricesIncludeTax Boolean   @default(true)
+  pricesIncludeTax Boolean       @default(true)
+  /// How this store's stock is valued (its book value): weighted average cost.
+  costingMethod    CostingMethod @default(WEIGHTED_AVERAGE)
   phone            String?
-  timezone         String    @default("UTC")
-  isActive         Boolean   @default(true)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  timezone         String        @default("UTC")
+  isActive         Boolean       @default(true)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   storeUsers     StoreUser[]
   inventoryItems InventoryItem[]
@@ -258,6 +289,7 @@ model Store {
   terminals      Terminal[]
   drawerEvents   DrawerEvent[]
   shifts         Shift[]
+  stockMovements StockMovement[]
 
   @@index([businessId])
   @@map("stores")
@@ -482,25 +514,43 @@ model Category {
 }
 
 model Product {
-  id          String    @id @default(cuid())
-  businessId  String
-  business    Business  @relation(fields: [businessId], references: [id])
-  categoryId  String?
-  category    Category? @relation(fields: [categoryId], references: [id])
-  sku         String
-  barcode     String?
-  name        String
-  description String?
-  costPrice   Decimal   @db.Decimal(14, 2)
-  sellPrice   Decimal   @db.Decimal(14, 2)
-  taxRate     Decimal   @default(0) @db.Decimal(5, 2)
+  id            String          @id @default(cuid())
+  businessId    String
+  business      Business        @relation(fields: [businessId], references: [id])
+  categoryId    String?
+  category      Category?       @relation(fields: [categoryId], references: [id])
+  sku           String
+  barcode       String?
+  name          String
+  description   String?
+  costPrice     Decimal         @db.Decimal(14, 2)
+  /// Per unit (kg, litre...); with or without IVA as the store's pricesIncludeTax says.
+  sellPrice     Decimal         @db.Decimal(14, 2)
+  /// The rate charged, kept in step with the chosen tax rate (0 when exempt).
+  taxRate       Decimal         @default(0) @db.Decimal(5, 2)
+  /// The tax rate picked by name (Taxa geral 14%...); null when exempt or not chosen yet.
+  taxRateId     String?
+  taxRateRef    TaxRate?        @relation(fields: [taxRateId], references: [id])
+  /// SAF-T tax code: NOR, RED, INT, ISE...
+  taxCode       String?
+  /// Why it's exempt (M10...), when the rate is 0.
+  exemptionCode String?
+  /// un, kg, g, l, m, cx. Only "un" is sold in whole numbers.
+  unit          String          @default("un")
+  productType   SaftProductType @default(P)
+  /// Inventory product type for the yearly inventory file (M, P, A, S, T); null for services.
+  inventoryType String?
+  /// The photo's random id (also its URL); null without a photo.
+  photoId       String?
   /// False for services and other things with no stock: always sellable,
   /// never move stock, never in low-stock alerts.
-  trackStock  Boolean   @default(true)
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  trackStock    Boolean         @default(true)
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
+  photo             ProductPhoto?
+  stockMovements    StockMovement[]
   inventoryItems    InventoryItem[]
   saleLineItems     SaleLineItem[]
   purchaseLineItems PurchaseLineItem[]
@@ -519,12 +569,57 @@ model InventoryItem {
   store        Store    @relation(fields: [storeId], references: [id])
   productId    String
   product      Product  @relation(fields: [productId], references: [id])
-  quantity     Int      @default(0)
-  reorderLevel Int      @default(0)
+  quantity     Decimal  @default(0) @db.Decimal(14, 3)
+  reorderLevel Decimal  @default(0) @db.Decimal(14, 3)
+  /// Weighted average cost per unit in this store; with quantity, the book value.
+  averageCost  Decimal  @default(0) @db.Decimal(14, 4)
   updatedAt    DateTime @updatedAt
 
   @@unique([storeId, productId])
   @@map("inventory_items")
+}
+
+/// A product photo, resized by the browser before upload. Served by its
+/// random id, which is only known to people who can see the product.
+model ProductPhoto {
+  id        String   @id
+  productId String   @unique
+  product   Product  @relation(fields: [productId], references: [id])
+  mimeType  String
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@map("product_photos")
+}
+
+/// Every change to a store's stock, oldest first: the stock and its value at
+/// any date, and the trail behind the weighted average cost. Each movement
+/// keeps its own unit cost so FIFO lots can be added later.
+model StockMovement {
+  id          String            @id @default(cuid())
+  storeId     String
+  store       Store             @relation(fields: [storeId], references: [id])
+  productId   String
+  product     Product           @relation(fields: [productId], references: [id])
+  type        StockMovementType
+  /// Positive in, negative out.
+  quantity    Decimal           @db.Decimal(14, 3)
+  /// Cost per unit of this movement: what was paid for purchases, the average cost for everything else.
+  unitCost    Decimal           @db.Decimal(14, 4)
+  /// The store's stock and average cost right after it.
+  balance     Decimal           @db.Decimal(14, 3)
+  averageCost Decimal           @db.Decimal(14, 4)
+  saleId      String?
+  returnId    String?
+  purchaseId  String?
+  transferId  String?
+  userId      String?
+  note        String?
+  occurredAt  DateTime          @default(now())
+
+  @@index([storeId, productId, occurredAt])
+  @@index([storeId, occurredAt])
+  @@map("stock_movements")
 }
 
 model Customer {
@@ -597,6 +692,9 @@ model Sale {
   /// The till shift it was rung up in, when the business counts shifts.
   shiftId            String?
   shift              Shift?        @relation(fields: [shiftId], references: [id])
+  /// The prices included IVA (the store's setting when sold): the tax is part
+  /// of the subtotal, so total = subtotal - discountTotal.
+  pricesIncludeTax   Boolean       @default(false)
 
   lineItems SaleLineItem[]
   payments  SalePayment[]
@@ -618,8 +716,15 @@ model SaleLineItem {
   /// change past receipts and invoices.
   productName        String
   productSku         String
-  quantity           Int
+  quantity           Decimal  @db.Decimal(14, 3)
+  unit               String   @default("un")
   unitPrice          Decimal  @db.Decimal(14, 2)
+  /// The tax as charged (null on sales from before tax was recorded per line).
+  taxRate            Decimal? @db.Decimal(5, 2)
+  taxCode            String?
+  exemptionCode      String?
+  /// The store's average cost per unit when sold, for margins.
+  unitCost           Decimal? @db.Decimal(14, 4)
   /// The product's price when the cashier changed it at the till (CHANGE_PRICE); null otherwise.
   originalUnitPrice  Decimal? @db.Decimal(14, 2)
   taxAmount          Decimal  @default(0) @db.Decimal(14, 2)
@@ -729,7 +834,7 @@ model PurchaseLineItem {
   purchase   Purchase @relation(fields: [purchaseId], references: [id])
   productId  String
   product    Product  @relation(fields: [productId], references: [id])
-  quantity   Int
+  quantity   Decimal  @db.Decimal(14, 3)
   unitCost   Decimal  @db.Decimal(14, 2)
   lineTotal  Decimal  @db.Decimal(14, 2)
 
@@ -784,7 +889,7 @@ model ReturnLineItem {
   return    Return  @relation(fields: [returnId], references: [id])
   productId String
   product   Product @relation(fields: [productId], references: [id])
-  quantity  Int
+  quantity  Decimal @db.Decimal(14, 3)
   unitPrice Decimal @db.Decimal(14, 2)
   lineTotal Decimal @db.Decimal(14, 2)
 
@@ -821,7 +926,7 @@ model StockTransferLineItem {
   transfer   StockTransfer @relation(fields: [transferId], references: [id])
   productId  String
   product    Product       @relation(fields: [productId], references: [id])
-  quantity   Int
+  quantity   Decimal       @db.Decimal(14, 3)
 
   @@index([transferId])
   @@map("stock_transfer_line_items")

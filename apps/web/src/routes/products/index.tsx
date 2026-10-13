@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
-import { Download, Pencil, Plus, Upload } from "lucide-react";
+import { AlertTriangle, Download, ImageIcon, Pencil, Plus, Tags, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { downloadCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { ProductDto } from "@pos/shared";
-import { fetchProducts } from "@/features/products/api";
+import { fetchProducts, productPhotoSrc } from "@/features/products/api";
+import { CategoriesDialog } from "@/features/categories/components/CategoriesDialog";
+import { fetchTaxRates, TAX_RATES_QUERY_KEY } from "@/features/business/api";
 import { fieldHeader } from "@/features/products/import-rows";
 import { ImportProductsDialog } from "@/features/products/components/ImportProductsDialog";
 import { ProductFormDialog } from "@/features/products/components/ProductFormDialog";
@@ -27,6 +29,7 @@ export function ProductsPage() {
   const [dialogOpen, setDialogOpen] = React.useState(() => searchParams.get("new") === "1");
   const [editing, setEditing] = React.useState<ProductDto | null>(null);
   const [importOpen, setImportOpen] = React.useState(false);
+  const [categoriesOpen, setCategoriesOpen] = React.useState(false);
   React.useEffect(() => {
     if (searchParams.has("new")) setSearchParams({}, { replace: true });
   }, [searchParams, setSearchParams]);
@@ -40,6 +43,16 @@ export function ProductsPage() {
     queryFn: () => fetchProducts(search || undefined, undefined, showArchived),
   });
   const categoriesQuery = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
+  const ratesQuery = useQuery({ queryKey: TAX_RATES_QUERY_KEY, queryFn: fetchTaxRates });
+  /** The tax by name ("Taxa geral 14%"), "Isento (M10)", or a warning when it hasn't been chosen properly. */
+  const taxLabel = (p: ProductDto): { text: string; check: boolean } => {
+    const rate = ratesQuery.data?.find((r) => r.id === p.taxRateId);
+    if (rate) return { text: `${rate.name} ${Number(rate.percentage)}%`, check: false };
+    if (Number(p.taxRate) <= 0) {
+      return p.exemptionCode ? { text: t("exemptCode", { code: p.exemptionCode }), check: false } : { text: t("exemptNoReason"), check: true };
+    }
+    return { text: `${Number(p.taxRate)}%`, check: true };
+  };
 
   const openNew = () => {
     setEditing(null);
@@ -87,6 +100,12 @@ export function ProductsPage() {
           >
             <Download className="mr-2 h-4 w-4" /> {t("common:actions.exportCsv")}
           </Button>
+          {canEdit && (
+            <Button variant="outline" onClick={() => setCategoriesOpen(true)}>
+              <Tags className="mr-2 h-4 w-4" /> {t("categories.manage")}
+            </Button>
+          )}
+          <CategoriesDialog open={categoriesOpen} onOpenChange={setCategoriesOpen} />
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <Upload className="mr-2 h-4 w-4" /> {t("common:actions.importCsv")}
           </Button>
@@ -123,9 +142,11 @@ export function ProductsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12" />
                 <TableHead>{t("columns.name")}</TableHead>
                 <TableHead>{t("columns.sku")}</TableHead>
                 <TableHead>{t("columns.barcode")}</TableHead>
+                <TableHead>{t("columns.tax")}</TableHead>
                 <TableHead className="text-right">{t("columns.sellPrice")}</TableHead>
                 {canEdit && <TableHead className="w-12" />}
               </TableRow>
@@ -137,10 +158,38 @@ export function ProductsPage() {
                   className={canEdit ? "cursor-pointer" : undefined}
                   onClick={() => openEdit(product)}
                 >
-                  <TableCell>{product.name}</TableCell>
+                  <TableCell className="py-1">
+                    <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded bg-muted text-muted-foreground">
+                      {productPhotoSrc(product) ? (
+                        <img src={productPhotoSrc(product)!} alt="" loading="lazy" className="h-full w-full object-cover" />
+                      ) : (
+                        <ImageIcon className="h-4 w-4" />
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {product.name}
+                    {categoriesQuery.data && product.categoryId && (
+                      <span className="block text-xs text-muted-foreground">{categoriesQuery.data.find((c) => c.id === product.categoryId)?.name}</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{product.sku}</TableCell>
                   <TableCell className="text-muted-foreground">{product.barcode ?? "—"}</TableCell>
-                  <TableCell className="text-right">{money(product.sellPrice)}</TableCell>
+                  <TableCell className="text-sm">
+                    {(() => {
+                      const tax = taxLabel(product);
+                      return (
+                        <span className={tax.check ? "inline-flex items-center gap-1 text-amber-700 dark:text-amber-400" : undefined} title={tax.check ? t("checkTax") : undefined}>
+                          {tax.check && <AlertTriangle className="h-3 w-3" />}
+                          {tax.text}
+                        </span>
+                      );
+                    })()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {money(product.sellPrice)}
+                    {product.unit && product.unit !== "un" && <span className="text-muted-foreground">/{product.unit}</span>}
+                  </TableCell>
                   {canEdit && (
                     <TableCell className="py-1 text-right">
                       <Button
@@ -160,7 +209,7 @@ export function ProductsPage() {
               ))}
               {productsQuery.data?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={canEdit ? 5 : 4} className="p-6 text-center text-muted-foreground">
+                  <TableCell colSpan={canEdit ? 7 : 6} className="p-6 text-center text-muted-foreground">
                     {showArchived ? t("emptyArchived") : t("empty")}
                   </TableCell>
                 </TableRow>

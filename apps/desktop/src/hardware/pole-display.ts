@@ -29,7 +29,7 @@ export type CustomerDisplayState =
       mode: "cart";
       /** The item just added (or changed). */
       lastItem: { name: string; quantity: number; price: string } | null;
-      lines: { name: string; quantity: number; total: string }[];
+      lines: { name: string; quantity: number; unit?: string; total: string }[];
       itemCount: number;
       total: string;
       labels?: PoleLabels;

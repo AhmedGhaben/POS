@@ -20,7 +20,13 @@
     "reorderLevel": "Estoque mínimo",
     "lowStock": "Estoque baixo",
     "updated": "Estoque atualizado",
-    "empty": "Ainda não há estoque nesta loja."
+    "empty": "Ainda não há estoque nesta loja.",
+    "bookValue": "Valor contábil (custo médio ponderado): {{value}}",
+    "unit": "Unidade",
+    "averageCost": "Custo médio",
+    "value": "Valor",
+    "countFor": "Quantidade contada de {{name}}",
+    "historyFor": "Histórico de estoque de {{name}}"
   },
   "transfers": {
     "title": "Transferências de estoque",
@@ -67,5 +73,34 @@
     "cashNeedsShift": "Reembolsos em dinheiro saem de uma gaveta: faça-os em um caixa com o seu turno aberto, ou reembolse de outra forma.",
     "approval": "Fazer uma devolução / nota de crédito",
     "notApproved": "A devolução não foi autorizada."
+  },
+  "stockAt": {
+    "title": "Estoque em uma data",
+    "hint": "O estoque e seu valor no fim de um dia, ao custo médio ponderado. Use 31 de dezembro para o inventário anual. O histórico começa no dia em que os movimentos de estoque passaram a ser registrados.",
+    "date": "Data",
+    "show": "Mostrar",
+    "exportFile": "estoque-{{date}}.csv",
+    "productType": "Tipo de produto",
+    "inventoryType": "Tipo de inventário",
+    "empty": "Sem estoque no fim desse dia.",
+    "total": "Valor contábil total"
+  },
+  "history": {
+    "title": "Histórico de estoque: {{name}}",
+    "hint": "Todas as alterações no estoque deste produto nesta loja, das mais recentes para as mais antigas.",
+    "when": "Quando",
+    "what": "O quê",
+    "balance": "Estoque depois",
+    "empty": "Ainda não há movimentos.",
+    "types": {
+      "OPENING": "Estoque inicial",
+      "SALE": "Venda",
+      "SALE_VOID": "Venda cancelada",
+      "RETURN": "Devolução",
+      "PURCHASE": "Compra",
+      "TRANSFER_IN": "Transferência recebida",
+      "TRANSFER_OUT": "Transferência enviada",
+      "ADJUSTMENT": "Ajuste de contagem"
+    }
   }
 }

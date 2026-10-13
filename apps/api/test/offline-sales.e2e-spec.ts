@@ -32,7 +32,7 @@ describe("Offline sales and terminals (e2e)", () => {
   const http = () => request(app.getHttpServer());
   const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
   const stock = async () =>
-    (await prisma.inventoryItem.findUnique({ where: { storeId_productId: { storeId, productId } } }))!.quantity;
+    (await prisma.inventoryItem.findUnique({ where: { storeId_productId: { storeId, productId } } }))!.quantity.toNumber();
 
   /** 2 × 10.00 at 19% tax = 23.80, paid by card. */
   function saleBody(extra: Record<string, unknown> = {}, quantity = 2, amount = 23.8) {
@@ -70,6 +70,8 @@ describe("Offline sales and terminals (e2e)", () => {
     businessId = reg.body.user.businessId;
     ownerToken = reg.body.accessToken;
     storeId = reg.body.stores[0].id;
+    // These tests price without tax (added at the till); new stores price with IVA in.
+    await prisma.store.updateMany({ where: { businessId }, data: { pricesIncludeTax: false } });
 
     const product = await http()
       .post("/products")

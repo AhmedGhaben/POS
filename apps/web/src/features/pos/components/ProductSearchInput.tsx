@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { ProductDto } from "@pos/shared";
+import { roundQuantity, unitDecimals, type ProductDto } from "@pos/shared";
 import { Input } from "@/components/ui/input";
 import { posFetchProducts } from "@/features/pos/catalog";
 import { findByBarcode } from "@/features/pos/api";
@@ -28,8 +28,9 @@ export function ProductSearchInput({ onSelect, suppressRefocusRef }: ProductSear
   const money = useMoney();
   const [query, setQuery] = React.useState("");
   const inputRef = React.useRef<HTMLInputElement>(null);
-  // "3*" before a barcode or name adds that many (features/pos/quantity.ts).
-  const { quantity, query: search } = splitQuantityPrefix(query);
+  // "3*" before a barcode or name adds that many (features/pos/quantity.ts);
+  // "0,5*" half a kilo of something sold by weight.
+  const { quantity, query: search } = splitQuantityPrefix(query, 3);
 
   const searchQuery = useQuery({
     queryKey: ["pos-search", search],
@@ -46,7 +47,8 @@ export function ProductSearchInput({ onSelect, suppressRefocusRef }: ProductSear
   }, [refocus]);
 
   async function handleSelect(product: ProductDto) {
-    onSelect(product, quantity);
+    // Whole numbers for things sold by the unit.
+    onSelect(product, Math.max(roundQuantity(quantity, product.unit), unitDecimals(product.unit) > 0 ? 0.001 : 1));
     setQuery("");
     refocus();
   }

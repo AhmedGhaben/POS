@@ -12,7 +12,7 @@ import { CashMovementDialog } from "@/features/shifts/components/CashMovementDia
 import { CloseShiftDialog } from "@/features/shifts/components/CloseShiftDialog";
 import { isWorkingOffline } from "@/features/pos/offline-store";
 import { useTranslation } from "react-i18next";
-import { DrawerOpenReason, PaymentMethod, Permission } from "@pos/shared";
+import { DrawerOpenReason, fromCents, lineGrossCents, PaymentMethod, Permission } from "@pos/shared";
 import type { CustomerDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -478,7 +478,7 @@ export function PosPage() {
         base={
           discountFor === "sale" || discountFor === null
             ? totals.subtotal - (totals.discountTotal - totals.saleDiscount)
-            : linePrice(discountFor) * discountFor.quantity
+            : fromCents(lineGrossCents(linePrice(discountFor), discountFor.quantity))
         }
         current={discountFor === "sale" || discountFor === null ? saleDiscount : discountFor.discount}
         onApply={(d, approval) => {

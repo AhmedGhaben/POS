@@ -24,7 +24,7 @@ import { createReturn, fetchReturns } from "@/features/returns/api";
 import { useCurrentShift } from "@/features/shifts/shift-store";
 import { useHasPermission } from "@/features/auth/use-permission";
 import { approvalHeaders, requestApproval, type Approval } from "@/features/overrides/approval";
-import { PAYMENT_METHOD_ORDER, PaymentMethod, Permission } from "@pos/shared";
+import { PAYMENT_METHOD_ORDER, PaymentMethod, Permission, unitDecimals } from "@pos/shared";
 import { fetchSalesByStore } from "@/features/sales/api";
 import { useAuthStore } from "@/features/auth/store";
 import { useMoney } from "@/features/business/use-money";
@@ -35,6 +35,7 @@ const returnLineSchema = z
     productId: z.string(),
     productName: z.string(),
     maxQuantity: z.number(),
+    unit: z.string(),
     quantity: z.coerce.number().min(0, "validation.nonNegative"),
   })
   .refine((line) => line.quantity <= line.maxQuantity, {
@@ -178,7 +179,8 @@ export function ReturnsPage() {
                             sale?.lineItems.map((li) => ({
                               productId: li.productId,
                               productName: li.product.name,
-                              maxQuantity: li.quantity,
+                              maxQuantity: Number(li.quantity),
+                              unit: li.unit ?? "un",
                               quantity: "0",
                             })) ?? [],
                           );
@@ -209,7 +211,8 @@ export function ReturnsPage() {
                                   type="number"
                                   min={0}
                                   max={line.maxQuantity}
-                                  className="w-20"
+                                  step={unitDecimals(line.unit) > 0 ? 0.001 : 1}
+                                  className="w-24"
                                   {...field}
                                   value={field.value as string}
                                 />

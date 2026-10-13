@@ -1,7 +1,9 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreatePurchaseDto } from "./dto/create-purchase.dto";
+import { recordMovement } from "../stock/stock";
+import { unitDecimals } from "../sales/pricing";
 
 @Injectable()
 export class PurchasesService {
@@ -30,9 +32,14 @@ export class PurchasesService {
       throw new NotFoundException("One or more products were not found");
     }
 
+    const productById = new Map(products.map((p) => [p.id, p]));
     let subtotal = new Prisma.Decimal(0);
     const lineItemsData = dto.lineItems.map((li) => {
-      const lineTotal = new Prisma.Decimal(li.unitCost).mul(li.quantity);
+      const product = productById.get(li.productId)!;
+      if (unitDecimals(product.unit) === 0 && !Number.isInteger(li.quantity)) {
+        throw new BadRequestException(`"${product.name}" is sold in whole units`);
+      }
+      const lineTotal = new Prisma.Decimal(li.unitCost).mul(li.quantity).toDecimalPlaces(2);
       subtotal = subtotal.add(lineTotal);
       return {
         productId: li.productId,
@@ -43,18 +50,8 @@ export class PurchasesService {
     });
     const purchaseNumber = `PO-${dto.storeId.slice(-4).toUpperCase()}-${Date.now()}`;
 
-    // Bought services (and other untracked items) don't add stock.
-    const tracked = new Set(products.filter((p) => p.trackStock).map((p) => p.id));
     return this.prisma.$transaction(async (tx) => {
-      for (const li of dto.lineItems.filter((l) => tracked.has(l.productId))) {
-        await tx.inventoryItem.upsert({
-          where: { storeId_productId: { storeId: dto.storeId, productId: li.productId } },
-          create: { storeId: dto.storeId, productId: li.productId, quantity: li.quantity },
-          update: { quantity: { increment: li.quantity } },
-        });
-      }
-
-      return tx.purchase.create({
+      const purchase = await tx.purchase.create({
         data: {
           storeId: dto.storeId,
           supplierId: dto.supplierId,
@@ -68,6 +65,22 @@ export class PurchasesService {
         },
         include: { lineItems: { include: { product: true } }, supplier: true },
       });
+      // Bought services (and other untracked items) don't add stock. What
+      // was paid re-averages the store's cost.
+      for (const li of dto.lineItems) {
+        const product = productById.get(li.productId)!;
+        if (!product.trackStock) continue;
+        await recordMovement(tx, {
+          storeId: dto.storeId,
+          product,
+          type: "PURCHASE",
+          quantity: li.quantity,
+          unitCost: li.unitCost,
+          purchaseId: purchase.id,
+          userId: createdById,
+        });
+      }
+      return purchase;
     });
   }
 }

@@ -121,4 +121,22 @@ export interface CountryConfig {
   /** Link encoded in the document QR code. */
   documentQrUrl: (issuerTaxId: string, documentNo: string) => string;
   deadlines: DeadlineConfig[];
+  /** SAF-T ProductType: P products, S services, O other, E excise, I other taxes. */
+  productTypes: { code: SaftProductType; name: string }[];
+  /** Inventory product types for the yearly inventory file. */
+  inventoryTypes: { code: string; name: string }[];
+  /** The inventory types are our best guess until the official list is published. */
+  inventoryTypesDraft: boolean;
+}
+
+export type SaftProductType = "P" | "S" | "O" | "E" | "I";
+
+/** The tax that applies to one line: the product's, unless the store's regime exempts everything. */
+export interface LineTax {
+  taxType: TaxType;
+  taxCode: TaxCode;
+  /** Percent, e.g. 14. */
+  rate: number;
+  /** Exemption code (e.g. M00) when the rate is 0. */
+  exemptionCode: string | null;
 }

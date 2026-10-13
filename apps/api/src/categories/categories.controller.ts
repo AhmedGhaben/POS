@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { Roles } from "../common/decorators/roles.decorator";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -21,5 +21,20 @@ export class CategoriesController {
   @Roles(Role.OWNER, Role.MANAGER)
   create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateCategoryDto) {
     return this.categoriesService.create(user.businessId, dto);
+  }
+
+  @Patch(":id")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  rename(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() dto: CreateCategoryDto) {
+    return this.categoriesService.rename(user.businessId, id, dto);
+  }
+
+  /** ?reassignTo=<category id> moves its products there; without it they're left uncategorized. */
+  @Delete(":id")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  remove(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Query("reassignTo") reassignTo?: string) {
+    return this.categoriesService.remove(user.businessId, id, reassignTo || null);
   }
 }

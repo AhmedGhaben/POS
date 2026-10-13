@@ -6,7 +6,8 @@
     "tax": "Tax",
     "total": "Total",
     "discount": "Discount",
-    "saleDiscount": "Sale discount"
+    "saleDiscount": "Sale discount",
+    "taxIncluded": "Tax included"
   },
   "receipt": {
     "number": "Receipt #{{number}}",
@@ -15,7 +16,8 @@
     "thankYou": "Thank you!",
     "copy": "COPY",
     "cancelled": "CANCELLED",
-    "saved": "You saved {{amount}}"
+    "saved": "You saved {{amount}}",
+    "perUnit": "@ {{price}}/{{unit}}"
   },
   "quote": {
     "slipTitle": "QUOTE",

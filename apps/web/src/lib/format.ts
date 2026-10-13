@@ -22,6 +22,18 @@ export function formatMoney(value: number | string, currency: string, locale: st
   return cached(locale, currency, {}, "exact").format(Number(value));
 }
 
+/** A quantity with up to 3 decimals, and its unit unless it's "un": 2, 0,765 kg, 1.5 l. */
+export function formatQuantity(value: number | string, unit?: string | null, locale: string = currentLanguage()): string {
+  const key = `qty|${locale}`;
+  let format = numberFormats.get(key);
+  if (!format) {
+    format = new Intl.NumberFormat(locale, { maximumFractionDigits: 3 });
+    numberFormats.set(key, format);
+  }
+  const text = format.format(Number(value));
+  return unit && unit !== "un" ? `${text} ${unit}` : text;
+}
+
 /** Auto-compact for stat tiles and chart axes: $1,284.00 / $12.9K / $4.2M. */
 export function formatCurrency(value: number, currency: string, locale: string = currentLanguage()): string {
   if (Math.abs(value) < 10_000) return formatMoney(value, currency, locale);

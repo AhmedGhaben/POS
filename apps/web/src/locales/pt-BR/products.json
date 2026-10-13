@@ -16,7 +16,8 @@
     "costPrice": "Preço de custo",
     "sellPrice": "Preço de venda",
     "taxRate": "Imposto %",
-    "stock": "Estoque"
+    "stock": "Estoque",
+    "tax": "Imposto"
   },
   "form": {
     "editTitle": "Editar produto",
@@ -31,7 +32,26 @@
     "restore": "Restaurar produto",
     "archiveNote": "Arquivar esconde o produto do caixa e desta lista. Vendas e relatórios anteriores continuam com ele.",
     "trackStock": "Controlar estoque",
-    "trackStockHint": "Desligue para serviços e outros itens sem estoque: podem sempre ser vendidos e nunca aparecem no estoque nem nos alertas de estoque baixo."
+    "trackStockHint": "Desligue para serviços e outros itens sem estoque: podem sempre ser vendidos e nunca aparecem no estoque nem nos alertas de estoque baixo.",
+    "barcodePlaceholder": "Leia ou digite",
+    "barcodeTaken": "Já usado por \"{{name}}\"",
+    "unit": "Unidade",
+    "pricePer": "Preço por {{unit}}",
+    "priceWithTax": "Com impostos, como na prateleira.",
+    "priceWithoutTax": "Sem impostos: são somados no caixa.",
+    "tax": "Imposto",
+    "verifyRate": "confirme que ainda vale",
+    "legacyRate": "{{rate}}% (como antes)",
+    "legacyRateHint": "Escolha uma alíquota pelo nome",
+    "exempt": "Isento",
+    "exemptionReason": "Motivo de isenção",
+    "chooseReason": "Escolha o motivo",
+    "productType": "Tipo de produto (SAF-T)",
+    "inventoryType": "Tipo de inventário",
+    "inventoryTypeDraft": "Lista provisória até a AGT publicar a de Angola.",
+    "addPhoto": "Adicionar foto",
+    "changePhoto": "Trocar a foto",
+    "removePhoto": "Remover"
   },
   "import": {
     "title": "Importar produtos de CSV",
@@ -83,5 +103,40 @@
       "over100": "{{field}} é maior que 100",
       "stock": "{{field}} \"{{value}}\" deve ser um número inteiro, 0 ou mais"
     }
+  },
+  "exemptCode": "Isento ({{code}})",
+  "exemptNoReason": "Isento, sem motivo informado",
+  "checkTax": "Escolha o imposto deste produto pelo nome: abra-o e escolha uma alíquota, ou isento com o motivo.",
+  "categories": {
+    "manage": "Categorias",
+    "title": "Categorias",
+    "hint": "Adicione, renomeie ou exclua categorias. Ao excluir uma, os produtos passam para outra categoria ou ficam sem categoria.",
+    "newPlaceholder": "Nova categoria",
+    "newName": "Nome da nova categoria",
+    "add": "Adicionar",
+    "created": "Categoria adicionada",
+    "renamed": "Categoria renomeada",
+    "deleted_one": "Categoria excluída; {{count}} produto foi movido",
+    "deleted_other": "Categoria excluída; {{count}} produtos foram movidos",
+    "productCount_one": "{{count}} produto",
+    "productCount_other": "{{count}} produtos",
+    "rename": "Renomear {{name}}",
+    "renameTo": "Novo nome para {{name}}",
+    "delete": "Excluir {{name}}",
+    "empty": "Ainda não há categorias.",
+    "deleteTitle": "Excluir \"{{name}}\"?",
+    "moveTo_one": "Mover o {{count}} produto para",
+    "moveTo_other": "Mover os {{count}} produtos para",
+    "moveToLabel": "Mover os produtos para",
+    "leaveUncategorized": "Deixá-los sem categoria",
+    "confirmDelete": "Excluir categoria"
+  },
+  "units": {
+    "un": "Unidade",
+    "kg": "Quilograma",
+    "g": "Grama",
+    "l": "Litro",
+    "m": "Metro",
+    "cx": "Caixa"
   }
 }
