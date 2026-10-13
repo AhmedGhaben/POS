@@ -6,6 +6,7 @@ import { syncOutbox } from "@/features/pos/sync";
 import { apiClient } from "@/lib/api-client";
 import { addToOutbox } from "@/lib/offline-db";
 import { localSummary, type LocalShift } from "./ledger";
+import { offlineOverride, type Approval } from "@/features/overrides/approval";
 import { useShiftStore } from "./shift-store";
 
 /**
@@ -46,9 +47,10 @@ export async function openShift(storeId: string, openingFloat: number): Promise<
   return shift;
 }
 
+/** Cash in or out. A cash out by someone without CASH_OUT carries a manager's approval. */
 export async function addCashMovement(
   shift: LocalShift,
-  movement: { type: "IN" | "OUT"; amount: number; reason: CashMovementReason; note?: string },
+  { approval, ...movement }: { type: "IN" | "OUT"; amount: number; reason: CashMovementReason; note?: string; approval?: Approval | null },
 ) {
   const clientId = crypto.randomUUID();
   const occurredAt = new Date().toISOString();
@@ -67,6 +69,8 @@ export async function addCashMovement(
       occurredAt,
       offline: isWorkingOffline(),
       actingUserId: me().id,
+      offlineOverride: offlineOverride(approval),
+      overrideToken: approval?.kind === "token" ? approval.token : undefined,
     },
   });
 }
@@ -75,7 +79,12 @@ export async function addCashMovement(
  * Closes the shift with the count. Returns the till's own figure for the
  * expected cash; the server's report follows once it has the close.
  */
-export async function closeShift(shift: LocalShift, countedCash: number, note?: string) {
+export async function closeShift(
+  shift: LocalShift,
+  countedCash: number,
+  note?: string,
+  countedDenominations?: Record<string, number> | null,
+) {
   const summary = localSummary(shift);
   const closedAt = new Date().toISOString();
   const clientId = crypto.randomUUID();
@@ -88,6 +97,7 @@ export async function closeShift(shift: LocalShift, countedCash: number, note?: 
       storeId: shift.storeId,
       shiftClientId: shift.clientId,
       countedCash,
+      countedDenominations: countedDenominations ?? undefined,
       // An adopted shift's record here is incomplete: leave it to the server.
       tillExpectedCash: shift.adopted ? undefined : Number(summary.expectedCash),
       note: note?.trim() || undefined,
@@ -109,8 +119,25 @@ export async function fetchCurrentShift(storeId: string, terminalId?: string | n
   return res.shift;
 }
 
-export function fetchShifts(storeId: string, page: number, pageSize: number) {
-  return apiClient.get<PagedDto<ShiftDto>>(`/shifts?storeId=${storeId}&page=${page}&pageSize=${pageSize}`);
+export interface ShiftFilters {
+  status?: "OPEN" | "CLOSED";
+  flagged?: boolean;
+  cashierId?: string;
+  terminalId?: string;
+}
+
+export function fetchShifts(storeId: string, page: number, pageSize: number, filters: ShiftFilters = {}) {
+  const query = new URLSearchParams({ storeId, page: String(page), pageSize: String(pageSize) });
+  if (filters.status) query.set("status", filters.status);
+  if (filters.flagged) query.set("flagged", "true");
+  if (filters.cashierId) query.set("cashierId", filters.cashierId);
+  if (filters.terminalId) query.set("terminalId", filters.terminalId);
+  return apiClient.get<PagedDto<ShiftDto>>(`/shifts?${query}`);
+}
+
+/** People who can open shifts, for the Shifts page filter (owners and managers). */
+export function fetchShiftPeople() {
+  return apiClient.get<{ id: string; firstName: string; lastName: string }[]>("/users");
 }
 
 export function fetchShift(id: string) {

@@ -11,7 +11,9 @@ import { PrintArea } from "@/components/print/PrintArea";
 import { useAuthStore } from "@/features/auth/store";
 import { useMoney } from "@/features/business/use-money";
 import { printDocument } from "@/features/desktop/printing";
-import { fetchShift, fetchShifts } from "@/features/shifts/api";
+import { fetchShift, fetchShiftPeople, fetchShifts, type ShiftFilters } from "@/features/shifts/api";
+import { fetchTerminals } from "@/features/desktop/api";
+import { Combobox } from "@/components/ui/combobox";
 import { ShiftReport } from "@/features/shifts/components/ShiftReport";
 import { reportFromServer } from "@/features/shifts/report-data";
 import { formatDateTime } from "@/lib/format";
@@ -29,12 +31,19 @@ export function ShiftsPage() {
   const store = stores.find((s) => s.id === storeId);
   const [page, setPage] = React.useState(1);
   const [openId, setOpenId] = React.useState<string | null>(null);
+  const [filters, setFilters] = React.useState<ShiftFilters>({});
+  const filter = (next: Partial<ShiftFilters>) => {
+    setFilters((f) => ({ ...f, ...next }));
+    setPage(1);
+  };
 
   const list = useQuery({
-    queryKey: ["shifts", storeId, page],
-    queryFn: () => fetchShifts(storeId!, page, PAGE_SIZE),
+    queryKey: ["shifts", storeId, page, filters],
+    queryFn: () => fetchShifts(storeId!, page, PAGE_SIZE, filters),
     enabled: !!storeId,
   });
+  const people = useQuery({ queryKey: ["shift-people"], queryFn: fetchShiftPeople });
+  const tills = useQuery({ queryKey: ["terminals"], queryFn: fetchTerminals });
   const detail = useQuery({ queryKey: ["shift", openId], queryFn: () => fetchShift(openId!), enabled: !!openId });
   const pageCount = list.data ? Math.max(1, Math.ceil(list.data.total / PAGE_SIZE)) : 1;
 
@@ -50,6 +59,41 @@ export function ShiftsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-semibold">{t("common:nav.shifts")}</h1>
         <p className="text-sm text-muted-foreground">{t("page.description")}</p>
+      </div>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Combobox
+          className="w-40"
+          aria-label={t("page.filterStatus")}
+          value={filters.status ?? "ALL"}
+          onChange={(v) => filter({ status: v === "OPEN" || v === "CLOSED" ? v : undefined })}
+          options={[
+            { value: "ALL", label: t("page.allShifts") },
+            { value: "OPEN", label: t("page.open") },
+            { value: "CLOSED", label: t("page.closedOnes") },
+          ]}
+        />
+        <Combobox
+          className="w-48"
+          aria-label={t("page.filterCashier")}
+          value={filters.cashierId ?? null}
+          placeholder={t("page.allCashiers")}
+          clearLabel={t("page.allCashiers")}
+          onChange={(v) => filter({ cashierId: v ?? undefined })}
+          options={(people.data ?? []).map((p) => ({ value: p.id, label: `${p.firstName} ${p.lastName}` }))}
+        />
+        <Combobox
+          className="w-48"
+          aria-label={t("page.filterTill")}
+          value={filters.terminalId ?? null}
+          placeholder={t("page.allTills")}
+          clearLabel={t("page.allTills")}
+          onChange={(v) => filter({ terminalId: v ?? undefined })}
+          options={(tills.data ?? []).filter((x) => x.storeId === storeId).map((x) => ({ value: x.id, label: x.name, description: x.code }))}
+        />
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" className="h-4 w-4" checked={!!filters.flagged} onChange={(e) => filter({ flagged: e.target.checked || undefined })} />
+          {t("page.onlyFlagged")}
+        </label>
       </div>
       <Card>
         <CardContent className="p-0">
@@ -83,7 +127,19 @@ export function ShiftsPage() {
                   </TableCell>
                   <TableCell className="text-right">{s.expectedCash != null ? money(s.expectedCash) : "—"}</TableCell>
                   <TableCell className="text-right">{s.countedCash != null ? money(s.countedCash) : "—"}</TableCell>
-                  <TableCell className="text-right">{differenceCell(s)}</TableCell>
+                  <TableCell className="text-right">
+                    {differenceCell(s)}
+                    {s.flagged && (
+                      <Badge variant="destructive" className="ml-2">
+                        {t("page.flagged")}
+                      </Badge>
+                    )}
+                    {s.forcedClose && (
+                      <Badge variant="outline" className="ml-2" title={t("page.forcedHint", { name: person(s.closedBy) })}>
+                        {t("page.forced")}
+                      </Badge>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

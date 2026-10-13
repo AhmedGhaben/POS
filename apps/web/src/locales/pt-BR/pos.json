@@ -24,7 +24,10 @@
     "discount": "Desconto",
     "discountNamed": "Desconto em {{name}}",
     "discountOff": "{{label}} de desconto (-{{amount}})",
-    "quantityFor": "Quantidade de {{name}}"
+    "quantityFor": "Quantidade de {{name}}",
+    "priceChanged": "(era {{price}})",
+    "price": "Alterar preço",
+    "priceNamed": "Alterar o preço de {{name}}"
   },
   "customer": {
     "walkIn": "Consumidor final",
@@ -132,7 +135,8 @@
     "done": "Venda cancelada",
     "doneOffline": "Venda cancelada. Será sincronizada quando o caixa voltar a ter conexão.",
     "handBack": "Devolva {{amount}} em dinheiro.",
-    "printSlip": "Imprimir comprovante de cancelamento"
+    "printSlip": "Imprimir comprovante de cancelamento",
+    "approval": "Cancelar a venda {{receipt}} ({{total}})"
   },
   "discount": {
     "titleSale": "Desconto na venda toda",
@@ -146,9 +150,12 @@
     "preview": "{{off}} de desconto: {{after}} antes dos impostos",
     "percentTooBig": "Uma porcentagem não pode passar de 100.",
     "tooBig": "É mais do que o preço.",
-    "overMax": "Você pode dar no máximo {{max}}% de desconto.",
     "apply": "Aplicar",
-    "remove": "Remover desconto"
+    "remove": "Remover desconto",
+    "approval": "{{title}}: {{off}} de desconto",
+    "overMaxApproval": "Mais de {{max}}% de desconto: um gerente precisa autorizar.",
+    "needsApproval": "Um gerente precisa autorizar este desconto.",
+    "askApproval": "Pedir a um gerente"
   },
   "held": {
     "hold": "Deixar pendente",
@@ -165,5 +172,32 @@
     "resumeNamed": "Retomar {{name}}",
     "discard": "Excluir venda pendente",
     "swapped": "A venda que estava no caixa ficou pendente."
+  },
+  "price": {
+    "title": "Preço de {{name}}",
+    "description": "Preço normal {{price}}. O novo preço vale só para esta venda.",
+    "label": "Novo preço (unidade)",
+    "needsApproval": "Um gerente precisa autorizar esta alteração de preço.",
+    "approval": "Alterar {{name}} de {{from}} para {{to}}",
+    "reset": "Preço normal",
+    "apply": "Usar este preço"
+  },
+  "view": {
+    "label": "Mostrar produtos como",
+    "grid": "Blocos",
+    "list": "Lista"
+  },
+  "card": {
+    "open": "Ficha do cliente",
+    "title": "Ficha do cliente",
+    "taxId": "CPF/CNPJ",
+    "phone": "Telefone",
+    "email": "E-mail",
+    "address": "Endereço",
+    "purchases": "Compras",
+    "spent": "Gasto",
+    "last": "Última compra",
+    "recent": "Últimas vendas",
+    "offline": "O histórico de compras precisa do servidor."
   }
 }

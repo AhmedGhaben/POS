@@ -205,6 +205,71 @@ const EXACT: Record<string, Translations> = {
     "pt-PT": "Não foi possível gerar a análise — tente novamente.",
     "pt-BR": "Não foi possível gerar a análise — tente de novo.",
   },
+  "Customer not found": { "pt-PT": "Cliente não encontrado", "pt-BR": "Cliente não encontrado" },
+  // Stock that isn't tracked (services etc.)
+  "This product doesn't track stock": {
+    "pt-PT": "Este produto não controla stock",
+    "pt-BR": "Este produto não controla estoque",
+  },
+  // Manager override
+  "Someone else has to approve this": {
+    "pt-PT": "Tem de ser outra pessoa a autorizar",
+    "pt-BR": "Outra pessoa precisa autorizar",
+  },
+  "This person can't approve it": {
+    "pt-PT": "Esta pessoa não pode autorizar isto",
+    "pt-BR": "Esta pessoa não pode autorizar isso",
+  },
+  "The manager's approval is no longer valid": {
+    "pt-PT": "A autorização do gerente já não é válida. Peça-a novamente.",
+    "pt-BR": "A autorização do gerente não é mais válida. Peça de novo.",
+  },
+  "Unknown approver": { "pt-PT": "Autorizador desconhecido", "pt-BR": "Autorizador desconhecido" },
+  "Changing a price needs a manager's approval": {
+    "pt-PT": "Alterar um preço precisa da autorização de um gerente",
+    "pt-BR": "Alterar um preço precisa da autorização de um gerente",
+  },
+  "Taking cash out needs a manager's approval": {
+    "pt-PT": "Retirar dinheiro precisa da autorização de um gerente",
+    "pt-BR": "Retirar dinheiro precisa da autorização de um gerente",
+  },
+  // Shifts
+  "A cash refund has to be done at a till with an open shift": {
+    "pt-PT": "Um reembolso em dinheiro tem de ser feito numa caixa com o turno aberto",
+    "pt-BR": "Um reembolso em dinheiro precisa ser feito em um caixa com o turno aberto",
+  },
+  "Open a shift before selling": {
+    "pt-PT": "Abra o turno antes de vender",
+    "pt-BR": "Abra o turno antes de vender",
+  },
+  "This sale's shift hasn't reached the server yet": {
+    "pt-PT": "O turno desta venda ainda não chegou ao servidor",
+    "pt-BR": "O turno desta venda ainda não chegou ao servidor",
+  },
+  "This shift is closed. Open a new one to sell.": {
+    "pt-PT": "Este turno está fechado. Abra um novo para vender.",
+    "pt-BR": "Este turno está fechado. Abra um novo para vender.",
+  },
+  "This shift belongs to someone else. They have to close it before you can sell.": {
+    "pt-PT": "Este turno é de outra pessoa. Essa pessoa tem de o fechar antes de poder vender.",
+    "pt-BR": "Este turno é de outra pessoa. Ela precisa fechá-lo antes que você possa vender.",
+  },
+  "This shift is open on another till": {
+    "pt-PT": "Este turno está aberto noutra caixa",
+    "pt-BR": "Este turno está aberto em outro caixa",
+  },
+  "The count by note and coin isn't valid": {
+    "pt-PT": "A contagem por notas e moedas não é válida",
+    "pt-BR": "A contagem por cédulas e moedas não é válida",
+  },
+  "The notes and coins don't add up to the counted cash": {
+    "pt-PT": "As notas e moedas não somam o valor contado",
+    "pt-BR": "As cédulas e moedas não somam o valor contado",
+  },
+  "Only the cashier who opened this shift, or a manager, can close it": {
+    "pt-PT": "Só o operador que abriu este turno, ou um gerente, o pode fechar",
+    "pt-BR": "Só o operador que abriu este turno, ou um gerente, pode fechá-lo",
+  },
 };
 
 /** Messages with a value inside; `$1` is the captured value. */
@@ -220,6 +285,13 @@ const PATTERNS: { re: RegExp; t: Translations }[] = [
   {
     re: /^Discounts can't be more than (\S+)% of the price$/,
     t: { "pt-PT": "Os descontos não podem ser superiores a $1% do preço", "pt-BR": "Os descontos não podem passar de $1% do preço" },
+  },
+  {
+    re: /^"(.+)" doesn't track stock, so it can't be transferred$/,
+    t: {
+      "pt-PT": '"$1" não controla stock, por isso não pode ser transferido',
+      "pt-BR": '"$1" não controla estoque, por isso não pode ser transferido',
+    },
   },
   {
     re: /^Product (\S+) was not part of this sale$/,

@@ -61,6 +61,7 @@ function buildPrismaMock() {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    customer: { create: jest.fn().mockResolvedValue({ id: "fc-1" }) },
     $transaction: jest.fn(),
   };
   // Supports both forms: an array of queries, or an interactive callback

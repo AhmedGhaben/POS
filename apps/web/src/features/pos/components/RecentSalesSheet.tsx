@@ -2,14 +2,13 @@ import * as React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Ban, Printer } from "lucide-react";
-import { Permission, SaleStatus, type SaleDto, type StoreDto } from "@pos/shared";
+import { SaleStatus, type SaleDto, type StoreDto } from "@pos/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { PrintArea } from "@/components/print/PrintArea";
 import { useAuthStore } from "@/features/auth/store";
-import { useHasPermission } from "@/features/auth/use-permission";
 import { useMoney } from "@/features/business/use-money";
 import { printDocument } from "@/features/desktop/printing";
 import { listOutbox } from "@/lib/offline-db";
@@ -36,7 +35,6 @@ export function RecentSalesSheet({ open, onOpenChange, storeId, store }: RecentS
   const money = useMoney();
   const queryClient = useQueryClient();
   const userId = useAuthStore((s) => s.user?.id);
-  const canVoid = useHasPermission(Permission.VOID_SALE);
   const pendingCount = useOfflineStore((s) => s.pendingCount);
   const failedCount = useOfflineStore((s) => s.failedCount);
   const offline = useOfflineStore((s) => isWorkingOffline(s));
@@ -106,7 +104,7 @@ export function RecentSalesSheet({ open, onOpenChange, storeId, store }: RecentS
                   <Button size="icon" variant="ghost" aria-label={t("recent.reprint")} title={t("recent.reprint")} onClick={() => setReprint(sale)}>
                     <Printer className="h-4 w-4" />
                   </Button>
-                  {canVoid && !voided && (
+                  {!voided && (
                     <Button
                       size="icon"
                       variant="ghost"

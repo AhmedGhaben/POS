@@ -62,6 +62,10 @@
     "submitting": "Processando...",
     "done": "Devolução processada",
     "refund": "Reembolso",
-    "empty": "Nenhuma devolução processada ainda."
+    "empty": "Nenhuma devolução processada ainda.",
+    "refundMethod": "Reembolso por",
+    "cashNeedsShift": "Reembolsos em dinheiro saem de uma gaveta: faça-os em um caixa com o seu turno aberto, ou reembolse de outra forma.",
+    "approval": "Fazer uma devolução / nota de crédito",
+    "notApproved": "A devolução não foi autorizada."
   }
 }

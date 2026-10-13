@@ -29,8 +29,8 @@ export interface BusinessDto {
   defaultTaxRate: string;
   /** Largest discount % anyone but the owner may give (decimal string); null = no limit. */
   maxDiscountPercent: string | null;
-  /** Tills count the cash at the start and end of each shift (absent on older sessions). */
-  shiftsEnabled?: boolean;
+  /** A shift's cash difference above this (decimal string, either way) is flagged; null = never. */
+  shiftDifferenceThreshold?: string | null;
   receiptHeader: string | null;
   receiptFooter: string | null;
   invoiceFooter: string | null;
@@ -55,7 +55,7 @@ export type UpdateBusinessDto = Partial<
     | "receiptFooter"
     | "invoiceFooter"
   >
-> & { defaultTaxRate?: number; maxDiscountPercent?: number | null; shiftsEnabled?: boolean };
+> & { defaultTaxRate?: number; maxDiscountPercent?: number | null; shiftDifferenceThreshold?: number | null };
 
 export interface UpdateStoreDto {
   name?: string;
@@ -138,6 +138,8 @@ export interface ProductDto {
   costPrice: string;
   sellPrice: string;
   taxRate: string;
+  /** False for services etc.: always sellable, never moves stock (absent on older cached catalogs = true). */
+  trackStock?: boolean;
   isActive: boolean;
 }
 
@@ -150,6 +152,8 @@ export interface CreateProductDto {
   costPrice: number;
   sellPrice: number;
   taxRate?: number;
+  /** False for services etc.; defaults to true. */
+  trackStock?: boolean;
 }
 
 /** PATCH /products/:id. `isActive: false` archives, `true` restores. */
@@ -183,12 +187,24 @@ export interface CustomerDto {
   email: string | null;
   address: string | null;
   taxId: string | null;
+  /** "Consumidor Final" (NIF 999999999), used when no customer is chosen. */
+  isFinalConsumer?: boolean;
+}
+
+/** GET /customers/:id/card */
+export interface CustomerCardDto {
+  customer: CustomerDto;
+  purchases: { count: number; total: string; lastAt: string | null };
+  recent: { id: string; receiptNumber: string; createdAt: string; total: string; status: SaleStatus }[];
 }
 
 export interface SaleLineItemInputDto {
   productId: string;
   quantity: number;
-  /** Offline sales only: the price and tax rate (%) the till used. */
+  /**
+   * The price the till used. Offline: whatever it was. Online: only when
+   * the cashier changed it (needs CHANGE_PRICE or a manager's approval).
+   */
   unitPrice?: number;
   taxRate?: number;
   /** Off this line. */
@@ -222,6 +238,45 @@ export interface CreateSaleDto {
   actingUserId?: string;
   /** The till's id for its open shift. */
   shiftClientId?: string;
+  /** Online: managers' approvals for what the cashier may not do alone (price change, discounts). */
+  overrides?: SaleOverrideDto[];
+  /** Offline: approvals the till checked itself (approver's PIN). */
+  offlineOverrides?: OfflineOverrideDto[];
+}
+
+/** A manager's approval (POST /overrides) used by a sale. */
+export interface SaleOverrideDto {
+  permission: Permission;
+  token: string;
+}
+
+/** A manager approval checked on the till while offline. */
+export interface OfflineOverrideDto {
+  approverId: string;
+  permission: Permission;
+}
+
+/** POST /overrides: a manager approves one action with their PIN. */
+export interface RequestOverrideDto {
+  approverId: string;
+  pin: string;
+  permission: Permission;
+  action: string;
+  storeId?: string;
+  details?: Record<string, unknown>;
+}
+
+export interface OverrideGrantDto {
+  token: string;
+  expiresAt: string;
+  approver: { id: string; firstName: string; lastName: string };
+}
+
+export interface ApproverDto {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role: Role;
 }
 
 export interface SalePaymentDto {
@@ -564,6 +619,10 @@ export interface VoidSaleDto {
   occurredAt?: string;
   /** Who was on the till (used when it uploads with the till's key). */
   actingUserId?: string;
+  /** Cancelled offline with a manager's approval checked on the till. */
+  offlineOverride?: OfflineOverrideDto;
+  /** Till only: an online approval, sent as the X-Override-Token header (not in the body). */
+  overrideToken?: string;
 }
 
 /** Seller details frozen when an invoice is issued. */
@@ -709,17 +768,33 @@ export interface CashMovementInputDto {
   occurredAt?: string;
   offline?: boolean;
   actingUserId?: string;
+  /** A cash out by someone without CASH_OUT, approved offline on the till. */
+  offlineOverride?: OfflineOverrideDto;
+  /** Till only: an online approval, sent as the X-Override-Token header (not in the body). */
+  overrideToken?: string;
 }
 
 export interface CloseShiftDto {
   storeId: string;
   shiftClientId: string;
   countedCash: number;
+  /** The blind count by note/coin (value in the currency → how many). */
+  countedDenominations?: Record<string, number>;
   tillExpectedCash?: number;
   note?: string;
   closedAt?: string;
   offline?: boolean;
   actingUserId?: string;
+}
+
+export interface ShiftSaleLineDto {
+  receiptNumber: string;
+  at: string;
+  total: string;
+  /** The payment method, or "SPLIT" when paid several ways. */
+  method: PaymentMethod | "SPLIT";
+  voided: boolean;
+  cashier: string;
 }
 
 export interface ShiftSummaryDto {
@@ -733,6 +808,8 @@ export interface ShiftSummaryDto {
   cashOut: string;
   movements: { id: string; type: "IN" | "OUT"; amount: string; reason: CashMovementReason; note: string | null; occurredAt: string; user: string }[];
   byCashier: { id: string; name: string; count: number; total: string }[];
+  /** Every sale in the shift, oldest first (for the report's optional full list). */
+  sales?: ShiftSaleLineDto[];
   expectedCash: string;
 }
 
@@ -748,6 +825,12 @@ export interface ShiftDto {
   expectedCash: string | null;
   tillExpectedCash: string | null;
   difference: string | null;
+  /** The blind count by note/coin, when given: { "5000": 3, … }. */
+  countedDenominations?: Record<string, number> | null;
+  /** Closed by a manager for someone else (abandoned shift). */
+  forcedClose?: boolean;
+  /** Difference over the business's threshold. */
+  flagged?: boolean;
   note: string | null;
   clientId: string;
   createdOffline: boolean;

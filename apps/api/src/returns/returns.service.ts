@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { PaymentMethod, Prisma, ShiftStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateReturnDto } from "./dto/create-return.dto";
 
@@ -61,15 +61,28 @@ export class ReturnsService {
       };
     });
 
+    // Cash back leaves a drawer, so it happens in that till's open shift. A
+    // credit note with no cash (refund by transfer, card, to the customer's
+    // balance) can be done from the back office, linked to the person and store.
+    const refundMethod = dto.refundMethod ?? PaymentMethod.CASH;
     const shift = dto.shiftClientId
       ? await this.prisma.shift.findUnique({
           where: { storeId_clientId: { storeId: dto.storeId, clientId: dto.shiftClientId } },
           select: { id: true, status: true },
         })
       : null;
+    if (refundMethod === PaymentMethod.CASH && shift?.status !== ShiftStatus.OPEN) {
+      throw new BadRequestException("A cash refund has to be done at a till with an open shift");
+    }
+
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: dto.lineItems.map((li) => li.productId) } },
+      select: { id: true, trackStock: true },
+    });
+    const tracked = new Set(products.filter((p) => p.trackStock).map((p) => p.id));
 
     return this.prisma.$transaction(async (tx) => {
-      for (const li of dto.lineItems) {
+      for (const li of dto.lineItems.filter((l) => tracked.has(l.productId))) {
         await tx.inventoryItem.upsert({
           where: { storeId_productId: { storeId: dto.storeId, productId: li.productId } },
           create: { storeId: dto.storeId, productId: li.productId, quantity: li.quantity },
@@ -84,8 +97,8 @@ export class ReturnsService {
           processedById,
           reason: dto.reason,
           totalRefund,
-          refundMethod: dto.refundMethod ?? "CASH",
-          shiftId: shift?.status === "OPEN" ? shift.id : null,
+          refundMethod,
+          shiftId: shift?.status === ShiftStatus.OPEN ? shift.id : null,
           lineItems: { create: lineItemsData },
         },
         include: { lineItems: { include: { product: true } } },

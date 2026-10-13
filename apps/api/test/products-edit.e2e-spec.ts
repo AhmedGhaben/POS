@@ -4,6 +4,8 @@ import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
 import { PrismaService } from "../src/prisma/prisma.service";
+import { deleteBusiness } from "./cleanup";
+import { ensureShift } from "./shift-helper";
 
 /**
  * Editing and archiving products: changed fields, SKU clashes, categories
@@ -80,27 +82,7 @@ describe("Product editing (e2e)", () => {
 
   afterAll(async () => {
     if (businessId) {
-      const userIds = (await prisma.user.findMany({ where: { businessId }, select: { id: true } })).map((u) => u.id);
-      const storeIds = (await prisma.store.findMany({ where: { businessId }, select: { id: true } })).map((s) => s.id);
-      const saleWhere = { storeId: { in: storeIds } };
-      await prisma.$transaction([
-        prisma.salePayment.deleteMany({ where: { sale: saleWhere } }),
-        prisma.saleLineItem.deleteMany({ where: { sale: saleWhere } }),
-        prisma.sale.deleteMany({ where: saleWhere }),
-        prisma.inventoryItem.deleteMany({ where: { storeId: { in: storeIds } } }),
-        prisma.product.deleteMany({ where: { businessId } }),
-        prisma.category.deleteMany({ where: { businessId } }),
-        prisma.auditLog.deleteMany({ where: { businessId } }),
-        prisma.userPermission.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.employee.deleteMany({ where: { businessId } }),
-        prisma.storeUser.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.emailVerificationToken.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.passwordResetToken.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.user.deleteMany({ where: { businessId } }),
-        prisma.store.deleteMany({ where: { businessId } }),
-        prisma.business.delete({ where: { id: businessId } }),
-      ]);
+      await deleteBusiness(prisma, businessId);
     }
     await app.close();
   });
@@ -168,7 +150,7 @@ describe("Product editing (e2e)", () => {
     const sale = await http()
       .post("/sales")
       .set(auth(ownerToken))
-      .send({ storeId, lineItems: [{ productId: teaId, quantity: 1 }], payments: [{ method: "CASH", amount: 2 }] })
+      .send({ storeId, shiftClientId: await ensureShift(app, ownerToken, storeId), lineItems: [{ productId: teaId, quantity: 1 }], payments: [{ method: "CASH", amount: 2 }] })
       .expect(201);
 
     await patch(ownerToken, teaId, { sellPrice: 9 }).expect(200);
@@ -182,7 +164,7 @@ describe("Product editing (e2e)", () => {
     const sale = await http()
       .post("/sales")
       .set(auth(ownerToken))
-      .send({ storeId, lineItems: [{ productId: teaId, quantity: 1 }], payments: [{ method: "CASH", amount: 9 }] })
+      .send({ storeId, shiftClientId: await ensureShift(app, ownerToken, storeId), lineItems: [{ productId: teaId, quantity: 1 }], payments: [{ method: "CASH", amount: 9 }] })
       .expect(201);
     expect(sale.body.lineItems[0].product).toMatchObject({ name: before.name, sku: before.sku });
 

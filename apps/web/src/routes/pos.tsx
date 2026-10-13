@@ -1,10 +1,13 @@
 import * as React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowDownUp, FileText, History, LockKeyhole, Percent, ShoppingCart, Vault } from "lucide-react";
+import { ArrowDownUp, FileText, History, LockKeyhole, Pause, Percent, ShoppingCart, Vault } from "lucide-react";
+import { toast } from "sonner";
 import { useCurrentShift, useShiftStore } from "@/features/shifts/shift-store";
 import { adoptShift, fetchCurrentShift } from "@/features/shifts/api";
 import type { LocalShift } from "@/features/shifts/ledger";
 import { OpenShiftPanel } from "@/features/shifts/components/OpenShiftPanel";
+import { OthersShiftPanel } from "@/features/shifts/components/OthersShiftPanel";
+import { useCloseShiftRequest } from "@/features/shifts/close-request";
 import { CashMovementDialog } from "@/features/shifts/components/CashMovementDialog";
 import { CloseShiftDialog } from "@/features/shifts/components/CloseShiftDialog";
 import { isWorkingOffline } from "@/features/pos/offline-store";
@@ -26,11 +29,14 @@ import { PrintQuoteDialog } from "@/features/pos/components/PrintQuoteDialog";
 import { IssueInvoiceDialog } from "@/features/invoices/components/IssueInvoiceDialog";
 import { PaymentPanel } from "@/features/pos/components/PaymentPanel";
 import { RecentSalesSheet } from "@/features/pos/components/RecentSalesSheet";
+import { HeldOrdersSheet } from "@/features/pos/components/HeldOrdersSheet";
+import { useHeldOrders, useStoreHeldOrders, type HeldOrder } from "@/features/pos/held-orders";
 import { DiscountDialog } from "@/features/pos/components/DiscountDialog";
+import { PriceDialog } from "@/features/pos/components/PriceDialog";
+import type { Approval } from "@/features/overrides/approval";
 import { discountLabel } from "@/features/pos/discount-label";
-import { useHasPermission } from "@/features/auth/use-permission";
 import { CustomerSearchCombobox } from "@/features/pos/components/CustomerSearchCombobox";
-import { useCart, type CartLine } from "@/features/pos/hooks/useCart";
+import { linePrice, useCart, type CartLine } from "@/features/pos/hooks/useCart";
 import { createSale } from "@/features/pos/api";
 import { useAuthStore } from "@/features/auth/store";
 import { ApiError } from "@/lib/api-client";
@@ -55,11 +61,23 @@ export function PosPage() {
     setQuantity,
     setLineDiscount,
     setSaleDiscount,
+    setLinePrice,
     removeLine,
-    clear,
+    clear: clearCart,
+    restore,
     totals,
   } = useCart();
-  const canDiscount = useHasPermission(Permission.APPLY_DISCOUNT);
+  // Managers' approvals for this sale (discounts, price changes), one per
+  // permission; they go with the sale and are used once.
+  const [approvals, setApprovals] = React.useState<Partial<Record<Permission, Approval>>>({});
+  const addApproval = React.useCallback((approval: Approval | null | undefined) => {
+    if (approval) setApprovals((a) => ({ ...a, [approval.permission]: approval }));
+  }, []);
+  const clear = React.useCallback(() => {
+    clearCart();
+    setApprovals({});
+  }, [clearCart]);
+  const [priceFor, setPriceFor] = React.useState<CartLine | null>(null);
   // Someone else took over the till (PIN): their own cart, not the last person's.
   const userId = useAuthStore((s) => s.user?.id);
   const cartOwner = React.useRef(userId);
@@ -79,24 +97,71 @@ export function PosPage() {
   const [cartSheetOpen, setCartSheetOpen] = React.useState(false);
   const [quoteOpen, setQuoteOpen] = React.useState(false);
   const [recentOpen, setRecentOpen] = React.useState(false);
+  const [heldOpen, setHeldOpen] = React.useState(false);
+  const [holdNoteOpen, setHoldNoteOpen] = React.useState(false);
+  const [holdNote, setHoldNote] = React.useState("");
+  const heldOrders = useStoreHeldOrders(currentStoreId);
 
-  // Shifts (when the business counts the cash): no selling until the till is open.
-  const shiftsOn = useAuthStore((s) => !!s.business?.shiftsEnabled);
+  /** Puts the current order on hold and empties the till for the next customer. */
+  function holdCurrent(note: string | null) {
+    const user = useAuthStore.getState().user;
+    if (!currentStoreId || !user || lines.length === 0) return;
+    useHeldOrders.getState().hold({
+      storeId: currentStoreId,
+      heldBy: { id: user.id, name: `${user.firstName} ${user.lastName}` },
+      lines,
+      saleDiscount,
+      customer,
+      note: note?.trim() || null,
+      approvals: Object.values(approvals).filter((a): a is Approval => !!a),
+    });
+    clear();
+    setCustomer(null);
+    setPaymentPanelKey((k) => k + 1);
+  }
+
+  /** Carries on with a held order; one already in the till is held first, so nothing is lost. */
+  function resumeHeld(order: HeldOrder) {
+    const taken = useHeldOrders.getState().take(order.id);
+    if (!taken) return;
+    if (lines.length > 0) {
+      holdCurrent(null);
+      toast.info(t("held.swapped"));
+    }
+    restore(taken.lines, taken.saleDiscount);
+    setApprovals(Object.fromEntries((taken.approvals ?? []).map((a) => [a.permission, a])));
+    setCustomer(taken.customer);
+    setHeldOpen(false);
+    setCartSheetOpen(false);
+  }
+
+  // Shifts: no selling until this person opens one on this till; a shift
+  // someone else left open has to be closed first (by them, or a manager).
   const shift = useCurrentShift(currentStoreId);
-  const needsShift = shiftsOn && !shift;
+  const role = useAuthStore((s) => s.user?.role);
+  const othersShift = shift && shift.openedBy.id !== userId ? shift : null;
+  const needsShift = !shift;
   const [movementOpen, setMovementOpen] = React.useState(false);
   // A copy, so the close dialog keeps it after the shift is cleared.
   const [closing, setClosing] = React.useState<LocalShift | null>(null);
   const terminalId = useDeviceStore((s) => s.terminal?.id ?? null);
   React.useEffect(() => {
-    if (!shiftsOn || shift || !currentStoreId || isWorkingOffline()) return;
-    // Opened on another device, or this one lost its record: carry on with it.
+    if (shift || !currentStoreId || isWorkingOffline()) return;
+    // Opened on another device, or this one lost its record (app closed
+    // or crashed): carry on with it.
     fetchCurrentShift(currentStoreId, terminalId)
       .then((open) => {
         if (open && !useShiftStore.getState().current) adoptShift(open);
       })
       .catch(() => undefined);
-  }, [shiftsOn, shift, currentStoreId, terminalId]);
+  }, [shift, currentStoreId, terminalId]);
+  // Log out with a shift open: close it first (blind count, report, then sign out).
+  const closeRequested = useCloseShiftRequest((s) => s.requested);
+  React.useEffect(() => {
+    if (!closeRequested) return;
+    useCloseShiftRequest.getState().done();
+    if (shift && !othersShift) setClosing(shift);
+  }, [closeRequested, shift, othersShift]);
   // Kept separate from completedSale: only one dialog (and print area) is mounted at a time.
   const [invoiceFor, setInvoiceFor] = React.useState<{ sale: SaleDto; customer: CustomerDto | null } | null>(null);
   const queryClient = useQueryClient();
@@ -141,6 +206,7 @@ export function PosPage() {
           shiftClientId: shift?.clientId,
         },
         lines,
+        Object.values(approvals).filter((a): a is Approval => !!a),
       ),
     onSuccess: (sale) => {
       // The sale is already saved (on the server or in the outbox): open
@@ -190,7 +256,7 @@ export function PosPage() {
           <span>{t("totals.total")}</span>
           <span>{money(totals.total)}</span>
         </div>
-        {canDiscount && lines.length > 0 && (
+        {lines.length > 0 && (
           <Button variant="ghost" size="sm" className="-ml-2 gap-2" onClick={() => setDiscountFor("sale")}>
             <Percent className="h-3.5 w-3.5" /> {saleDiscount ? t("checkout.changeSaleDiscount") : t("checkout.saleDiscount")}
           </Button>
@@ -198,7 +264,13 @@ export function PosPage() {
       </div>
 
       <div className="space-y-3" ref={checkoutAreaRef}>
-        {needsShift ? (
+        {othersShift ? (
+          <OthersShiftPanel
+            shift={othersShift}
+            canForceClose={role === "OWNER" || role === "MANAGER"}
+            onForceClose={() => setClosing(othersShift)}
+          />
+        ) : needsShift ? (
           <OpenShiftPanel storeId={currentStoreId} />
         ) : (
         <>
@@ -250,6 +322,23 @@ export function PosPage() {
           <Button variant="outline" disabled={lines.length === 0} onClick={clear}>
             {t("checkout.clearCart")}
           </Button>
+          <Button variant="outline" disabled={lines.length === 0} onClick={() => setHoldNoteOpen(true)}>
+            <Pause className="mr-2 h-4 w-4" /> {t("held.hold")}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setCartSheetOpen(false);
+              setHeldOpen(true);
+            }}
+          >
+            {t("held.title")}
+            {heldOrders.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {heldOrders.length}
+              </Badge>
+            )}
+          </Button>
           <Button
             variant="outline"
             className="col-span-2"
@@ -260,7 +349,7 @@ export function PosPage() {
           >
             <History className="mr-2 h-4 w-4" /> {t("checkout.recentSales")}
           </Button>
-          {shift && canOpenDrawer && (
+          {shift && !othersShift && (
             <Button
               variant="outline"
               onClick={() => {
@@ -271,10 +360,9 @@ export function PosPage() {
               <ArrowDownUp className="mr-2 h-4 w-4" /> {t("shifts:buttons.cashInOut")}
             </Button>
           )}
-          {shift && (
+          {shift && !othersShift && (
             <Button
               variant="outline"
-              className={canOpenDrawer ? undefined : "col-span-2"}
               onClick={() => {
                 setCartSheetOpen(false);
                 setClosing(shift);
@@ -311,7 +399,8 @@ export function PosPage() {
           priced={priced.lines}
           onSetQuantity={setQuantity}
           onRemove={removeLine}
-          onDiscount={canDiscount ? (line) => setDiscountFor(line) : undefined}
+          onDiscount={(line) => setDiscountFor(line)}
+          onChangePrice={(line) => setPriceFor(line)}
         />
       </div>
 
@@ -349,6 +438,34 @@ export function PosPage() {
       <OpenDrawerDialog open={drawerDialogOpen} onOpenChange={setDrawerDialogOpen} />
       {shift && <CashMovementDialog shift={shift} open={movementOpen} onOpenChange={setMovementOpen} />}
       <CloseShiftDialog shift={closing} store={currentStore} open={!!closing} onOpenChange={(o) => !o && setClosing(null)} />
+      <HeldOrdersSheet open={heldOpen} onOpenChange={setHeldOpen} storeId={currentStoreId} onResume={resumeHeld} />
+      <Dialog open={holdNoteOpen} onOpenChange={setHoldNoteOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("held.holdTitle")}</DialogTitle>
+          </DialogHeader>
+          <form
+            className="space-y-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              holdCurrent(holdNote);
+              setHoldNote("");
+              setHoldNoteOpen(false);
+            }}
+          >
+            <Input
+              autoFocus
+              aria-label={t("held.note")}
+              placeholder={t("held.notePlaceholder")}
+              value={holdNote}
+              onChange={(e) => setHoldNote(e.target.value)}
+            />
+            <Button type="submit" className="w-full">
+              <Pause className="mr-2 h-4 w-4" /> {t("held.hold")}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
       <RecentSalesSheet open={recentOpen} onOpenChange={setRecentOpen} storeId={currentStoreId} store={currentStore} />
       <DiscountDialog
         open={discountFor !== null}
@@ -361,12 +478,21 @@ export function PosPage() {
         base={
           discountFor === "sale" || discountFor === null
             ? totals.subtotal - (totals.discountTotal - totals.saleDiscount)
-            : Number(discountFor.product.sellPrice) * discountFor.quantity
+            : linePrice(discountFor) * discountFor.quantity
         }
         current={discountFor === "sale" || discountFor === null ? saleDiscount : discountFor.discount}
-        onApply={(d) => {
+        onApply={(d, approval) => {
           if (discountFor === "sale") setSaleDiscount(d);
           else if (discountFor) setLineDiscount(discountFor.product.id, d);
+          addApproval(approval);
+        }}
+      />
+      <PriceDialog
+        line={priceFor}
+        onOpenChange={(open) => !open && setPriceFor(null)}
+        onApply={(price, approval) => {
+          if (priceFor) setLinePrice(priceFor.product.id, price);
+          addApproval(approval);
         }}
       />
       <PrintQuoteDialog

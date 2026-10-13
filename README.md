@@ -9,22 +9,41 @@ Prisma backend.
 - **Self-serve sign-up**: creates the business, its first store and the
   owner in one step. Then email verification, password reset, and a
   first-run `/welcome` screen.
-- **POS**: product grid and search, barcode scanning, split payments,
-  customers, emailed receipts. Works **offline**: sales are queued on the
-  device and sync automatically, exactly once, when the server is back.
+- **POS**: product grid (tiles or a list) and search, barcode scanning,
+  split payments, customers, emailed receipts. Works **offline**: sales
+  are queued on the device and sync automatically, exactly once, when the
+  server is back.
+  - **Quantities**: type one on a cart line, or put `3*` before a barcode
+    or name in the search.
+  - **Held orders** ("Deixar pendente" / "Vendas pendentes"): put an order
+    on hold, serve someone else, resume it later. Kept on the till; no
+    stock or document number until it's completed.
+  - **Change a price** on a line for this sale (CHANGE_PRICE); the
+    original price is kept beside it.
+  - **Customers**: a sale with nobody chosen goes to "Consumidor Final"
+    (NIF 999999999). The customer card shows contact, NIF, purchases and
+    the last sales.
+  - **Manager approval**: whoever lacks a permission (cancel, return,
+    discount, discount above the maximum, price change, cash out) can ask
+    a manager, who picks their name and types their PIN. The cashier stays
+    signed in; the approval covers that one action, and the server issues
+    a single-use token that expires in 5 minutes. Offline, the till checks the PIN
+    itself and the upload records who approved it. Every approval is in
+    the audit log.
   - **Recent sales** on the till: the store's latest sales, including ones
     waiting to upload. Reprint a receipt (marked COPY) or **cancel a
     sale**.
   - Cancelling needs the VOID_SALE permission (owners and managers by
-    default) and a reason. The stock goes back, reports drop the sale, and
+    default, others with a manager's approval) and a reason. The stock goes back, reports drop the sale, and
     a cash sale opens the drawer to hand the money back. It works offline
     too.
   - A sale with a return or an invoice, or older than 24 hours, is undone
     with a return instead.
   - **Discounts**: a percentage or an amount off an item or the whole
     sale. They need the APPLY_DISCOUNT permission (owners and managers by
-    default), and owners can set a maximum discount % for everyone else
-    in Settings.
+    default), and owners can set a maximum discount % in Settings; going
+    over it needs DISCOUNT_ABOVE_LIMIT (owners and managers) or a
+    manager's approval.
     - Tax is charged on the discounted amount.
     - The till, offline receipts and the server use the same calculation
       (`packages/shared/src/pricing.ts`, with a copy in the API that a test
@@ -40,6 +59,12 @@ Prisma backend.
 - **Products & stock**: categories, per-store inventory, purchases,
   returns, transfers between stores, low-stock alerts, and **CSV
   import/export** with a validating preview.
+  - **Track stock** can be turned off for services and the like: they
+    always sell, never move stock and never show in stock or low-stock
+    alerts.
+  - **Returns**: a cash refund comes out of a drawer, so it needs the
+    person's open shift at a till; a refund by card or transfer can be done
+    from the back office.
   - **Editing products**: owners and managers click a product to change its
     name, SKU, barcode, category, prices or tax. Changes apply to new
     sales only: past receipts and invoices keep the name, SKU and price
@@ -48,19 +73,27 @@ Prisma backend.
   - **Archiving**: hides a product from the till and the list without
     touching past sales or reports. "Show archived products" lets you
     restore it.
-- **Shifts and cash counts** (turned on in Settings → Tills):
-  - The till asks for the opening float before the first sale.
-  - **Cash in / out** records money added or taken out, with a reason
-    (needs OPEN_DRAWER).
-  - **Close the till** asks for a blind count, then shows the expected
-    cash, the count and the difference, and prints an end-of-shift report.
-    The report covers sales by payment method, discounts, cancels,
-    returns, cash in/out and each cashier.
+- **Shifts and cash counts** (always on):
+  - The cashier opens a shift with the opening float before the first
+    sale; the server refuses sales without an open shift on that till (an
+    offline upload is never dropped). One open shift per till, owned by
+    whoever opened it: someone else signing in can't sell until it's
+    closed, and a manager can close an abandoned one for them (logged as
+    forced). A shift survives the app closing or crashing.
+  - **Cash in / out** with a reason; cash out needs CASH_OUT or a
+    manager's approval.
+  - **Close the till** (or Log out, which goes into closing) asks for a
+    blind count, as a total or note by note, then shows the expected
+    cash, the count and the difference, prints the end-of-shift report
+    (optionally listing every sale) and signs the cashier out. The report
+    covers sales by payment method, discounts, cancels, returns, cash
+    in/out and each cashier.
   - Expected cash = float + cash taken − cash refunds + cash in − cash
     out. The server keeps its own figure and the till's, and works offline
     through the outbox.
-  - A **Shifts** page in the back office lists every shift with its
-    difference.
+  - Differences above an amount set in Settings → Tills are flagged. The
+    **Shifts** page lists every shift with its difference and filters by
+    status, cashier, till and flagged.
 - **Staff**:
   - employees with optional logins (cashier or manager), limited to
     chosen stores

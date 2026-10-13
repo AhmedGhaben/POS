@@ -5,6 +5,8 @@ import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
 import { PrismaService } from "../src/prisma/prisma.service";
+import { deleteBusiness } from "./cleanup";
+import { ensureShift } from "./shift-helper";
 
 /**
  * Discounts (docs/plans/TILL_ESSENTIALS.md, part 2): the server works out
@@ -27,8 +29,10 @@ describe("Discounts (e2e)", () => {
 
   const http = () => request(app.getHttpServer());
   const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
+  // Each person sells in their own open shift (opened in beforeAll).
+  const shifts = new Map<string, string>();
   const sale = (token: string, body: object) =>
-    http().post("/sales").set(auth(token)).send({ storeId, ...body });
+    http().post("/sales").set(auth(token)).send({ storeId, shiftClientId: shifts.get(token), ...body });
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -70,31 +74,13 @@ describe("Discounts (e2e)", () => {
     const login = await http().post("/auth/login").send({ email, password: PASSWORD }).expect(200);
     cashierToken = login.body.accessToken;
     cashierId = login.body.user.id;
+    for (const token of [ownerToken, cashierToken]) shifts.set(token, await ensureShift(app, token, storeId));
   }, 30_000);
 
   afterAll(async () => {
     try {
       if (businessId) {
-        const userIds = (await prisma.user.findMany({ where: { businessId }, select: { id: true } })).map((u) => u.id);
-        const saleWhere = { storeId };
-        await prisma.$transaction([
-          prisma.returnLineItem.deleteMany({ where: { return: saleWhere } }),
-          prisma.return.deleteMany({ where: saleWhere }),
-          prisma.salePayment.deleteMany({ where: { sale: saleWhere } }),
-          prisma.saleLineItem.deleteMany({ where: { sale: saleWhere } }),
-          prisma.sale.deleteMany({ where: saleWhere }),
-          prisma.inventoryItem.deleteMany({ where: { storeId } }),
-          prisma.product.deleteMany({ where: { businessId } }),
-          prisma.auditLog.deleteMany({ where: { businessId } }),
-          prisma.userPermission.deleteMany({ where: { userId: { in: userIds } } }),
-          prisma.employee.deleteMany({ where: { businessId } }),
-          prisma.storeUser.deleteMany({ where: { userId: { in: userIds } } }),
-          prisma.emailVerificationToken.deleteMany({ where: { userId: { in: userIds } } }),
-          prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } }),
-          prisma.user.deleteMany({ where: { businessId } }),
-          prisma.store.deleteMany({ where: { businessId } }),
-          prisma.business.delete({ where: { id: businessId } }),
-        ]);
+        await deleteBusiness(prisma, businessId);
       }
     } finally {
       await app.close();
@@ -207,7 +193,7 @@ describe("Discounts (e2e)", () => {
     const ret = await http()
       .post("/returns")
       .set(auth(ownerToken))
-      .send({ storeId, saleId: sold.id, lineItems: [{ productId: shirtId, quantity: 1 }] })
+      .send({ storeId, saleId: sold.id, shiftClientId: shifts.get(ownerToken), lineItems: [{ productId: shirtId, quantity: 1 }] })
       .expect(201);
     expect(ret.body.totalRefund).toBe("16.5");
   });

@@ -6,7 +6,8 @@ import { useShiftStore } from "@/features/shifts/shift-store";
 import { apiClient, ApiError, isRetryableError, isUnreachableError } from "@/lib/api-client";
 import { addToOutbox } from "@/lib/offline-db";
 import { findSavedByBarcode } from "./catalog";
-import type { CartLine } from "./hooks/useCart";
+import { linePrice, type CartLine } from "./hooks/useCart";
+import { approvalHeaders, type Approval } from "@/features/overrides/approval";
 import { buildOfflineSale } from "./offline-sale";
 import { isWorkingOffline, useOfflineStore } from "./offline-store";
 
@@ -33,9 +34,13 @@ export async function findByBarcode(barcode: string): Promise<ProductDto | null>
  * cashier carries on. Only a real rejection (bad stock, bad payment) is
  * shown as an error. `lines` builds the local receipt for a queued sale.
  */
-export async function createSale(dto: CreateSaleDto, lines: CartLine[]): Promise<SaleDto> {
+export async function createSale(dto: CreateSaleDto, lines: CartLine[], approvals: Approval[] = []): Promise<SaleDto> {
   const sale: CreateSaleDto = {
     ...dto,
+    // A changed price goes up with the line; otherwise the server uses the product's.
+    lineItems: dto.lineItems.map((li, i) => (lines[i]?.unitPrice != null ? { ...li, unitPrice: lines[i].unitPrice! } : li)),
+    // Managers' approvals: tokens online; a sale queued offline says who approved instead.
+    overrides: approvals.flatMap((a) => (a.kind === "token" ? [{ permission: a.permission, token: a.token }] : [])),
     // One key for every attempt at this sale, online or later from the queue.
     clientId: crypto.randomUUID(),
     terminalId: useDeviceStore.getState().terminal?.id,
@@ -43,28 +48,30 @@ export async function createSale(dto: CreateSaleDto, lines: CartLine[]): Promise
     actingUserId: useAuthStore.getState().user?.id,
   };
   if (isWorkingOffline()) {
-    return queueSaleOffline(sale, lines);
+    return queueSaleOffline(sale, lines, approvals);
   }
   try {
     return await apiClient.post<SaleDto>("/sales", sale, { timeoutMs: SALE_TIMEOUT_MS });
   } catch (err) {
     if (isRetryableError(err) || (err instanceof ApiError && err.status === 401)) {
-      return queueSaleOffline(sale, lines);
+      return queueSaleOffline(sale, lines, approvals);
     }
     throw err;
   }
 }
 
-async function queueSaleOffline(sale: CreateSaleDto, lines: CartLine[]): Promise<SaleDto> {
+async function queueSaleOffline(sale: CreateSaleDto, lines: CartLine[], approvals: Approval[]): Promise<SaleDto> {
   const createdAt = new Date().toISOString();
   const payload: CreateSaleDto = {
     ...sale,
     offline: { createdAt },
+    overrides: undefined,
+    offlineOverrides: approvals.map((a) => ({ approverId: a.approverId, permission: a.permission })),
     // The server records these prices, not whatever they are by sync time.
     lineItems: lines.map((l) => ({
       productId: l.product.id,
       quantity: l.quantity,
-      unitPrice: Number(l.product.sellPrice),
+      unitPrice: linePrice(l),
       taxRate: Number(l.product.taxRate),
       discount: l.discount ?? undefined,
     })),
@@ -96,12 +103,16 @@ export async function voidSale(
   sale: SaleDto,
   reason: VoidReason,
   note?: string,
+  /** A manager's approval, for someone without VOID_SALE. */
+  approval?: Approval | null,
 ): Promise<{ sale: SaleDto; queued: boolean }> {
   const base: VoidSaleDto = {
     storeId: sale.storeId,
     reason,
     note: note?.trim() || undefined,
     actingUserId: useAuthStore.getState().user?.id,
+    // Uploaded later by the till: who approved it (checked on the till or the server).
+    offlineOverride: approval ? { approverId: approval.approverId, permission: approval.permission } : undefined,
   };
 
   const queue = async () => {
@@ -126,7 +137,12 @@ export async function voidSale(
   const result = await (async () => {
     if (sale.queued || isWorkingOffline()) return queue();
     try {
-      const voided = await apiClient.post<SaleDto>("/sales/void", { ...base, saleId: sale.id }, { timeoutMs: SALE_TIMEOUT_MS });
+      const { offlineOverride: _offline, ...online } = base;
+      const voided = await apiClient.post<SaleDto>(
+        "/sales/void",
+        { ...online, saleId: sale.id },
+        { timeoutMs: SALE_TIMEOUT_MS, headers: approvalHeaders(approval) },
+      );
       return { sale: voided, queued: false };
     } catch (err) {
       if (isRetryableError(err) || (err instanceof ApiError && err.status === 401)) return queue();

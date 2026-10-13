@@ -5,6 +5,7 @@ import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
 import { PrismaService } from "../src/prisma/prisma.service";
+import { deleteBusiness } from "./cleanup";
 
 /**
  * Shifts (docs/plans/TILL_ESSENTIALS.md, part 4): one open shift per till,
@@ -19,6 +20,8 @@ describe("Shifts (e2e)", () => {
   const PASSWORD = "ShiftPass123!";
   let businessId: string | undefined;
   let ownerToken: string;
+  let ownerId: string;
+  const OWNER_PIN = "8642";
   let cashierToken: string;
   let cashierId: string;
   let storeId: string;
@@ -64,7 +67,10 @@ describe("Shifts (e2e)", () => {
       .expect(201);
     businessId = reg.body.user.businessId;
     ownerToken = reg.body.accessToken;
+    ownerId = reg.body.user.id;
     storeId = reg.body.stores[0].id;
+    // The owner approves things for the cashier with this PIN (manager override).
+    await http().put("/users/me/pin").set(auth(ownerToken)).send({ pin: OWNER_PIN, password: PASSWORD }).expect(200);
 
     productId = (
       await http()
@@ -93,38 +99,22 @@ describe("Shifts (e2e)", () => {
   afterAll(async () => {
     try {
       if (businessId) {
-        const userIds = (await prisma.user.findMany({ where: { businessId }, select: { id: true } })).map((u) => u.id);
-        const saleWhere = { storeId };
-        await prisma.$transaction([
-          prisma.returnLineItem.deleteMany({ where: { return: saleWhere } }),
-          prisma.return.deleteMany({ where: saleWhere }),
-          prisma.salePayment.deleteMany({ where: { sale: saleWhere } }),
-          prisma.saleLineItem.deleteMany({ where: { sale: saleWhere } }),
-          prisma.sale.deleteMany({ where: saleWhere }),
-          prisma.cashMovement.deleteMany({ where: { shift: { businessId } } }),
-          prisma.shift.deleteMany({ where: { businessId } }),
-          prisma.terminal.deleteMany({ where: { businessId } }),
-          prisma.inventoryItem.deleteMany({ where: { storeId } }),
-          prisma.product.deleteMany({ where: { businessId } }),
-          prisma.auditLog.deleteMany({ where: { businessId } }),
-          prisma.userPermission.deleteMany({ where: { userId: { in: userIds } } }),
-          prisma.employee.deleteMany({ where: { businessId } }),
-          prisma.storeUser.deleteMany({ where: { userId: { in: userIds } } }),
-          prisma.emailVerificationToken.deleteMany({ where: { userId: { in: userIds } } }),
-          prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } }),
-          prisma.user.deleteMany({ where: { businessId } }),
-          prisma.store.deleteMany({ where: { businessId } }),
-          prisma.business.delete({ where: { id: businessId } }),
-        ]);
+        await deleteBusiness(prisma, businessId);
       }
     } finally {
       await app.close();
     }
   });
 
-  it("the owner turns shifts on in Settings", async () => {
-    const res = await http().patch("/businesses/me").set(auth(ownerToken)).send({ shiftsEnabled: true }).expect(200);
-    expect(res.body.shiftsEnabled).toBe(true);
+  it("shifts are always on: no sale before the till opens a shift", async () => {
+    const res = await http()
+      .post("/sales")
+      .set(auth(cashierToken))
+      .send({ storeId, terminalId, lineItems: [{ productId, quantity: 1 }], payments: [{ method: "CASH", amount: 10 }] })
+      .expect(400);
+    expect(res.body.message).toBe("Open a shift before selling");
+    const settings = await http().get("/businesses/me").set(auth(ownerToken)).expect(200);
+    expect(settings.body).not.toHaveProperty("shiftsEnabled");
   });
 
   it("a cashier opens the till with a float; a till has one open shift at a time", async () => {
@@ -150,9 +140,27 @@ describe("Shifts (e2e)", () => {
     const first = (await sell(cashierToken, "CASH")).body;
     await sell(cashierToken, "CASH");
     const cancelled = (await sell(cashierToken, "CASH")).body;
-    await sell(ownerToken, "CASH", { discount: { type: "AMOUNT", value: 2 }, payments: [{ method: "CASH", amount: 8 }] });
+    // The cashier can't give discounts alone: the owner approves this one with their PIN.
+    const discounted = { discount: { type: "AMOUNT", value: 2 }, payments: [{ method: "CASH", amount: 8 }] };
+    await http()
+      .post("/sales")
+      .set(auth(cashierToken))
+      .send({ storeId, terminalId, shiftClientId: shiftId, lineItems: [{ productId, quantity: 1 }], ...discounted })
+      .expect(403);
+    const approval = await http()
+      .post("/overrides")
+      .set(auth(cashierToken))
+      .send({ approverId: ownerId, pin: OWNER_PIN, permission: "APPLY_DISCOUNT", action: "sale.discount", storeId })
+      .expect(200);
+    await sell(cashierToken, "CASH", { ...discounted, overrides: [{ permission: "APPLY_DISCOUNT", token: approval.body.token }] });
     await sell(cashierToken, "CARD");
     expect(first.shiftId).toBeTruthy();
+    // Someone else can't sell in the cashier's shift.
+    await http()
+      .post("/sales")
+      .set(auth(ownerToken))
+      .send({ storeId, terminalId, shiftClientId: shiftId, lineItems: [{ productId, quantity: 1 }], payments: [{ method: "CASH", amount: 10 }] })
+      .expect(403);
 
     await http().post("/sales/void").set(auth(ownerToken)).send({ storeId, saleId: cancelled.id, reason: "WRONG_ITEMS" }).expect(200);
     await http()
@@ -161,7 +169,7 @@ describe("Shifts (e2e)", () => {
       .send({ storeId, saleId: first.id, shiftClientId: shiftId, lineItems: [{ productId, quantity: 1 }] })
       .expect(201);
 
-    // Cash in/out opens the drawer without a sale: OPEN_DRAWER.
+    // Cash in for anyone; cash out needs CASH_OUT (or a manager's approval).
     const movement = (type: "IN" | "OUT", amount: number, reason: string, token = ownerToken) =>
       http()
         .post("/shifts/cash-movements")
@@ -187,10 +195,7 @@ describe("Shifts (e2e)", () => {
       cashIn: "50.00",
       cashOut: "30.00",
     });
-    expect(current.body.shift.summary.byCashier.map((c: { name: string; count: number }) => [c.name, c.count]).sort()).toEqual([
-      ["Cleo Cash", 3],
-      ["Sam Owner", 1],
-    ]);
+    expect(current.body.shift.summary.byCashier.map((c: { name: string; count: number }) => [c.name, c.count])).toEqual([["Cleo Cash", 4]]);
   });
 
   it("closing records the count, the expected cash and the difference", async () => {

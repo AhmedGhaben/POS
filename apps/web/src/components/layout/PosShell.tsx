@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { StoreSwitcher } from "./StoreSwitcher";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuthStore } from "@/features/auth/store";
-import { logout } from "@/features/auth/api";
+import { logOutOrCloseShift } from "@/features/shifts/close-request";
 import { OfflineIndicator } from "@/features/pos/components/OfflineIndicator";
 
 /**
@@ -35,15 +35,13 @@ export function PosShell() {
   const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const role = useAuthStore((s) => s.user?.role);
-  const clearSession = useAuthStore((s) => s.clearSession);
   const navigate = useNavigate();
   const tillMode = useTillMode();
   const lock = useLockStore((s) => s.lock);
 
-  async function handleLogout() {
-    await logout().catch(() => {});
-    clearSession();
-    navigate("/login");
+  // With a shift open, Log out closes it first (blind count, report).
+  function handleLogout() {
+    void logOutOrCloseShift(navigate);
   }
 
   const canReturnToBackOffice = role !== "CASHIER";

@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import request from "supertest";
 import { AppModule } from "../src/app.module";
+import { ensureShift } from "./shift-helper";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
 
 /**
@@ -105,6 +106,7 @@ describe("POS API (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({
         storeId: STORE_ID,
+        shiftClientId: await ensureShift(app, token, STORE_ID),
         payments: [{ method: "CASH", amount: total }],
         lineItems: [{ productId: product.id, quantity }],
       })
@@ -140,6 +142,7 @@ describe("POS API (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({
         storeId: STORE_ID,
+        shiftClientId: await ensureShift(app, token, STORE_ID),
         payments: [{ method: "CASH", amount: 1 }],
         lineItems: [{ productId: product.id, quantity: 999999 }],
       })

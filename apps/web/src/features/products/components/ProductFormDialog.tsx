@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Combobox } from "@/components/ui/combobox";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createProduct, updateProduct } from "@/features/products/api";
 import { fetchCategories } from "@/features/categories/api";
 import { useAuthStore } from "@/features/auth/store";
@@ -27,6 +27,7 @@ const productSchema = z.object({
   costPrice: z.coerce.number().min(0, "validation.nonNegative"),
   sellPrice: z.coerce.number().min(0, "validation.nonNegative"),
   taxRate: z.coerce.number().min(0, "validation.nonNegative"),
+  trackStock: z.boolean(),
 });
 type FormInput = z.input<typeof productSchema>;
 type FormOutput = z.output<typeof productSchema>;
@@ -41,6 +42,7 @@ function valuesFor(product: ProductDto | null, defaultTaxRate: string): FormInpu
       costPrice: "",
       sellPrice: "",
       taxRate: String(Number(defaultTaxRate)),
+      trackStock: true,
     };
   }
   return {
@@ -52,6 +54,7 @@ function valuesFor(product: ProductDto | null, defaultTaxRate: string): FormInpu
     costPrice: "costPrice" in product ? String(Number(product.costPrice)) : "0",
     sellPrice: String(Number(product.sellPrice)),
     taxRate: String(Number(product.taxRate)),
+    trackStock: product.trackStock ?? true,
   };
 }
 
@@ -102,6 +105,7 @@ export function ProductFormDialog({
         categoryId: values.categoryId && values.categoryId !== NO_CATEGORY ? values.categoryId : null,
         sellPrice: values.sellPrice,
         taxRate: values.taxRate,
+        trackStock: values.trackStock,
         ...(showCost ? { costPrice: values.costPrice } : {}),
       };
       return editing
@@ -237,6 +241,28 @@ export function ProductFormDialog({
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="trackStock"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-start gap-3">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4"
+                        checked={field.value}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                      />
+                    </FormControl>
+                    <div>
+                      <FormLabel>{t("form.trackStock")}</FormLabel>
+                      <FormDescription>{t("form.trackStockHint")}</FormDescription>
+                    </div>
+                  </div>
+                </FormItem>
+              )}
+            />
             <Button type="submit" className="w-full" disabled={busy}>
               {saveMutation.isPending ? t("common:actions.saving") : editing ? t("common:actions.saveChanges") : t("form.save")}
             </Button>

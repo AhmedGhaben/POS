@@ -32,7 +32,16 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
  * The end-of-shift report, 80 mm. It's for the shop, not the customer, so
  * it uses the cashier's screen language.
  */
-export function ShiftReport({ data, store }: { data: ShiftReportData; store: StoreDto | undefined }) {
+export function ShiftReport({
+  data,
+  store,
+  withSales = false,
+}: {
+  data: ShiftReportData;
+  store: StoreDto | undefined;
+  /** Also list every sale (receipt, time, method, total). */
+  withSales?: boolean;
+}) {
   const { t } = useTranslation(["shifts", "common"]);
   const { money, dateTime } = useDocumentLanguage();
   const s = data.summary;
@@ -92,6 +101,21 @@ export function ShiftReport({ data, store }: { data: ShiftReportData; store: Sto
           <p className="font-semibold">{t("report.byCashier")}</p>
           {s.byCashier.map((c) => (
             <Row key={c.id} label={`${c.name} (${c.count})`} value={money(c.total)} />
+          ))}
+        </>
+      )}
+      {withSales && s.sales && s.sales.length > 0 && (
+        <>
+          <hr className="my-2 border-dashed" />
+          <p className="font-semibold">{t("report.allSales")}</p>
+          {s.sales.map((sale) => (
+            <div key={sale.receiptNumber} className={sale.voided ? "line-through" : undefined}>
+              <Row label={sale.receiptNumber} value={money(sale.total)} />
+              <p className="pl-2 text-[10px]">
+                {dateTime(sale.at)} · {sale.method === "SPLIT" ? t("report.split") : t(`common:paymentMethods.${sale.method}`)}
+                {sale.voided ? ` · ${t("report.cancelled")}` : ""}
+              </p>
+            </div>
           ))}
         </>
       )}

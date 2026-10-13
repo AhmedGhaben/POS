@@ -1,7 +1,9 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { DrawerOpenReason, type CashMovementReason, type DrawerSubReason } from "@pos/shared";
+import { DrawerOpenReason, Permission, type CashMovementReason, type DrawerSubReason } from "@pos/shared";
+import { useHasPermission } from "@/features/auth/use-permission";
+import { requestApproval, type Approval } from "@/features/overrides/approval";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -30,6 +32,7 @@ export function CashMovementDialog({ shift, open, onOpenChange }: { shift: Local
   const { t } = useTranslation("shifts");
   const money = useMoney();
   const hasDrawer = useHasDrawer();
+  const canCashOut = useHasPermission(Permission.CASH_OUT);
   const [type, setType] = React.useState<"IN" | "OUT">("OUT");
   const [reason, setReason] = React.useState<CashMovementReason>("CASH_PICKUP");
   const [amount, setAmount] = React.useState("");
@@ -51,9 +54,20 @@ export function CashMovementDialog({ shift, open, onOpenChange }: { shift: Local
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!valid || busy) return;
-    setBusy(true);
     const rounded = Math.round(value * 100) / 100;
-    await addCashMovement(shift, { type, amount: rounded, reason, note });
+    // Taking cash out needs CASH_OUT, or a manager's approval for this once.
+    let approval: Approval | null = null;
+    if (type === "OUT" && !canCashOut) {
+      approval = await requestApproval({
+        permission: Permission.CASH_OUT,
+        action: "cash.out",
+        description: t("movement.approval", { amount: money(rounded), reason: t(`reasons.${reason}`) }),
+        details: { amount: rounded, reason },
+      });
+      if (!approval) return;
+    }
+    setBusy(true);
+    await addCashMovement(shift, { type, amount: rounded, reason, note, approval });
     if (hasDrawer) {
       void openCashDrawer({ reason: DrawerOpenReason.MANUAL_OPEN, subReason: DRAWER_REASON[reason], note: t(`reasons.${reason}`) });
     }

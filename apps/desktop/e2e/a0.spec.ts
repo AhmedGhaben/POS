@@ -10,6 +10,7 @@ import {
   sellFirstProduct,
   SwitchableProxy,
   tempUserData,
+  logOut,
 } from "./helpers";
 
 /**
@@ -50,7 +51,7 @@ test.describe.serial("A0: desktop shell, auth and offline", () => {
     expect(env).toEqual({
       require: "undefined",
       process: "undefined",
-      bridge: ["app", "display", "drawer", "hardware", "log", "pin", "printers", "printing", "settings", "staff", "terminal", "updates"],
+      bridge: ["app", "approval", "display", "drawer", "hardware", "log", "pin", "printers", "printing", "settings", "staff", "terminal", "updates"],
     });
   });
 
@@ -140,7 +141,7 @@ test.describe.serial("A0: desktop shell, auth and offline", () => {
 
   test("logout clears the session and the refresh cookie", async () => {
     await page.goto("app://pos/pos");
-    await page.getByRole("button", { name: "Log out" }).click();
+    await logOut(page);
     await expect(page).toHaveURL(/\/login/);
     expect(await refreshStatus(page)).toBe(401);
   });

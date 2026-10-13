@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { DrawerOpenReason, type StoreDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
@@ -14,13 +15,17 @@ import { printDocument } from "@/features/desktop/printing";
 import { isWorkingOffline } from "@/features/pos/offline-store";
 import { syncOutbox } from "@/features/pos/sync";
 import { closeShift, fetchShiftByClient } from "../api";
+import { signOut } from "../close-request";
+import { cleanCounts, countTotal, denominationsFor } from "../denominations";
 import type { LocalShift } from "../ledger";
 import { reportFromLocal, reportFromServer } from "../report-data";
 import { ShiftReport, type ShiftReportData } from "./ShiftReport";
 
 /**
  * Closing the till: count the cash first, without seeing what's expected
- * (so the count is honest), then see the difference and print the report.
+ * (so the count is honest), as a total or note by note; then see the
+ * difference, print the report, and the person who closed it is signed
+ * out. A manager closing someone else's abandoned shift stays signed in.
  */
 export function CloseShiftDialog({
   shift,
@@ -35,31 +40,41 @@ export function CloseShiftDialog({
 }) {
   const { t } = useTranslation("shifts");
   const money = useMoney();
+  const navigate = useNavigate();
   const hasDrawer = useHasDrawer();
   const user = useAuthStore((s) => s.user);
+  const currency = useAuthStore((s) => s.business?.currency);
+  const denominations = denominationsFor(currency);
+  const [byNote, setByNote] = React.useState(false);
+  const [counts, setCounts] = React.useState<Record<string, string>>({});
   const [counted, setCounted] = React.useState("");
   const [note, setNote] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [report, setReport] = React.useState<ShiftReportData | null>(null);
+  const [withSales, setWithSales] = React.useState(false);
+  const forced = !!shift && !!user && shift.openedBy.id !== user.id;
 
   React.useEffect(() => {
     if (!open) return;
     setCounted("");
+    setCounts({});
+    setByNote(false);
     setNote("");
     setReport(null);
     // The drawer opens so the cash can be counted.
     if (hasDrawer) void openCashDrawer({ reason: DrawerOpenReason.SHIFT_CLOSE });
   }, [open, hasDrawer]);
 
-  const value = Number(counted.replace(",", "."));
-  const valid = counted.trim() !== "" && Number.isFinite(value) && value >= 0;
+  const cleaned = byNote ? cleanCounts(counts) : null;
+  const value = byNote ? (cleaned ? countTotal(cleaned) : NaN) : Number(counted.replace(",", "."));
+  const valid = byNote ? cleaned !== null : counted.trim() !== "" && Number.isFinite(value) && value >= 0;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!shift || !valid || busy) return;
     setBusy(true);
     const countedCash = Math.round(value * 100) / 100;
-    const { closedAt } = await closeShift(shift, countedCash, note);
+    const { closedAt } = await closeShift(shift, countedCash, note, byNote ? cleaned : null);
     let data = reportFromLocal(shift, {
       countedCash,
       closedAt,
@@ -79,22 +94,60 @@ export function CloseShiftDialog({
     setBusy(false);
   }
 
+  /** Done: the cashier's shift is over, so they're signed out (not a manager closing someone else's). */
+  function finish() {
+    onOpenChange(false);
+    if (report && !forced) void signOut(navigate);
+  }
+
   const difference = report?.countedCash != null ? report.countedCash - report.expectedCash : 0;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !busy && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={(o) => !busy && (o ? onOpenChange(true) : report ? finish() : onOpenChange(false))}>
+      <DialogContent className="max-h-[95vh] overflow-y-auto sm:max-w-md">
         {!report ? (
           <>
             <DialogHeader>
-              <DialogTitle>{t("close.title")}</DialogTitle>
-              <DialogDescription>{t("close.description")}</DialogDescription>
+              <DialogTitle>{forced ? t("close.titleFor", { name: shift?.openedBy.name ?? "" }) : t("close.title")}</DialogTitle>
+              <DialogDescription>{forced ? t("close.descriptionForced") : t("close.description")}</DialogDescription>
             </DialogHeader>
             <form className="space-y-4" onSubmit={submit}>
-              <div className="space-y-1.5">
-                <Label htmlFor="counted-cash">{t("close.counted")}</Label>
-                <Input id="counted-cash" inputMode="decimal" autoFocus value={counted} onChange={(e) => setCounted(e.target.value)} />
-              </div>
+              {denominations && (
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" className="h-4 w-4" checked={byNote} onChange={(e) => setByNote(e.target.checked)} />
+                  {t("close.byNote")}
+                </label>
+              )}
+              {byNote && denominations ? (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                    {[...denominations.notes, ...denominations.coins].map((d) => (
+                      <div key={d} className="flex items-center gap-2">
+                        <Label htmlFor={`count-${d}`} className="w-16 shrink-0 text-right text-sm">
+                          {money(d)}
+                        </Label>
+                        <span className="text-muted-foreground">×</span>
+                        <Input
+                          id={`count-${d}`}
+                          aria-label={t("close.countOf", { value: money(d) })}
+                          inputMode="numeric"
+                          className="h-8"
+                          value={counts[String(d)] ?? ""}
+                          onChange={(e) => setCounts((c) => ({ ...c, [String(d)]: e.target.value }))}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-sm font-medium" data-testid="count-total">
+                    {cleaned ? t("close.countTotal", { amount: money(countTotal(cleaned)) }) : t("close.countInvalid")}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <Label htmlFor="counted-cash">{t("close.counted")}</Label>
+                  <Input id="counted-cash" inputMode="decimal" autoFocus value={counted} onChange={(e) => setCounted(e.target.value)} />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label htmlFor="close-note">{t("close.note")}</Label>
                 <Textarea id="close-note" rows={2} maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} />
@@ -116,16 +169,20 @@ export function CloseShiftDialog({
                     : t("close.short", { amount: money(-difference) })}
               </DialogDescription>
             </DialogHeader>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" className="h-4 w-4" checked={withSales} onChange={(e) => setWithSales(e.target.checked)} />
+              {t("close.withSales")}
+            </label>
             <div className="max-h-[55vh] overflow-y-auto rounded-md border bg-white py-3 text-black">
-              <ShiftReport data={report} store={store} />
+              <ShiftReport data={report} store={store} withSales={withSales} />
             </div>
             <PrintArea>
-              <ShiftReport data={report} store={store} />
+              <ShiftReport data={report} store={store} withSales={withSales} />
             </PrintArea>
             <div className="grid grid-cols-2 gap-2">
               <Button onClick={() => void printDocument()}>{t("close.print")}</Button>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                {t("close.finish")}
+              <Button variant="outline" onClick={finish}>
+                {forced ? t("close.finish") : t("close.finishSignOut")}
               </Button>
             </div>
           </>

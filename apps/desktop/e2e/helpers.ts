@@ -161,11 +161,47 @@ export async function connect(page: Page, serverUrl: string, { skipSetup = true 
   }
 }
 
-/** Opens the POS and selects the first category so products are on screen. */
-export async function openPosWithProducts(page: Page) {
+/**
+ * Opens the POS and selects the first category so products are on screen.
+ * Selling needs an open shift (docs/plans/ANGOLA.md, phase 3): unless
+ * `openShift: false`, the till is opened with no float if it asks.
+ */
+export async function openPosWithProducts(page: Page, { openShift = true } = {}) {
   await page.goto("app://pos/pos");
   await page.getByRole("button", { name: "All", exact: true }).locator("xpath=following-sibling::button[1]").click();
   await page.locator("div.grid > button.text-left").first().waitFor();
+  if (openShift) await ensureShiftOpen(page);
+}
+
+/**
+ * Log out. With the person's shift open, Log out goes into closing it
+ * (blind count, report): count 0, close, and sign out from there.
+ */
+export async function logOut(page: Page) {
+  await page.getByRole("button", { name: "Log out" }).click();
+  const closing = page.getByRole("dialog").filter({ hasText: "Close the till" });
+  const outcome = await Promise.race([
+    page.waitForURL(/\/login/).then(() => "out" as const),
+    closing.waitFor().then(() => "close" as const),
+  ]);
+  if (outcome === "close") {
+    await closing.getByLabel("Cash counted").fill("0");
+    await closing.getByRole("button", { name: "Close the till" }).click();
+    await page.getByRole("button", { name: "Done (sign out)" }).click();
+    await page.waitForURL(/\/login/);
+  }
+}
+
+/** On the POS: opens the till with no float if it's asking for one. */
+export async function ensureShiftOpen(page: Page) {
+  const float = page.getByLabel("Opening float");
+  const charge = page.getByRole("button", { name: /^Charge/ });
+  await Promise.race([float.waitFor(), charge.waitFor()]);
+  if (await float.isVisible()) {
+    await float.fill("0");
+    await page.getByRole("button", { name: "Open the till" }).click();
+    await charge.waitFor();
+  }
 }
 
 /** Adds the first product on screen and charges it (default payment: cash). */
@@ -195,7 +231,7 @@ export function serverSales(page: Page) {
 export function outbox(page: Page) {
   return page.evaluate(
     () =>
-      new Promise<{ clientId: string; state: string; attempts: number }[]>((resolve, reject) => {
+      new Promise<{ clientId: string; kind: string; state: string; attempts: number }[]>((resolve, reject) => {
         const req = indexedDB.open("pos-offline");
         req.onerror = () => reject(req.error);
         req.onsuccess = () => {
@@ -203,9 +239,9 @@ export function outbox(page: Page) {
           const all = tx.objectStore("outbox").getAll();
           all.onsuccess = () =>
             resolve(
-              (all.result as { clientId: string; state: string; createdAt: string; attempts: number }[])
+              (all.result as { clientId: string; kind: string; state: string; createdAt: string; attempts: number }[])
                 .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-                .map((e) => ({ clientId: e.clientId, state: e.state, attempts: e.attempts })),
+                .map((e) => ({ clientId: e.clientId, kind: e.kind, state: e.state, attempts: e.attempts })),
             );
           all.onerror = () => reject(all.error);
         };

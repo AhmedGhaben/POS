@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString, Min, MinLength } from "class-validator";
+import { IsBoolean, IsNumber, IsOptional, IsString, Min, MinLength } from "class-validator";
 
 export class CreateProductDto {
   @IsOptional()
@@ -33,4 +33,9 @@ export class CreateProductDto {
   @IsNumber()
   @Min(0)
   taxRate?: number;
+
+  /** False for services etc.: always sellable, never moves stock. Defaults to true. */
+  @IsOptional()
+  @IsBoolean()
+  trackStock?: boolean;
 }

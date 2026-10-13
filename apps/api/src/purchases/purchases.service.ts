@@ -43,8 +43,10 @@ export class PurchasesService {
     });
     const purchaseNumber = `PO-${dto.storeId.slice(-4).toUpperCase()}-${Date.now()}`;
 
+    // Bought services (and other untracked items) don't add stock.
+    const tracked = new Set(products.filter((p) => p.trackStock).map((p) => p.id));
     return this.prisma.$transaction(async (tx) => {
-      for (const li of dto.lineItems) {
+      for (const li of dto.lineItems.filter((l) => tracked.has(l.productId))) {
         await tx.inventoryItem.upsert({
           where: { storeId_productId: { storeId: dto.storeId, productId: li.productId } },
           create: { storeId: dto.storeId, productId: li.productId, quantity: li.quantity },

@@ -18,7 +18,7 @@ import { StoreSwitcher } from "./StoreSwitcher";
 import { SidebarNav } from "./Sidebar";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuthStore } from "@/features/auth/store";
-import { logout } from "@/features/auth/api";
+import { logOutOrCloseShift } from "@/features/shifts/close-request";
 import { LANGUAGES } from "@/i18n";
 import { useLanguage } from "@/i18n/use-language";
 
@@ -26,7 +26,6 @@ export function BackOfficeTopBar() {
   const { t } = useTranslation();
   const [language, setLanguage] = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  const clearSession = useAuthStore((s) => s.clearSession);
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
@@ -34,10 +33,9 @@ export function BackOfficeTopBar() {
   const tillMode = useTillMode();
   const lock = useLockStore((s) => s.lock);
 
-  async function handleLogout() {
-    await logout().catch(() => {});
-    clearSession();
-    navigate("/login");
+  // With a shift open, Log out closes it first (on the POS page).
+  function handleLogout() {
+    void logOutOrCloseShift(navigate);
   }
 
   return (

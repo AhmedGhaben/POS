@@ -10,6 +10,7 @@ import {
   serverSales,
   SwitchableProxy,
   tempUserData,
+  logOut,
 } from "./helpers";
 
 /**
@@ -109,12 +110,24 @@ test.describe.serial("Till: discounts", () => {
     expect(Number(latest.total)).toBeCloseTo(shown, 2);
   });
 
-  test("a cashier without the permission sees no discount buttons", async () => {
-    await page.getByRole("button", { name: "Log out" }).click();
+  test("a cashier without the permission needs a manager's approval for a discount", async () => {
+    await logOut(page);
     await login(page, "cashier@demo-store.test", "CashierPass123!");
     await openPosWithProducts(page);
     await page.locator("div.grid > button.text-left").first().click();
-    await expect(page.getByRole("button", { name: /^Discount on / })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Discount on the whole sale" })).toHaveCount(0);
+    await page.getByRole("button", { name: /^Discount on / }).first().click();
+    await page.getByLabel("Percentage off").fill("5");
+    await expect(page.getByText("A manager needs to approve this discount.")).toBeVisible();
+    await page.getByRole("button", { name: "Ask a manager" }).click();
+    const approval = page.getByRole("dialog", { name: "Manager approval" });
+    await expect(approval).toBeVisible();
+    // Without the approval, no discount.
+    await approval.getByRole("button", { name: "Cancel" }).click();
+    await expect(approval).toBeHidden();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.getByText(/off \(-/)).toHaveCount(0);
+    await page.getByRole("button", { name: "Clear cart" }).click();
+    await logOut(page);
   });
 });

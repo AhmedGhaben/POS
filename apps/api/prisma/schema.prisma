@@ -60,6 +60,14 @@ enum Permission {
   VOID_SALE
   /// Give discounts on items or on the whole sale at the till.
   APPLY_DISCOUNT
+  /// Give more than the business's maximum discount (others need a manager override).
+  DISCOUNT_ABOVE_LIMIT
+  /// Change an item's price at the till.
+  CHANGE_PRICE
+  /// Sell on credit (pay later): an invoice (FT) settled later by receipts.
+  SELL_ON_CREDIT
+  /// Take cash out of the drawer during a shift (e.g. to the safe).
+  CASH_OUT
 }
 
 enum DrawerOpenReason {
@@ -97,18 +105,20 @@ model Business {
   website            String?
 
   /// ISO 4217 code. Only currencies with 0-2 decimals: money columns are Decimal(10, 2).
-  currency           String   @default("USD")
+  currency                 String   @default("USD")
   /// Language of receipts, quotes, invoices and customer emails: en, pt-PT, pt-BR.
-  language           String   @default("en")
+  language                 String   @default("en")
   /// Pre-fills the tax % of new products; each product keeps its own rate.
-  defaultTaxRate     Decimal  @default(0) @db.Decimal(5, 2)
-  /// Tills count the cash at the start and end of each shift (docs/plans/TILL_ESSENTIALS.md, part 4).
-  shiftsEnabled      Boolean  @default(false)
+  defaultTaxRate           Decimal  @default(0) @db.Decimal(5, 2)
+  /// A shift whose counted cash is off by more than this (either way) is
+  /// flagged for managers; null = never flagged. Shifts are always on
+  /// (docs/plans/ANGOLA.md, phase 3).
+  shiftDifferenceThreshold Decimal? @db.Decimal(10, 2)
   /// Largest discount (% of the sale or line) anyone but the owner may give; null = no limit.
-  maxDiscountPercent Decimal? @db.Decimal(5, 2)
-  receiptHeader      String?
-  receiptFooter      String?
-  invoiceFooter      String?
+  maxDiscountPercent       Decimal? @db.Decimal(5, 2)
+  receiptHeader            String?
+  receiptFooter            String?
+  invoiceFooter            String?
 
   /// Small (<= 300 KB, resized in the browser) so it lives in the row until
   /// object storage exists. logoUpdatedAt busts the browser cache.
@@ -398,6 +408,9 @@ model Product {
   costPrice   Decimal   @db.Decimal(10, 2)
   sellPrice   Decimal   @db.Decimal(10, 2)
   taxRate     Decimal   @default(0) @db.Decimal(5, 2)
+  /// False for services and other things with no stock: always sellable,
+  /// never move stock, never in low-stock alerts.
+  trackStock  Boolean   @default(true)
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -429,16 +442,19 @@ model InventoryItem {
 }
 
 model Customer {
-  id         String   @id @default(cuid())
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id])
-  name       String
-  phone      String?
-  email      String?
+  id              String   @id @default(cuid())
+  businessId      String
+  business        Business @relation(fields: [businessId], references: [id])
+  name            String
+  phone           String?
+  email           String?
   /// For A4 invoices to company buyers.
-  address    String?
-  taxId      String?
-  createdAt  DateTime @default(now())
+  address         String?
+  taxId           String?
+  /// "Consumidor Final" (NIF 999999999): one per business, used for every
+  /// sale where no customer was chosen. Can't be edited or deleted.
+  isFinalConsumer Boolean  @default(false)
+  createdAt       DateTime @default(now())
 
   sales    Sale[]
   invoices Invoice[]
@@ -514,6 +530,8 @@ model SaleLineItem {
   productSku         String
   quantity           Int
   unitPrice          Decimal  @db.Decimal(10, 2)
+  /// The product's price when the cashier changed it at the till (CHANGE_PRICE); null otherwise.
+  originalUnitPrice  Decimal? @db.Decimal(10, 2)
   taxAmount          Decimal  @default(0) @db.Decimal(10, 2)
   /// This line's own discount as given (PERCENT or AMOUNT), and what it came to.
   discountType       String?
@@ -760,32 +778,38 @@ model Invoice {
 /// returns and cash movements made in it point here. Opened, moved and
 /// closed through the till's outbox, so it works offline (clientId).
 model Shift {
-  id               String      @id @default(cuid())
-  businessId       String
-  business         Business    @relation(fields: [businessId], references: [id])
-  storeId          String
-  store            Store       @relation(fields: [storeId], references: [id])
+  id                   String      @id @default(cuid())
+  businessId           String
+  business             Business    @relation(fields: [businessId], references: [id])
+  storeId              String
+  store                Store       @relation(fields: [storeId], references: [id])
   /// Null for a shift opened in a browser (one per person per store).
-  terminalId       String?
-  terminal         Terminal?   @relation(fields: [terminalId], references: [id])
-  status           ShiftStatus @default(OPEN)
-  openedById       String
-  openedBy         User        @relation("ShiftOpenedBy", fields: [openedById], references: [id])
-  openedAt         DateTime
-  openingFloat     Decimal     @db.Decimal(10, 2)
-  closedById       String?
-  closedBy         User?       @relation("ShiftClosedBy", fields: [closedById], references: [id])
-  closedAt         DateTime?
-  countedCash      Decimal?    @db.Decimal(10, 2)
+  terminalId           String?
+  terminal             Terminal?   @relation(fields: [terminalId], references: [id])
+  status               ShiftStatus @default(OPEN)
+  openedById           String
+  openedBy             User        @relation("ShiftOpenedBy", fields: [openedById], references: [id])
+  openedAt             DateTime
+  openingFloat         Decimal     @db.Decimal(10, 2)
+  closedById           String?
+  closedBy             User?       @relation("ShiftClosedBy", fields: [closedById], references: [id])
+  closedAt             DateTime?
+  countedCash          Decimal?    @db.Decimal(10, 2)
   /// What the server's records say should be in the drawer at close.
-  expectedCash     Decimal?    @db.Decimal(10, 2)
+  expectedCash         Decimal?    @db.Decimal(10, 2)
   /// What the till worked out itself (it may know sales not uploaded yet).
-  tillExpectedCash Decimal?    @db.Decimal(10, 2)
-  difference       Decimal?    @db.Decimal(10, 2)
-  note             String?
-  clientId         String
-  createdOffline   Boolean     @default(false)
-  createdAt        DateTime    @default(now())
+  tillExpectedCash     Decimal?    @db.Decimal(10, 2)
+  difference           Decimal?    @db.Decimal(10, 2)
+  /// The blind count note by note and coin by coin, when given: { "5000": 3, "200": 4, … }.
+  countedDenominations Json?
+  /// Closed by a manager for someone else (an abandoned shift); the manager entered the count.
+  forcedClose          Boolean     @default(false)
+  /// The difference was over the business's threshold at closing.
+  flagged              Boolean     @default(false)
+  note                 String?
+  clientId             String
+  createdOffline       Boolean     @default(false)
+  createdAt            DateTime    @default(now())
 
   sales         Sale[]
   returns       Return[]
@@ -809,6 +833,8 @@ model CashMovement {
   note           String?
   userId         String
   user           User             @relation(fields: [userId], references: [id])
+  /// Who approved a cash out the cashier wasn't allowed to make (manager override).
+  approvedById   String?
   occurredAt     DateTime
   clientId       String
   createdOffline Boolean          @default(false)
@@ -816,6 +842,32 @@ model CashMovement {
 
   @@unique([shiftId, clientId])
   @@map("cash_movements")
+}
+
+/// A manager authorising one restricted action for someone who lacks the
+/// permission (docs/plans/ANGOLA.md, phase 3). The cashier stays signed in.
+/// Online: issued after the approver's PIN is checked, as a single-use
+/// token (only its hash is kept) that expires in minutes. Offline: the till
+/// checked the PIN itself and the upload records it (offline = true).
+model ManagerOverride {
+  id            String     @id @default(cuid())
+  businessId    String
+  storeId       String?
+  /// The person who asked (the cashier).
+  requestedById String
+  approvedById  String
+  permission    Permission
+  /// What it was for, e.g. "sale.discount", "sale.void", "return", "cash.out".
+  action        String
+  details       Json?
+  tokenHash     String?    @unique
+  expiresAt     DateTime?
+  usedAt        DateTime?
+  offline       Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+
+  @@index([businessId, createdAt])
+  @@map("manager_overrides")
 }
 
 /// A 6-digit code an owner creates to set up a new till without typing

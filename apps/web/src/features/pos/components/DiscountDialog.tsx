@@ -1,12 +1,14 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import { discountCents, toCents, type DiscountInput, type DiscountType } from "@pos/shared";
+import { discountCents, Permission, toCents, type DiscountInput, type DiscountType } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/features/auth/store";
 import { useMoney } from "@/features/business/use-money";
+import { useHasPermission } from "@/features/auth/use-permission";
+import { requestApproval, type Approval } from "@/features/overrides/approval";
 
 const QUICK_PERCENTS = [5, 10, 15, 20];
 
@@ -17,19 +19,23 @@ interface DiscountDialogProps {
   /** What the discount comes off, in the currency (before tax). */
   base: number;
   current: DiscountInput | null | undefined;
-  onApply: (discount: DiscountInput | null) => void;
+  /** approval: a manager's, when this discount needed one. */
+  onApply: (discount: DiscountInput | null, approval?: Approval | null) => void;
 }
 
 /**
- * A percentage or an amount off a line or the whole sale. Owners have no
- * limit; everyone else stays within the business's maximum discount.
+ * A percentage or an amount off a line or the whole sale. Discounts need
+ * APPLY_DISCOUNT and stay within the business's maximum unless the person
+ * has DISCOUNT_ABOVE_LIMIT; otherwise a manager approves it (the approval
+ * goes with the sale).
  */
 export function DiscountDialog({ open, onOpenChange, title, base, current, onApply }: DiscountDialogProps) {
   const { t } = useTranslation("pos");
   const money = useMoney();
-  const role = useAuthStore((s) => s.user?.role);
+  const canDiscount = useHasPermission(Permission.APPLY_DISCOUNT);
+  const canGoOver = useHasPermission(Permission.DISCOUNT_ABOVE_LIMIT);
   const maxSetting = useAuthStore((s) => s.business?.maxDiscountPercent);
-  const max = role !== "OWNER" && maxSetting != null ? Number(maxSetting) : null;
+  const max = !canGoOver && maxSetting != null ? Number(maxSetting) : null;
   const [type, setType] = React.useState<DiscountType>("PERCENT");
   const [value, setValue] = React.useState("");
 
@@ -50,14 +56,26 @@ export function DiscountDialog({ open, onOpenChange, title, base, current, onApp
       ? t("discount.percentTooBig")
       : type === "AMOUNT" && toCents(number) > baseCents
         ? t("discount.tooBig")
-        : max !== null && off > Math.round((baseCents * max) / 100)
-          ? t("discount.overMax", { max })
-          : null;
+        : null;
+  const overMax = valid && max !== null && off > Math.round((baseCents * max) / 100);
+  // What this discount needs a manager for, if anything (one approval covers it).
+  const needs = !valid ? null : overMax ? Permission.DISCOUNT_ABOVE_LIMIT : !canDiscount ? Permission.APPLY_DISCOUNT : null;
 
-  function apply(e: React.FormEvent) {
+  async function apply(e: React.FormEvent) {
     e.preventDefault();
     if (!valid || error) return;
-    onApply({ type, value: Math.round(number * 100) / 100 });
+    const discount: DiscountInput = { type, value: Math.round(number * 100) / 100 };
+    let approval: Approval | null = null;
+    if (needs) {
+      approval = await requestApproval({
+        permission: needs,
+        action: "sale.discount",
+        description: t("discount.approval", { title, off: money(off / 100) }),
+        details: { discount, base },
+      });
+      if (!approval) return;
+    }
+    onApply(discount, approval);
     onOpenChange(false);
   }
 
@@ -95,7 +113,7 @@ export function DiscountDialog({ open, onOpenChange, title, base, current, onApp
           </div>
           {type === "PERCENT" && (
             <div className="flex flex-wrap gap-2">
-              {QUICK_PERCENTS.filter((p) => max === null || p <= max).map((p) => (
+              {QUICK_PERCENTS.map((p) => (
                 <Button key={p} type="button" size="sm" variant="secondary" onClick={() => setValue(String(p))}>
                   {p}%
                 </Button>
@@ -111,6 +129,11 @@ export function DiscountDialog({ open, onOpenChange, title, base, current, onApp
               </p>
             )
           )}
+          {!error && needs && (
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              {overMax ? t("discount.overMaxApproval", { max }) : t("discount.needsApproval")}
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <Button
               type="button"
@@ -124,7 +147,7 @@ export function DiscountDialog({ open, onOpenChange, title, base, current, onApp
               {t("discount.remove")}
             </Button>
             <Button type="submit" disabled={!valid || !!error}>
-              {t("discount.apply")}
+              {needs ? t("discount.askApproval") : t("discount.apply")}
             </Button>
           </div>
         </form>

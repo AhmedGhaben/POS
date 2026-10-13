@@ -4,6 +4,7 @@ import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
 import { PrismaService } from "../src/prisma/prisma.service";
+import { deleteBusiness } from "./cleanup";
 
 /**
  * Languages (docs/plans/I18N.md): the sign-up language becomes the owner's
@@ -34,16 +35,7 @@ describe("Languages (e2e)", () => {
   afterAll(async () => {
     try {
       if (businessId) {
-        const userIds = (await prisma.user.findMany({ where: { businessId }, select: { id: true } })).map((u) => u.id);
-        await prisma.$transaction([
-          prisma.auditLog.deleteMany({ where: { businessId } }),
-          prisma.storeUser.deleteMany({ where: { userId: { in: userIds } } }),
-          prisma.emailVerificationToken.deleteMany({ where: { userId: { in: userIds } } }),
-          prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } }),
-          prisma.user.deleteMany({ where: { businessId } }),
-          prisma.store.deleteMany({ where: { businessId } }),
-          prisma.business.delete({ where: { id: businessId } }),
-        ]);
+        await deleteBusiness(prisma, businessId);
       }
     } finally {
       // Always, so a failed clean-up can't leave Jest hanging.

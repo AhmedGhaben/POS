@@ -10,7 +10,7 @@
   },
   "receipt": {
     "number": "Recibo nº {{number}}",
-    "tendered": "Recebido",
+    "tendered": "Pagamento",
     "changeDue": "Troco",
     "thankYou": "Obrigado!",
     "copy": "2ª VIA",

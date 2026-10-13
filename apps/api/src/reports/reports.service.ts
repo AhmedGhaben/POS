@@ -126,8 +126,9 @@ export class ReportsService {
   }
 
   async lowStock(storeId: string) {
+    // Only products that track stock (and are still sold) can run low.
     const items = await this.prisma.inventoryItem.findMany({
-      where: { storeId },
+      where: { storeId, product: { trackStock: true, isActive: true } },
       include: { product: true },
       orderBy: { quantity: "asc" },
     });

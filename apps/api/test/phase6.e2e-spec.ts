@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import request from "supertest";
 import { AppModule } from "../src/app.module";
+import { ensureShift } from "./shift-helper";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
 
 /**
@@ -126,17 +127,20 @@ describe("POS API Phase 6 (e2e)", () => {
       .set("Authorization", `Bearer ${ownerAuthToken}`)
       .send({
         storeId: STORE_ID,
+        shiftClientId: await ensureShift(app, ownerAuthToken, STORE_ID),
         payments: [{ method: "CASH", amount: total }],
         lineItems: [{ productId: product.id, quantity: 1 }],
       })
       .expect(201);
 
+    // A cash refund comes out of the cashier's own open shift.
     await request(app.getHttpServer())
       .post("/returns")
       .set("Authorization", `Bearer ${cashierAuthToken}`)
       .send({
         storeId: STORE_ID,
         saleId: saleRes.body.id,
+        shiftClientId: await ensureShift(app, cashierAuthToken, STORE_ID),
         lineItems: [{ productId: product.id, quantity: 1 }],
       })
       .expect(201);

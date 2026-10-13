@@ -1,5 +1,5 @@
 import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
-import { API_URL, connect, launch, login, openPosWithProducts, restock, SwitchableProxy, tempUserData } from "./helpers";
+import { API_URL, connect, launch, login, logOut, openPosWithProducts, restock, SwitchableProxy, tempUserData } from "./helpers";
 
 /**
  * docs/plans/ANGOLA.md, phase 1: a cashier signing in after a manager gets
@@ -102,11 +102,21 @@ test.describe.serial("Angola phase 1: account switch and dropdowns", () => {
     await page.getByRole("button", { name: "Clear customer" }).click();
   });
 
+  /** The line discount dialog's button: "Apply" with APPLY_DISCOUNT, "Ask a manager" without. */
+  async function discountAction() {
+    await page.getByRole("button", { name: /^Discount on / }).first().click();
+    await page.getByLabel("Percentage off").fill("5");
+    const action = page.getByRole("dialog").getByRole("button", { name: /^(Apply|Ask a manager)$/ });
+    const text = (await action.textContent())?.trim();
+    await page.keyboard.press("Escape");
+    return text;
+  }
+
   test("the owner can discount; the cashier who signs in next can't, without a restart", async () => {
     await addFirstProduct(page);
-    await expect(page.getByRole("button", { name: /^Discount on / }).first()).toBeVisible();
+    expect(await discountAction()).toBe("Apply");
 
-    await page.getByRole("button", { name: "Log out" }).click();
+    await logOut(page);
     await page.waitForURL(/\/login/);
     await login(page, "cashier@demo-store.test", "CashierPass123!");
     await addFirstProductInPlace(page);
@@ -115,14 +125,14 @@ test.describe.serial("Angola phase 1: account switch and dropdowns", () => {
       .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("pos-auth")!).state.permissions?.APPLY_DISCOUNT))
       .toBe(false);
     await page.waitForTimeout(500);
-    await expect(page.getByRole("button", { name: /^Discount on / })).toHaveCount(0);
+    expect(await discountAction()).toBe("Ask a manager");
 
     // And back: the owner's rights return the same way.
-    await page.getByRole("button", { name: "Log out" }).click();
+    await logOut(page);
     await page.waitForURL(/\/login/);
     await login(page);
     await addFirstProduct(page);
-    await expect(page.getByRole("button", { name: /^Discount on / }).first()).toBeVisible();
+    expect(await discountAction()).toBe("Apply");
 
     // Signed in as the owner again: put their language back now.
     if (ownerLanguage && ownerLanguage !== "en") await setMyLanguage(page, ownerLanguage);

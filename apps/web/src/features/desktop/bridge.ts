@@ -119,6 +119,10 @@ export type PinSignInResult =
     }
   | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user" | "not-registered"; error: string };
 
+export type ApprovalCheckResult =
+  | { ok: true }
+  | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user"; error: string };
+
 export type PinResumeResult =
   | { ok: true; session: unknown }
   | { ok: false; code: "unreachable" | "rejected" | "nothing"; error?: string };
@@ -151,6 +155,11 @@ export interface PosDesktopApi {
   pin?: {
     signIn(userId: string, pin: string): Promise<PinSignInResult>;
     resume(userId: string): Promise<PinResumeResult>;
+  };
+  /** Offline manager override (absent before 0.2.4). */
+  approval?: {
+    approvers(permission: string, exceptUserId?: string): Promise<TillStaffMember[]>;
+    check(userId: string, pin: string, permission: string): Promise<ApprovalCheckResult>;
   };
   printers: {
     list(): Promise<DesktopPrinter[]>;

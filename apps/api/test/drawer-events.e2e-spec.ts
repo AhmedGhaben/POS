@@ -5,6 +5,8 @@ import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
 import { PrismaService } from "../src/prisma/prisma.service";
+import { deleteBusiness } from "./cleanup";
+import { ensureShift } from "./shift-helper";
 
 /**
  * Desktop part C: cash drawer openings recorded by tills (idempotent, kept
@@ -90,28 +92,7 @@ describe("Drawer events (e2e)", () => {
 
   afterAll(async () => {
     if (businessId) {
-      const userIds = (await prisma.user.findMany({ where: { businessId }, select: { id: true } })).map((u) => u.id);
-      const storeIds = (await prisma.store.findMany({ where: { businessId }, select: { id: true } })).map((s) => s.id);
-      const saleWhere = { storeId: { in: storeIds } };
-      await prisma.$transaction([
-        prisma.drawerEvent.deleteMany({ where: { businessId } }),
-        prisma.salePayment.deleteMany({ where: { sale: saleWhere } }),
-        prisma.saleLineItem.deleteMany({ where: { sale: saleWhere } }),
-        prisma.sale.deleteMany({ where: saleWhere }),
-        prisma.terminal.deleteMany({ where: { businessId } }),
-        prisma.inventoryItem.deleteMany({ where: { storeId: { in: storeIds } } }),
-        prisma.product.deleteMany({ where: { businessId } }),
-        prisma.auditLog.deleteMany({ where: { businessId } }),
-        prisma.employee.deleteMany({ where: { businessId } }),
-        prisma.userPermission.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.storeUser.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.emailVerificationToken.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.passwordResetToken.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.user.deleteMany({ where: { businessId } }),
-        prisma.store.deleteMany({ where: { businessId } }),
-        prisma.business.delete({ where: { id: businessId } }),
-      ]);
+      await deleteBusiness(prisma, businessId);
     }
     await app.close();
   });
@@ -131,6 +112,7 @@ describe("Drawer events (e2e)", () => {
       .send({
         storeId,
         clientId: saleClientId,
+        shiftClientId: await ensureShift(app, cashierToken, storeId),
         lineItems: [{ productId, quantity: 1 }],
         payments: [{ method: "CASH", amount: 10, tendered: 20 }],
       })

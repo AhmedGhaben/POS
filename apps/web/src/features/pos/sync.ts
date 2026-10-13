@@ -56,6 +56,12 @@ export async function drainOutbox(deps: DrainDeps): Promise<SyncResult> {
   return result;
 }
 
+/** A manager's online approval travels with the queued entry and goes up as a header. */
+function withApproval<T extends { overrideToken?: string }>(payload: T): { body: Omit<T, "overrideToken">; opts: { timeoutMs: number; headers?: Record<string, string> } } {
+  const { overrideToken, ...body } = payload;
+  return { body, opts: { timeoutMs: 15_000, ...(overrideToken ? { headers: { "X-Override-Token": overrideToken } } : {}) } };
+}
+
 function uploadEntry(entry: OutboxEntry): Promise<{ id: string }> {
   switch (entry.kind) {
     case "sale":
@@ -68,14 +74,18 @@ function uploadEntry(entry: OutboxEntry): Promise<{ id: string }> {
         { ...entry.payload, offline: entry.payload.offline || entry.attempts > 0 },
         { timeoutMs: 15_000 },
       );
-    case "void-sale":
+    case "void-sale": {
       // Queued after its sale, so the sale is on the server by now.
-      return apiClient.post<SaleDto>("/sales/void", entry.payload, { timeoutMs: 15_000 });
+      const { body, opts } = withApproval(entry.payload);
+      return apiClient.post<SaleDto>("/sales/void", body, opts);
+    }
     // Shift events: like drawer openings, needing a retry means it happened offline.
     case "shift-open":
       return apiClient.post<{ id: string }>("/shifts/open", { ...entry.payload, offline: entry.payload.offline || entry.attempts > 0 }, { timeoutMs: 15_000 });
-    case "cash-movement":
-      return apiClient.post<{ id: string }>("/shifts/cash-movements", { ...entry.payload, offline: entry.payload.offline || entry.attempts > 0 }, { timeoutMs: 15_000 });
+    case "cash-movement": {
+      const { body, opts } = withApproval(entry.payload);
+      return apiClient.post<{ id: string }>("/shifts/cash-movements", { ...body, offline: body.offline || entry.attempts > 0 }, opts);
+    }
     case "shift-close":
       return apiClient.post<{ id: string }>("/shifts/close", { ...entry.payload, offline: entry.payload.offline || entry.attempts > 0 }, { timeoutMs: 15_000 });
   }

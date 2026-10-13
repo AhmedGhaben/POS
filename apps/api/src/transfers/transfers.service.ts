@@ -41,6 +41,10 @@ export class TransfersService {
       throw new NotFoundException("One or more products were not found");
     }
     const productById = new Map(products.map((p) => [p.id, p]));
+    const untracked = products.find((p) => !p.trackStock);
+    if (untracked) {
+      throw new BadRequestException(`"${untracked.name}" doesn't track stock, so it can't be transferred`);
+    }
 
     return this.prisma.$transaction(async (tx) => {
       for (const li of dto.lineItems) {

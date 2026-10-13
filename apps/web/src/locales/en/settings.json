@@ -76,8 +76,11 @@
   },
   "tills": {
     "title": "Tills",
-    "shifts": "Count the cash at the start and end of each shift",
-    "shiftsHint": "Tills ask for the opening float before the first sale, record cash in and out, and end each shift with a cash count and a report."
+    "shiftsAlwaysOn": "Every till works in shifts: the cashier opens one with the opening float before selling, and closes it with a blind cash count.",
+    "threshold": "Flag cash differences above",
+    "noThreshold": "Never flag",
+    "thresholdHint": "Shifts whose counted cash is off by more than this (short or over) are flagged for managers on the Shifts page.",
+    "thresholdRange": "Enter an amount of 0 or more, or leave it empty"
   },
   "tillsList": {
     "title": "Tills",

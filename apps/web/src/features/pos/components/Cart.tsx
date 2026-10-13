@@ -1,10 +1,12 @@
-import { Minus, Percent, Plus, X } from "lucide-react";
+import * as React from "react";
+import { Minus, Percent, Plus, Tag, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { PricedLine } from "@pos/shared";
 import { Button } from "@/components/ui/button";
-import type { CartLine } from "@/features/pos/hooks/useCart";
+import { linePrice, type CartLine } from "@/features/pos/hooks/useCart";
 import { useMoney } from "@/features/business/use-money";
 import { discountLabel } from "../discount-label";
+import { parseQuantity } from "../quantity";
 
 interface CartProps {
   lines: CartLine[];
@@ -12,11 +14,48 @@ interface CartProps {
   priced: PricedLine[];
   onSetQuantity: (productId: string, quantity: number) => void;
   onRemove: (productId: string) => void;
-  /** Present when this person may give discounts. */
+  /** Discount on a line (a manager approves it if the person may not). */
   onDiscount?: (line: CartLine) => void;
+  /** Change a line's price (likewise). */
+  onChangePrice?: (line: CartLine) => void;
 }
 
-export function Cart({ lines, priced, onSetQuantity, onRemove, onDiscount }: CartProps) {
+/**
+ * A line's quantity, typed straight in: Enter or leaving the field applies
+ * it, Esc or anything that isn't a quantity puts the old one back.
+ */
+function QuantityField({ value, label, onCommit }: { value: number; label: string; onCommit: (quantity: number) => void }) {
+  const [text, setText] = React.useState(String(value));
+  React.useEffect(() => setText(String(value)), [value]);
+
+  function commit() {
+    const quantity = parseQuantity(text);
+    if (quantity === null || quantity === value) setText(String(value));
+    else onCommit(quantity);
+  }
+
+  return (
+    <input
+      data-keep-focus
+      inputMode="numeric"
+      aria-label={label}
+      className="h-7 w-12 rounded-md border border-input bg-background text-center text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+      value={text}
+      onFocus={(e) => e.target.select()}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+        if (e.key === "Escape") {
+          setText(String(value));
+          e.currentTarget.blur();
+        }
+      }}
+    />
+  );
+}
+
+export function Cart({ lines, priced, onSetQuantity, onRemove, onDiscount, onChangePrice }: CartProps) {
   const { t } = useTranslation("pos");
   const money = useMoney();
   if (lines.length === 0) {
@@ -37,7 +76,12 @@ export function Cart({ lines, priced, onSetQuantity, onRemove, onDiscount }: Car
             <div className="flex-1">
               <p className="text-sm font-medium">{line.product.name}</p>
               <p className="text-xs text-muted-foreground">
-                {t("cart.each", { price: money(line.product.sellPrice) })}
+                {t("cart.each", { price: money(linePrice(line)) })}
+                {line.unitPrice != null && (
+                  <span className="ml-1 text-amber-700 dark:text-amber-400">
+                    {t("cart.priceChanged", { price: money(line.product.sellPrice) })}
+                  </span>
+                )}
               </p>
               {discounted && line.discount && (
                 <p className="text-xs text-emerald-700 dark:text-emerald-400">
@@ -55,7 +99,11 @@ export function Cart({ lines, priced, onSetQuantity, onRemove, onDiscount }: Car
               >
                 <Minus className="h-3 w-3" />
               </Button>
-              <span className="w-8 text-center text-sm">{line.quantity}</span>
+              <QuantityField
+                value={line.quantity}
+                label={t("cart.quantityFor", { name: line.product.name })}
+                onCommit={(quantity) => onSetQuantity(line.product.id, quantity)}
+              />
               <Button
                 size="icon"
                 variant="outline"
@@ -70,8 +118,20 @@ export function Cart({ lines, priced, onSetQuantity, onRemove, onDiscount }: Car
               {discounted && (
                 <p className="text-xs text-muted-foreground line-through">{money(p.gross)}</p>
               )}
-              <p className="text-sm font-medium">{money(p ? p.gross - p.lineDiscount : Number(line.product.sellPrice) * line.quantity)}</p>
+              <p className="text-sm font-medium">{money(p ? p.gross - p.lineDiscount : linePrice(line) * line.quantity)}</p>
             </div>
+            {onChangePrice && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 text-muted-foreground"
+                aria-label={t("cart.priceNamed", { name: line.product.name })}
+                title={t("cart.price")}
+                onClick={() => onChangePrice(line)}
+              >
+                <Tag className="h-3.5 w-3.5" />
+              </Button>
+            )}
             {onDiscount && (
               <Button
                 size="icon"

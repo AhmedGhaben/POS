@@ -12,6 +12,7 @@ import {
   restock,
   SwitchableProxy,
   tempUserData,
+  logOut,
 } from "./helpers";
 
 /**
@@ -195,7 +196,7 @@ test.describe.serial("Part C: cash drawer", () => {
 
   test("a cashier without permission has no Open drawer button, but cash sales still open it", async () => {
     await page.goto("app://pos/pos");
-    await page.getByRole("button", { name: "Log out" }).click();
+    await logOut(page);
     await login(page, "cashier@demo-store.test", "CashierPass123!");
     await openPosWithProducts(page);
     await expect(page.getByRole("button", { name: /^Charge/ })).toBeVisible();

@@ -24,7 +24,10 @@
     "discount": "Discount",
     "discountNamed": "Discount on {{name}}",
     "discountOff": "{{label}} off (-{{amount}})",
-    "quantityFor": "Quantity of {{name}}"
+    "quantityFor": "Quantity of {{name}}",
+    "priceChanged": "(was {{price}})",
+    "price": "Change price",
+    "priceNamed": "Change the price of {{name}}"
   },
   "customer": {
     "walkIn": "Walk-in customer",
@@ -132,7 +135,8 @@
     "done": "Sale cancelled",
     "doneOffline": "Sale cancelled. It will sync when the till is back online.",
     "handBack": "Hand back {{amount}} in cash.",
-    "printSlip": "Print cancellation slip"
+    "printSlip": "Print cancellation slip",
+    "approval": "Cancel sale {{receipt}} ({{total}})"
   },
   "discount": {
     "titleSale": "Discount on the whole sale",
@@ -146,9 +150,12 @@
     "preview": "{{off}} off: {{after}} before tax",
     "percentTooBig": "A percentage can't be more than 100.",
     "tooBig": "That's more than the price.",
-    "overMax": "You can give at most {{max}}% off.",
     "apply": "Apply",
-    "remove": "Remove discount"
+    "remove": "Remove discount",
+    "approval": "{{title}}: {{off}} off",
+    "overMaxApproval": "More than {{max}}% off: a manager needs to approve it.",
+    "needsApproval": "A manager needs to approve this discount.",
+    "askApproval": "Ask a manager"
   },
   "held": {
     "hold": "Hold order",
@@ -165,5 +172,32 @@
     "resumeNamed": "Resume {{name}}",
     "discard": "Discard held order",
     "swapped": "The order that was in the till is now on hold."
+  },
+  "price": {
+    "title": "Price of {{name}}",
+    "description": "Normal price {{price}}. The new price applies to this sale only.",
+    "label": "New price (each)",
+    "needsApproval": "A manager needs to approve this price change.",
+    "approval": "Change {{name}} from {{from}} to {{to}}",
+    "reset": "Normal price",
+    "apply": "Use this price"
+  },
+  "view": {
+    "label": "Show products as",
+    "grid": "Tiles",
+    "list": "List"
+  },
+  "card": {
+    "open": "Customer card",
+    "title": "Customer card",
+    "taxId": "Tax ID",
+    "phone": "Phone",
+    "email": "Email",
+    "address": "Address",
+    "purchases": "Purchases",
+    "spent": "Spent",
+    "last": "Last purchase",
+    "recent": "Last sales",
+    "offline": "Purchase history needs the server."
   }
 }

@@ -72,10 +72,14 @@
     "reset": "Repor",
     "labels": {
       "VIEW_COST_PRICE": "Ver preço de custo e margem",
-      "PROCESS_RETURN": "Processar devoluções / reembolsos",
+      "PROCESS_RETURN": "Processar devoluções / notas de crédito",
       "OPEN_DRAWER": "Abrir a gaveta de dinheiro sem venda",
       "VOID_SALE": "Anular vendas",
-      "APPLY_DISCOUNT": "Fazer descontos"
+      "APPLY_DISCOUNT": "Fazer descontos",
+      "DISCOUNT_ABOVE_LIMIT": "Fazer descontos acima do máximo",
+      "CHANGE_PRICE": "Alterar preços na caixa",
+      "SELL_ON_CREDIT": "Vender a crédito (pagar depois)",
+      "CASH_OUT": "Retirar dinheiro da gaveta"
     }
   }
 }

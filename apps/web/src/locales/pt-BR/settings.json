@@ -76,8 +76,11 @@
   },
   "tills": {
     "title": "Caixas",
-    "shifts": "Contar o dinheiro no início e no fim de cada turno",
-    "shiftsHint": "Os caixas pedem o fundo de troco antes da primeira venda, registram suprimentos e sangrias e terminam cada turno com uma contagem e um relatório."
+    "shiftsAlwaysOn": "Todos os caixas trabalham por turnos: o operador abre um com o fundo de troco antes de vender e fecha com uma contagem cega.",
+    "threshold": "Sinalizar diferenças de caixa acima de",
+    "noThreshold": "Nunca sinalizar",
+    "thresholdHint": "Turnos cuja contagem difere mais do que isso (falta ou sobra) ficam sinalizados para os gerentes na página Turnos.",
+    "thresholdRange": "Informe um valor igual ou maior que 0, ou deixe em branco"
   },
   "tillsList": {
     "title": "Caixas",

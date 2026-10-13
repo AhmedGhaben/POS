@@ -22,7 +22,8 @@
     "submitIn": "Put cash in",
     "submitOut": "Take cash out",
     "addedIn": "{{amount}} put in",
-    "addedOut": "{{amount}} taken out"
+    "addedOut": "{{amount}} taken out",
+    "approval": "Take {{amount}} out of the drawer ({{reason}})"
   },
   "reasons": {
     "CASH_PICKUP": "Cash pickup (to the safe)",
@@ -42,7 +43,15 @@
     "over": "{{amount}} more than expected.",
     "short": "{{amount}} short.",
     "print": "Print report",
-    "finish": "Done"
+    "finish": "Done",
+    "titleFor": "Close {{name}}'s shift",
+    "descriptionForced": "Count the cash in the drawer for them and type the total. It's recorded as closed by you.",
+    "byNote": "Count by note and coin",
+    "countOf": "Number of {{value}}",
+    "countTotal": "Counted: {{amount}}",
+    "countInvalid": "Use whole numbers.",
+    "withSales": "Include every sale in the report",
+    "finishSignOut": "Done (sign out)"
   },
   "report": {
     "title": "END OF SHIFT",
@@ -65,7 +74,10 @@
     "tillExpected": "Till's own figure",
     "counted": "Counted",
     "difference": "Difference",
-    "byCashier": "By cashier"
+    "byCashier": "By cashier",
+    "allSales": "ALL SALES",
+    "split": "Split",
+    "cancelled": "cancelled"
   },
   "page": {
     "description": "Each till shift with its cash count. Differences are shown in red.",
@@ -78,6 +90,23 @@
     "difference": "Difference",
     "open": "Open",
     "browser": "Browser",
-    "empty": "No shifts yet. Turn on cash counting in Settings."
+    "empty": "No shifts yet. Turn on cash counting in Settings.",
+    "filterStatus": "Status",
+    "allShifts": "All shifts",
+    "closedOnes": "Closed",
+    "filterCashier": "Cashier",
+    "allCashiers": "All cashiers",
+    "filterTill": "Till",
+    "allTills": "All tills",
+    "onlyFlagged": "Only flagged differences",
+    "flagged": "Flagged",
+    "forced": "Closed by manager",
+    "forcedHint": "Closed by {{name}} for the cashier"
+  },
+  "others": {
+    "title": "{{name}}'s shift is still open",
+    "description": "{{name}} opened this till at {{time}} and hasn't closed it. Sales wait until it's closed.",
+    "forceClose": "Close {{name}}'s shift (count the cash)",
+    "askManager": "Ask {{name}} or a manager to close it."
   }
 }

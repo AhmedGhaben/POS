@@ -85,10 +85,12 @@ interface RequestOptions {
   skipAuth?: boolean;
   /** Give up after this long (rejects like a network failure). */
   timeoutMs?: number;
+  /** Extra headers, e.g. X-Override-Token with a manager's approval. */
+  headers?: Record<string, string>;
 }
 
 async function request<T>(path: string, options: RequestOptions = {}, isRetry = false): Promise<T> {
-  const { method = "GET", body, skipAuth = false, timeoutMs } = options;
+  const { method = "GET", body, skipAuth = false, timeoutMs, headers: extraHeaders } = options;
   const token = useAuthStore.getState().accessToken;
 
   let res: Response;
@@ -101,6 +103,7 @@ async function request<T>(path: string, options: RequestOptions = {}, isRetry = 
         // The server answers error messages in the language on screen.
         "X-Language": currentLanguage(),
         ...(token && !skipAuth ? { Authorization: `Bearer ${token}` } : {}),
+        ...extraHeaders,
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined,

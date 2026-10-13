@@ -121,6 +121,13 @@ async function main() {
     update: {},
   });
 
+  // "Consumidor Final" (NIF 999999999): every sale without a chosen customer.
+  if (!(await prisma.customer.findFirst({ where: { businessId: business.id, isFinalConsumer: true } }))) {
+    await prisma.customer.create({
+      data: { businessId: business.id, name: "Consumidor Final", taxId: "999999999", isFinalConsumer: true },
+    });
+  }
+
   const store = await prisma.store.upsert({
     where: { id: "seed-store-main" },
     create: {

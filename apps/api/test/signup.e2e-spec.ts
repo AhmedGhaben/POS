@@ -5,6 +5,7 @@ import { AppModule } from "../src/app.module";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
 import { MailService } from "../src/common/mail/mail.service";
 import { PrismaService } from "../src/prisma/prisma.service";
+import { deleteBusiness } from "./cleanup";
 
 /**
  * Runs against the seeded dev database (apps/api/prisma/seed.ts). Covers
@@ -35,18 +36,7 @@ describe("Sign-up & email verification (e2e)", () => {
 
   afterAll(async () => {
     if (businessId) {
-      const userIds = (
-        await prisma.user.findMany({ where: { businessId }, select: { id: true } })
-      ).map((u) => u.id);
-      await prisma.$transaction([
-        prisma.auditLog.deleteMany({ where: { businessId } }),
-        prisma.emailVerificationToken.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.passwordResetToken.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.user.deleteMany({ where: { businessId } }),
-        prisma.store.deleteMany({ where: { businessId } }),
-        prisma.business.delete({ where: { id: businessId } }),
-      ]);
+      await deleteBusiness(prisma, businessId);
     }
     await app.close();
   });

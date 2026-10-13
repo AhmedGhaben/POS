@@ -1,6 +1,6 @@
 import { PaymentMethod, SaleStatus } from "@pos/shared";
 import type { CreateSaleDto, SaleDto, SaleLineItemDto, SalePaymentDto } from "@pos/shared";
-import { priceCart, type CartLine } from "./hooks/useCart";
+import { linePrice, priceCart, type CartLine } from "./hooks/useCart";
 
 /**
  * Receipt number for a sale rung up offline. Must match the API's
@@ -30,7 +30,7 @@ export function buildOfflineSale(localId: string, dto: CreateSaleDto, lines: Car
       productId: line.product.id,
       product: line.product,
       quantity: line.quantity,
-      unitPrice: Number(line.product.sellPrice).toFixed(2),
+      unitPrice: linePrice(line).toFixed(2),
       taxAmount: p.tax.toFixed(2),
       discountAmount: p.discount.toFixed(2),
       lineTotal: p.total.toFixed(2),

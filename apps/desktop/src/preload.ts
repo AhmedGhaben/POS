@@ -91,6 +91,8 @@ type PinSignInResult =
 
 type ResumeResult = { ok: true; session: unknown } | { ok: false; code: "unreachable" | "rejected" | "nothing"; error?: string };
 
+type ApprovalCheckResult = { ok: true } | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user"; error: string };
+
 /**
  * The only bridge between the page and the desktop layer. Each operation is
  * a named, typed function; `ipcRenderer` itself is never exposed, and the
@@ -124,6 +126,14 @@ const posDesktop = {
     signIn: (userId: string, pin: string): Promise<PinSignInResult> => ipcRenderer.invoke("pin:sign-in", userId, pin),
     /** After an offline PIN sign-in, once the server is back. */
     resume: (userId: string): Promise<ResumeResult> => ipcRenderer.invoke("pin:resume", userId),
+  },
+  approval: {
+    /** Offline manager override: who on this till may approve `permission`. */
+    approvers: (permission: string, exceptUserId?: string): Promise<StaffMember[]> =>
+      ipcRenderer.invoke("approval:approvers", permission, exceptUserId),
+    /** Checks the approver's PIN and permission on the till; nobody is signed in or out. */
+    check: (userId: string, pin: string, permission: string): Promise<ApprovalCheckResult> =>
+      ipcRenderer.invoke("approval:check", userId, pin, permission),
   },
   printers: {
     list: (): Promise<{ name: string; displayName: string; isDefault: boolean; description: string }[]> =>

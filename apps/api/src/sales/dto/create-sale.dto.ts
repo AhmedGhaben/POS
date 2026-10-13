@@ -14,7 +14,16 @@ import {
   Min,
   ValidateNested,
 } from "class-validator";
-import { PaymentMethod } from "@prisma/client";
+import { PaymentMethod, Permission } from "@prisma/client";
+import { OfflineOverrideDto } from "../../overrides/dto/override.dto";
+
+export class SaleOverrideDto {
+  @IsEnum(Permission)
+  permission!: Permission;
+
+  @IsString()
+  token!: string;
+}
 
 /** A discount as the cashier gave it: a percentage or an amount off. */
 export class DiscountDto {
@@ -92,10 +101,22 @@ export class CreateSaleDto {
   @IsString()
   actingUserId?: string;
 
-  /** The till's id for the open shift, when the business counts shifts. */
+  /** The till's id for its open shift. Required online; old offline uploads may lack it. */
   @IsOptional()
   @IsUUID()
   shiftClientId?: string;
+
+  /** Online: managers' approvals (POST /overrides) for a price change or discounts. */
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => SaleOverrideDto)
+  overrides?: SaleOverrideDto[];
+
+  /** Offline: approvals the till checked itself. */
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => OfflineOverrideDto)
+  offlineOverrides?: OfflineOverrideDto[];
 
   @IsOptional()
   @ValidateNested()

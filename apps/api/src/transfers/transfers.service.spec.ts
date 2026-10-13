@@ -1,7 +1,7 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { TransfersService } from "./transfers.service";
 
-const PRODUCT = { id: "prod-1", businessId: "biz-1", name: "Widget" };
+const PRODUCT = { id: "prod-1", businessId: "biz-1", name: "Widget", trackStock: true };
 const STORE_A = { id: "store-a", businessId: "biz-1" };
 const STORE_B = { id: "store-b", businessId: "biz-1" };
 

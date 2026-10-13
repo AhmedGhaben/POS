@@ -97,7 +97,7 @@ test.describe.serial("Part A: terminal, outbox and sync", () => {
 
     // Every sale that went through the outbox (the 502 one may already have
     // synced the moment the server answered again).
-    for (const e of await outbox(page)) queued.push(e.clientId);
+    for (const e of await outbox(page)) if (e.kind === "sale") queued.push(e.clientId);
     expect(queued).toHaveLength(2);
   });
 
@@ -124,7 +124,7 @@ test.describe.serial("Part A: terminal, outbox and sync", () => {
     await proxy.down();
     const receipt = await sellFirstProduct(page);
     expect(receipt).toContain("Saved offline");
-    const [killed] = (await outbox(page)).filter((e) => e.state === "pending");
+    const [killed] = (await outbox(page)).filter((e) => e.kind === "sale" && e.state === "pending");
 
     // No clean shutdown: force-kill the whole process tree, the closest a
     // test can get to pulling the plug.

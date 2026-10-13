@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
-import { IsBoolean, IsIn, IsInt, IsISO8601, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from "class-validator";
+import { IsBoolean, IsIn, IsInt, IsISO8601, IsNumber, IsObject, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateNested } from "class-validator";
+import { OfflineOverrideDto } from "../../overrides/dto/override.dto";
 
 export const CASH_MOVEMENT_REASONS = ["CASH_PICKUP", "PETTY_CASH", "CHANGE_TOPUP", "OTHER"] as const;
 
@@ -62,6 +63,12 @@ export class CashMovementDto extends TillEventDto {
   @IsOptional()
   @IsISO8601()
   occurredAt?: string;
+
+  /** Offline cash out by someone without CASH_OUT: the approver the till checked. */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => OfflineOverrideDto)
+  offlineOverride?: OfflineOverrideDto;
 }
 
 export class CloseShiftDto extends TillEventDto {
@@ -72,6 +79,11 @@ export class CloseShiftDto extends TillEventDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   countedCash!: number;
+
+  /** The blind count by note/coin: { "5000": 3, "200": 4 } (value → how many). */
+  @IsOptional()
+  @IsObject()
+  countedDenominations?: Record<string, number>;
 
   /** What the till expected, from its own records. */
   @IsOptional()
@@ -92,6 +104,24 @@ export class ListShiftsQuery {
   @IsOptional()
   @IsString()
   storeId?: string;
+
+  @IsOptional()
+  @IsIn(["OPEN", "CLOSED"])
+  status?: "OPEN" | "CLOSED";
+
+  /** Only shifts whose difference went over the threshold. */
+  @IsOptional()
+  @IsIn(["true", "false"])
+  flagged?: "true" | "false";
+
+  /** Opened by this cashier. */
+  @IsOptional()
+  @IsString()
+  cashierId?: string;
+
+  @IsOptional()
+  @IsString()
+  terminalId?: string;
 
   @IsOptional()
   @Type(() => Number)

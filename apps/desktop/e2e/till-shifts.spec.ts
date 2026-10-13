@@ -70,7 +70,6 @@ test.describe.serial("Till: shifts", () => {
     await connect(page, proxy.url);
     await login(page);
     await restock(page);
-    await api(page, "/businesses/me", { method: "PATCH", body: { shiftsEnabled: true } });
     // Close any shift a previous run left open in a browser for this owner.
     const { shift: open } = await api<{ shift: ShiftRow | null }>(page, `/shifts/current?storeId=${await storeId(page)}`);
     if (open) await api(page, "/shifts/close", { method: "POST", body: { storeId: await storeId(page), shiftClientId: open.clientId, countedCash: 0 } });
@@ -78,7 +77,6 @@ test.describe.serial("Till: shifts", () => {
 
   test.afterAll(async () => {
     await proxy.up().catch(() => {});
-    await api(page, "/businesses/me", { method: "PATCH", body: { shiftsEnabled: false } }).catch(() => {});
     await app?.close().catch(() => {});
     await proxy.down();
   });
@@ -86,7 +84,7 @@ test.describe.serial("Till: shifts", () => {
   test("no selling until the till is opened with a float", async () => {
     await page.goto("app://pos/pos");
     await page.reload();
-    await openPosWithProducts(page);
+    await openPosWithProducts(page, { openShift: false });
     await expect(page.getByRole("button", { name: /^Charge/ })).toHaveCount(0);
     await page.getByLabel("Opening float").fill("100");
     await page.getByRole("button", { name: "Open the till" }).click();
@@ -131,11 +129,34 @@ test.describe.serial("Till: shifts", () => {
     const report = await api<ShiftRow>(page, `/shifts/client/${shift.clientId}?storeId=${await storeId(page)}`);
     expect(report.summary).toMatchObject({ salesCount: 3, cashOut: "20.00" });
 
-    await dialog.getByRole("button", { name: "Done" }).click();
-    await expect(page.getByLabel("Opening float")).toBeVisible();
+    // The shift is over, so the cashier is signed out.
+    await dialog.getByRole("button", { name: "Done (sign out)" }).click();
+    await page.waitForURL(/\/login/);
+  });
+
+  test("the next shift: Log out closes it first, counted by note and coin", async () => {
+    await login(page);
+    await openPosWithProducts(page);
+    await sale("Cash");
+    await page.getByRole("button", { name: "Log out" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("Close the till");
+    await dialog.getByLabel("Count by note and coin").check();
+    await dialog.getByLabel(/Number of .*5,000|Number of .*5 000|Number of .*5000/).fill("1");
+    await expect(dialog.getByTestId("count-total")).toContainText("5");
+    await dialog.getByRole("button", { name: "Close the till" }).click();
+    await expect(dialog).toContainText("Till closed");
+    const list = await api<{ items: (ShiftRow & { countedDenominations: Record<string, number> })[] }>(
+      page,
+      `/shifts?storeId=${await storeId(page)}&pageSize=1`,
+    );
+    expect(list.items[0]).toMatchObject({ status: "CLOSED", countedCash: "5000", countedDenominations: { "5000": 1 } });
+    await dialog.getByRole("button", { name: "Done (sign out)" }).click();
+    await page.waitForURL(/\/login/);
   });
 
   test("the Shifts page lists it with the difference", async () => {
+    await login(page);
     await page.goto("app://pos/shifts");
     const row = page.getByRole("row").nth(1);
     await expect(row).toContainText("Ada Owner");

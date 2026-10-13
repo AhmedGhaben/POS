@@ -18,16 +18,14 @@ import { generateOpaqueToken, hashToken } from "../common/utils/tokens";
 import { normalizeEmail } from "../common/transforms/normalize-email";
 import { RegisterDto } from "./dto/register.dto";
 import { BusinessSettings, toBusinessSettings } from "../businesses/businesses.service";
-import { verifyPin } from "../common/utils/pin";
+import { checkPinAttempt } from "../common/utils/pin-attempts";
+import { finalConsumerData } from "../customers/final-consumer";
 import { TillAuthService, type TillTerminal } from "../till/till-auth.service";
 
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 /** Same cost as UsersService and resetPassword. */
 const SALT_ROUNDS = 12;
-/** Wrong PINs in a row before that person's PIN is locked for PIN_LOCK_MS. */
-const PIN_MAX_TRIES = 5;
-const PIN_LOCK_MS = 5 * 60 * 1000;
 /** How long after an offline PIN check the till may pick the session up. */
 const PIN_RESUME_WINDOW_MS = 12 * 60 * 60 * 1000;
 
@@ -105,23 +103,7 @@ export class AuthService {
    */
   async pinLogin(terminal: TillTerminal, userId: string, pin: string): Promise<LoginResult> {
     const user = await this.tillUser(terminal, userId);
-    if (user.pinLockedUntil && user.pinLockedUntil > new Date()) {
-      throw new ForbiddenException("Too many wrong PINs. Try again in a few minutes.");
-    }
-    if (!(await verifyPin(pin, user.pinHash!))) {
-      const failed = user.pinFailedCount + 1;
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data:
-          failed >= PIN_MAX_TRIES
-            ? { pinFailedCount: 0, pinLockedUntil: new Date(Date.now() + PIN_LOCK_MS) }
-            : { pinFailedCount: failed },
-      });
-      throw new UnauthorizedException("Wrong PIN");
-    }
-    if (user.pinFailedCount > 0 || user.pinLockedUntil) {
-      await this.prisma.user.update({ where: { id: user.id }, data: { pinFailedCount: 0, pinLockedUntil: null } });
-    }
+    await checkPinAttempt(this.prisma, user, pin);
     return this.buildSession(user);
   }
 
@@ -166,6 +148,8 @@ export class AuthService {
       const business = await tx.business.create({
         data: { name: dto.businessName.trim(), plan: Plan.SIMPLE, language: dto.language ?? "en" },
       });
+      // Every sale without a chosen customer goes to "Consumidor Final".
+      await tx.customer.create({ data: finalConsumerData(business.id) });
       await tx.store.create({
         data: {
           businessId: business.id,

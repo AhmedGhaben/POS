@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { CreateCustomerDto } from "./dto/create-customer.dto";
@@ -11,6 +11,12 @@ export class CustomersController {
   @Get()
   findAll(@CurrentUser() user: AuthenticatedUser, @Query("search") search?: string) {
     return this.customersService.findAll(user.businessId, search);
+  }
+
+  /** The customer card: details, what they've bought and their last sales. */
+  @Get(":id/card")
+  card(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.customersService.card(user.businessId, id);
   }
 
   @Post()

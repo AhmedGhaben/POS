@@ -5,6 +5,7 @@ export function fetchReturns(storeId: string) {
   return apiClient.get<ReturnDto[]>(`/returns/store/${storeId}`);
 }
 
-export function createReturn(dto: CreateReturnDto) {
-  return apiClient.post<ReturnDto>("/returns", dto);
+/** headers: a manager's approval (X-Override-Token) for someone without PROCESS_RETURN. */
+export function createReturn(dto: CreateReturnDto, headers?: Record<string, string>) {
+  return apiClient.post<ReturnDto>("/returns", dto, { headers });
 }

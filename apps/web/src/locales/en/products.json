@@ -29,7 +29,9 @@
     "restored": "Product restored",
     "archive": "Archive product",
     "restore": "Restore product",
-    "archiveNote": "Archiving hides it from the till and this list. Past sales and reports keep it."
+    "archiveNote": "Archiving hides it from the till and this list. Past sales and reports keep it.",
+    "trackStock": "Track stock",
+    "trackStockHint": "Turn off for services and other things with no stock: they can always be sold and never show in stock or low-stock alerts."
   },
   "import": {
     "title": "Import products from CSV",

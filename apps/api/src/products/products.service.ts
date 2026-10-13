@@ -59,6 +59,7 @@ export class ProductsService {
         costPrice: dto.costPrice,
         sellPrice: dto.sellPrice,
         taxRate: dto.taxRate ?? 0,
+        trackStock: dto.trackStock ?? true,
       },
     });
   }
@@ -92,6 +93,7 @@ export class ProductsService {
       costPrice: canEditCostPrice ? dto.costPrice : undefined,
       sellPrice: dto.sellPrice,
       taxRate: dto.taxRate,
+      trackStock: dto.trackStock,
       isActive: dto.isActive,
     };
     try {

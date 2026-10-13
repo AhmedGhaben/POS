@@ -10,6 +10,7 @@ import {
   serverSales,
   SwitchableProxy,
   tempUserData,
+  logOut,
 } from "./helpers";
 
 /**
@@ -135,12 +136,12 @@ test.describe.serial("Till: PIN sign-in", () => {
   });
 
   test("signing out shows the name buttons, with email as the other way in", async () => {
-    await page.getByRole("button", { name: "Log out" }).click();
+    await logOut(page);
     await expect(page.getByText("Tap your name")).toBeVisible();
     await page.getByRole("button", { name: `${cashier.firstName} ${cashier.lastName}` }).click();
     await typePin(page, CASHIER_PIN);
     await page.waitForURL(/\/pos$/);
-    await page.getByRole("button", { name: "Log out" }).click();
+    await logOut(page);
     await page.getByRole("button", { name: "Sign in with email instead" }).click();
     await expect(page.getByLabel("Email")).toBeVisible();
   });

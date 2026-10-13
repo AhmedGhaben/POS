@@ -1,7 +1,9 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { DrawerOpenReason, PaymentMethod, VOID_REASONS, type SaleDto, type StoreDto, type VoidReason } from "@pos/shared";
+import { DrawerOpenReason, PaymentMethod, Permission, VOID_REASONS, type SaleDto, type StoreDto, type VoidReason } from "@pos/shared";
+import { useHasPermission } from "@/features/auth/use-permission";
+import { requestApproval, type Approval } from "@/features/overrides/approval";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -29,6 +31,7 @@ export function VoidSaleDialog({ sale, store, onClose, onVoided }: VoidSaleDialo
   const { t } = useTranslation(["pos", "common"]);
   const money = useMoney();
   const hasDrawer = useHasDrawer();
+  const canVoid = useHasPermission(Permission.VOID_SALE);
   const [reason, setReason] = React.useState<VoidReason>("WRONG_ITEMS");
   const [note, setNote] = React.useState("");
   const [busy, setBusy] = React.useState(false);
@@ -53,10 +56,21 @@ export function VoidSaleDialog({ sale, store, onClose, onVoided }: VoidSaleDialo
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!sale || needsNote) return;
+    // Without VOID_SALE, a manager approves this one cancellation.
+    let approval: Approval | null = null;
+    if (!canVoid) {
+      approval = await requestApproval({
+        permission: Permission.VOID_SALE,
+        action: "sale.void",
+        description: t("void.approval", { receipt: sale.receiptNumber, total: money(sale.total) }),
+        details: { saleId: sale.id, receiptNumber: sale.receiptNumber, reason },
+      });
+      if (!approval) return;
+    }
     setBusy(true);
     setError(null);
     try {
-      const result = await voidSale(sale, reason, note);
+      const result = await voidSale(sale, reason, note, approval);
       setVoided(result.sale);
       setQueued(result.queued);
       onVoided();

@@ -1,5 +1,7 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from "@nestjs/common";
-import { Permission, Prisma, PaymentMethod, Role, SaleStatus } from "@prisma/client";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { Permission, Prisma, PaymentMethod, Role, SaleStatus, ShiftStatus } from "@prisma/client";
+import { OverridesService } from "../overrides/overrides.service";
+import { finalConsumerData } from "../customers/final-consumer";
 import { PermissionsService } from "../common/permissions/permissions.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
@@ -81,6 +83,7 @@ export class SalesService {
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
     private readonly permissions: PermissionsService,
+    private readonly overrides: OverridesService,
   ) {}
 
   async findByStore(storeId: string) {
@@ -123,10 +126,12 @@ export class SalesService {
     // An offline sale records what already happened at the till, so it
     // keeps the price, tax and discounts the cashier gave even if they've
     // changed on the server since (or the cashier wasn't allowed to).
+    // Online, a price other than the product's is a price change.
     const unitPrices = dto.lineItems.map((li) => {
       const product = productById.get(li.productId)!;
-      return offline && li.unitPrice !== undefined ? new Prisma.Decimal(li.unitPrice) : product.sellPrice;
+      return li.unitPrice !== undefined ? new Prisma.Decimal(li.unitPrice) : product.sellPrice;
     });
+    const priceChanged = dto.lineItems.map((li, i) => !unitPrices[i].equals(productById.get(li.productId)!.sellPrice));
     const priced = priceSaleCents(
       dto.lineItems.map((li, i) => {
         const product = productById.get(li.productId)!;
@@ -135,10 +140,30 @@ export class SalesService {
       }),
       given(dto.discount),
     );
-    if (priced.discountTotal > 0 && !offline) {
-      await this.checkDiscount(businessId, cashierId, role, priced);
+
+    // What the cashier may not do alone needs a manager's approval, used
+    // (once) inside the sale's transaction.
+    const approvals: { permission: Permission; token: string }[] = [];
+    if (!offline) {
+      const needed: { permission: Permission; message: string }[] = [];
+      if (priceChanged.some(Boolean) && !(await this.permissions.hasPermission(cashierId, role, Permission.CHANGE_PRICE))) {
+        needed.push({ permission: Permission.CHANGE_PRICE, message: "Changing a price needs a manager's approval" });
+      }
+      if (priced.discountTotal > 0) {
+        const need = await this.discountApproval(businessId, cashierId, role, priced);
+        if (need) needed.push(need);
+      }
+      for (const { permission, message } of needed) {
+        const token = dto.overrides?.find((o) => o.permission === permission)?.token;
+        if (!token) {
+          throw permission === Permission.DISCOUNT_ABOVE_LIMIT ? new BadRequestException(message) : new ForbiddenException(message);
+        }
+        approvals.push({ permission, token });
+      }
     }
 
+    const offlineApproved = (permission: Permission) =>
+      !!offline && !!dto.offlineOverrides?.some((o) => o.permission === permission);
     const lineItemsData = dto.lineItems.map((li, i) => {
       const product = productById.get(li.productId)!;
       const line = priced.lines[i];
@@ -149,6 +174,8 @@ export class SalesService {
         productSku: product.sku,
         quantity: li.quantity,
         unitPrice: unitPrices[i],
+        // A price the cashier changed (offline, only when a manager's approval came with it).
+        originalUnitPrice: priceChanged[i] && (!offline || offlineApproved(Permission.CHANGE_PRICE)) ? product.sellPrice : null,
         taxAmount: fromCents(line.tax),
         discountType: discount?.type ?? null,
         discountValue: discount ? new Prisma.Decimal(discount.value) : null,
@@ -192,21 +219,22 @@ export class SalesService {
 
     const terminalId = await this.resolveTerminal(businessId, dto.terminalId);
     // The shift was opened before this sale (the till uploads in order).
-    const shift = dto.shiftClientId
-      ? await this.prisma.shift.findUnique({
-          where: { storeId_clientId: { storeId: dto.storeId, clientId: dto.shiftClientId } },
-          select: { id: true },
-        })
-      : null;
+    const shift = await this.saleShift(dto, cashierId, terminalId);
+    const customerId = dto.customerId || (await this.finalConsumerId(businessId));
     const createdAt = offline ? clampToNow(new Date(offline.createdAt)) : undefined;
+    // Services and the like don't move stock.
+    const stockLines = dto.lineItems.filter((li) => productById.get(li.productId)!.trackStock);
 
     let sale: Prisma.SaleGetPayload<{ include: typeof SALE_INCLUDE }>;
     try {
       sale = await this.prisma.$transaction(async (tx) => {
+        for (const approval of approvals) {
+          await this.overrides.consume(approval.token, { userId: cashierId, businessId }, approval.permission, tx);
+        }
         if (offline) {
           // The goods already left the shop: record the sale even if the
           // server's stock count says there weren't enough.
-          for (const li of dto.lineItems) {
+          for (const li of stockLines) {
             await tx.inventoryItem.upsert({
               where: { storeId_productId: { storeId: dto.storeId, productId: li.productId } },
               update: { quantity: { decrement: li.quantity } },
@@ -214,7 +242,7 @@ export class SalesService {
             });
           }
         } else {
-          for (const li of dto.lineItems) {
+          for (const li of stockLines) {
             const inventoryItem = await tx.inventoryItem.findUnique({
               where: { storeId_productId: { storeId: dto.storeId, productId: li.productId } },
             });
@@ -224,7 +252,7 @@ export class SalesService {
             }
           }
 
-          for (const li of dto.lineItems) {
+          for (const li of stockLines) {
             await tx.inventoryItem.update({
               where: { storeId_productId: { storeId: dto.storeId, productId: li.productId } },
               data: { quantity: { decrement: li.quantity } },
@@ -240,7 +268,7 @@ export class SalesService {
           data: {
             storeId: dto.storeId,
             cashierId,
-            customerId: dto.customerId,
+            customerId,
             receiptNumber,
             subtotal,
             taxTotal,
@@ -277,6 +305,16 @@ export class SalesService {
       throw error;
     }
 
+    // Approvals the till checked while offline: recorded now the sale exists.
+    if (offline) {
+      for (const o of dto.offlineOverrides ?? []) {
+        await this.overrides.recordOffline(
+          { userId: cashierId, businessId },
+          { ...o, action: `sale.${o.permission.toLowerCase()}`, storeId: dto.storeId, details: { saleId: sale.id, receiptNumber } },
+        );
+      }
+    }
+
     // Best-effort — a mail failure shouldn't fail an already-completed sale.
     this.emailReceiptIfRequested(dto, sale).catch((error) => {
       this.logger.error(`Failed to email receipt for sale ${sale.id}: ${error}`);
@@ -286,24 +324,83 @@ export class SalesService {
   }
 
   /**
-   * Discounts need APPLY_DISCOUNT, and (for everyone but the owner) must stay
-   * within the business's maximum, both overall and on each line.
+   * Which approval a discount needs, if any. Discounts need APPLY_DISCOUNT
+   * and must stay within the business's maximum (overall and on each line)
+   * unless the person has DISCOUNT_ABOVE_LIMIT. Over the limit, one
+   * DISCOUNT_ABOVE_LIMIT approval covers it.
    */
-  private async checkDiscount(businessId: string, userId: string, role: Role, priced: PricedSale) {
-    if (!(await this.permissions.hasPermission(userId, role, Permission.APPLY_DISCOUNT))) {
-      throw new ForbiddenException("You don't have permission to give discounts");
-    }
-    if (role === Role.OWNER) return;
+  private async discountApproval(
+    businessId: string,
+    userId: string,
+    role: Role,
+    priced: PricedSale,
+  ): Promise<{ permission: Permission; message: string } | null> {
     const business = await this.prisma.business.findUnique({
       where: { id: businessId },
       select: { maxDiscountPercent: true },
     });
-    if (business?.maxDiscountPercent == null) return;
-    const max = Number(business.maxDiscountPercent);
-    const limit = (base: number) => Math.round((base * max) / 100);
-    const over =
-      priced.discountTotal > limit(priced.subtotal) || priced.lines.some((l) => l.lineDiscount > limit(l.gross));
-    if (over) throw new BadRequestException(`Discounts can't be more than ${max}% of the price`);
+    if (business?.maxDiscountPercent != null) {
+      const max = Number(business.maxDiscountPercent);
+      const limit = (base: number) => Math.round((base * max) / 100);
+      const over =
+        priced.discountTotal > limit(priced.subtotal) || priced.lines.some((l) => l.lineDiscount > limit(l.gross));
+      if (over && !(await this.permissions.hasPermission(userId, role, Permission.DISCOUNT_ABOVE_LIMIT))) {
+        return { permission: Permission.DISCOUNT_ABOVE_LIMIT, message: `Discounts can't be more than ${max}% of the price` };
+      }
+      if (over) return null;
+    }
+    if (!(await this.permissions.hasPermission(userId, role, Permission.APPLY_DISCOUNT))) {
+      return { permission: Permission.APPLY_DISCOUNT, message: "You don't have permission to give discounts" };
+    }
+    return null;
+  }
+
+  /**
+   * The shift a sale belongs to. Online: an open shift on this till, opened
+   * by the cashier ringing it up. Offline uploads record what happened: the
+   * shift may have closed since, and sales queued by older apps may have
+   * none; if it hasn't uploaded yet, the till tries again later.
+   */
+  private async saleShift(dto: CreateSaleDto, cashierId: string, terminalId: string | null) {
+    const offline = !!dto.offline;
+    if (!dto.shiftClientId) {
+      if (offline) return null;
+      throw new BadRequestException("Open a shift before selling");
+    }
+    const shift = await this.prisma.shift.findUnique({
+      where: { storeId_clientId: { storeId: dto.storeId, clientId: dto.shiftClientId } },
+      select: { id: true, status: true, openedById: true, terminalId: true },
+    });
+    if (!shift) {
+      if (offline) throw new ConflictException("This sale's shift hasn't reached the server yet");
+      throw new BadRequestException("Open a shift before selling");
+    }
+    if (!offline) {
+      if (shift.status !== ShiftStatus.OPEN) throw new BadRequestException("This shift is closed. Open a new one to sell.");
+      if (shift.openedById !== cashierId) {
+        throw new ForbiddenException("This shift belongs to someone else. They have to close it before you can sell.");
+      }
+      if (shift.terminalId && terminalId && shift.terminalId !== terminalId) {
+        throw new BadRequestException("This shift is open on another till");
+      }
+    }
+    return shift;
+  }
+
+  /**
+   * "Consumidor Final" (NIF 999999999). Every business gets one when it's
+   * created (and existing ones in the migration); made here only if missing.
+   */
+  async finalConsumerId(businessId: string): Promise<string> {
+    const existing = await this.prisma.customer.findFirst({ where: { businessId, isFinalConsumer: true }, select: { id: true } });
+    if (existing) return existing.id;
+    const created = await this.prisma.customer.upsert({
+      where: { id: `fc_${businessId}` },
+      update: {},
+      create: { id: `fc_${businessId}`, ...finalConsumerData(businessId) },
+      select: { id: true },
+    });
+    return created.id;
   }
 
   /**

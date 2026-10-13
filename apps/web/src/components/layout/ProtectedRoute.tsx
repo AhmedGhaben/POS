@@ -9,6 +9,7 @@ import { startSyncEngine } from "@/features/pos/sync";
 import { startCustomerDisplayChannel, useIdleMessageBroadcast } from "@/features/desktop/customer-display";
 import { CommandPalette } from "./CommandPalette";
 import { LockOverlay } from "@/features/till/components/LockOverlay";
+import { ManagerApprovalDialog } from "@/features/overrides/components/ManagerApprovalDialog";
 import { useTillUpkeep } from "@/features/till/use-till";
 
 export function ProtectedRoute() {
@@ -64,6 +65,7 @@ export function ProtectedRoute() {
     <>
       <CommandPalette />
       <Outlet />
+      <ManagerApprovalDialog />
       <LockOverlay />
     </>
   );

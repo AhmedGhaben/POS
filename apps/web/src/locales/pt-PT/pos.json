@@ -24,10 +24,13 @@
     "discount": "Desconto",
     "discountNamed": "Desconto em {{name}}",
     "discountOff": "{{label}} de desconto (-{{amount}})",
-    "quantityFor": "Quantidade de {{name}}"
+    "quantityFor": "Quantidade de {{name}}",
+    "priceChanged": "(era {{price}})",
+    "price": "Alterar preço",
+    "priceNamed": "Alterar o preço de {{name}}"
   },
   "customer": {
-    "walkIn": "Cliente de balcão",
+    "walkIn": "Consumidor final",
     "clear": "Remover cliente",
     "search": "Procurar clientes...",
     "addNew": "Adicionar \"{{name}}\" como novo cliente",
@@ -46,7 +49,7 @@
     "fullyAllocated": "Valor totalmente distribuído",
     "remaining": "Em falta: {{amount}}",
     "cancelSplit": "Cancelar pagamento dividido",
-    "tendered": "Valor entregue (opcional)",
+    "tendered": "Valor recebido (opcional)",
     "tenderedTooLow": "O valor entregue é inferior ao total",
     "changeDue": "Troco: {{amount}}",
     "split": "+ Dividir pagamento",
@@ -132,7 +135,8 @@
     "done": "Venda anulada",
     "doneOffline": "Venda anulada. Será sincronizada quando a caixa voltar a ter ligação.",
     "handBack": "Devolva {{amount}} em dinheiro.",
-    "printSlip": "Imprimir comprovativo de anulação"
+    "printSlip": "Imprimir comprovativo de anulação",
+    "approval": "Anular a venda {{receipt}} ({{total}})"
   },
   "discount": {
     "titleSale": "Desconto na venda toda",
@@ -146,9 +150,12 @@
     "preview": "{{off}} de desconto: {{after}} antes do IVA",
     "percentTooBig": "Uma percentagem não pode ser superior a 100.",
     "tooBig": "É mais do que o preço.",
-    "overMax": "Pode dar no máximo {{max}}% de desconto.",
     "apply": "Aplicar",
-    "remove": "Retirar desconto"
+    "remove": "Retirar desconto",
+    "approval": "{{title}}: {{off}} de desconto",
+    "overMaxApproval": "Mais de {{max}}% de desconto: um gerente tem de autorizar.",
+    "needsApproval": "Um gerente tem de autorizar este desconto.",
+    "askApproval": "Pedir a um gerente"
   },
   "held": {
     "hold": "Deixar pendente",
@@ -165,5 +172,32 @@
     "resumeNamed": "Retomar {{name}}",
     "discard": "Eliminar venda pendente",
     "swapped": "A venda que estava no posto ficou pendente."
+  },
+  "price": {
+    "title": "Preço de {{name}}",
+    "description": "Preço normal {{price}}. O novo preço vale só para esta venda.",
+    "label": "Novo preço (unidade)",
+    "needsApproval": "Um gerente tem de autorizar esta alteração de preço.",
+    "approval": "Alterar {{name}} de {{from}} para {{to}}",
+    "reset": "Preço normal",
+    "apply": "Usar este preço"
+  },
+  "view": {
+    "label": "Mostrar produtos como",
+    "grid": "Mosaico",
+    "list": "Lista"
+  },
+  "card": {
+    "open": "Ficha do cliente",
+    "title": "Ficha do cliente",
+    "taxId": "NIF",
+    "phone": "Telefone",
+    "email": "Email",
+    "address": "Morada",
+    "purchases": "Compras",
+    "spent": "Gasto",
+    "last": "Última compra",
+    "recent": "Últimas vendas",
+    "offline": "O histórico de compras precisa do servidor."
   }
 }

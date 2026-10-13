@@ -1,7 +1,7 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query, UseGuards } from "@nestjs/common";
-import { Permission, Role } from "@prisma/client";
+import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Param, Post, Query, UseGuards } from "@nestjs/common";
+import { Role } from "@prisma/client";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { RequiresPermission } from "../common/decorators/requires-permission.decorator";
+import { OVERRIDE_HEADER } from "../overrides/overrides.service";
 import { Roles } from "../common/decorators/roles.decorator";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { StoreAccessGuard } from "../common/guards/store-access.guard";
@@ -23,14 +23,17 @@ export class ShiftsController {
     return this.shifts.open(user, dto);
   }
 
-  /** Opens the drawer without a sale, so it needs OPEN_DRAWER. */
+  /** Cash in or out with a reason; cash out needs CASH_OUT or a manager's approval (checked in the service). */
   @Post("cash-movements")
   @TillUpload()
   @HttpCode(HttpStatus.OK)
   @UseGuards(StoreAccessGuard)
-  @RequiresPermission(Permission.OPEN_DRAWER)
-  addMovement(@CurrentUser() user: AuthenticatedUser, @Body() dto: CashMovementDto) {
-    return this.shifts.addMovement(user, dto);
+  addMovement(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CashMovementDto,
+    @Headers(OVERRIDE_HEADER) overrideToken?: string,
+  ) {
+    return this.shifts.addMovement(user, dto, overrideToken);
   }
 
   @Post("close")

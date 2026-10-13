@@ -5,6 +5,8 @@ import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
 import { PrismaService } from "../src/prisma/prisma.service";
+import { deleteBusiness } from "./cleanup";
+import { ensureShift } from "./shift-helper";
 import { offlineReceiptNumber } from "../src/sales/sales.service";
 
 /**
@@ -23,6 +25,7 @@ describe("Offline sales and terminals (e2e)", () => {
   let businessId: string | undefined;
   let ownerToken: string;
   let cashierToken: string;
+  let cashierShift: string;
   let storeId: string;
   let productId: string;
 
@@ -35,6 +38,7 @@ describe("Offline sales and terminals (e2e)", () => {
   function saleBody(extra: Record<string, unknown> = {}, quantity = 2, amount = 23.8) {
     return {
       storeId,
+      shiftClientId: cashierShift,
       lineItems: [{ productId, quantity }],
       payments: [{ method: "CARD", amount }],
       ...extra,
@@ -90,30 +94,12 @@ describe("Offline sales and terminals (e2e)", () => {
       .expect(201);
     cashierToken = (await http().post("/auth/login").send({ email: CASHIER_EMAIL, password: PASSWORD }).expect(200))
       .body.accessToken;
+    cashierShift = await ensureShift(app, cashierToken, storeId);
   });
 
   afterAll(async () => {
     if (businessId) {
-      const userIds = (await prisma.user.findMany({ where: { businessId }, select: { id: true } })).map((u) => u.id);
-      const storeIds = (await prisma.store.findMany({ where: { businessId }, select: { id: true } })).map((s) => s.id);
-      const saleWhere = { storeId: { in: storeIds } };
-      await prisma.$transaction([
-        prisma.salePayment.deleteMany({ where: { sale: saleWhere } }),
-        prisma.saleLineItem.deleteMany({ where: { sale: saleWhere } }),
-        prisma.sale.deleteMany({ where: saleWhere }),
-        prisma.terminal.deleteMany({ where: { businessId } }),
-        prisma.inventoryItem.deleteMany({ where: { storeId: { in: storeIds } } }),
-        prisma.product.deleteMany({ where: { businessId } }),
-        prisma.auditLog.deleteMany({ where: { businessId } }),
-        prisma.employee.deleteMany({ where: { businessId } }),
-        prisma.storeUser.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.emailVerificationToken.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.passwordResetToken.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } }),
-        prisma.user.deleteMany({ where: { businessId } }),
-        prisma.store.deleteMany({ where: { businessId } }),
-        prisma.business.delete({ where: { id: businessId } }),
-      ]);
+      await deleteBusiness(prisma, businessId);
     }
     await app.close();
   });
@@ -192,7 +178,7 @@ describe("Offline sales and terminals (e2e)", () => {
       expect(await stock()).toBe(-3);
     });
 
-    it("an online sale still can't oversell, and ignores client prices", async () => {
+    it("an online sale still can't oversell, and a cashier can't change prices alone", async () => {
       await http()
         .post("/sales")
         .set(auth(cashierToken))
@@ -204,16 +190,23 @@ describe("Offline sales and terminals (e2e)", () => {
         .set(auth(ownerToken))
         .send({ quantity: 10 })
         .expect(200);
-      // Client claims 1.00; the server charges the real 12.00 + 19% = 14.28.
-      await http()
+      // A different price online is a price change: CHANGE_PRICE or a
+      // manager's approval. The tax rate always comes from the product.
+      const changed = await http()
         .post("/sales")
         .set(auth(cashierToken))
-        .send({ storeId, lineItems: [{ productId, quantity: 1, unitPrice: 1, taxRate: 0 }], payments: [{ method: "CARD", amount: 1 }] })
-        .expect(400);
+        .send({
+          storeId,
+          shiftClientId: cashierShift,
+          lineItems: [{ productId, quantity: 1, unitPrice: 1, taxRate: 0 }],
+          payments: [{ method: "CARD", amount: 1.19 }],
+        })
+        .expect(403);
+      expect(changed.body.message).toBe("Changing a price needs a manager's approval");
       const ok = await http()
         .post("/sales")
         .set(auth(cashierToken))
-        .send({ storeId, lineItems: [{ productId, quantity: 1, unitPrice: 1, taxRate: 0 }], payments: [{ method: "CARD", amount: 14.28 }] })
+        .send({ storeId, shiftClientId: cashierShift, lineItems: [{ productId, quantity: 1, taxRate: 0 }], payments: [{ method: "CARD", amount: 14.28 }] })
         .expect(201);
       expect(ok.body.lineItems[0].unitPrice).toBe("12");
       expect(ok.body.createdOffline).toBe(false);

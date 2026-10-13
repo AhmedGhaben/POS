@@ -1,5 +1,7 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { PaymentMethod, Prisma, Role, SaleStatus, ShiftStatus } from "@prisma/client";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { PaymentMethod, Permission, Prisma, Role, SaleStatus, ShiftStatus } from "@prisma/client";
+import { PermissionsService } from "../common/permissions/permissions.service";
+import { OverridesService } from "../overrides/overrides.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { CashMovementDto, CloseShiftDto, ListShiftsQuery, OpenShiftDto } from "./dto/shift.dto";
@@ -27,6 +29,49 @@ function tillTime(value: string | undefined): Date {
   return Number.isNaN(at.getTime()) || at.getTime() > Date.now() + MAX_CLOCK_SKEW_MS ? new Date() : at;
 }
 
+/**
+ * What should be in the drawer: opening float + cash sales (what the sales
+ * kept, i.e. after change) − cash refunds + cash in − cash out.
+ */
+export function computeExpectedCash(c: {
+  openingFloat: Prisma.Decimal;
+  cashSales: Prisma.Decimal;
+  cashRefunds: Prisma.Decimal;
+  cashIn: Prisma.Decimal;
+  cashOut: Prisma.Decimal;
+}): Prisma.Decimal {
+  return c.openingFloat.add(c.cashSales).sub(c.cashRefunds).add(c.cashIn).sub(c.cashOut);
+}
+
+/**
+ * The note/coin count, if given, must be whole non-negative numbers of
+ * positive values and add up to the counted cash. Returns the cleaned map.
+ */
+export function checkDenominations(
+  counted: Prisma.Decimal,
+  denominations: Record<string, number> | undefined,
+): Record<string, number> | null {
+  if (!denominations) return null;
+  const clean: Record<string, number> = {};
+  let total = ZERO;
+  for (const [value, count] of Object.entries(denominations)) {
+    const v = Number(value);
+    if (!Number.isFinite(v) || v <= 0 || !Number.isInteger(count) || count < 0) {
+      throw new BadRequestException("The count by note and coin isn't valid");
+    }
+    if (count === 0) continue;
+    clean[value] = count;
+    total = total.add(new Prisma.Decimal(value).mul(count));
+  }
+  if (!total.equals(counted)) throw new BadRequestException("The notes and coins don't add up to the counted cash");
+  return clean;
+}
+
+/** Over the threshold (either way) → flagged for managers. */
+export function isFlagged(difference: Prisma.Decimal, threshold: Prisma.Decimal | null): boolean {
+  return threshold !== null && difference.abs().gt(threshold);
+}
+
 export interface ShiftSummary {
   salesCount: number;
   salesTotal: string;
@@ -38,13 +83,19 @@ export interface ShiftSummary {
   cashOut: string;
   movements: { id: string; type: "IN" | "OUT"; amount: string; reason: string; note: string | null; occurredAt: Date; user: string }[];
   byCashier: { id: string; name: string; count: number; total: string }[];
+  /** Every sale, oldest first, for the report's optional full list. */
+  sales: { receiptNumber: string; at: Date; total: string; method: PaymentMethod | "SPLIT"; voided: boolean; cashier: string }[];
   /** Opening float + cash taken - cash refunds + cash in - cash out. */
   expectedCash: string;
 }
 
 @Injectable()
 export class ShiftsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly permissions: PermissionsService,
+    private readonly overrides: OverridesService,
+  ) {}
 
   private findByClientId(storeId: string, clientId: string) {
     return this.prisma.shift.findUnique({
@@ -102,14 +153,31 @@ export class ShiftsService {
     return this.report(shift);
   }
 
-  /** Cash put into or taken out of the drawer during an open shift. */
-  async addMovement(user: AuthenticatedUser, dto: CashMovementDto) {
+  /**
+   * Cash put into or taken out of the drawer during an open shift, with a
+   * reason. Taking cash out needs CASH_OUT or a manager's approval (online:
+   * the X-Override-Token; offline: the approver the till checked).
+   */
+  async addMovement(user: AuthenticatedUser, dto: CashMovementDto, overrideToken?: string) {
     const shift = await this.byClientOrThrow(dto.storeId, dto.shiftClientId);
     const existing = await this.prisma.cashMovement.findUnique({
       where: { shiftId_clientId: { shiftId: shift.id, clientId: dto.clientId } },
     });
     if (!existing) {
       if (shift.status === ShiftStatus.CLOSED) throw new BadRequestException("This shift is closed");
+      let approvedById: string | null = null;
+      if (dto.type === "OUT" && !(await this.permissions.hasPermission(user.userId, user.role, Permission.CASH_OUT))) {
+        const details = { amount: dto.amount, reason: dto.reason, shiftId: shift.id };
+        if (dto.offline && dto.offlineOverride) {
+          approvedById = (
+            await this.overrides.recordOffline(user, { ...dto.offlineOverride, action: "cash.out", storeId: dto.storeId, details })
+          ).approvedById;
+        } else if (overrideToken) {
+          approvedById = (await this.overrides.consume(overrideToken, user, Permission.CASH_OUT)).approvedById;
+        } else if (!dto.offline) {
+          throw new ForbiddenException("Taking cash out needs a manager's approval");
+        }
+      }
       await this.prisma.cashMovement.create({
         data: {
           shiftId: shift.id,
@@ -118,6 +186,7 @@ export class ShiftsService {
           reason: dto.reason,
           note: dto.note?.trim() || null,
           userId: user.userId,
+          approvedById,
           occurredAt: tillTime(dto.occurredAt),
           clientId: dto.clientId,
           createdOffline: !!dto.offline,
@@ -136,8 +205,20 @@ export class ShiftsService {
     const shift = await this.byClientOrThrow(dto.storeId, dto.shiftClientId);
     if (shift.status === ShiftStatus.CLOSED) return this.report(shift);
 
-    const summary = await this.summarize(shift);
+    // The cashier closes their own shift; an owner or manager can close an
+    // abandoned one for them (they enter the count; it's marked forced).
+    const forced = shift.openedById !== user.userId;
+    if (forced && user.role === Role.CASHIER) {
+      throw new ForbiddenException("Only the cashier who opened this shift, or a manager, can close it");
+    }
     const counted = new Prisma.Decimal(dto.countedCash);
+    const denominations = checkDenominations(counted, dto.countedDenominations);
+    const summary = await this.summarize(shift);
+    const business = await this.prisma.business.findUniqueOrThrow({
+      where: { id: user.businessId },
+      select: { shiftDifferenceThreshold: true },
+    });
+    const difference = counted.sub(summary.expectedCash);
     const closedAt = tillTime(dto.closedAt);
     const closed = await this.prisma.shift.update({
       where: { id: shift.id },
@@ -148,11 +229,26 @@ export class ShiftsService {
         countedCash: counted,
         expectedCash: new Prisma.Decimal(summary.expectedCash),
         tillExpectedCash: dto.tillExpectedCash !== undefined ? new Prisma.Decimal(dto.tillExpectedCash) : null,
-        difference: counted.sub(summary.expectedCash),
+        difference,
+        countedDenominations: denominations ?? undefined,
+        forcedClose: forced,
+        flagged: isFlagged(difference, business.shiftDifferenceThreshold),
         note: dto.note?.trim() || null,
       },
       include: SHIFT_INCLUDE,
     });
+    if (forced) {
+      await this.prisma.auditLog.create({
+        data: {
+          businessId: user.businessId,
+          userId: user.userId,
+          action: "SHIFT_FORCE_CLOSED",
+          entityType: "shift",
+          entityId: shift.id,
+          metadata: { openedBy: shift.openedById, countedCash: counted.toFixed(2), difference: difference.toFixed(2) },
+        },
+      });
+    }
     return this.report(closed);
   }
 
@@ -174,6 +270,10 @@ export class ShiftsService {
     const where: Prisma.ShiftWhereInput = {
       businessId: user.businessId,
       ...(query.storeId ? { storeId: query.storeId } : {}),
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.flagged ? { flagged: query.flagged === "true" } : {}),
+      ...(query.cashierId ? { openedById: query.cashierId } : {}),
+      ...(query.terminalId ? { terminalId: query.terminalId } : {}),
       ...(user.role !== Role.OWNER && !query.storeId
         ? { store: { storeUsers: { some: { userId: user.userId } } } }
         : {}),
@@ -212,7 +312,10 @@ export class ShiftsService {
     const [sales, returns, movements] = await Promise.all([
       this.prisma.sale.findMany({
         where: { shiftId: shift.id },
+        orderBy: { createdAt: "asc" },
         select: {
+          receiptNumber: true,
+          createdAt: true,
           status: true,
           total: true,
           discountTotal: true,
@@ -271,7 +374,15 @@ export class ShiftsService {
         user: `${m.user.firstName} ${m.user.lastName}`,
       })),
       byCashier: [...byCashier.values()].map((r) => ({ ...r, total: r.total.toFixed(2) })),
-      expectedCash: shift.openingFloat.add(cashSales).sub(cashRefunds).add(cashIn).sub(cashOut).toFixed(2),
+      sales: sales.map((s) => ({
+        receiptNumber: s.receiptNumber,
+        at: s.createdAt,
+        total: s.total.toFixed(2),
+        method: s.payments.length === 1 ? s.payments[0].method : "SPLIT",
+        voided: s.status === SaleStatus.VOIDED,
+        cashier: `${s.cashier.firstName} ${s.cashier.lastName}`,
+      })),
+      expectedCash: computeExpectedCash({ openingFloat: shift.openingFloat, cashSales, cashRefunds, cashIn, cashOut }).toFixed(2),
     };
   }
 }

@@ -4,11 +4,13 @@ import type { ProductDto } from "@pos/shared";
 import { Input } from "@/components/ui/input";
 import { posFetchProducts } from "@/features/pos/catalog";
 import { findByBarcode } from "@/features/pos/api";
+import { splitQuantityPrefix } from "@/features/pos/quantity";
 import { useTranslation } from "react-i18next";
 import { useMoney } from "@/features/business/use-money";
 
 interface ProductSearchInputProps {
-  onSelect: (product: ProductDto) => void;
+  /** quantity: from the "3*" shortcut, else 1. */
+  onSelect: (product: ProductDto, quantity: number) => void;
   /** Blur targets inside this element (e.g. the customer/payment sidebar)
    * are left alone instead of refocusing the scanner input, so the cashier
    * can type into those controls without focus being stolen back. */
@@ -26,11 +28,13 @@ export function ProductSearchInput({ onSelect, suppressRefocusRef }: ProductSear
   const money = useMoney();
   const [query, setQuery] = React.useState("");
   const inputRef = React.useRef<HTMLInputElement>(null);
+  // "3*" before a barcode or name adds that many (features/pos/quantity.ts).
+  const { quantity, query: search } = splitQuantityPrefix(query);
 
   const searchQuery = useQuery({
-    queryKey: ["pos-search", query],
-    queryFn: () => posFetchProducts(query),
-    enabled: query.trim().length > 0,
+    queryKey: ["pos-search", search],
+    queryFn: () => posFetchProducts(search),
+    enabled: search.trim().length > 0,
   });
 
   const refocus = React.useCallback(() => {
@@ -42,22 +46,22 @@ export function ProductSearchInput({ onSelect, suppressRefocusRef }: ProductSear
   }, [refocus]);
 
   async function handleSelect(product: ProductDto) {
-    onSelect(product);
+    onSelect(product, quantity);
     setQuery("");
     refocus();
   }
 
   async function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key !== "Enter" || !query.trim()) return;
+    if (e.key !== "Enter" || !search.trim()) return;
     e.preventDefault();
 
-    const exactBarcodeMatch = await findByBarcode(query.trim());
+    const exactBarcodeMatch = await findByBarcode(search.trim());
     if (exactBarcodeMatch) {
       await handleSelect(exactBarcodeMatch);
       return;
     }
 
-    const results = await posFetchProducts(query.trim());
+    const results = await posFetchProducts(search.trim());
     if (results.length === 1) {
       await handleSelect(results[0]);
     }
@@ -77,11 +81,14 @@ export function ProductSearchInput({ onSelect, suppressRefocusRef }: ProductSear
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
         onBlur={(e) => {
-          if (suppressRefocusRef?.current?.contains(e.relatedTarget as Node | null)) return;
+          const target = e.relatedTarget as HTMLElement | null;
+          if (suppressRefocusRef?.current?.contains(target)) return;
+          // Fields that take typing elsewhere on the till (e.g. a cart line's quantity).
+          if (target?.closest("[data-keep-focus]")) return;
           refocus();
         }}
       />
-      {query.trim().length > 0 && results.length > 0 && (
+      {search.trim().length > 0 && results.length > 0 && (
         <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-md border bg-popover shadow-md">
           {results.map((product) => (
             <button

@@ -39,7 +39,9 @@ const settingsSchema = z.object({
   maxDiscountPercent: z
     .string()
     .refine((v) => v.trim() === "" || (!Number.isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100), "settings:money.maxDiscountRange"),
-  shiftsEnabled: z.boolean(),
+  shiftDifferenceThreshold: z
+    .string()
+    .refine((v) => v.trim() === "" || (!Number.isNaN(Number(v)) && Number(v) >= 0), "settings:tills.thresholdRange"),
   receiptHeader: z.string().max(300),
   receiptFooter: z.string().max(300),
   invoiceFooter: z.string().max(1000),
@@ -61,7 +63,7 @@ function toFormValues(b: BusinessDto): SettingsValues {
     language: b.language ?? "en",
     defaultTaxRate: String(Number(b.defaultTaxRate)),
     maxDiscountPercent: b.maxDiscountPercent == null ? "" : String(Number(b.maxDiscountPercent)),
-    shiftsEnabled: !!b.shiftsEnabled,
+    shiftDifferenceThreshold: b.shiftDifferenceThreshold == null ? "" : String(Number(b.shiftDifferenceThreshold)),
     receiptHeader: b.receiptHeader ?? "",
     receiptFooter: b.receiptFooter ?? "",
     invoiceFooter: b.invoiceFooter ?? "",
@@ -108,6 +110,7 @@ export function SettingsPage() {
         ...values,
         defaultTaxRate: Number(values.defaultTaxRate),
         maxDiscountPercent: values.maxDiscountPercent.trim() === "" ? null : Number(values.maxDiscountPercent),
+        shiftDifferenceThreshold: values.shiftDifferenceThreshold.trim() === "" ? null : Number(values.shiftDifferenceThreshold),
       }),
     onSuccess: (business) => {
       saved(business);
@@ -236,25 +239,18 @@ export function SettingsPage() {
                   <CardTitle className="text-base">{t("tills.title")}</CardTitle>
                 </CardHeader>
                 <CardContent>
+                  <p className="mb-4 text-sm text-muted-foreground">{t("tills.shiftsAlwaysOn")}</p>
                   <FormField
                     control={form.control}
-                    name="shiftsEnabled"
+                    name="shiftDifferenceThreshold"
                     render={({ field }) => (
                       <FormItem>
-                        <div className="flex items-start gap-3">
-                          <FormControl>
-                            <input
-                              type="checkbox"
-                              className="mt-1 h-4 w-4"
-                              checked={field.value}
-                              onChange={(e) => field.onChange(e.target.checked)}
-                            />
-                          </FormControl>
-                          <div>
-                            <FormLabel>{t("tills.shifts")}</FormLabel>
-                            <FormDescription>{t("tills.shiftsHint")}</FormDescription>
-                          </div>
-                        </div>
+                        <FormLabel>{t("tills.threshold")}</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.01" min="0" placeholder={t("tills.noThreshold")} {...field} />
+                        </FormControl>
+                        <FormDescription>{t("tills.thresholdHint")}</FormDescription>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />

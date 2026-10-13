@@ -5,6 +5,8 @@ import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
 import { PrismaService } from "../src/prisma/prisma.service";
+import { deleteBusiness } from "./cleanup";
+import { ensureShift } from "./shift-helper";
 
 /**
  * Cancelling (voiding) a sale (docs/plans/TILL_ESSENTIALS.md, part 1): stock
@@ -28,11 +30,17 @@ describe("Cancelling a sale (e2e)", () => {
   const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
   const stock = async () =>
     (await prisma.inventoryItem.findUnique({ where: { storeId_productId: { storeId, productId: teaId } } }))!.quantity;
-  const sell = (token = ownerToken, extra: object = {}) =>
+  const sell = async (token = ownerToken, extra: object = {}) =>
     http()
       .post("/sales")
       .set(auth(token))
-      .send({ storeId, lineItems: [{ productId: teaId, quantity: 2 }], payments: [{ method: "CASH", amount: 4 }], ...extra })
+      .send({
+        storeId,
+        shiftClientId: await ensureShift(app, token, storeId),
+        lineItems: [{ productId: teaId, quantity: 2 }],
+        payments: [{ method: "CASH", amount: 4 }],
+        ...extra,
+      })
       .expect(201);
   const voidSale = (token: string, body: object) =>
     http().post("/sales/void").set(auth(token)).send({ storeId, reason: "WRONG_ITEMS", ...body });
@@ -83,28 +91,7 @@ describe("Cancelling a sale (e2e)", () => {
   afterAll(async () => {
     try {
       if (businessId) {
-        const userIds = (await prisma.user.findMany({ where: { businessId }, select: { id: true } })).map((u) => u.id);
-        const saleWhere = { storeId };
-        await prisma.$transaction([
-          prisma.returnLineItem.deleteMany({ where: { return: saleWhere } }),
-          prisma.return.deleteMany({ where: saleWhere }),
-          prisma.invoice.deleteMany({ where: { businessId } }),
-          prisma.invoiceCounter.deleteMany({ where: { businessId } }),
-          prisma.salePayment.deleteMany({ where: { sale: saleWhere } }),
-          prisma.saleLineItem.deleteMany({ where: { sale: saleWhere } }),
-          prisma.sale.deleteMany({ where: saleWhere }),
-          prisma.inventoryItem.deleteMany({ where: { storeId } }),
-          prisma.product.deleteMany({ where: { businessId } }),
-          prisma.auditLog.deleteMany({ where: { businessId } }),
-          prisma.userPermission.deleteMany({ where: { userId: { in: userIds } } }),
-          prisma.employee.deleteMany({ where: { businessId } }),
-          prisma.storeUser.deleteMany({ where: { userId: { in: userIds } } }),
-          prisma.emailVerificationToken.deleteMany({ where: { userId: { in: userIds } } }),
-          prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } }),
-          prisma.user.deleteMany({ where: { businessId } }),
-          prisma.store.deleteMany({ where: { businessId } }),
-          prisma.business.delete({ where: { id: businessId } }),
-        ]);
+        await deleteBusiness(prisma, businessId);
       }
     } finally {
       await app.close();
@@ -170,7 +157,7 @@ describe("Cancelling a sale (e2e)", () => {
     await http()
       .post("/returns")
       .set(auth(ownerToken))
-      .send({ storeId, saleId: returned.id, lineItems: [{ productId: teaId, quantity: 1 }] })
+      .send({ storeId, saleId: returned.id, shiftClientId: await ensureShift(app, ownerToken, storeId), lineItems: [{ productId: teaId, quantity: 1 }] })
       .expect(201);
     const r1 = await voidSale(ownerToken, { saleId: returned.id }).expect(400);
     expect(r1.body.message).toContain("Use Returns instead");
@@ -191,7 +178,7 @@ describe("Cancelling a sale (e2e)", () => {
     await http()
       .post("/returns")
       .set(auth(ownerToken))
-      .send({ storeId, saleId: sale.id, lineItems: [{ productId: teaId, quantity: 1 }] })
+      .send({ storeId, saleId: sale.id, shiftClientId: await ensureShift(app, ownerToken, storeId), lineItems: [{ productId: teaId, quantity: 1 }] })
       .expect(400);
     await http().post(`/sales/${sale.id}/invoice`).set(auth(ownerToken)).send({ buyerName: "Acme" }).expect(400);
   });

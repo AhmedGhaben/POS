@@ -231,6 +231,38 @@ export async function pinSignIn(userId: string, pin: string): Promise<PinSignInR
   return { ok: true, mode: "offline", user };
 }
 
+// ---------------------------------------------------------------- manager approval (offline)
+
+export type ApprovalCheckResult =
+  | { ok: true }
+  | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user"; error: string };
+
+/** People on this till's saved list who may approve `permission` (for the approval popup while offline). */
+export function listApprovers(permission: string, exceptUserId?: string): PublicStaffMember[] {
+  return readStaff()
+    .filter((s) => s.permissions[permission] === true && s.id !== exceptUserId)
+    .map(({ id, firstName, lastName, role }) => ({ id, firstName, lastName, role }));
+}
+
+/**
+ * Offline manager override: checks the approver's PIN and permission
+ * against the saved list. Nobody's signed in or out; the upload records
+ * who approved it. Same lockout as signing in.
+ */
+export async function checkApproval(userId: string, pin: string, permission: string): Promise<ApprovalCheckResult> {
+  const member = readStaff().find((s) => s.id === userId);
+  if (!member) return { ok: false, code: "unknown-user", error: "Unknown person" };
+  if (lockout.isLocked(userId)) return { ok: false, code: "locked", error: "Too many wrong PINs. Try again in a few minutes." };
+  if (!(await verifyPin(pin, member.pin))) {
+    lockout.failed(userId);
+    return { ok: false, code: "wrong", error: "Wrong PIN" };
+  }
+  lockout.succeeded(userId);
+  if (member.permissions[permission] !== true) return { ok: false, code: "no-access", error: "This person can't approve it" };
+  log.info(`[till] offline approval of ${permission} by ${userId}`);
+  return { ok: true };
+}
+
 export type ResumeResult =
   | { ok: true; session: unknown }
   | { ok: false; code: "unreachable" | "rejected" | "nothing"; error?: string };

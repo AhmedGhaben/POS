@@ -29,7 +29,9 @@
     "restored": "Produto restaurado",
     "archive": "Arquivar produto",
     "restore": "Restaurar produto",
-    "archiveNote": "Arquivar esconde o produto do caixa e desta lista. Vendas e relatórios anteriores continuam com ele."
+    "archiveNote": "Arquivar esconde o produto do caixa e desta lista. Vendas e relatórios anteriores continuam com ele.",
+    "trackStock": "Controlar estoque",
+    "trackStockHint": "Desligue para serviços e outros itens sem estoque: podem sempre ser vendidos e nunca aparecem no estoque nem nos alertas de estoque baixo."
   },
   "import": {
     "title": "Importar produtos de CSV",

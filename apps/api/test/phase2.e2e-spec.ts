@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import request from "supertest";
 import { AppModule } from "../src/app.module";
+import { ensureShift } from "./shift-helper";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
 
 /**
@@ -127,11 +128,13 @@ describe("POS API Phase 2 (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({
         storeId: STORE_ID,
+        shiftClientId: await ensureShift(app, token, STORE_ID),
         payments: [{ method: "CASH", amount: total }],
         lineItems: [{ productId: product.id, quantity }],
       })
       .expect(201);
     const saleId = saleRes.body.id;
+    const shiftClientId = await ensureShift(app, token, STORE_ID);
 
     const stockAfterSale = (
       await request(app.getHttpServer())
@@ -144,7 +147,7 @@ describe("POS API Phase 2 (e2e)", () => {
     await request(app.getHttpServer())
       .post("/returns")
       .set("Authorization", `Bearer ${token}`)
-      .send({ storeId: STORE_ID, saleId, reason: "e2e test", lineItems: [{ productId: product.id, quantity: 2 }] })
+      .send({ storeId: STORE_ID, saleId, shiftClientId, reason: "e2e test", lineItems: [{ productId: product.id, quantity: 2 }] })
       .expect(201);
 
     const stockAfterReturn = (
@@ -159,7 +162,7 @@ describe("POS API Phase 2 (e2e)", () => {
     await request(app.getHttpServer())
       .post("/returns")
       .set("Authorization", `Bearer ${token}`)
-      .send({ storeId: STORE_ID, saleId, lineItems: [{ productId: product.id, quantity: 5 }] })
+      .send({ storeId: STORE_ID, saleId, shiftClientId, lineItems: [{ productId: product.id, quantity: 5 }] })
       .expect(400);
   });
 

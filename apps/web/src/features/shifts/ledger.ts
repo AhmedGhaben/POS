@@ -14,6 +14,9 @@ export interface LedgerSale {
   cashier: string;
   payments: { method: PaymentMethod; amount: number }[];
   voided: boolean;
+  /** For the report's full list (absent on records from before it existed). */
+  receiptNumber?: string;
+  at?: string;
 }
 
 export interface LedgerMovement {
@@ -51,6 +54,8 @@ export function ledgerSale(sale: SaleDto, cashierName: string): LedgerSale {
     cashier: cashierName,
     payments: sale.payments.map((p) => ({ method: p.method, amount: Number(p.amount) })),
     voided: sale.status === SaleStatus.VOIDED,
+    receiptNumber: sale.receiptNumber,
+    at: sale.createdAt,
   };
 }
 
@@ -94,6 +99,14 @@ export function localSummary(shift: LocalShift): ShiftSummaryDto {
       user: m.user,
     })),
     byCashier: [...byCashier.values()].map((r) => ({ ...r, total: money(r.total) })),
+    sales: shift.sales.map((s) => ({
+      receiptNumber: s.receiptNumber ?? s.key,
+      at: s.at ?? shift.openedAt,
+      total: s.total.toFixed(2),
+      method: s.payments.length === 1 ? s.payments[0].method : "SPLIT",
+      voided: s.voided,
+      cashier: s.cashier,
+    })),
     expectedCash: money(cents(shift.openingFloat) + cash + cashIn - cashOut),
   };
 }

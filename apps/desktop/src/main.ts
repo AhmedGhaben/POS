@@ -28,7 +28,16 @@ import { listComPorts, stopRawPrintHelper, warmRawPrintHelper } from "./hardware
 import { closePrintWindow, listPrinters, printJob, printJobSchema } from "./printing";
 import { checkForUpdates, getUpdateStatus, initUpdater, installUpdateNow } from "./updater";
 import { APP_ORIGIN, handleAppScheme, registerAppScheme } from "./protocol";
-import { hasTerminalKey, listStaff, pinSignIn, refreshStaff, resumeSession, setTerminalKey } from "./till";
+import {
+  checkApproval,
+  hasTerminalKey,
+  listApprovers,
+  listStaff,
+  pinSignIn,
+  refreshStaff,
+  resumeSession,
+  setTerminalKey,
+} from "./till";
 
 // Tests (and a second profile on one PC) point the app at another data folder.
 if (process.env.POS_DESKTOP_USER_DATA) {
@@ -209,6 +218,14 @@ function registerIpc() {
   handle("pin:sign-in", z.tuple([z.string().min(1).max(64), z.string().min(1).max(12)]), pinSignIn);
 
   handle("pin:resume", z.tuple([z.string().min(1).max(64)]), resumeSession);
+
+  handle("approval:approvers", z.tuple([z.string().min(1).max(64), z.string().max(64).optional()]), listApprovers);
+
+  handle(
+    "approval:check",
+    z.tuple([z.string().min(1).max(64), z.string().min(1).max(12), z.string().min(1).max(64)]),
+    checkApproval,
+  );
 
   handle("printers:list", z.tuple([]), listPrinters);
 

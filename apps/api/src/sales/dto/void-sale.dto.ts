@@ -1,4 +1,6 @@
-import { IsIn, IsISO8601, IsOptional, IsString, IsUUID, MaxLength } from "class-validator";
+import { Type } from "class-transformer";
+import { IsIn, IsISO8601, IsOptional, IsString, IsUUID, MaxLength, ValidateNested } from "class-validator";
+import { OfflineOverrideDto } from "../../overrides/dto/override.dto";
 
 export const VOID_REASONS = ["WRONG_ITEMS", "CUSTOMER_CHANGED_MIND", "PAYMENT_PROBLEM", "TRAINING", "OTHER"] as const;
 export type VoidReason = (typeof VOID_REASONS)[number];
@@ -36,4 +38,10 @@ export class VoidSaleDto {
   @IsOptional()
   @IsString()
   actingUserId?: string;
+
+  /** Cancelled offline with a manager's approval checked on the till. */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => OfflineOverrideDto)
+  offlineOverride?: OfflineOverrideDto;
 }

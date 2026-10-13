@@ -75,7 +75,11 @@
       "PROCESS_RETURN": "Process returns / refunds",
       "OPEN_DRAWER": "Open the cash drawer without a sale",
       "VOID_SALE": "Cancel sales",
-      "APPLY_DISCOUNT": "Give discounts"
+      "APPLY_DISCOUNT": "Give discounts",
+      "DISCOUNT_ABOVE_LIMIT": "Give discounts above the maximum",
+      "CHANGE_PRICE": "Change prices at the till",
+      "SELL_ON_CREDIT": "Sell on credit (pay later)",
+      "CASH_OUT": "Take cash out of the drawer"
     }
   }
 }

@@ -1,7 +1,7 @@
 # Angola launch: fiscal documents, IVA, checkout, credit, AGT
 
 **Status:** approved 2026-10-13; additions A (SAF-T) and B (shifts)
-added the same day, waiting for the owner's OK. Built phase by phase in
+approved the same day (decisions at the end). Built phase by phase in
 the order 1 → 2 → 3 → 7 → 6 → 8 → 8b → 4 → 5 → 9 → 10 → 11 (tax per
 product needs the country config; credit sales need FT/RC; SAF-T reads
 the fiscal documents). Reference files: `docs/saft-ao/` (XSD, decrees,
@@ -28,6 +28,37 @@ commit and push.
   1st. Tests: web unit `combobox-filter.test.ts` (5), desktop e2e
   `angola-phase2.spec.ts` (3). "Outro" gets its first real use with banks
   (phase 7).
+- **Phase 3 (checkout + shifts) is built** (2026-10-13). Migration
+  `20261013120000_angola_phase3_checkout` (its partial unique index on
+  final consumers isn't in the Prisma schema: strip it from future
+  `migrate diff` output). As planned, plus:
+  - Manager override: `overrides` module (global), `X-Override-Token` on
+    guarded routes, `{ permission, token }[]` on sales, offline approvals
+    on till uploads (guard accepts `offlineOverride` only with the till's
+    key). A wrong approver PIN is a 403 with `code` WRONG_PIN/PIN_LOCKED,
+    never 401 (the web client treats 401 as an expired session). Every
+    approval also carries the approver's id, so a sale that falls back to
+    the outbox uploads them as offline approvals. Desktop IPC
+    `approval:approvers` / `approval:check` check PINs offline without
+    signing anyone in.
+  - Shifts: online sales need an open shift opened by that cashier on that
+    till; offline uploads (even old ones without a shift) are kept, an
+    unknown shift is a 409 the outbox retries. Close: by the opener or a
+    manager (forced, audit-logged), optional note/coin count
+    (`features/shifts/denominations.ts`; moves to the country config in
+    phase 7), flagged over `Business.shiftDifferenceThreshold`, report can
+    list every sale, and the cashier is signed out after. Log out with a
+    shift open goes into the close flow (`features/shifts/close-request.ts`).
+    A shift someone else left open shows a panel; managers can close it.
+  - Price change at the till (`PriceDialog`, `SaleLineItem.originalUnitPrice`),
+    customer card (`GET /customers/:id/card`), products as tiles or a list,
+    held orders keep their approvals.
+  - Tests: API unit 131 (incl. sales shift/override/price, shift helpers,
+    guard), API e2e 130 incl. `angola-phase3.e2e-spec.ts` (11) with shared
+    `test/cleanup.ts` + `test/shift-helper.ts`; web unit 98 (+ held
+    orders, quantity, denominations); desktop e2e incl.
+    `angola-phase3.spec.ts` (4); the desktop helpers open a shift and
+    `logOut` finishes the close flow.
 
 ## Decisions (from the owner, 2026-10-13)
 
@@ -119,8 +150,10 @@ loses its shift when it's missing or closed. Changes:
   sale, return or payment; the API refuses those without an open shift on
   that till (an offline upload whose shift is still syncing waits in the
   outbox, it's never dropped). One open shift per till; every document
-  and payment records shift, cashier and till. The back-office Returns
-  page asks for a shift too (or the return is done at a till).
+  and payment records shift, cashier and till. Exception: a return with
+  no cash back (to the customer's balance, by transfer) can be done from
+  the back office without a shift, linked to user and store (decision
+  A/B 5); a cash refund needs an open shift at a till.
 - The shift belongs to the cashier who opened it. Another person signing
   in on that till can't sell until it's closed; a manager can force-close
   an abandoned shift (entering the count; logged as forced).
@@ -292,22 +325,41 @@ status; PDF + CSV.
 Wider sidebar with larger icons; per-user display size scaling the root
 font size (printed documents are in mm/pt and unaffected).
 
-## Open questions (2026-10-13, additions A/B)
-1. **Hash algorithm.** Decreto Presidencial 312/18 (the signing rules)
-   is a scan. Proposal: the Portuguese-style chain the SAF-T AO fields
-   imply — RSA-SHA1 signature over
-   `InvoiceDate;SystemEntryDate;InvoiceNo;GrossTotal;<previous Hash>`
-   per series, base64 (172 chars), HashControl "0" until certified, 4
-   characters printed. Built in phase 8 with our own key; confirm the
-   exact message format (or send the text of 312/18).
-2. **Exemption wording**: print the AGT e-invoicing spec text (the
-   request's table) or the SAF-T file's? Proposal: one table with the
-   e-invoicing spec wording, plus M94.
-3. **Costing method**: weighted average now and FIFO (cost layers on
-   every purchase, sale, return and transfer) later, or both now?
-   Proposal: both selectable now is a lot of stock code; average first.
-4. **Payment methods**: add "Transferência bancária" (TB) and
-   "Multicaixa / TPA" (CD), and map today's "Mobile money" to OU?
-5. **Returns from the back office** need an open shift under the new
-   rule; OK that they're done at a till (or the back office opens a
-   shift for that person)?
+## Decisions on additions A/B (from the owner, 2026-10-13)
+1. **SAF-T hash chain** (Decreto Executivo 74/19; 312/18 only requires
+   an asymmetric algorithm and a private key known only to the
+   producer). The standard used by certified AO/PT software:
+   - RSA + SHA-1, 1024-bit key, Base64 output.
+   - Message: `InvoiceDate (YYYY-MM-DD);SystemEntryDate
+     (YYYY-MM-DDThh:mm:ss);InvoiceNo;GrossTotal (2 decimals, dot);previous
+     document's hash` (empty for the first document of the series).
+   - Chained per series; signed and unsigned documents never mixed in a
+     series.
+   - Printout: hash characters 1, 11, 21 and 31 as a prefix of the
+     certification line, e.g. "pqf3-Processado por programa validado nº
+     77/AGT/2019".
+   - HashControl "0" until certified, then the private key version.
+   - Behind a `SignatureProvider` interface with test vectors, so a
+     detail can change during certification. Private key in secrets,
+     never in the repo; the public key goes to AGT at certification.
+   - Separate from the phase 9 e-invoicing JWS RS256 signatures; both
+     exist.
+2. **Exemption wording**: the e-invoicing table and TaxExemptions.json
+   use the same wording. That text goes on printed documents and in SAF-T
+   `TaxExemptionReason` (test: 6–60 characters); the dropdown shows the
+   plain-language description. M94 ("Isento nos termos da alinea e) do
+   nº1 do artigo 16.º") is included. The table is data with valid from/to
+   dates so codes can be retired without code changes.
+3. **Costing**: weighted average cost only (the setting exists with that
+   one option). Stock movements are designed so FIFO lots can be added
+   later without a painful migration.
+4. **Payment methods → PaymentMechanism** (mapping in the country
+   config): Numerário NU; Multicaixa / TPA CD; Cartão de crédito CC;
+   Referência Multicaixa MB; Transferência bancária TB; Cheque CH; Mobile
+   money (Multicaixa Express, Unitel Money…) OU.
+5. **Returns**: a return/credit note that gives cash back happens in an
+   open shift at a till. A credit note with no cash (to the customer's
+   balance, refund by transfer, correcting an invoice) can be issued from
+   the back office without a shift: needs `PROCESS_RETURN` ("returns and
+   credit notes") or a manager override, linked to user and store, audit
+   logged. No fake shifts for back-office users.

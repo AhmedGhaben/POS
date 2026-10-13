@@ -10,7 +10,7 @@
   },
   "receipt": {
     "number": "Talão n.º {{number}}",
-    "tendered": "Entregue",
+    "tendered": "Pagamento",
     "changeDue": "Troco",
     "thankYou": "Obrigado!",
     "copy": "2.ª VIA",

@@ -8,9 +8,11 @@ import {
   openPosWithProducts,
   outbox,
   restock,
+  sellFirstProduct,
   serverSales,
   SwitchableProxy,
   tempUserData,
+  logOut,
 } from "./helpers";
 
 /**
@@ -19,6 +21,8 @@ import {
  * that hands back the cash can be checked.
  */
 const KICK = "1b 40 1b 70 00 32 64";
+/** The demo owner's till PIN in the dev database (seeded for the PIN tests). */
+const OWNER_PIN = "8642";
 
 interface SaleRow {
   id: string;
@@ -81,6 +85,9 @@ test.describe.serial("Till: cancel a sale", () => {
 
   test("online: cancel the last sale, hand back the cash, print the slip", async () => {
     await openPosWithProducts(page);
+    // Opening the till kicks the drawer for the float: count from here.
+    await expect.poll(() => printer.jobs.length).toBeGreaterThanOrEqual(1);
+    printer.jobs.splice(0);
     await cashSale();
     await expect.poll(() => printer.jobs.length).toBe(1);
     const saleId = (await salesWithStatus(page))[0].id;
@@ -136,13 +143,35 @@ test.describe.serial("Till: cancel a sale", () => {
     expect(latest).toMatchObject({ createdOffline: true, status: "VOIDED", voidReason: "WRONG_ITEMS" });
   });
 
-  test("a cashier without the permission can't cancel", async () => {
+  test("a cashier without the permission cancels with a manager's approval (PIN)", async () => {
     await page.goto("app://pos/pos");
-    await page.getByRole("button", { name: "Log out" }).click();
+    await logOut(page);
     await login(page, "cashier@demo-store.test", "CashierPass123!");
     await openPosWithProducts(page);
-    await page.getByRole("button", { name: "Recent sales" }).click();
-    await expect(page.getByTestId("recent-sale").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: "Cancel sale" })).toHaveCount(0);
+    await sellFirstProduct(page);
+
+    await cancelLatest("Wrong items or price");
+    const approval = page.getByRole("dialog", { name: "Manager approval" });
+    await expect(approval).toContainText("Cancel sale");
+    // Cancelling the approval leaves the sale alone.
+    await approval.getByRole("button", { name: "Cancel" }).click();
+    await expect(approval).toBeHidden();
+    expect((await salesWithStatus(page))[0].status).toBe("COMPLETED");
+
+    await page.getByRole("dialog").getByRole("button", { name: "Cancel sale" }).click();
+    await approval.getByRole("button", { name: "Ada Owner" }).click();
+    for (const digit of "0000") await page.keyboard.press(digit);
+    await page.keyboard.press("Enter");
+    await expect(approval).toContainText("Wrong PIN");
+    for (const digit of OWNER_PIN) await page.keyboard.press(digit);
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("dialog")).toContainText("Sale cancelled");
+    expect((await salesWithStatus(page))[0]).toMatchObject({ status: "VOIDED", voidReason: "WRONG_ITEMS" });
+    // Close the slip and Recent sales, then sign out (closing the cashier's shift).
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog").filter({ hasText: "Sale cancelled" })).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await logOut(page);
   });
 });

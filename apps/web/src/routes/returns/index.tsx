@@ -21,7 +21,10 @@ import { Combobox } from "@/components/ui/combobox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createReturn, fetchReturns } from "@/features/returns/api";
-import { useShiftStore } from "@/features/shifts/shift-store";
+import { useCurrentShift } from "@/features/shifts/shift-store";
+import { useHasPermission } from "@/features/auth/use-permission";
+import { approvalHeaders, requestApproval, type Approval } from "@/features/overrides/approval";
+import { PaymentMethod, Permission } from "@pos/shared";
 import { fetchSalesByStore } from "@/features/sales/api";
 import { useAuthStore } from "@/features/auth/store";
 import { useMoney } from "@/features/business/use-money";
@@ -55,6 +58,8 @@ export function ReturnsPage() {
   const { t } = useTranslation(["stock", "common"]);
   const money = useMoney();
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
+  const userId = useAuthStore((s) => s.user?.id);
+  const canReturn = useHasPermission(Permission.PROCESS_RETURN);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const queryClient = useQueryClient();
 
@@ -75,19 +80,43 @@ export function ReturnsPage() {
   });
   const { fields, replace } = useFieldArray({ control: form.control, name: "lines" });
 
+  // Cash back comes out of a drawer, so it needs this person's open shift
+  // on this device; a refund by card, transfer etc. can be done from here.
+  const myShift = useCurrentShift(currentStoreId);
+  const shiftHere = myShift && myShift.openedBy.id === userId ? myShift : null;
+  const [refundMethod, setRefundMethod] = React.useState<PaymentMethod>(PaymentMethod.CASH);
+  React.useEffect(() => {
+    if (dialogOpen) setRefundMethod(shiftHere ? PaymentMethod.CASH : PaymentMethod.CARD);
+  }, [dialogOpen, shiftHere]);
+  const cashWithoutShift = refundMethod === PaymentMethod.CASH && !shiftHere;
+
   const createMutation = useMutation({
-    mutationFn: (values: z.output<typeof returnSchema>) =>
-      createReturn({
-        storeId: currentStoreId!,
-        saleId: values.saleId,
-        reason: values.reason || undefined,
-        // A cash refund at a till with an open shift comes out of its cash.
-        shiftClientId:
-          useShiftStore.getState().current?.storeId === currentStoreId ? useShiftStore.getState().current?.clientId : undefined,
-        lineItems: values.lines
-          .filter((l) => l.quantity > 0)
-          .map((l) => ({ productId: l.productId, quantity: l.quantity })),
-      }),
+    mutationFn: async (values: z.output<typeof returnSchema>) => {
+      // Without PROCESS_RETURN, a manager approves this one return.
+      let approval: Approval | null = null;
+      if (!canReturn) {
+        approval = await requestApproval({
+          permission: Permission.PROCESS_RETURN,
+          action: "return",
+          description: t("returns.approval"),
+          details: { saleId: values.saleId },
+        });
+        if (!approval) throw new Error(t("returns.notApproved"));
+      }
+      return createReturn(
+        {
+          storeId: currentStoreId!,
+          saleId: values.saleId,
+          reason: values.reason || undefined,
+          refundMethod,
+          shiftClientId: refundMethod === PaymentMethod.CASH ? shiftHere?.clientId : undefined,
+          lineItems: values.lines
+            .filter((l) => l.quantity > 0)
+            .map((l) => ({ productId: l.productId, quantity: l.quantity })),
+        },
+        approvalHeaders(approval),
+      );
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["returns", currentStoreId] });
       queryClient.invalidateQueries({ queryKey: ["inventory", currentStoreId] });
@@ -208,7 +237,18 @@ export function ReturnsPage() {
                   )}
                 />
 
-                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+                <div className="space-y-1.5">
+                  <Label>{t("returns.refundMethod")}</Label>
+                  <Combobox
+                    aria-label={t("returns.refundMethod")}
+                    value={refundMethod}
+                    onChange={(v) => v !== null && setRefundMethod(v as PaymentMethod)}
+                    options={Object.values(PaymentMethod).map((m) => ({ value: m, label: t(`common:paymentMethods.${m}`) }))}
+                  />
+                  {cashWithoutShift && <p className="text-sm text-destructive">{t("returns.cashNeedsShift")}</p>}
+                </div>
+
+                <Button type="submit" className="w-full" disabled={createMutation.isPending || cashWithoutShift}>
                   {createMutation.isPending ? t("returns.submitting") : t("returns.submit")}
                 </Button>
               </form>

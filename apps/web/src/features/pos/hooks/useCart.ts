@@ -6,11 +6,18 @@ export interface CartLine {
   quantity: number;
   /** Off this line. */
   discount?: DiscountInput | null;
+  /** A price the cashier changed at the till (CHANGE_PRICE or a manager's approval). */
+  unitPrice?: number | null;
+}
+
+/** What one of this line costs: the changed price, or the product's. */
+export function linePrice(line: Pick<CartLine, "product" | "unitPrice">): number {
+  return line.unitPrice ?? Number(line.product.sellPrice);
 }
 
 export function pricingInput(lines: CartLine[]): PricingLineInput[] {
   return lines.map((l) => ({
-    unitPrice: Number(l.product.sellPrice),
+    unitPrice: linePrice(l),
     quantity: l.quantity,
     taxRate: Number(l.product.taxRate),
     discount: l.discount ?? null,
@@ -26,16 +33,22 @@ export function useCart() {
   const [lines, setLines] = React.useState<CartLine[]>([]);
   const [saleDiscount, setSaleDiscount] = React.useState<DiscountInput | null>(null);
 
-  const addProduct = React.useCallback((product: ProductDto) => {
+  const addProduct = React.useCallback((product: ProductDto, quantity = 1) => {
     setLines((prev) => {
       const existing = prev.find((l) => l.product.id === product.id);
       if (existing) {
         return prev.map((l) =>
-          l.product.id === product.id ? { ...l, quantity: l.quantity + 1 } : l,
+          l.product.id === product.id ? { ...l, quantity: l.quantity + quantity } : l,
         );
       }
-      return [...prev, { product, quantity: 1 }];
+      return [...prev, { product, quantity }];
     });
+  }, []);
+
+  /** Puts back a cart that was put on hold. */
+  const restore = React.useCallback((restored: CartLine[], discount: DiscountInput | null) => {
+    setLines(restored);
+    setSaleDiscount(discount);
   }, []);
 
   const setQuantity = React.useCallback((productId: string, quantity: number) => {
@@ -48,6 +61,11 @@ export function useCart() {
 
   const setLineDiscount = React.useCallback((productId: string, discount: DiscountInput | null) => {
     setLines((prev) => prev.map((l) => (l.product.id === productId ? { ...l, discount } : l)));
+  }, []);
+
+  /** null puts the product's own price back. */
+  const setLinePrice = React.useCallback((productId: string, unitPrice: number | null) => {
+    setLines((prev) => prev.map((l) => (l.product.id === productId ? { ...l, unitPrice } : l)));
   }, []);
 
   const removeLine = React.useCallback((productId: string) => {
@@ -79,8 +97,10 @@ export function useCart() {
     setQuantity,
     setLineDiscount,
     setSaleDiscount,
+    setLinePrice,
     removeLine,
     clear,
+    restore,
     totals,
   };
 }

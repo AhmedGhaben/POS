@@ -22,7 +22,8 @@
     "submitIn": "Pôr dinheiro",
     "submitOut": "Retirar dinheiro",
     "addedIn": "{{amount}} posto na gaveta",
-    "addedOut": "{{amount}} retirado da gaveta"
+    "addedOut": "{{amount}} retirado da gaveta",
+    "approval": "Retirar {{amount}} da gaveta ({{reason}})"
   },
   "reasons": {
     "CASH_PICKUP": "Recolha (para o cofre)",
@@ -42,7 +43,15 @@
     "over": "{{amount}} a mais do que o esperado.",
     "short": "Faltam {{amount}}.",
     "print": "Imprimir relatório",
-    "finish": "Concluir"
+    "finish": "Concluir",
+    "titleFor": "Fechar o turno de {{name}}",
+    "descriptionForced": "Conte o dinheiro da gaveta por essa pessoa e escreva o total. Fica registado como fechado por si.",
+    "byNote": "Contar por notas e moedas",
+    "countOf": "Quantidade de {{value}}",
+    "countTotal": "Contado: {{amount}}",
+    "countInvalid": "Use números inteiros.",
+    "withSales": "Incluir todas as vendas no relatório",
+    "finishSignOut": "Concluir (terminar sessão)"
   },
   "report": {
     "title": "FECHO DE CAIXA",
@@ -65,7 +74,10 @@
     "tillExpected": "Valor da caixa",
     "counted": "Contado",
     "difference": "Diferença",
-    "byCashier": "Por operador"
+    "byCashier": "Por operador",
+    "allSales": "TODAS AS VENDAS",
+    "split": "Dividido",
+    "cancelled": "anulada"
   },
   "page": {
     "description": "Cada turno de caixa com a contagem do dinheiro. As diferenças aparecem a vermelho.",
@@ -78,6 +90,23 @@
     "difference": "Diferença",
     "open": "Aberto",
     "browser": "Navegador",
-    "empty": "Ainda não há turnos. Ative a contagem de dinheiro nas Definições."
+    "empty": "Ainda não há turnos. Ative a contagem de dinheiro nas Definições.",
+    "filterStatus": "Estado",
+    "allShifts": "Todos os turnos",
+    "closedOnes": "Fechados",
+    "filterCashier": "Operador",
+    "allCashiers": "Todos os operadores",
+    "filterTill": "Caixa",
+    "allTills": "Todas as caixas",
+    "onlyFlagged": "Só diferenças assinaladas",
+    "flagged": "Assinalado",
+    "forced": "Fechado pelo gerente",
+    "forcedHint": "Fechado por {{name}} em nome do operador"
+  },
+  "others": {
+    "title": "O turno de {{name}} continua aberto",
+    "description": "{{name}} abriu esta caixa às {{time}} e não a fechou. As vendas esperam até ser fechado.",
+    "forceClose": "Fechar o turno de {{name}} (contar o dinheiro)",
+    "askManager": "Peça a {{name}} ou a um gerente para o fechar."
   }
 }

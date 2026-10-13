@@ -62,6 +62,10 @@
     "submitting": "Processing...",
     "done": "Return processed",
     "refund": "Refund",
-    "empty": "No returns processed yet."
+    "empty": "No returns processed yet.",
+    "refundMethod": "Refund by",
+    "cashNeedsShift": "Cash refunds come out of a drawer: do them at a till with your shift open, or refund another way.",
+    "approval": "Process a return / credit note",
+    "notApproved": "The return wasn't approved."
   }
 }
