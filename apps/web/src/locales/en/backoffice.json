@@ -14,7 +14,11 @@
     "contact": "Contact",
     "save": "Save supplier",
     "created": "Supplier created",
-    "empty": "No suppliers yet."
+    "empty": "No suppliers yet.",
+    "taxId": "Tax ID (NIF)",
+    "taxIdInvalid": "Use only letters and numbers",
+    "city": "City",
+    "province": "Province"
   },
   "expenses": {
     "subtitle": "Store expenses.",

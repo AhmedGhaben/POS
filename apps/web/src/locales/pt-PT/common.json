@@ -70,7 +70,11 @@
     "CASH": "Dinheiro",
     "CARD": "Cartão",
     "MOBILE_MONEY": "Pagamento móvel",
-    "OTHER": "Outro"
+    "OTHER": "Outro",
+    "CREDIT_CARD": "Cartão de crédito",
+    "MULTICAIXA_REFERENCE": "Referência Multicaixa",
+    "BANK_TRANSFER": "Transferência bancária",
+    "CHEQUE": "Cheque"
   },
   "drawerReasons": {
     "CASH_PICKUP": "Recolha de dinheiro",

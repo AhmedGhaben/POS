@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LANGUAGES, matchLanguage } from "./index";
+import { DERIVED_LANGUAGES, LANGUAGES, matchLanguage } from "./index";
 
 /** Every translation must have exactly English's keys, placeholders and tags. */
 const files = import.meta.glob<{ default: Record<string, unknown> }>("../locales/*/*.json", { eager: true });
@@ -31,7 +31,8 @@ function markers(text: string) {
 const en = load("en");
 
 describe("translations", () => {
-  for (const { code } of LANGUAGES.filter((l) => l.code !== "en")) {
+  // Derived languages (pt-AO from pt-PT) have no files of their own.
+  for (const { code } of LANGUAGES.filter((l) => l.code !== "en" && !(l.code in DERIVED_LANGUAGES))) {
     const other = load(code);
 
     it(`${code} has the same files as English`, () => {
@@ -55,7 +56,9 @@ describe("matchLanguage", () => {
     expect(matchLanguage("pt-BR")).toBe("pt-BR");
     expect(matchLanguage("pt-br")).toBe("pt-BR");
     expect(matchLanguage("pt-PT")).toBe("pt-PT");
-    expect(matchLanguage("pt-AO")).toBe("pt-PT");
+    expect(matchLanguage("pt-AO")).toBe("pt-AO");
+    expect(matchLanguage("pt-ao")).toBe("pt-AO");
+    expect(matchLanguage("pt-MZ")).toBe("pt-PT");
     expect(matchLanguage("pt")).toBe("pt-PT");
     expect(matchLanguage("en-GB")).toBe("en");
     expect(matchLanguage("fr-FR")).toBeNull();

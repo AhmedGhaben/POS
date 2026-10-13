@@ -1,5 +1,5 @@
 import * as React from "react";
-import { PaymentMethod } from "@pos/shared";
+import { PAYMENT_METHOD_ORDER, PaymentMethod } from "@pos/shared";
 import type { SalePaymentInputDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,7 @@ let nextRowId = 0;
  */
 export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
   const { t } = useTranslation(["pos", "common"]);
-  const paymentMethodOptions = Object.values(PaymentMethod).map((m) => ({ value: m, label: t(`common:paymentMethods.${m}`) }));
+  const paymentMethodOptions = PAYMENT_METHOD_ORDER.map((m) => ({ value: m, label: t(`common:paymentMethods.${m}`) }));
   const money = useMoney();
   const [isSplit, setIsSplit] = React.useState(false);
   const [method, setMethod] = React.useState<PaymentMethod>(PaymentMethod.CASH);

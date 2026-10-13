@@ -1,5 +1,7 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
+import { aoSpellingTree } from "./ao-spelling";
+import { PT_AO_OVERRIDES, withOverrides } from "./pt-ao-overrides";
 
 /**
  * Languages the app ships with. Adding one: add its folder under
@@ -10,7 +12,12 @@ export const LANGUAGES = [
   { code: "en", label: "English" },
   { code: "pt-PT", label: "Português (Portugal)" },
   { code: "pt-BR", label: "Português (Brasil)" },
+  // Made from pt-PT with the Angolan spelling (Factura, actual…): no files of its own.
+  { code: "pt-AO", label: "Português (Angola)" },
 ] as const;
+
+/** Languages made from another one rather than shipped as files. */
+export const DERIVED_LANGUAGES: Partial<Record<Language, Language>> = { "pt-AO": "pt-PT" };
 export type Language = (typeof LANGUAGES)[number]["code"];
 export const DEFAULT_LANGUAGE: Language = "en";
 
@@ -26,6 +33,7 @@ export function matchLanguage(tag: string | undefined | null): Language | null {
   if (isLanguage(tag)) return tag;
   const lower = tag.toLowerCase();
   if (lower === "pt-br") return "pt-BR";
+  if (lower === "pt-ao") return "pt-AO";
   if (lower.startsWith("pt")) return "pt-PT";
   if (lower.startsWith("en")) return "en";
   return null;
@@ -55,6 +63,7 @@ for (const [path, mod] of Object.entries(files)) {
   (resources[lang] ??= {})[ns] = mod.default;
 }
 export const NAMESPACES = Object.keys(resources[DEFAULT_LANGUAGE]);
+resources["pt-AO"] = withOverrides(aoSpellingTree(resources["pt-PT"]), PT_AO_OVERRIDES);
 
 void i18n.use(initReactI18next).init({
   resources,

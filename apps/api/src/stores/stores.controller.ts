@@ -33,7 +33,7 @@ export class StoresController {
     @Param("storeId") storeId: string,
     @Body() dto: UpdateStoreDto,
   ) {
-    return this.storesService.update(user.businessId, storeId, dto);
+    return this.storesService.update(user.businessId, storeId, dto, user.userId);
   }
 
   @Post(":storeId/users")

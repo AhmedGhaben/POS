@@ -37,6 +37,8 @@ export async function deleteBusiness(prisma: PrismaService, businessId: string):
     prisma.refreshToken.deleteMany({ where: byUsers }),
     prisma.passwordResetToken.deleteMany({ where: byUsers }),
     prisma.emailVerificationToken.deleteMany({ where: byUsers }),
+    prisma.bankAccount.deleteMany({ where: { businessId } }),
+    prisma.taxRate.deleteMany({ where: { businessId } }),
     prisma.customer.deleteMany({ where: { businessId } }),
     prisma.supplier.deleteMany({ where: { businessId } }),
     prisma.product.deleteMany({ where: { businessId } }),

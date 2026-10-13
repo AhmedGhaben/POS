@@ -17,12 +17,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Combobox } from "@/components/ui/combobox";
+import { useAuthStore } from "@/features/auth/store";
+import { countryConfig } from "@pos/shared";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createSupplier, fetchSuppliers } from "@/features/suppliers/api";
 
 const supplierSchema = z.object({
   name: z.string().min(1, "validation.required"),
   contactName: z.string().optional(),
+  taxId: z.union([z.literal(""), z.string().trim().regex(/^[A-Za-z0-9][A-Za-z0-9 .-]*$/, "suppliers.taxIdInvalid")]).optional(),
+  city: z.string().optional(),
+  province: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().optional(),
   address: z.string().optional(),
@@ -31,6 +37,9 @@ const supplierSchema = z.object({
 const defaultValues = {
   name: "",
   contactName: "",
+  taxId: "",
+  city: "",
+  province: "",
   phone: "",
   email: "",
   address: "",
@@ -39,6 +48,7 @@ const defaultValues = {
 export function SuppliersPage() {
   const { t } = useTranslation(["backoffice", "common"]);
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const business = useAuthStore((s) => s.business);
   const queryClient = useQueryClient();
   const suppliersQuery = useQuery({ queryKey: ["suppliers"], queryFn: fetchSuppliers });
 
@@ -52,6 +62,9 @@ export function SuppliersPage() {
       createSupplier({
         name: values.name,
         contactName: values.contactName || undefined,
+        taxId: values.taxId || undefined,
+        city: values.city || undefined,
+        province: values.province || undefined,
         phone: values.phone || undefined,
         email: values.email || undefined,
         address: values.address || undefined,
@@ -145,6 +158,19 @@ export function SuppliersPage() {
                 </div>
                 <FormField
                   control={form.control}
+                  name="taxId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("suppliers.taxId")}</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="address"
                   render={({ field }) => (
                     <FormItem>
@@ -156,6 +182,40 @@ export function SuppliersPage() {
                     </FormItem>
                   )}
                 />
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("suppliers.city")}</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="province"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("suppliers.province")}</FormLabel>
+                        <FormControl>
+                          <Combobox
+                            value={field.value || null}
+                            onChange={(v) => field.onChange(v ?? "")}
+                            clearLabel="—"
+                            placeholder="—"
+                            options={(countryConfig(business?.country ?? "AO")?.provinces ?? []).map((p) => ({ value: p.code, label: p.name }))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 <Button type="submit" className="w-full" disabled={createMutation.isPending}>
                   {createMutation.isPending ? t("common:actions.saving") : t("suppliers.save")}
                 </Button>
@@ -171,6 +231,7 @@ export function SuppliersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t("fields.name")}</TableHead>
+                <TableHead>{t("suppliers.taxId")}</TableHead>
                 <TableHead>{t("suppliers.contact")}</TableHead>
                 <TableHead>{t("fields.phone")}</TableHead>
                 <TableHead>{t("fields.email")}</TableHead>
@@ -180,6 +241,7 @@ export function SuppliersPage() {
               {suppliersQuery.data?.map((supplier) => (
                 <TableRow key={supplier.id}>
                   <TableCell>{supplier.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{supplier.taxId ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{supplier.contactName ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{supplier.phone ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{supplier.email ?? "—"}</TableCell>
@@ -187,7 +249,7 @@ export function SuppliersPage() {
               ))}
               {suppliersQuery.data?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="p-6 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="p-6 text-center text-muted-foreground">
                     {t("suppliers.empty")}
                   </TableCell>
                 </TableRow>

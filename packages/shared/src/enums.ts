@@ -19,7 +19,23 @@ export enum PaymentMethod {
   CARD = "CARD",
   MOBILE_MONEY = "MOBILE_MONEY",
   OTHER = "OTHER",
+  CREDIT_CARD = "CREDIT_CARD",
+  MULTICAIXA_REFERENCE = "MULTICAIXA_REFERENCE",
+  BANK_TRANSFER = "BANK_TRANSFER",
+  CHEQUE = "CHEQUE",
 }
+
+/** The order payment methods are offered in (most used first). */
+export const PAYMENT_METHOD_ORDER: PaymentMethod[] = [
+  PaymentMethod.CASH,
+  PaymentMethod.CARD,
+  PaymentMethod.MOBILE_MONEY,
+  PaymentMethod.MULTICAIXA_REFERENCE,
+  PaymentMethod.BANK_TRANSFER,
+  PaymentMethod.CREDIT_CARD,
+  PaymentMethod.CHEQUE,
+  PaymentMethod.OTHER,
+];
 
 export enum PurchaseStatus {
   PENDING = "PENDING",

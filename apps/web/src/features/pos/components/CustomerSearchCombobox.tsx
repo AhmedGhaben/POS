@@ -23,6 +23,7 @@ export function CustomerSearchCombobox({ selected, onSelect }: CustomerSearchCom
   const [newName, setNewName] = React.useState<string | null>(null);
   const [newPhone, setNewPhone] = React.useState("");
   const [newEmail, setNewEmail] = React.useState("");
+  const [newTaxId, setNewTaxId] = React.useState("");
   const [cardFor, setCardFor] = React.useState<CustomerDto | null>(null);
 
   const searchResults = useQuery({
@@ -38,6 +39,7 @@ export function CustomerSearchCombobox({ selected, onSelect }: CustomerSearchCom
         name: (newName ?? "").trim(),
         phone: newPhone.trim() || undefined,
         email: newEmail.trim() || undefined,
+        taxId: newTaxId.trim() || undefined,
       }),
     onSuccess: (customer) => {
       onSelect(customer);
@@ -49,6 +51,7 @@ export function CustomerSearchCombobox({ selected, onSelect }: CustomerSearchCom
     setNewName(null);
     setNewPhone("");
     setNewEmail("");
+    setNewTaxId("");
   }
 
   return (
@@ -116,6 +119,10 @@ export function CustomerSearchCombobox({ selected, onSelect }: CustomerSearchCom
             <div className="space-y-1">
               <Label htmlFor="new-customer-email">{t("customer.email")}</Label>
               <Input id="new-customer-email" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="new-customer-taxid">{t("customer.taxId")}</Label>
+              <Input id="new-customer-taxid" value={newTaxId} onChange={(e) => setNewTaxId(e.target.value)} />
             </div>
             <div className="pt-1">
               <Button type="submit" className="w-full" disabled={createMutation.isPending || !(newName ?? "").trim()}>

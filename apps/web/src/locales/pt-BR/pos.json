@@ -41,7 +41,8 @@
     "creating": "Cadastrando...",
     "typeToSearch": "Digite um nome ou telefone",
     "noMatch": "Nenhum cliente encontrado.",
-    "newTitle": "Novo cliente"
+    "newTitle": "Novo cliente",
+    "taxId": "NIF / CPF (opcional)"
   },
   "payment": {
     "removePayment": "Remover pagamento",

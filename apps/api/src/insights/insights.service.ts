@@ -42,6 +42,8 @@ const WRITE_IN: Record<Language, string> = {
   en: "",
   "pt-PT": "\n\nWrite every text field in European Portuguese (as spoken in Portugal and Angola). Keep product names exactly as given.",
   "pt-BR": "\n\nWrite every text field in Brazilian Portuguese. Keep product names exactly as given.",
+  "pt-AO":
+    "\n\nWrite every text field in Angolan Portuguese (European Portuguese with the pre-1990 spelling still used in Angola, e.g. \"factura\", \"actual\", \"acção\"). Keep product names exactly as given.",
 };
 
 @Injectable()

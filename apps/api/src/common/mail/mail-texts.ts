@@ -1,4 +1,5 @@
 import type { Language } from "../i18n/languages";
+import { aoSpelling } from "../i18n/ao-spelling";
 
 /**
  * Email wording per language. Values are already HTML-escaped by the
@@ -38,7 +39,7 @@ export interface MailTexts {
   };
 }
 
-export const MAIL_TEXTS: Record<Language, MailTexts> = {
+const TEXTS: Record<Exclude<Language, "pt-AO">, MailTexts> = {
   en: {
     reset: {
       subject: "Reset your password",
@@ -175,3 +176,19 @@ export const MAIL_TEXTS: Record<Language, MailTexts> = {
     },
   },
 };
+
+/** Every text in Angolan spelling, functions included (their result is converted). */
+function inAoSpelling<T>(value: T): T {
+  if (typeof value === "string") return aoSpelling(value) as T;
+  if (typeof value === "function") {
+    const fn = value as (...args: string[]) => string;
+    return ((...args: string[]) => aoSpelling(fn(...args))) as T;
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, inAoSpelling(v)])) as T;
+  }
+  return value;
+}
+
+/** pt-AO is the European Portuguese wording in Angolan spelling. */
+export const MAIL_TEXTS: Record<Language, MailTexts> = { ...TEXTS, "pt-AO": inAoSpelling(TEXTS["pt-PT"]) };

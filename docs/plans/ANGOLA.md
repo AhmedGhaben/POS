@@ -59,6 +59,27 @@ commit and push.
     orders, quantity, denominations); desktop e2e incl.
     `angola-phase3.spec.ts` (4); the desktop helpers open a shift and
     `logOut` finishes the close flow.
+- **Phase 7 (country config, company data) is built** (2026-10-13).
+  Migration `20261013180000_angola_phase7_country_config` (money columns
+  Decimal(14,2); existing stores keep `pricesIncludeTax` off, new ones
+  start on). Notes:
+  - `packages/shared/src/countries/` (types, `ao.ts`, generated
+    `ao-exemptions.ts`, helpers); the API copy in `apps/api/src/countries/`
+    must stay byte-identical (`countries.spec.ts`). Exemptions are generated
+    from the AGT JSON by a script (legal text verbatim, our labels).
+  - Still to confirm: the IS (S01–S03) and IEC (I01–I16) exemption texts
+    (placeholders marked `unconfirmed`, never offered), the day of the
+    month the SAF-T invoicing file is due (15th as a placeholder), and the
+    province codes of the four provinces created in 2024 (CD, CB, IB, ML).
+  - Tax rates are per business (`TaxRate`), seeded from the config on first
+    read; owner edits. The IVA-inclusive pricing itself comes with tax per
+    product in phase 6; phase 7 only stores the setting.
+  - pt-AO: built at runtime from pt-PT (`i18n/ao-spelling.ts` +
+    `pt-ao-overrides.ts`); the API applies the same rules to messages and
+    emails (`common/i18n/ao-spelling.ts`, byte-identical, tested).
+  - Tests: API unit 146 (config, IBAN, pt-AO), API e2e incl.
+    `angola-phase7.e2e-spec.ts` (8), web unit 101 (spelling), desktop e2e
+    `angola-phase7.spec.ts` (5).
 
 ## Decisions (from the owner, 2026-10-13)
 

@@ -130,7 +130,7 @@ test.describe.serial("Part C: cash drawer", () => {
   test("a card sale doesn't open the drawer", async () => {
     await page.locator("div.grid > button.text-left").first().click();
     await page.getByRole("combobox").filter({ hasText: "Cash" }).click();
-    await page.getByRole("option", { name: "Card" }).click();
+    await page.getByRole("option", { name: "Card", exact: true }).click();
     await page.getByRole("button", { name: /^Charge/ }).click();
     await expect(page.getByRole("dialog")).toContainText("Sale complete");
     await page.keyboard.press("Escape");

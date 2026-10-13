@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { Business } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { UpdateBusinessDto } from "./dto/update-business.dto";
+import { countryConfig } from "../countries";
 
 const MAX_LOGO_BYTES = 300 * 1024;
 
@@ -43,7 +44,17 @@ export class BusinessesService {
   }
 
   async update(businessId: string, dto: UpdateBusinessDto): Promise<BusinessSettings> {
-    await this.get(businessId);
+    const current = await this.get(businessId);
+    // Legal form and province come from the country's lists.
+    const config = countryConfig(dto.country ?? current.country);
+    if (config) {
+      if (dto.legalForm && !config.legalForms.some((f) => f.code === dto.legalForm)) {
+        throw new BadRequestException("Unknown legal form");
+      }
+      if (dto.province && !config.provinces.some((p) => p.code === dto.province)) {
+        throw new BadRequestException("Unknown province");
+      }
+    }
     const business = await this.prisma.business.update({ where: { id: businessId }, data: dto });
     return toBusinessSettings(business);
   }

@@ -1,7 +1,8 @@
 import { Transform } from "class-transformer";
-import { IsEmail, IsIn, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength, ValidateIf } from "class-validator";
+import { IsBoolean, IsEmail, IsIn, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateIf } from "class-validator";
 import { SUPPORTED_CURRENCIES } from "../../common/utils/currency";
 import { SUPPORTED_LANGUAGES } from "../../common/i18n/languages";
+import { COUNTRIES } from "../../countries";
 
 /** Blank text fields clear the value rather than storing "". */
 const BlankToNull = () =>
@@ -17,14 +18,43 @@ export class UpdateBusinessDto {
   @IsOptional() @BlankToNull() @IsString() @MaxLength(150)
   legalName?: string | null;
 
-  @IsOptional() @BlankToNull() @IsString() @MaxLength(50)
+  /** NIF: letters and digits (Angola, e.g. 000415195LA035), spaces and dashes allowed. */
+  @IsOptional() @BlankToNull() @IsString() @MaxLength(50) @Matches(/^[A-Za-z0-9][A-Za-z0-9 .-]*$/, { message: "Use only letters and numbers" })
   taxId?: string | null;
 
+  /** Número de Registo Comercial: letters and numbers. */
   @IsOptional() @BlankToNull() @IsString() @MaxLength(50)
   registrationNumber?: string | null;
 
+  /** A legal form code from the country config (checked in the service). */
+  @IsOptional() @BlankToNull() @IsString() @MaxLength(20)
+  legalForm?: string | null;
+
+  /** CAE (economic activity code). */
+  @IsOptional() @BlankToNull() @IsString() @MaxLength(10) @Matches(/^[0-9A-Za-z.]+$/, { message: "Use only letters and numbers" })
+  eacCode?: string | null;
+
   @IsOptional() @BlankToNull() @IsString() @MaxLength(300)
   address?: string | null;
+
+  @IsOptional() @BlankToNull() @IsString() @MaxLength(80)
+  city?: string | null;
+
+  @IsOptional() @BlankToNull() @IsString() @MaxLength(20)
+  postalCode?: string | null;
+
+  /** A province code from the country config. */
+  @IsOptional() @BlankToNull() @IsString() @MaxLength(10)
+  province?: string | null;
+
+  @IsOptional()
+  @IsIn(Object.keys(COUNTRIES), { message: "Unsupported country" })
+  country?: string;
+
+  /** Documents go to AGT in real time: the monthly SAF-T reminder stops. */
+  @IsOptional()
+  @IsBoolean()
+  eInvoicingActive?: boolean;
 
   @IsOptional() @BlankToNull() @IsString() @MaxLength(40)
   phone?: string | null;

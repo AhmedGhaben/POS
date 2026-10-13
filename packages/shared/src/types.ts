@@ -1,4 +1,5 @@
 import type { DiscountInput, DiscountType } from "./pricing";
+import type { IvaRegime } from "./countries/types";
 import type {
   Plan,
   Role,
@@ -15,9 +16,21 @@ export interface BusinessDto {
   name: string;
   plan: Plan;
   legalName: string | null;
+  /** NIF (alphanumeric in Angola). */
   taxId: string | null;
+  /** Número de Registo Comercial. */
   registrationNumber: string | null;
+  /** Legal form code from the country config. */
+  legalForm?: string | null;
+  /** CAE. */
+  eacCode?: string | null;
   address: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  province?: string | null;
+  country?: string;
+  /** Documents go to AGT in real time: no monthly SAF-T reminder. */
+  eInvoicingActive?: boolean;
   phone: string | null;
   email: string | null;
   website: string | null;
@@ -42,6 +55,13 @@ export type UpdateBusinessDto = Partial<
   Pick<
     BusinessDto,
     | "name"
+    | "legalForm"
+    | "eacCode"
+    | "city"
+    | "postalCode"
+    | "province"
+    | "country"
+    | "eInvoicingActive"
     | "legalName"
     | "taxId"
     | "registrationNumber"
@@ -60,6 +80,13 @@ export type UpdateBusinessDto = Partial<
 export interface UpdateStoreDto {
   name?: string;
   address?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  province?: string | null;
+  country?: string;
+  /** Owner only; logged. */
+  ivaRegime?: IvaRegime;
+  pricesIncludeTax?: boolean;
   phone?: string | null;
   timezone?: string;
 }
@@ -69,9 +96,65 @@ export interface StoreDto {
   businessId: string;
   name: string;
   address: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  /** Province code from the country config (CA = Cabinda gets the regional rate). */
+  province?: string | null;
+  /** The country config that applies (absent on sessions saved before it existed: AO). */
+  country?: string;
+  ivaRegime?: IvaRegime;
+  /** Shelf prices include IVA. */
+  pricesIncludeTax?: boolean;
   phone: string | null;
   timezone: string;
   isActive: boolean;
+}
+
+/** Structured address (SAF-T) for customers and suppliers. */
+export interface AddressFields {
+  address?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  province?: string | null;
+  /** ISO alpha-2. */
+  country?: string;
+}
+
+/** GET /bank-accounts */
+export interface BankAccountDto {
+  id: string;
+  bankCode: string;
+  bankName: string;
+  accountHolder: string;
+  iban: string;
+  showOnQuotes: boolean;
+  showOnInvoices: boolean;
+  sortOrder: number;
+}
+
+export interface SaveBankAccountDto {
+  bankCode: string;
+  bankName?: string;
+  accountHolder: string;
+  iban: string;
+  showOnQuotes?: boolean;
+  showOnInvoices?: boolean;
+}
+
+/** GET /tax-rates: the business's rates (seeded from the country config). */
+export interface TaxRateDto {
+  id: string;
+  key: string | null;
+  name: string;
+  taxType: string;
+  taxCode: string;
+  /** Decimal string. */
+  percentage: string;
+  region: string;
+  isDefault: boolean;
+  verifyValidity: boolean;
+  note: string | null;
+  active: boolean;
 }
 
 export interface UserDto {
@@ -173,10 +256,12 @@ export interface AdjustStockDto {
   reorderLevel?: number;
 }
 
-export interface CreateCustomerDto {
+export interface CreateCustomerDto extends Omit<AddressFields, "address"> {
   name: string;
   phone?: string;
   email?: string;
+  address?: string;
+  taxId?: string;
 }
 
 export interface CustomerDto {
@@ -186,6 +271,10 @@ export interface CustomerDto {
   phone: string | null;
   email: string | null;
   address: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  province?: string | null;
+  country?: string;
   taxId: string | null;
   /** "Consumidor Final" (NIF 999999999), used when no customer is chosen. */
   isFinalConsumer?: boolean;
@@ -308,14 +397,21 @@ export interface SupplierDto {
   businessId: string;
   name: string;
   contactName: string | null;
+  /** NIF. */
+  taxId?: string | null;
   phone: string | null;
   email: string | null;
   address: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  province?: string | null;
+  country?: string;
 }
 
-export interface CreateSupplierDto {
+export interface CreateSupplierDto extends Omit<AddressFields, "address"> {
   name: string;
   contactName?: string;
+  taxId?: string;
   phone?: string;
   email?: string;
   address?: string;

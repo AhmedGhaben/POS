@@ -41,7 +41,8 @@
     "creating": "Creating...",
     "typeToSearch": "Type a name or phone number",
     "noMatch": "No customer found.",
-    "newTitle": "New customer"
+    "newTitle": "New customer",
+    "taxId": "Tax ID (optional)"
   },
   "payment": {
     "removePayment": "Remove payment",

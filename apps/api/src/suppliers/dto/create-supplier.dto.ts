@@ -1,6 +1,7 @@
-import { IsEmail, IsOptional, IsString, MinLength } from "class-validator";
+import { IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from "class-validator";
+import { AddressFieldsDto, TAX_ID_PATTERN } from "../../common/dto/address.dto";
 
-export class CreateSupplierDto {
+export class CreateSupplierDto extends AddressFieldsDto {
   @IsString()
   @MinLength(1)
   name!: string;
@@ -9,6 +10,13 @@ export class CreateSupplierDto {
   @IsString()
   contactName?: string;
 
+  /** NIF (for purchases in SAF-T and the IVA return's supplier annex). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  @Matches(TAX_ID_PATTERN, { message: "Use only letters and numbers" })
+  taxId?: string;
+
   @IsOptional()
   @IsString()
   phone?: string;
@@ -16,8 +24,4 @@ export class CreateSupplierDto {
   @IsOptional()
   @IsEmail()
   email?: string;
-
-  @IsOptional()
-  @IsString()
-  address?: string;
 }

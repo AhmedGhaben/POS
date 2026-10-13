@@ -18,11 +18,19 @@
       "address": "Address",
       "phone": "Phone",
       "email": "Email",
-      "website": "Website"
+      "website": "Website",
+      "legalForm": "Legal form",
+      "eacCode": "Activity code (CAE)",
+      "city": "City",
+      "postalCode": "Postal code",
+      "province": "Province"
     },
     "hints": {
       "legalName": "If different from the business name, e.g. \"Corner Cafe LLC\"."
-    }
+    },
+    "choose": "Choose…",
+    "none": "Not set",
+    "lettersAndNumbers": "Use only letters and numbers"
   },
   "money": {
     "title": "Money",
@@ -72,7 +80,16 @@
     "save": "Save store",
     "updated": "Store updated",
     "nameRequired": "Store name is required",
-    "badTimezone": "Unknown timezone — use a name like Europe/Paris"
+    "badTimezone": "Unknown timezone — use a name like Europe/Paris",
+    "ivaRegime": "IVA regime",
+    "regimeHint": {
+      "GERAL": "Products use their own rate (14% general by default); exemptions and reduced rates per product.",
+      "SIMPLIFICADO": "Every line is exempt with M00 \"IVA – Regime Simplificado\"; the 7% on turnover received shows in reports.",
+      "EXCLUSAO": "No IVA charged; every line carries M04 \"IVA – Regime de Exclusão\"."
+    },
+    "regimeChangeLogged": "Changing the regime is recorded with your name, and it's printed on every document from now on.",
+    "pricesIncludeTax": "Shelf prices include IVA",
+    "pricesIncludeTaxHint": "Documents show the price without IVA worked out from it, so price + IVA always equals the shelf price."
   },
   "tills": {
     "title": "Tills",
@@ -103,5 +120,49 @@
     "expiresIn_other": "Valid for {{count}} more minutes",
     "expired": "This code has expired. Get a new one.",
     "close": "Close"
+  },
+  "agt": {
+    "title": "Electronic invoicing (AGT)",
+    "eInvoicing": "Documents are sent to AGT in real time",
+    "eInvoicingHint": "Once it's on, the monthly SAF-T invoicing file is no longer required, so its reminder stops. You can still generate the file at any time."
+  },
+  "rates": {
+    "title": "Tax rates",
+    "description": "The IVA rates products can use. They start as the country's rates; you can change them, turn them off or add new ones.",
+    "name": "Name",
+    "rate": "Rate",
+    "code": "Code",
+    "region": "Applies in",
+    "note": "Note",
+    "default": "Default",
+    "off": "Off",
+    "verify": "Check it still applies",
+    "makeDefault": "Make default",
+    "turnOff": "Turn off",
+    "turnOn": "Turn on",
+    "add": "Add a rate",
+    "edit": "Edit rate",
+    "saved": "Rate saved",
+    "codes": {
+      "NOR": "General",
+      "RED": "Reduced",
+      "INT": "Intermediate",
+      "OUT": "Other"
+    }
+  },
+  "banks": {
+    "title": "Bank accounts",
+    "description": "Printed on quotes and proformas (and on invoices if you choose), so customers can pay by transfer.",
+    "bank": "Bank",
+    "holder": "Account holder",
+    "chooseBank": "Choose a bank…",
+    "otherHint": "Not in the list? Type its name and choose \"Other\".",
+    "showOnQuotes": "Show on quotes and proformas",
+    "showOnInvoices": "Show on invoices",
+    "none": "No bank accounts yet.",
+    "add": "Add a bank account",
+    "edit": "Edit bank account",
+    "saved": "Bank account saved",
+    "deleted": "Bank account deleted"
   }
 }

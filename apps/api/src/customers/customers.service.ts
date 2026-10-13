@@ -60,6 +60,10 @@ export class CustomersService {
         phone: dto.phone,
         email: dto.email,
         address: dto.address,
+        city: dto.city,
+        postalCode: dto.postalCode,
+        province: dto.province,
+        country: dto.country,
         taxId: dto.taxId,
       },
     });

@@ -14,7 +14,11 @@
     "contact": "Contato",
     "save": "Salvar fornecedor",
     "created": "Fornecedor cadastrado",
-    "empty": "Nenhum fornecedor ainda."
+    "empty": "Nenhum fornecedor ainda.",
+    "taxId": "NIF / CNPJ",
+    "taxIdInvalid": "Use só letras e números",
+    "city": "Cidade",
+    "province": "Estado / Província"
   },
   "expenses": {
     "subtitle": "Despesas da loja.",

@@ -56,11 +56,11 @@ test.describe.serial("Angola phase 2: searchable dropdowns", () => {
     await expect(method).toContainText("Cash");
 
     await method.focus();
-    await page.keyboard.type("car");
-    await expect(page.getByPlaceholder("Type to search...")).toHaveValue("car");
+    await page.keyboard.type("cred");
+    await expect(page.getByPlaceholder("Type to search...")).toHaveValue("cred");
     await expect(page.getByRole("option")).toHaveCount(1);
     await page.keyboard.press("Enter");
-    await expect(method).toContainText("Card");
+    await expect(method).toContainText("Credit card");
 
     // Arrow down opens it; Esc closes it without changing anything.
     await method.focus();
@@ -68,11 +68,11 @@ test.describe.serial("Angola phase 2: searchable dropdowns", () => {
     await expect(page.getByRole("listbox")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("listbox")).toBeHidden();
-    await expect(method).toContainText("Card");
+    await expect(method).toContainText("Credit card");
 
     await method.click();
     await page.keyboard.type("cash");
-    await page.getByRole("option", { name: "Cash" }).click();
+    await page.getByRole("option", { name: "Cash", exact: true }).click();
     await expect(method).toContainText("Cash");
   });
 

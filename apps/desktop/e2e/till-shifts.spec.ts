@@ -56,7 +56,7 @@ test.describe.serial("Till: shifts", () => {
     await page.locator("div.grid > button.text-left").first().click();
     if (method === "Card") {
       await page.getByRole("combobox").filter({ hasText: "Cash" }).click();
-      await page.getByRole("option", { name: "Card" }).click();
+      await page.getByRole("option", { name: "Card", exact: true }).click();
     }
     await page.getByRole("button", { name: /^Charge/ }).click();
     await expect(page.getByRole("dialog")).toContainText(offline ? "Saved offline" : "Sale complete");

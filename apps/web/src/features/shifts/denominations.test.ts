@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { cleanCounts, countTotal, denominationsFor } from "./denominations";
 
 describe("counting the drawer by note and coin", () => {
-  it("has the Kwanza notes and coins, and nothing for other currencies", () => {
-    expect(denominationsFor("AOA")?.notes).toContain(5000);
-    expect(denominationsFor("AOA")?.coins).toContain(1);
-    expect(denominationsFor("XYZ")).toBeNull();
-    expect(denominationsFor(undefined)).toBeNull();
+  it("has the country config's notes and coins when the business counts in its currency", () => {
+    expect(denominationsFor("AO", "AOA")?.notes).toContain(5000);
+    expect(denominationsFor(undefined, "AOA")?.coins).toContain(1);
+    expect(denominationsFor("AO", "USD")).toBeNull();
+    expect(denominationsFor("XX", "AOA")).toBeNull();
   });
 
   it("adds the count up exactly", () => {

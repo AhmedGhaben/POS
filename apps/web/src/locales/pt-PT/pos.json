@@ -41,7 +41,8 @@
     "creating": "A criar...",
     "typeToSearch": "Escreva um nome ou telefone",
     "noMatch": "Nenhum cliente encontrado.",
-    "newTitle": "Novo cliente"
+    "newTitle": "Novo cliente",
+    "taxId": "NIF (opcional)"
   },
   "payment": {
     "removePayment": "Remover pagamento",

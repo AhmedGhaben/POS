@@ -24,7 +24,7 @@ import { createReturn, fetchReturns } from "@/features/returns/api";
 import { useCurrentShift } from "@/features/shifts/shift-store";
 import { useHasPermission } from "@/features/auth/use-permission";
 import { approvalHeaders, requestApproval, type Approval } from "@/features/overrides/approval";
-import { PaymentMethod, Permission } from "@pos/shared";
+import { PAYMENT_METHOD_ORDER, PaymentMethod, Permission } from "@pos/shared";
 import { fetchSalesByStore } from "@/features/sales/api";
 import { useAuthStore } from "@/features/auth/store";
 import { useMoney } from "@/features/business/use-money";
@@ -243,7 +243,7 @@ export function ReturnsPage() {
                     aria-label={t("returns.refundMethod")}
                     value={refundMethod}
                     onChange={(v) => v !== null && setRefundMethod(v as PaymentMethod)}
-                    options={Object.values(PaymentMethod).map((m) => ({ value: m, label: t(`common:paymentMethods.${m}`) }))}
+                    options={PAYMENT_METHOD_ORDER.map((m) => ({ value: m, label: t(`common:paymentMethods.${m}`) }))}
                   />
                   {cashWithoutShift && <p className="text-sm text-destructive">{t("returns.cashNeedsShift")}</p>}
                 </div>

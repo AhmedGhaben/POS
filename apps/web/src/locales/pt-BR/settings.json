@@ -18,11 +18,19 @@
       "address": "Endereço",
       "phone": "Telefone",
       "email": "E-mail",
-      "website": "Site"
+      "website": "Site",
+      "legalForm": "Natureza jurídica",
+      "eacCode": "Código de atividade (CAE)",
+      "city": "Cidade",
+      "postalCode": "CEP",
+      "province": "Estado / Província"
     },
     "hints": {
       "legalName": "Se for diferente do nome da empresa, por exemplo \"Café da Esquina Ltda.\"."
-    }
+    },
+    "choose": "Escolher…",
+    "none": "Não informado",
+    "lettersAndNumbers": "Use só letras e números"
   },
   "money": {
     "title": "Dinheiro",
@@ -72,7 +80,16 @@
     "save": "Salvar loja",
     "updated": "Loja atualizada",
     "nameRequired": "O nome da loja é obrigatório",
-    "badTimezone": "Fuso horário desconhecido — use um nome como America/Sao_Paulo"
+    "badTimezone": "Fuso horário desconhecido — use um nome como America/Sao_Paulo",
+    "ivaRegime": "Regime do IVA",
+    "regimeHint": {
+      "GERAL": "Cada produto usa sua alíquota (14% geral por padrão); isenções e alíquotas reduzidas por produto.",
+      "SIMPLIFICADO": "Todas as linhas são isentas com M00 \"IVA – Regime Simplificado\"; os 7% sobre o faturamento recebido aparecem nos relatórios.",
+      "EXCLUSAO": "Não se cobra IVA; todas as linhas levam M04 \"IVA – Regime de Exclusão\"."
+    },
+    "regimeChangeLogged": "A mudança de regime fica registrada com seu nome e passa a ser impressa em todos os documentos.",
+    "pricesIncludeTax": "Os preços de venda incluem IVA",
+    "pricesIncludeTaxHint": "Os documentos mostram o preço sem IVA calculado a partir dele, para que preço + IVA sempre dê o preço de venda."
   },
   "tills": {
     "title": "Caixas",
@@ -103,5 +120,49 @@
     "expiresIn_other": "Válido por mais {{count}} minutos",
     "expired": "Este código expirou. Gere um novo.",
     "close": "Fechar"
+  },
+  "agt": {
+    "title": "Faturamento eletrônico (AGT)",
+    "eInvoicing": "Os documentos são enviados à AGT em tempo real",
+    "eInvoicingHint": "Com isso ligado, o arquivo SAF-T mensal de faturamento deixa de ser obrigatório e o lembrete some. Você ainda pode gerar o arquivo quando quiser."
+  },
+  "rates": {
+    "title": "Alíquotas",
+    "description": "As alíquotas de IVA que os produtos podem usar. Começam com as do país; você pode alterá-las, desligá-las ou adicionar outras.",
+    "name": "Nome",
+    "rate": "Alíquota",
+    "code": "Código",
+    "region": "Vale em",
+    "note": "Observação",
+    "default": "Padrão",
+    "off": "Desligada",
+    "verify": "Confirmar se ainda vale",
+    "makeDefault": "Usar como padrão",
+    "turnOff": "Desligar",
+    "turnOn": "Ligar",
+    "add": "Adicionar alíquota",
+    "edit": "Alterar alíquota",
+    "saved": "Alíquota salva",
+    "codes": {
+      "NOR": "Geral",
+      "RED": "Reduzida",
+      "INT": "Intermediária",
+      "OUT": "Outra"
+    }
+  },
+  "banks": {
+    "title": "Contas bancárias",
+    "description": "Impressas nos orçamentos e pró-formas (e nas faturas, se quiser), para os clientes pagarem por transferência.",
+    "bank": "Banco",
+    "holder": "Titular da conta",
+    "chooseBank": "Escolher banco…",
+    "otherHint": "Não está na lista? Digite o nome e escolha \"Outro\".",
+    "showOnQuotes": "Mostrar nos orçamentos e pró-formas",
+    "showOnInvoices": "Mostrar nas faturas",
+    "none": "Nenhuma conta bancária ainda.",
+    "add": "Adicionar conta bancária",
+    "edit": "Alterar conta bancária",
+    "saved": "Conta bancária salva",
+    "deleted": "Conta bancária excluída"
   }
 }

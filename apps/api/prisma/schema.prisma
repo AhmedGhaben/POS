@@ -23,11 +23,25 @@ enum SaleStatus {
   VOIDED
 }
 
+/// SAF-T PaymentMechanism per country in the country config (AO: CASH NU,
+/// CARD = Multicaixa/TPA CD, CREDIT_CARD CC, MULTICAIXA_REFERENCE MB,
+/// BANK_TRANSFER TB, CHEQUE CH, MOBILE_MONEY/OTHER OU).
 enum PaymentMethod {
   CASH
   CARD
   MOBILE_MONEY
   OTHER
+  CREDIT_CARD
+  MULTICAIXA_REFERENCE
+  BANK_TRANSFER
+  CHEQUE
+}
+
+/// A store's IVA regime (rules in the country config).
+enum IvaRegime {
+  GERAL
+  SIMPLIFICADO
+  EXCLUSAO
 }
 
 enum PurchaseStatus {
@@ -95,14 +109,27 @@ model Business {
   name String
   plan Plan   @default(SIMPLE)
 
-  /// Company details shown on receipts and A4 invoices.
+  /// Company details shown on receipts and A4 invoices ("Dados da Empresa").
   legalName          String?
+  /// NIF; alphanumeric in Angola (e.g. 000415195LA035).
   taxId              String?
+  /// Número de Registo Comercial (alphanumeric).
   registrationNumber String?
+  /// Legal form code from the country config (e.g. LDA, SA).
+  legalForm          String?
+  /// CAE (economic activity code), for SAF-T and AGT.
+  eacCode            String?
+  /// Street and number (SAF-T AddressDetail); city, postal code, province, country beside it.
   address            String?
+  city               String?
+  postalCode         String?
+  province           String?
+  country            String  @default("AO")
   phone              String?
   email              String?
   website            String?
+  /// Documents go to AGT in real time (phase 9): the monthly SAF-T reminder stops.
+  eInvoicingActive   Boolean @default(false)
 
   /// ISO 4217 code. Only currencies with 0-2 decimals: money columns are Decimal(10, 2).
   currency                 String   @default("USD")
@@ -113,7 +140,7 @@ model Business {
   /// A shift whose counted cash is off by more than this (either way) is
   /// flagged for managers; null = never flagged. Shifts are always on
   /// (docs/plans/ANGOLA.md, phase 3).
-  shiftDifferenceThreshold Decimal? @db.Decimal(10, 2)
+  shiftDifferenceThreshold Decimal? @db.Decimal(14, 2)
   /// Largest discount (% of the sale or line) anyone but the owner may give; null = no limit.
   maxDiscountPercent       Decimal? @db.Decimal(5, 2)
   receiptHeader            String?
@@ -144,21 +171,80 @@ model Business {
   invoiceCounters InvoiceCounter[]
   shifts          Shift[]
   pairingCodes    TerminalPairingCode[]
+  bankAccounts    BankAccount[]
+  taxRates        TaxRate[]
 
   @@map("businesses")
 }
 
+/// The business's bank accounts, shown on quotes/proformas (and optionally invoices).
+model BankAccount {
+  id             String   @id @default(cuid())
+  businessId     String
+  business       Business @relation(fields: [businessId], references: [id])
+  /// Bank code from the country config, or "OTHER" with bankName typed in.
+  bankCode       String
+  bankName       String
+  accountHolder  String
+  iban           String
+  showOnQuotes   Boolean  @default(true)
+  showOnInvoices Boolean  @default(false)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  @@index([businessId])
+  @@map("bank_accounts")
+}
+
+/// A tax rate products can use, copied from the country config's defaults
+/// the first time it's needed; the owner can edit, add or retire them.
+model TaxRate {
+  id             String   @id @default(cuid())
+  businessId     String
+  business       Business @relation(fields: [businessId], references: [id])
+  /// The country default it came from (e.g. "IVA-NOR-14"); null for one the owner added.
+  key            String?
+  name           String
+  /// IVA, IS or IEC.
+  taxType        String   @default("IVA")
+  /// SAF-T code: NOR, RED, INT, OUT.
+  taxCode        String
+  percentage     Decimal  @db.Decimal(5, 2)
+  /// "AO", or "AO-CAB" (only for stores in Cabinda).
+  region         String
+  isDefault      Boolean  @default(false)
+  verifyValidity Boolean  @default(false)
+  note           String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([businessId, key])
+  @@index([businessId])
+  @@map("tax_rates")
+}
+
 model Store {
-  id         String   @id @default(cuid())
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id])
-  name       String
-  address    String?
-  phone      String?
-  timezone   String   @default("UTC")
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id               String    @id @default(cuid())
+  businessId       String
+  business         Business  @relation(fields: [businessId], references: [id])
+  name             String
+  address          String?
+  city             String?
+  postalCode       String?
+  /// Province code from the country config (e.g. LA, CA = Cabinda).
+  province         String?
+  /// The country config that applies here (taxes, documents, money).
+  country          String    @default("AO")
+  /// Only the owner changes it; it's logged and printed on documents.
+  ivaRegime        IvaRegime @default(GERAL)
+  /// Shelf prices include IVA; documents show the net price worked out from them.
+  pricesIncludeTax Boolean   @default(true)
+  phone            String?
+  timezone         String    @default("UTC")
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   storeUsers     StoreUser[]
   inventoryItems InventoryItem[]
@@ -405,8 +491,8 @@ model Product {
   barcode     String?
   name        String
   description String?
-  costPrice   Decimal   @db.Decimal(10, 2)
-  sellPrice   Decimal   @db.Decimal(10, 2)
+  costPrice   Decimal   @db.Decimal(14, 2)
+  sellPrice   Decimal   @db.Decimal(14, 2)
   taxRate     Decimal   @default(0) @db.Decimal(5, 2)
   /// False for services and other things with no stock: always sellable,
   /// never move stock, never in low-stock alerts.
@@ -448,8 +534,12 @@ model Customer {
   name            String
   phone           String?
   email           String?
-  /// For A4 invoices to company buyers.
+  /// For A4 invoices to company buyers (street and number; city etc. beside it).
   address         String?
+  city            String?
+  postalCode      String?
+  province        String?
+  country         String   @default("AO")
   taxId           String?
   /// "Consumidor Final" (NIF 999999999): one per business, used for every
   /// sale where no customer was chosen. Can't be edited or deleted.
@@ -473,20 +563,20 @@ model Sale {
   customer           Customer?     @relation(fields: [customerId], references: [id])
   receiptNumber      String        @unique
   /// Before any discount.
-  subtotal           Decimal       @db.Decimal(10, 2)
-  taxTotal           Decimal       @db.Decimal(10, 2)
+  subtotal           Decimal       @db.Decimal(14, 2)
+  taxTotal           Decimal       @db.Decimal(14, 2)
   /// Every discount: the lines' own plus the whole-sale one. total = subtotal - discountTotal + taxTotal.
-  discountTotal      Decimal       @default(0) @db.Decimal(10, 2)
+  discountTotal      Decimal       @default(0) @db.Decimal(14, 2)
   /// The whole-sale discount as the cashier gave it (PERCENT or AMOUNT), and what it came to.
   discountType       String?
-  discountValue      Decimal?      @db.Decimal(10, 2)
-  saleDiscountAmount Decimal       @default(0) @db.Decimal(10, 2)
-  total              Decimal       @db.Decimal(10, 2)
+  discountValue      Decimal?      @db.Decimal(14, 2)
+  saleDiscountAmount Decimal       @default(0) @db.Decimal(14, 2)
+  total              Decimal       @db.Decimal(14, 2)
   /// Denormalized "first payment leg" — kept for back-compat with existing
   /// reports; payments[] is the authoritative source for tender details.
   paymentMethod      PaymentMethod
-  amountTendered     Decimal?      @db.Decimal(10, 2)
-  changeDue          Decimal?      @db.Decimal(10, 2)
+  amountTendered     Decimal?      @db.Decimal(14, 2)
+  changeDue          Decimal?      @db.Decimal(14, 2)
   status             SaleStatus    @default(COMPLETED)
   /// Set when the sale is cancelled (VOIDED). Reason: WRONG_ITEMS,
   /// CUSTOMER_CHANGED_MIND, PAYMENT_PROBLEM, TRAINING or OTHER.
@@ -529,18 +619,18 @@ model SaleLineItem {
   productName        String
   productSku         String
   quantity           Int
-  unitPrice          Decimal  @db.Decimal(10, 2)
+  unitPrice          Decimal  @db.Decimal(14, 2)
   /// The product's price when the cashier changed it at the till (CHANGE_PRICE); null otherwise.
-  originalUnitPrice  Decimal? @db.Decimal(10, 2)
-  taxAmount          Decimal  @default(0) @db.Decimal(10, 2)
+  originalUnitPrice  Decimal? @db.Decimal(14, 2)
+  taxAmount          Decimal  @default(0) @db.Decimal(14, 2)
   /// This line's own discount as given (PERCENT or AMOUNT), and what it came to.
   discountType       String?
-  discountValue      Decimal? @db.Decimal(10, 2)
-  lineDiscountAmount Decimal  @default(0) @db.Decimal(10, 2)
+  discountValue      Decimal? @db.Decimal(14, 2)
+  lineDiscountAmount Decimal  @default(0) @db.Decimal(14, 2)
   /// Everything taken off this line: its own discount plus its share of the
   /// whole-sale one. Tax is on unitPrice x quantity - discountAmount.
-  discountAmount     Decimal  @default(0) @db.Decimal(10, 2)
-  lineTotal          Decimal  @db.Decimal(10, 2)
+  discountAmount     Decimal  @default(0) @db.Decimal(14, 2)
+  lineTotal          Decimal  @db.Decimal(14, 2)
 
   @@index([saleId])
   @@map("sale_line_items")
@@ -553,9 +643,9 @@ model SalePayment {
   saleId    String
   sale      Sale          @relation(fields: [saleId], references: [id])
   method    PaymentMethod
-  amount    Decimal       @db.Decimal(10, 2)
-  tendered  Decimal?      @db.Decimal(10, 2)
-  change    Decimal?      @db.Decimal(10, 2)
+  amount    Decimal       @db.Decimal(14, 2)
+  tendered  Decimal?      @db.Decimal(14, 2)
+  change    Decimal?      @db.Decimal(14, 2)
   createdAt DateTime      @default(now())
 
   @@index([saleId])
@@ -568,9 +658,15 @@ model Supplier {
   business    Business @relation(fields: [businessId], references: [id])
   name        String
   contactName String?
+  /// NIF (alphanumeric in Angola), for purchases in SAF-T and the IVA return.
+  taxId       String?
   phone       String?
   email       String?
   address     String?
+  city        String?
+  postalCode  String?
+  province    String?
+  country     String   @default("AO")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -597,7 +693,7 @@ model Employee {
   phone      String?
   email      String?
   hireDate   DateTime?
-  wage       Decimal?  @db.Decimal(10, 2)
+  wage       Decimal?  @db.Decimal(14, 2)
   isActive   Boolean   @default(true)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -615,9 +711,9 @@ model Purchase {
   createdById    String
   createdBy      User           @relation("PurchaseCreatedBy", fields: [createdById], references: [id])
   purchaseNumber String         @unique
-  subtotal       Decimal        @db.Decimal(10, 2)
-  taxTotal       Decimal        @db.Decimal(10, 2)
-  total          Decimal        @db.Decimal(10, 2)
+  subtotal       Decimal        @db.Decimal(14, 2)
+  taxTotal       Decimal        @db.Decimal(14, 2)
+  total          Decimal        @db.Decimal(14, 2)
   status         PurchaseStatus @default(RECEIVED)
   createdAt      DateTime       @default(now())
 
@@ -634,8 +730,8 @@ model PurchaseLineItem {
   productId  String
   product    Product  @relation(fields: [productId], references: [id])
   quantity   Int
-  unitCost   Decimal  @db.Decimal(10, 2)
-  lineTotal  Decimal  @db.Decimal(10, 2)
+  unitCost   Decimal  @db.Decimal(14, 2)
+  lineTotal  Decimal  @db.Decimal(14, 2)
 
   @@index([purchaseId])
   @@map("purchase_line_items")
@@ -649,7 +745,7 @@ model Expense {
   createdBy   User            @relation("ExpenseCreatedBy", fields: [createdById], references: [id])
   category    ExpenseCategory
   description String?
-  amount      Decimal         @db.Decimal(10, 2)
+  amount      Decimal         @db.Decimal(14, 2)
   incurredAt  DateTime        @default(now())
   createdAt   DateTime        @default(now())
 
@@ -669,7 +765,7 @@ model Return {
   processedById String
   processedBy   User          @relation("ReturnProcessedBy", fields: [processedById], references: [id])
   reason        String?
-  totalRefund   Decimal       @db.Decimal(10, 2)
+  totalRefund   Decimal       @db.Decimal(14, 2)
   /// How the money went back; a cash refund comes out of the shift's cash.
   refundMethod  PaymentMethod @default(CASH)
   shiftId       String?
@@ -689,8 +785,8 @@ model ReturnLineItem {
   productId String
   product   Product @relation(fields: [productId], references: [id])
   quantity  Int
-  unitPrice Decimal @db.Decimal(10, 2)
-  lineTotal Decimal @db.Decimal(10, 2)
+  unitPrice Decimal @db.Decimal(14, 2)
+  lineTotal Decimal @db.Decimal(14, 2)
 
   @@index([returnId])
   @@map("return_line_items")
@@ -790,16 +886,16 @@ model Shift {
   openedById           String
   openedBy             User        @relation("ShiftOpenedBy", fields: [openedById], references: [id])
   openedAt             DateTime
-  openingFloat         Decimal     @db.Decimal(10, 2)
+  openingFloat         Decimal     @db.Decimal(14, 2)
   closedById           String?
   closedBy             User?       @relation("ShiftClosedBy", fields: [closedById], references: [id])
   closedAt             DateTime?
-  countedCash          Decimal?    @db.Decimal(10, 2)
+  countedCash          Decimal?    @db.Decimal(14, 2)
   /// What the server's records say should be in the drawer at close.
-  expectedCash         Decimal?    @db.Decimal(10, 2)
+  expectedCash         Decimal?    @db.Decimal(14, 2)
   /// What the till worked out itself (it may know sales not uploaded yet).
-  tillExpectedCash     Decimal?    @db.Decimal(10, 2)
-  difference           Decimal?    @db.Decimal(10, 2)
+  tillExpectedCash     Decimal?    @db.Decimal(14, 2)
+  difference           Decimal?    @db.Decimal(14, 2)
   /// The blind count note by note and coin by coin, when given: { "5000": 3, "200": 4, … }.
   countedDenominations Json?
   /// Closed by a manager for someone else (an abandoned shift); the manager entered the count.
@@ -828,7 +924,7 @@ model CashMovement {
   shiftId        String
   shift          Shift            @relation(fields: [shiftId], references: [id])
   type           CashMovementType
-  amount         Decimal          @db.Decimal(10, 2)
+  amount         Decimal          @db.Decimal(14, 2)
   reason         String
   note           String?
   userId         String

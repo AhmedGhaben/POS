@@ -1,14 +1,16 @@
-/**
- * Notes and coins for counting the drawer by denomination at close, by
- * currency (largest first). Moves into the country config in phase 7
- * (docs/plans/ANGOLA.md). A currency without a list is counted as a total.
- */
-const DENOMINATIONS: Record<string, { notes: number[]; coins: number[] }> = {
-  AOA: { notes: [5000, 2000, 1000, 500, 200], coins: [100, 50, 20, 10, 5, 1] },
-};
+import { countryConfig } from "@pos/shared";
 
-export function denominationsFor(currency: string | undefined): { notes: number[]; coins: number[] } | null {
-  return (currency && DENOMINATIONS[currency]) || null;
+/**
+ * Notes and coins for counting the drawer at close, from the store's
+ * country config (largest first), when the business counts in that
+ * country's currency. Otherwise the drawer is counted as a total.
+ */
+export function denominationsFor(
+  country: string | null | undefined,
+  currency: string | undefined,
+): { notes: number[]; coins: number[] } | null {
+  const config = countryConfig(country ?? "AO");
+  return config && config.currency === currency ? config.denominations : null;
 }
 
 /** Total of a note/coin count, in the currency, exact to the cent. */

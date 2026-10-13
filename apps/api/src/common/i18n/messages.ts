@@ -1,4 +1,5 @@
-import type { Language } from "./languages";
+import type { Language, TranslatedLanguage } from "./languages";
+import { aoSpelling } from "./ao-spelling";
 
 /**
  * Translations of the messages the API sends back, keyed by the English
@@ -6,7 +7,7 @@ import type { Language } from "./languages";
  * them in using the request's X-Language header; a message missing here
  * stays in English, so adding a new error never breaks anything.
  */
-type Translations = Record<Exclude<Language, "en">, string>;
+type Translations = Record<TranslatedLanguage, string>;
 
 const EXACT: Record<string, Translations> = {
   // Generic
@@ -206,6 +207,25 @@ const EXACT: Record<string, Translations> = {
     "pt-BR": "Não foi possível gerar a análise — tente de novo.",
   },
   "Customer not found": { "pt-PT": "Cliente não encontrado", "pt-BR": "Cliente não encontrado" },
+  // Company data (country config)
+  "Unknown legal form": { "pt-PT": "Forma jurídica desconhecida", "pt-BR": "Natureza jurídica desconhecida" },
+  "Unknown province": { "pt-PT": "Província desconhecida", "pt-BR": "Província desconhecida" },
+  "Use only letters and numbers": { "pt-PT": "Use só letras e números", "pt-BR": "Use só letras e números" },
+  "Unsupported country": { "pt-PT": "País não suportado", "pt-BR": "País não suportado" },
+  "Use a two-letter country code": {
+    "pt-PT": "Use o código do país com duas letras",
+    "pt-BR": "Use o código do país com duas letras",
+  },
+  "Type the bank's name": { "pt-PT": "Escreva o nome do banco", "pt-BR": "Digite o nome do banco" },
+  "Unknown bank": { "pt-PT": "Banco desconhecido", "pt-BR": "Banco desconhecido" },
+  "This IBAN isn't valid": { "pt-PT": "Este IBAN não é válido", "pt-BR": "Este IBAN não é válido" },
+  "Bank account not found": { "pt-PT": "Conta bancária não encontrada", "pt-BR": "Conta bancária não encontrada" },
+  "Unknown tax region": { "pt-PT": "Região fiscal desconhecida", "pt-BR": "Região fiscal desconhecida" },
+  "Tax rate not found": { "pt-PT": "Taxa não encontrada", "pt-BR": "Alíquota não encontrada" },
+  "The default rate can't be turned off": {
+    "pt-PT": "A taxa por omissão não pode ser desativada",
+    "pt-BR": "A alíquota padrão não pode ser desativada",
+  },
   // Stock that isn't tracked (services etc.)
   "This product doesn't track stock": {
     "pt-PT": "Este produto não controla stock",
@@ -301,6 +321,8 @@ const PATTERNS: { re: RegExp; t: Translations }[] = [
 
 export function translateMessage(message: string, lang: Language): string {
   if (lang === "en") return message;
+  // Angola: the European Portuguese text in Angolan spelling.
+  if (lang === "pt-AO") return aoSpelling(translateMessage(message, "pt-PT"));
   const exact = EXACT[message];
   if (exact) return exact[lang];
   for (const { re, t } of PATTERNS) {

@@ -44,7 +44,7 @@ export function CloseShiftDialog({
   const hasDrawer = useHasDrawer();
   const user = useAuthStore((s) => s.user);
   const currency = useAuthStore((s) => s.business?.currency);
-  const denominations = denominationsFor(currency);
+  const denominations = denominationsFor(store?.country, currency);
   const [byNote, setByNote] = React.useState(false);
   const [counts, setCounts] = React.useState<Record<string, string>>({});
   const [counted, setCounted] = React.useState("");

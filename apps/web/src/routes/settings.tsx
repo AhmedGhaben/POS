@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import type { BusinessDto } from "@pos/shared";
+import { countryConfig, type BusinessDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +18,8 @@ import { BUSINESS_QUERY_KEY, fetchBusiness, updateBusiness } from "@/features/bu
 import { supportedCurrencies } from "@/features/business/currencies";
 import { LogoUploader } from "@/features/business/components/LogoUploader";
 import { StoresSettings } from "@/features/business/components/StoresSettings";
+import { TaxRatesSettings } from "@/features/business/components/TaxRatesSettings";
+import { BankAccountsSettings } from "@/features/business/components/BankAccountsSettings";
 import { TillsSettings } from "@/features/business/components/TillsSettings";
 import { formatMoney } from "@/lib/format";
 import { LANGUAGES } from "@/i18n";
@@ -25,9 +27,16 @@ import { LANGUAGES } from "@/i18n";
 const settingsSchema = z.object({
   name: z.string().trim().min(1, "validation.required").max(100),
   legalName: z.string().max(150),
-  taxId: z.string().max(50),
+  // NIF: letters and numbers (Angola: e.g. 000415195LA035).
+  taxId: z.union([z.literal(""), z.string().trim().regex(/^[A-Za-z0-9][A-Za-z0-9 .-]*$/, "settings:business.lettersAndNumbers").max(50)]),
   registrationNumber: z.string().max(50),
+  legalForm: z.string(),
+  eacCode: z.union([z.literal(""), z.string().trim().regex(/^[0-9A-Za-z.]+$/, "settings:business.lettersAndNumbers").max(10)]),
   address: z.string().max(300),
+  city: z.string().max(80),
+  postalCode: z.string().max(20),
+  province: z.string(),
+  eInvoicingActive: z.boolean(),
   phone: z.string().max(40),
   email: z.union([z.literal(""), z.string().trim().email("validation.email")]),
   website: z.string().max(100),
@@ -55,7 +64,13 @@ function toFormValues(b: BusinessDto): SettingsValues {
     legalName: b.legalName ?? "",
     taxId: b.taxId ?? "",
     registrationNumber: b.registrationNumber ?? "",
+    legalForm: b.legalForm ?? "",
+    eacCode: b.eacCode ?? "",
     address: b.address ?? "",
+    city: b.city ?? "",
+    postalCode: b.postalCode ?? "",
+    province: b.province ?? "",
+    eInvoicingActive: !!b.eInvoicingActive,
     phone: b.phone ?? "",
     email: b.email ?? "",
     website: b.website ?? "",
@@ -72,14 +87,17 @@ function toFormValues(b: BusinessDto): SettingsValues {
 
 /** Text fields: blank clears the value on the server. */
 const TEXT_FIELDS: {
-  name: "legalName" | "taxId" | "registrationNumber" | "address" | "phone" | "email" | "website";
+  name: "legalName" | "taxId" | "registrationNumber" | "eacCode" | "address" | "city" | "postalCode" | "phone" | "email" | "website";
   described?: boolean;
   multiline?: boolean;
 }[] = [
   { name: "legalName", described: true },
   { name: "taxId" },
   { name: "registrationNumber" },
+  { name: "eacCode" },
   { name: "address", multiline: true },
+  { name: "city" },
+  { name: "postalCode" },
   { name: "phone" },
   { name: "email" },
   { name: "website" },
@@ -123,6 +141,8 @@ export function SettingsPage() {
 
   const business = businessQuery.data;
   const currency = form.watch("currency");
+  // Lists (legal forms, provinces…) from the business's country config.
+  const country = countryConfig(businessQuery.data?.country ?? "AO");
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
@@ -155,6 +175,44 @@ export function SettingsPage() {
                         <FormLabel>{t("business.name")}</FormLabel>
                         <FormControl>
                           <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="legalForm"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("business.fields.legalForm")}</FormLabel>
+                        <FormControl>
+                          <Combobox
+                            value={field.value || null}
+                            onChange={(v) => field.onChange(v ?? "")}
+                            placeholder={t("business.choose")}
+                            clearLabel={t("business.none")}
+                            options={(country?.legalForms ?? []).map((f) => ({ value: f.code, label: f.name }))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="province"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("business.fields.province")}</FormLabel>
+                        <FormControl>
+                          <Combobox
+                            value={field.value || null}
+                            onChange={(v) => field.onChange(v ?? "")}
+                            placeholder={t("business.choose")}
+                            clearLabel={t("business.none")}
+                            options={(country?.provinces ?? []).map((p) => ({ value: p.code, label: p.name }))}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -259,6 +317,31 @@ export function SettingsPage() {
 
               <Card>
                 <CardHeader>
+                  <CardTitle className="text-base">{t("agt.title")}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <FormField
+                    control={form.control}
+                    name="eInvoicingActive"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-start gap-3">
+                          <FormControl>
+                            <input type="checkbox" className="mt-1 h-4 w-4" checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />
+                          </FormControl>
+                          <div>
+                            <FormLabel>{t("agt.eInvoicing")}</FormLabel>
+                            <FormDescription>{t("agt.eInvoicingHint")}</FormDescription>
+                          </div>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
                   <CardTitle className="text-base">{t("documents.title")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -348,6 +431,26 @@ export function SettingsPage() {
             </CardHeader>
             <CardContent>
               <StoresSettings />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">{t("rates.title")}</CardTitle>
+              <CardDescription>{t("rates.description")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TaxRatesSettings />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">{t("banks.title")}</CardTitle>
+              <CardDescription>{t("banks.description")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BankAccountsSettings />
             </CardContent>
           </Card>
 

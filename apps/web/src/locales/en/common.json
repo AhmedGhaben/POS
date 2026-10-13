@@ -70,7 +70,11 @@
     "CASH": "Cash",
     "CARD": "Card",
     "MOBILE_MONEY": "Mobile money",
-    "OTHER": "Other"
+    "OTHER": "Other",
+    "CREDIT_CARD": "Credit card",
+    "MULTICAIXA_REFERENCE": "Multicaixa reference",
+    "BANK_TRANSFER": "Bank transfer",
+    "CHEQUE": "Cheque"
   },
   "drawerReasons": {
     "CASH_PICKUP": "Cash pickup",

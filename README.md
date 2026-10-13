@@ -103,10 +103,35 @@ Prisma backend.
 - **Settings** (owner): legal details, tax/VAT ID, currency (shown
   everywhere), default tax rate, receipt and invoice text, logo, and store
   details.
+  - **Country configuration** (`packages/shared/src/countries/`, keyed on
+    the store's country; Angola first): IVA regimes and their rules, tax
+    rates, the AGT exemption table (generated from
+    `docs/saft-ao/examples/TaxExemptions.json`, with valid-from/to dates),
+    banks, legal forms, provinces, payment mechanisms, notes and coins,
+    document types, the AGT QR link and SAF-T deadlines. A new country is a
+    new config file. The API keeps a copy that a test keeps identical.
+  - **Company data** ("Dados da Empresa"): alphanumeric NIF, Registo
+    Comercial, legal form and province from the country's lists, CAE,
+    structured address, and "e-invoicing active" (stops the monthly SAF-T
+    reminder).
+  - **Stores**: country, structured address, **IVA regime** (Geral,
+    Simplificado, Exclusão; owner only, every change in the audit log) and
+    **prices include IVA** (on for new stores).
+  - **Tax rates**: start as the country's (Angola: 14% geral, 5% reduzida,
+    7% intermédia flagged "check it still applies", 1% Cabinda only for
+    stores in Cabinda); the owner can change, retire or add rates.
+  - **Bank accounts**: a bank from the list or "Outro", holder and a
+    checked IBAN; shown on quotes/proformas and, if chosen, invoices.
+  - Suppliers and customers have a NIF and a structured address. New
+    payment methods: credit card, Multicaixa reference, bank transfer and
+    cheque, each mapped to its SAF-T payment mechanism.
 - **Reports**: dashboard with KPIs, trends, top products, store
   comparison, CSV/PDF export, and optional AI insights (Anthropic API).
-- **Languages**: English, European Portuguese and Brazilian Portuguese
-  (see `docs/plans/I18N.md`).
+- **Languages**: English, European Portuguese, Brazilian Portuguese and
+  **Portuguese (Angola)** (see `docs/plans/I18N.md`).
+  - pt-AO is made from pt-PT with the Angolan spelling ("Factura", "actual",
+    "acção"; `src/i18n/ao-spelling.ts`, same rules in the API) plus a few
+    Angolan terms (Numerário, Multicaixa / TPA); money reads "245 000,00 Kz".
   - Each person picks their language (account menu, This device, or the
     corner of the sign-in pages). It's saved to their account, and before
     they choose it follows the computer's language.
