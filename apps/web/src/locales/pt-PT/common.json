@@ -95,5 +95,12 @@
     "PAYMENT_PROBLEM": "Problema no pagamento",
     "TRAINING": "Formação ou teste",
     "OTHER": "Outro"
+  },
+  "combobox": {
+    "select": "Selecionar...",
+    "search": "Escreva para pesquisar...",
+    "empty": "Sem resultados.",
+    "other": "Outro: “{{text}}”",
+    "more": "Mais {{count}}: continue a escrever para filtrar"
   }
 }

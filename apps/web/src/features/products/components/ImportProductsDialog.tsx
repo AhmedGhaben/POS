@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuthStore } from "@/features/auth/store";
 import { fetchProducts, IMPORT_CHUNK_SIZE, importProducts } from "@/features/products/api";
@@ -300,18 +300,13 @@ function PreviewStep(props: PreviewStepProps) {
         {step.hasStock && (
           <div className="space-y-1 sm:col-span-2">
             <Label>{t("import.stockAt")}</Label>
-            <Select value={storeId} onValueChange={props.setStoreId}>
-              <SelectTrigger className="sm:w-72">
-                <SelectValue placeholder={t("import.chooseStore")} />
-              </SelectTrigger>
-              <SelectContent>
-                {stores.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={storeId}
+              onChange={(v) => v !== null && props.setStoreId(v)}
+              placeholder={t("import.chooseStore")}
+              className="sm:w-72"
+              options={stores.map((s) => ({ value: s.id, label: s.name }))}
+            />
           </div>
         )}
       </div>

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { PrintArea } from "@/components/print/PrintArea";
 import { desktop, useDeviceStore, type PrintingSettings, type ReceiptPrinterSettings } from "../bridge";
 import { printDocument } from "../printing";
@@ -31,21 +31,21 @@ function PrinterSelect({
   const { t } = useTranslation("device");
   const missing = value !== null && !printers.some((p) => p.name === value);
   return (
-    <Select value={value ?? NONE} onValueChange={(v) => onChange(v === NONE ? null : v)}>
-      <SelectTrigger id={id} aria-label={id === "receipt-printer" ? t("printers.receipt") : t("printers.a4")}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={NONE}>{t("printers.none")}</SelectItem>
-        {printers.map((p) => (
-          <SelectItem key={p.name} value={p.name}>
-            {p.displayName}
-            {p.isDefault ? ` ${t("printers.windowsDefault")}` : ""}
-          </SelectItem>
-        ))}
-        {missing && <SelectItem value={value}>{t("printers.missingName", { name: value })}</SelectItem>}
-      </SelectContent>
-    </Select>
+    <Combobox
+      id={id}
+      value={value ?? NONE}
+      onChange={(v) => onChange(v === null || v === NONE ? null : v)}
+      aria-label={id === "receipt-printer" ? t("printers.receipt") : t("printers.a4")}
+      options={[
+        { value: NONE, label: t("printers.none") },
+        ...printers.map((p) => ({
+          value: p.name,
+          label: p.displayName,
+          description: p.isDefault ? t("printers.windowsDefault") : undefined,
+        })),
+        ...(missing ? [{ value, label: t("printers.missingName", { name: value }) }] : []),
+      ]}
+    />
   );
 }
 
@@ -205,23 +205,22 @@ export function PrintersSection() {
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="paper-width">{t("printers.paperWidth")}</Label>
-              <Select
+              <Combobox
+                id="paper-width"
+                aria-label={t("printers.paperWidth")}
                 value={paperPreset}
-                onValueChange={(v) => {
+                onChange={(v) => {
+                  if (v === null) return;
                   if (v === "custom") return void updateReceipt({ paperWidthMm: 76 });
                   const mm = Number(v);
                   void updateReceipt({ paperWidthMm: mm, printableWidthMm: PRINTABLE_FOR_PAPER[mm] });
                 }}
-              >
-                <SelectTrigger id="paper-width" aria-label={t("printers.paperWidth")}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="80">80 mm</SelectItem>
-                  <SelectItem value="58">58 mm</SelectItem>
-                  <SelectItem value="custom">{t("printers.custom")}</SelectItem>
-                </SelectContent>
-              </Select>
+                options={[
+                  { value: "80", label: "80 mm" },
+                  { value: "58", label: "58 mm" },
+                  { value: "custom", label: t("printers.custom") },
+                ]}
+              />
             </div>
             {paperPreset === "custom" && (
               <NumberField

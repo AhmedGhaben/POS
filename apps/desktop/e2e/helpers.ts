@@ -224,8 +224,12 @@ export function restock(page: Page, below = 50, to = 200) {
       const headers = { Authorization: `Bearer ${auth.accessToken}`, "Content-Type": "application/json" };
       const base = `/api/stores/${auth.currentStoreId}/inventory`;
       const items = (await (await fetch(base, { headers })).json()) as { productId: string; quantity: number }[];
-      for (const item of items.filter((i) => i.quantity < below)) {
-        await fetch(`${base}/${item.productId}`, { method: "PUT", headers, body: JSON.stringify({ quantity: to }) });
+      // Products added by hand may have no stock row in this store at all.
+      const products = (await (await fetch("/api/products", { headers })).json()) as { id: string }[];
+      const stock = new Map(items.map((i) => [i.productId, i.quantity]));
+      for (const { id } of products) {
+        if ((stock.get(id) ?? 0) >= below) continue;
+        await fetch(`${base}/${id}`, { method: "PUT", headers, body: JSON.stringify({ quantity: to }) });
       }
     },
     { below, to },

@@ -23,7 +23,8 @@
     "remove": "Remover {{name}}",
     "discount": "Desconto",
     "discountNamed": "Desconto em {{name}}",
-    "discountOff": "{{label}} de desconto (-{{amount}})"
+    "discountOff": "{{label}} de desconto (-{{amount}})",
+    "quantityFor": "Quantidade de {{name}}"
   },
   "customer": {
     "walkIn": "Cliente de balcão",
@@ -34,7 +35,10 @@
     "phone": "Telefone (opcional)",
     "email": "Email (opcional)",
     "create": "Criar e selecionar",
-    "creating": "A criar..."
+    "creating": "A criar...",
+    "typeToSearch": "Escreva um nome ou telefone",
+    "noMatch": "Nenhum cliente encontrado.",
+    "newTitle": "Novo cliente"
   },
   "payment": {
     "removePayment": "Remover pagamento",
@@ -45,7 +49,8 @@
     "tendered": "Valor entregue (opcional)",
     "tenderedTooLow": "O valor entregue é inferior ao total",
     "changeDue": "Troco: {{amount}}",
-    "split": "+ Dividir pagamento"
+    "split": "+ Dividir pagamento",
+    "method": "Meio de pagamento"
   },
   "checkout": {
     "title": "Pagamento",
@@ -144,5 +149,21 @@
     "overMax": "Pode dar no máximo {{max}}% de desconto.",
     "apply": "Aplicar",
     "remove": "Retirar desconto"
+  },
+  "held": {
+    "hold": "Deixar pendente",
+    "holdTitle": "Deixar esta venda pendente",
+    "note": "Nota",
+    "notePlaceholder": "Opcional, ex.: cliente de azul",
+    "title": "Vendas pendentes",
+    "description": "Vendas deixadas pendentes neste posto. Não tiram stock nem número de documento até serem concluídas.",
+    "empty": "Não há vendas pendentes.",
+    "untitled": "Venda pendente",
+    "summary_one": "{{count}} artigo · {{time}} · {{name}}",
+    "summary_other": "{{count}} artigos · {{time}} · {{name}}",
+    "resume": "Retomar",
+    "resumeNamed": "Retomar {{name}}",
+    "discard": "Eliminar venda pendente",
+    "swapped": "A venda que estava no posto ficou pendente."
   }
 }

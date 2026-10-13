@@ -17,7 +17,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
+import { productOptions } from "@/lib/options";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createTransfer, fetchTransfers } from "@/features/transfers/api";
@@ -123,20 +124,14 @@ export function TransfersPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t("transfers.fromStore")}</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder={t("transfers.source")} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {stores.map((store) => (
-                              <SelectItem key={store.id} value={store.id}>
-                                {store.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <Combobox
+                            value={field.value}
+                            onChange={(v) => field.onChange(v ?? "")}
+                            placeholder={t("transfers.source")}
+                            options={stores.map((store) => ({ value: store.id, label: store.name }))}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -147,22 +142,14 @@ export function TransfersPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t("transfers.toStore")}</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder={t("transfers.destination")} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {stores
-                              .filter((store) => store.id !== fromStoreId)
-                              .map((store) => (
-                                <SelectItem key={store.id} value={store.id}>
-                                  {store.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <Combobox
+                            value={field.value}
+                            onChange={(v) => field.onChange(v ?? "")}
+                            placeholder={t("transfers.destination")}
+                            options={stores.filter((store) => store.id !== fromStoreId).map((store) => ({ value: store.id, label: store.name }))}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -178,20 +165,14 @@ export function TransfersPage() {
                         name={`lines.${index}.productId`}
                         render={({ field }) => (
                           <FormItem className="flex-1">
-                            <Select value={field.value} onValueChange={field.onChange}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder={t("columns.product")} />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {productsQuery.data?.map((product) => (
-                                  <SelectItem key={product.id} value={product.id}>
-                                    {product.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <Combobox
+                                value={field.value}
+                                onChange={(v) => field.onChange(v ?? "")}
+                                placeholder={t("columns.product")}
+                                options={productOptions(productsQuery.data)}
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}

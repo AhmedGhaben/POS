@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { desktop, useDeviceStore, type DrawerConnection, type DrawerSettings } from "../bridge";
 import { openCashDrawer, useCanOpenDrawer } from "../drawer";
 
@@ -88,18 +88,13 @@ export function DrawerSection() {
       <CardContent className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="drawer-connection">{t("drawer.connection")}</Label>
-          <Select value={c} onValueChange={(v) => void save({ connection: v as DrawerConnection })}>
-            <SelectTrigger id="drawer-connection" aria-label={t("drawer.connectionLabel")}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {CONNECTIONS.map((o) => (
-                <SelectItem key={o} value={o}>
-                  {t(`drawer.connections.${o}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            id="drawer-connection"
+            aria-label={t("drawer.connectionLabel")}
+            value={c}
+            onChange={(v) => v !== null && void save({ connection: v as DrawerConnection })}
+            options={CONNECTIONS.map((o) => ({ value: o, label: t(`drawer.connections.${o}`) }))}
+          />
           {c === "receipt-printer" && (
             <p className="text-sm text-muted-foreground" data-testid="drawer-printer-note">
               {receiptPrinter ? t("drawer.receiptPrinter", { name: receiptPrinter }) : t("drawer.chooseReceiptPrinter")}
@@ -110,18 +105,14 @@ export function DrawerSection() {
         {c === "windows-printer" && (
           <div className="space-y-1.5">
             <Label htmlFor="drawer-printer">{t("drawer.printer")}</Label>
-            <Select value={drawer.printerName ?? ""} onValueChange={(v) => void save({ printerName: v })}>
-              <SelectTrigger id="drawer-printer" aria-label={t("drawer.printerLabel")}>
-                <SelectValue placeholder={t("drawer.choosePrinter")} />
-              </SelectTrigger>
-              <SelectContent>
-                {printers.map((p) => (
-                  <SelectItem key={p.name} value={p.name}>
-                    {p.displayName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              id="drawer-printer"
+              aria-label={t("drawer.printerLabel")}
+              value={drawer.printerName ?? ""}
+              onChange={(v) => v !== null && void save({ printerName: v })}
+              placeholder={t("drawer.choosePrinter")}
+              options={printers.map((p) => ({ value: p.name, label: p.displayName }))}
+            />
           </div>
         )}
 
@@ -151,33 +142,24 @@ export function DrawerSection() {
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="drawer-com">{t("drawer.comPort")}</Label>
-              <Select value={drawer.comPort ?? ""} onValueChange={(v) => void save({ comPort: v })}>
-                <SelectTrigger id="drawer-com" aria-label={t("drawer.comPort")}>
-                  <SelectValue placeholder={comPorts.data?.length === 0 ? t("drawer.noComPorts") : t("drawer.choosePort")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(comPorts.data ?? []).map((port) => (
-                    <SelectItem key={port} value={port}>
-                      {port}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                id="drawer-com"
+                aria-label={t("drawer.comPort")}
+                value={drawer.comPort ?? ""}
+                onChange={(v) => v !== null && void save({ comPort: v })}
+                placeholder={comPorts.data?.length === 0 ? t("drawer.noComPorts") : t("drawer.choosePort")}
+                options={(comPorts.data ?? []).map((port) => ({ value: port, label: port }))}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="drawer-baud">{t("drawer.baud")}</Label>
-              <Select value={String(drawer.baudRate)} onValueChange={(v) => void save({ baudRate: Number(v) })}>
-                <SelectTrigger id="drawer-baud" aria-label={t("drawer.baudLabel")}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {BAUD_RATES.map((b) => (
-                    <SelectItem key={b} value={String(b)}>
-                      {b}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                id="drawer-baud"
+                aria-label={t("drawer.baudLabel")}
+                value={String(drawer.baudRate)}
+                onChange={(v) => v !== null && void save({ baudRate: Number(v) })}
+                options={BAUD_RATES.map((b) => ({ value: String(b), label: String(b) }))}
+              />
             </div>
           </div>
         )}
@@ -187,15 +169,16 @@ export function DrawerSection() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="drawer-pin">{t("drawer.pin")}</Label>
-                <Select value={String(drawer.pin)} onValueChange={(v) => void save({ pin: v === "5" ? 5 : 2 })}>
-                  <SelectTrigger id="drawer-pin" aria-label={t("drawer.pin")}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="2">{t("drawer.pin2")}</SelectItem>
-                    <SelectItem value="5">{t("drawer.pin5")}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  id="drawer-pin"
+                  aria-label={t("drawer.pin")}
+                  value={String(drawer.pin)}
+                  onChange={(v) => v !== null && void save({ pin: v === "5" ? 5 : 2 })}
+                  options={[
+                    { value: "2", label: t("drawer.pin2") },
+                    { value: "5", label: t("drawer.pin5") },
+                  ]}
+                />
               </div>
               <TextField
                 id="drawer-pulse"

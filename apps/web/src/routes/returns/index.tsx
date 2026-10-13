@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createReturn, fetchReturns } from "@/features/returns/api";
@@ -132,9 +132,17 @@ export function ReturnsPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("returns.sale")}</FormLabel>
-                      <Select
+                      <FormControl>
+                      <Combobox
                         value={field.value}
-                        onValueChange={(v) => {
+                        placeholder={t("returns.selectSale")}
+                        options={(salesQuery.data ?? []).map((sale) => ({
+                          value: sale.id,
+                          label: sale.receiptNumber,
+                          description: money(sale.total),
+                        }))}
+                        onChange={(v) => {
+                          if (v === null) return;
                           field.onChange(v);
                           const sale = salesQuery.data?.find((s) => s.id === v);
                           replace(
@@ -146,20 +154,8 @@ export function ReturnsPage() {
                             })) ?? [],
                           );
                         }}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("returns.selectSale")} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {salesQuery.data?.map((sale) => (
-                            <SelectItem key={sale.id} value={sale.id}>
-                              {sale.receiptNumber} — {money(sale.total)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -10,7 +10,7 @@ import type { ProductDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createProduct, updateProduct } from "@/features/products/api";
 import { fetchCategories } from "@/features/categories/api";
@@ -180,21 +180,16 @@ export function ProductFormDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("columns.category")}</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger aria-label={t("columns.category")}>
-                        <SelectValue placeholder={t("form.uncategorized")} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value={NO_CATEGORY}>{t("form.uncategorized")}</SelectItem>
-                      {categoriesQuery.data?.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Combobox
+                      value={field.value === NO_CATEGORY ? null : field.value}
+                      onChange={(v) => field.onChange(v ?? NO_CATEGORY)}
+                      aria-label={t("columns.category")}
+                      placeholder={t("form.uncategorized")}
+                      clearLabel={t("form.uncategorized")}
+                      options={(categoriesQuery.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

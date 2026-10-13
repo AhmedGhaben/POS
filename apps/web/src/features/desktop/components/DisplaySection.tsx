@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { desktop, useDeviceStore, type DisplaySettings } from "../bridge";
 
 const BAUD_RATES = [2400, 4800, 9600, 19200, 38400, 57600, 115200];
@@ -94,82 +94,70 @@ export function DisplaySection() {
       <CardContent className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="display-kind">{t("display.kind")}</Label>
-          <Select value={display.kind} onValueChange={(v) => void save({ ...display, kind: v as DisplaySettings["kind"] })}>
-            <SelectTrigger id="display-kind" aria-label={t("display.title")}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">{t("display.kinds.none")}</SelectItem>
-              <SelectItem value="pole">{t("display.kinds.pole")}</SelectItem>
-              <SelectItem value="monitor">{t("display.kinds.monitor")}</SelectItem>
-            </SelectContent>
-          </Select>
+          <Combobox
+            id="display-kind"
+            aria-label={t("display.title")}
+            value={display.kind}
+            onChange={(v) => v !== null && void save({ ...display, kind: v as DisplaySettings["kind"] })}
+            options={[
+              { value: "none", label: t("display.kinds.none") },
+              { value: "pole", label: t("display.kinds.pole") },
+              { value: "monitor", label: t("display.kinds.monitor") },
+            ]}
+          />
         </div>
 
         {display.kind === "pole" && (
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="pole-connection">{t("drawer.connection")}</Label>
-              <Select
+              <Combobox
+                id="pole-connection"
+                aria-label={t("display.connectionLabel")}
                 value={display.pole.connection}
-                onValueChange={(v) => void savePole({ connection: v as "serial" | "network" })}
-              >
-                <SelectTrigger id="pole-connection" aria-label={t("display.connectionLabel")}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="serial">{t("display.serial")}</SelectItem>
-                  <SelectItem value="network">{t("display.network")}</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(v) => v !== null && void savePole({ connection: v as "serial" | "network" })}
+                options={[
+                  { value: "serial", label: t("display.serial") },
+                  { value: "network", label: t("display.network") },
+                ]}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="pole-commands">{t("display.commandSet")}</Label>
-              <Select
+              <Combobox
+                id="pole-commands"
+                aria-label={t("display.commandSet")}
                 value={display.pole.commandSet}
-                onValueChange={(v) => void savePole({ commandSet: v as DisplaySettings["pole"]["commandSet"] })}
-              >
-                <SelectTrigger id="pole-commands" aria-label={t("display.commandSet")}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="epson">{t("display.epson")}</SelectItem>
-                  <SelectItem value="cd5220">CD5220</SelectItem>
-                  <SelectItem value="plain">{t("display.plain")}</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(v) => v !== null && void savePole({ commandSet: v as DisplaySettings["pole"]["commandSet"] })}
+                options={[
+                  { value: "epson", label: t("display.epson") },
+                  { value: "cd5220", label: "CD5220" },
+                  { value: "plain", label: t("display.plain") },
+                ]}
+              />
             </div>
             {display.pole.connection === "serial" ? (
               <>
                 <div className="space-y-1.5">
                   <Label htmlFor="pole-com">{t("drawer.comPort")}</Label>
-                  <Select value={display.pole.comPort ?? ""} onValueChange={(v) => void savePole({ comPort: v })}>
-                    <SelectTrigger id="pole-com" aria-label={t("display.comPortLabel")}>
-                      <SelectValue placeholder={comPorts.data?.length === 0 ? t("drawer.noComPorts") : t("drawer.choosePort")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(comPorts.data ?? []).map((port) => (
-                        <SelectItem key={port} value={port}>
-                          {port}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    id="pole-com"
+                    aria-label={t("display.comPortLabel")}
+                    value={display.pole.comPort ?? ""}
+                    onChange={(v) => v !== null && void savePole({ comPort: v })}
+                    placeholder={comPorts.data?.length === 0 ? t("drawer.noComPorts") : t("drawer.choosePort")}
+                    options={(comPorts.data ?? []).map((port) => ({ value: port, label: port }))}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="pole-baud">{t("drawer.baud")}</Label>
-                  <Select value={String(display.pole.baudRate)} onValueChange={(v) => void savePole({ baudRate: Number(v) })}>
-                    <SelectTrigger id="pole-baud" aria-label={t("display.baudLabel")}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {BAUD_RATES.map((b) => (
-                        <SelectItem key={b} value={String(b)}>
-                          {b}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    id="pole-baud"
+                    aria-label={t("display.baudLabel")}
+                    value={String(display.pole.baudRate)}
+                    onChange={(v) => v !== null && void savePole({ baudRate: Number(v) })}
+                    options={BAUD_RATES.map((b) => ({ value: String(b), label: String(b) }))}
+                  />
                 </div>
               </>
             ) : (
@@ -199,24 +187,22 @@ export function DisplaySection() {
         {display.kind === "monitor" && (
           <div className="space-y-1.5">
             <Label htmlFor="monitor-screen">{t("display.screen")}</Label>
-            <Select
+            <Combobox
+              id="monitor-screen"
+              aria-label={t("display.screenLabel")}
               value={display.monitor.displayId === null ? ANY_OTHER : String(display.monitor.displayId)}
-              onValueChange={(v) =>
-                void save({ ...display, monitor: { displayId: v === ANY_OTHER ? null : Number(v) } })
+              onChange={(v) =>
+                v !== null && void save({ ...display, monitor: { displayId: v === ANY_OTHER ? null : Number(v) } })
               }
-            >
-              <SelectTrigger id="monitor-screen" aria-label={t("display.screenLabel")}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ANY_OTHER}>{t("display.otherScreen")}</SelectItem>
-                {(screens.data ?? []).map((s) => (
-                  <SelectItem key={s.id} value={String(s.id)}>
-                    {s.label} ({s.width}×{s.height}){s.primary ? ` · ${t("display.mainScreen")}` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              options={[
+                { value: ANY_OTHER, label: t("display.otherScreen") },
+                ...(screens.data ?? []).map((s) => ({
+                  value: String(s.id),
+                  label: s.label,
+                  description: `${s.width}×${s.height}${s.primary ? ` · ${t("display.mainScreen")}` : ""}`,
+                })),
+              ]}
+            />
             {onlyOneScreen && (
               <p className="text-sm text-muted-foreground">
                 {t("display.oneScreen")}

@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createEmployee, fetchEmployees } from "@/features/employees/api";
@@ -248,20 +248,15 @@ export function EmployeesPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("fields.store")}</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("allStores")} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {stores.map((store) => (
-                            <SelectItem key={store.id} value={store.id}>
-                              {store.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Combobox
+                          value={field.value}
+                          onChange={(v) => field.onChange(v ?? "")}
+                          placeholder={t("allStores")}
+                          clearLabel={t("allStores")}
+                          options={stores.map((store) => ({ value: store.id, label: store.name }))}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

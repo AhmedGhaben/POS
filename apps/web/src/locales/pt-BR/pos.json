@@ -23,7 +23,8 @@
     "remove": "Remover {{name}}",
     "discount": "Desconto",
     "discountNamed": "Desconto em {{name}}",
-    "discountOff": "{{label}} de desconto (-{{amount}})"
+    "discountOff": "{{label}} de desconto (-{{amount}})",
+    "quantityFor": "Quantidade de {{name}}"
   },
   "customer": {
     "walkIn": "Consumidor final",
@@ -34,7 +35,10 @@
     "phone": "Telefone (opcional)",
     "email": "E-mail (opcional)",
     "create": "Cadastrar e selecionar",
-    "creating": "Cadastrando..."
+    "creating": "Cadastrando...",
+    "typeToSearch": "Digite um nome ou telefone",
+    "noMatch": "Nenhum cliente encontrado.",
+    "newTitle": "Novo cliente"
   },
   "payment": {
     "removePayment": "Remover pagamento",
@@ -45,7 +49,8 @@
     "tendered": "Valor recebido (opcional)",
     "tenderedTooLow": "O valor recebido é menor que o total",
     "changeDue": "Troco: {{amount}}",
-    "split": "+ Dividir pagamento"
+    "split": "+ Dividir pagamento",
+    "method": "Forma de pagamento"
   },
   "checkout": {
     "title": "Pagamento",
@@ -144,5 +149,21 @@
     "overMax": "Você pode dar no máximo {{max}}% de desconto.",
     "apply": "Aplicar",
     "remove": "Remover desconto"
+  },
+  "held": {
+    "hold": "Deixar pendente",
+    "holdTitle": "Deixar esta venda pendente",
+    "note": "Observação",
+    "notePlaceholder": "Opcional, ex.: cliente de azul",
+    "title": "Vendas pendentes",
+    "description": "Vendas deixadas pendentes neste caixa. Não baixam estoque nem usam número de documento até serem concluídas.",
+    "empty": "Nenhuma venda pendente.",
+    "untitled": "Venda pendente",
+    "summary_one": "{{count}} item · {{time}} · {{name}}",
+    "summary_other": "{{count}} itens · {{time}} · {{name}}",
+    "resume": "Retomar",
+    "resumeNamed": "Retomar {{name}}",
+    "discard": "Excluir venda pendente",
+    "swapped": "A venda que estava no caixa ficou pendente."
   }
 }

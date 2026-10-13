@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
+import { storeOptions } from "@/lib/options";
 import { useAuthStore } from "@/features/auth/store";
 import { createPairingCode, fetchTerminals, updateTerminal } from "@/features/desktop/api";
 import { ApiError } from "@/lib/api-client";
@@ -132,18 +133,12 @@ function AddTillDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
             </div>
             <div className="space-y-1.5">
               <Label>{t("tillsList.store")}</Label>
-              <Select value={storeId} onValueChange={setStoreId}>
-                <SelectTrigger aria-label={t("tillsList.store")}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {stores.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                value={storeId}
+                onChange={(v) => v !== null && setStoreId(v)}
+                aria-label={t("tillsList.store")}
+                options={storeOptions(stores)}
+              />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={!name.trim() || !storeId || create.isPending}>

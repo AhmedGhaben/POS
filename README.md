@@ -84,6 +84,11 @@ Prisma backend.
     are translated too.
   - Text lives in `apps/web/src/locales/<language>/*.json`. Adding a
     language means adding a folder and one line in `src/i18n/index.ts`.
+- **Dropdowns**: every list (suppliers, products, stores, categories,
+  payment methods, printers…) uses one searchable dropdown
+  (`components/ui/combobox.tsx`). Start typing to filter (accents and
+  case don't matter, codes are searchable too), pick with the mouse or
+  arrows + Enter, Esc closes.
 - Audit log, rate-limited auth, `/health` endpoint.
 
 ## Structure

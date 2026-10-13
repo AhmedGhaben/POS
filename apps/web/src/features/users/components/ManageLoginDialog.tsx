@@ -6,7 +6,7 @@ import type { EmployeeDto, StaffRole, UpdateStaffAccessDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/features/auth/store";
 import { updateStaffAccess } from "@/features/users/api";
@@ -80,15 +80,14 @@ export function ManageLoginDialog({ employee, onClose }: ManageLoginDialogProps)
                 <form className="space-y-4" onSubmit={saveAccess}>
                   <div className="space-y-2">
                     <Label>{t("login.role")}</Label>
-                    <Select value={role} onValueChange={(v) => setRole(v as StaffRole)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="CASHIER">{t("manage.cashierRole")}</SelectItem>
-                        <SelectItem value="MANAGER">{t("manage.managerRole")}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Combobox
+                      value={role}
+                      onChange={(v) => v !== null && setRole(v as StaffRole)}
+                      options={[
+                        { value: "CASHIER", label: t("manage.cashierRole") },
+                        { value: "MANAGER", label: t("manage.managerRole") },
+                      ]}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>{t("login.stores")}</Label>

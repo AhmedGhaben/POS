@@ -2,7 +2,7 @@ import type { StaffRole } from "@pos/shared";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { useAuthStore } from "@/features/auth/store";
 import type { LoginFieldsValue } from "@/features/users/login-fields";
 import { StoreCheckboxes } from "./StoreCheckboxes";
@@ -35,15 +35,14 @@ export function LoginFields({ value, onChange, idPrefix }: LoginFieldsProps) {
         </div>
         <div className="space-y-2">
           <Label>{t("login.role")}</Label>
-          <Select value={value.role} onValueChange={(v) => set("role", v as StaffRole)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="CASHIER">{t("common:roles.CASHIER")}</SelectItem>
-              <SelectItem value="MANAGER">{t("common:roles.MANAGER")}</SelectItem>
-            </SelectContent>
-          </Select>
+          <Combobox
+            value={value.role}
+            onChange={(v) => v !== null && set("role", v as StaffRole)}
+            options={[
+              { value: "CASHIER", label: t("common:roles.CASHIER") },
+              { value: "MANAGER", label: t("common:roles.MANAGER") },
+            ]}
+          />
         </div>
       </div>
 

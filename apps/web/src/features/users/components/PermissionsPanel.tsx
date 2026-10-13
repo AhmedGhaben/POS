@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Permission } from "@pos/shared";
 import { useTranslation } from "react-i18next";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Button } from "@/components/ui/button";
 import { fetchEffectivePermissions, updateUserPermission } from "@/features/users/api";
 
@@ -31,18 +31,16 @@ export function PermissionsPanel({ userId }: { userId: string }) {
           <div key={permission} className="flex items-center justify-between gap-3">
             <span className="text-sm">{t(`permissions.labels.${permission}`)}</span>
             <div className="flex items-center gap-2">
-              <Select
+              <Combobox
                 value={effective === undefined ? undefined : String(effective)}
-                onValueChange={(v) => mutation.mutate({ permission, granted: v === "true" })}
-              >
-                <SelectTrigger className="w-36">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">{t("permissions.allowed")}</SelectItem>
-                  <SelectItem value="false">{t("permissions.notAllowed")}</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(v) => v !== null && mutation.mutate({ permission, granted: v === "true" })}
+                className="w-36"
+                aria-label={t(`permissions.labels.${permission}`)}
+                options={[
+                  { value: "true", label: t("permissions.allowed") },
+                  { value: "false", label: t("permissions.notAllowed") },
+                ]}
+              />
               <Button variant="ghost" size="sm" onClick={() => mutation.mutate({ permission, granted: null })}>
                 {t("permissions.reset")}
               </Button>

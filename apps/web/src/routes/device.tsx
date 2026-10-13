@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
+import { storeOptions } from "@/lib/options";
 import { useAuthStore } from "@/features/auth/store";
 import { createTerminal, updateTerminal } from "@/features/desktop/api";
 import { PrintersSection } from "@/features/desktop/components/PrintersSection";
@@ -118,18 +119,13 @@ function TerminalSection() {
             {!terminal && (
               <div className="space-y-1.5">
                 <Label>{t("terminal.store")}</Label>
-                <Select value={storeId} onValueChange={setStoreId}>
-                  <SelectTrigger aria-label={t("terminal.store")}>
-                    <SelectValue placeholder={t("terminal.chooseStore")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stores.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  value={storeId}
+                  onChange={(v) => v !== null && setStoreId(v)}
+                  aria-label={t("terminal.store")}
+                  placeholder={t("terminal.chooseStore")}
+                  options={storeOptions(stores)}
+                />
               </div>
             )}
             <Button

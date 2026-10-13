@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PrintArea } from "@/components/print/PrintArea";
 import { useAuthStore } from "@/features/auth/store";
@@ -84,18 +84,17 @@ function PastSalePicker({ open, onClose, onPick }: { open: boolean; onClose: () 
         </DialogHeader>
         <div className="space-y-2">
           <Label>{t("page.sale")}</Label>
-          <Select value={saleId} onValueChange={setSaleId}>
-            <SelectTrigger>
-              <SelectValue placeholder={salesQuery.isLoading ? t("common:actions.loading") : t("page.chooseSale")} />
-            </SelectTrigger>
-            <SelectContent>
-              {sales.map((sale) => (
-                <SelectItem key={sale.id} value={sale.id}>
-                  {formatDateTime(sale.createdAt)} · {sale.receiptNumber} · {money(sale.total)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            value={saleId}
+            onChange={(v) => v !== null && setSaleId(v)}
+            placeholder={salesQuery.isLoading ? t("common:actions.loading") : t("page.chooseSale")}
+            aria-label={t("page.sale")}
+            options={sales.map((sale) => ({
+              value: sale.id,
+              label: `${formatDateTime(sale.createdAt)} · ${sale.receiptNumber}`,
+              description: money(sale.total),
+            }))}
+          />
           {salesQuery.isSuccess && sales.length === 0 && (
             <p className="text-sm text-muted-foreground">{t("page.noSales")}</p>
           )}

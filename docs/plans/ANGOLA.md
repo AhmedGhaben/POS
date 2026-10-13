@@ -11,7 +11,20 @@ commit and push.
   cached query is reset when the signed-in person changes
   (`features/auth/user-scope.ts`) and the permissions query is keyed by
   person. Dropdowns: `CommandItem` matches `data-[disabled=true]`.
-  Tests: web unit `user-scope.test.ts` (4).
+  Tests: web unit `user-scope.test.ts` (4), desktop e2e
+  `angola-phase1.spec.ts` (2; each fails without its fix).
+- **Phase 2 (one combobox) is built** (2026-10-13).
+  `components/ui/combobox.tsx` replaces every Radix `<Select>` (the
+  component and `@radix-ui/react-select` are gone) and the POS customer
+  picker. Its own filter ignores case and accents and matches name,
+  secondary text (codes, rates) and keywords (`combobox-filter.ts`);
+  `allowOther` adds "Outro: <typed text>"; `clearLabel` adds a "none"
+  entry (category, store). Fixed on the way: a combobox is named by its
+  label, not its text, so unlabelled ones fall back to an aria-label; Radix
+  selected the search text on open, so the 2nd key typed replaced the
+  1st. Tests: web unit `combobox-filter.test.ts` (5), desktop e2e
+  `angola-phase2.spec.ts` (3). "Outro" gets its first real use with banks
+  (phase 7).
 
 ## Decisions (from the owner, 2026-10-13)
 
@@ -79,6 +92,19 @@ ISSUE_CREDIT_NOTE; one shift per till at a time, several tills tested;
 `trackStock` flag; "Consumidor Final" (NIF 999999999) default customer;
 list/grid view; customer card.
 
+**Shifts enforced (addition B, 2026-10-13).** Found: shifts are opt-in
+(`Business.shiftsEnabled` defaults off), the API saves a sale with
+`shiftId: null` when the till sends no `shiftClientId`, and a return
+loses its shift when it's missing or closed. Change: shifts always on
+(setting removed, existing businesses migrated); the till must open a
+shift with the opening float (fundo de caixa) before any sale, return or
+payment; the API refuses those without an open shift on that till (an
+offline upload whose shift is still syncing waits in the outbox, it is
+never dropped); one open shift per till; every document and payment
+records shift, cashier and till. The rest of addition B arrived cut off
+at "Cash movements during the shift (cash in / cash out, e.g. moving" —
+waiting for the remainder.
+
 ### 7. Country config & company settings
 Typed `CountryConfig` registry (`packages/shared/src/countries/ao.ts`):
 currency, number format, regimes, rates, exemption tables (M/S/I),
@@ -104,6 +130,26 @@ DB trigger). Old `INV-…` invoices stay readable as legacy. Cancel becomes
 annulment with reason I/N only; anything else is an NC. Number to words
 (pt), AGT QR (v4, ECC M, 350 px), A4 + 80/58 mm layouts.
 
+### 8b. SAF-T (AO) exports (addition A, 2026-10-13; built after 8)
+- **Facturação**: required monthly while e-invoicing isn't live (our
+  case until certification). Per-company setting "e-invoicing active"
+  turns the monthly reminder off; the export stays available on demand.
+- **Inventário**: required for Regime Geral and Simplificado: stock at
+  31 December, due by 15 February. Only stock-tracked products; a
+  company with no stock gets a null declaration file.
+- **Contabilidade**: not built (accounting software produces it). Open
+  question for the owner: do we need an export feeding an accountant's
+  software?
+- Strictly the official AGT SAF-T (AO) XSD; every generated file is
+  validated against it in tests. **The XSD is not in the repo; the owner
+  will provide it.** Field gaps against our models get listed here once
+  it's in.
+- Reports → "Ficheiros SAF-T": type, period (month / year-end),
+  store/company → generate, download XML; who generated it and when is
+  logged.
+- Dashboard reminders for upcoming deadlines; the deadlines live in the
+  country config.
+
 ### 4. Credit & payables
 FT on credit, RC for payments, balances, credit limit;
 `CustomerPayment`/`SupplierPayment` with allocations; purchase
@@ -121,7 +167,7 @@ browsers.
 keys from env/secret files only, DB-backed transmission queue with
 backoff and 429/E98 handling, per-document status/requestID/errors,
 rejected-documents screen with correct-and-resend (status C), pending-sync
-indicator. Later: SAF-T(AO) and inventory file export.
+indicator. SAF-T exports: see 8b.
 
 ### 10. Reports
 Sales by period/product/category/cashier/payment/document type, margin,

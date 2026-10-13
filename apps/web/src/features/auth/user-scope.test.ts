@@ -1,19 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
-
-// The auth store persists to localStorage, which Node doesn't have.
-vi.hoisted(() => {
-  const items = new Map<string, string>();
-  globalThis.localStorage = {
-    getItem: (k: string) => items.get(k) ?? null,
-    setItem: (k: string, v: string) => void items.set(k, v),
-    removeItem: (k: string) => void items.delete(k),
-    clear: () => items.clear(),
-    key: () => null,
-    length: 0,
-  };
-  (globalThis as { window?: unknown }).window ??= globalThis;
-});
 import { Role, type BusinessDto, type UserDto } from "@pos/shared";
 import { myPermissionsQueryKey } from "@/features/users/api";
 import { useAuthStore } from "./store";

@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createExpense, fetchExpenses } from "@/features/expenses/api";
@@ -110,20 +110,16 @@ export function ExpensesPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("expenses.category")}</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Object.values(ExpenseCategory).map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {t(`expenses.categories.${category}`)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Combobox
+                          value={field.value}
+                          onChange={(v) => v !== null && field.onChange(v)}
+                          options={Object.values(ExpenseCategory).map((category) => ({
+                            value: category,
+                            label: t(`expenses.categories.${category}`),
+                          }))}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

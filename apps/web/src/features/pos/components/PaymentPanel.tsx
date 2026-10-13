@@ -3,10 +3,10 @@ import { PaymentMethod } from "@pos/shared";
 import type { SalePaymentInputDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useMoney } from "@/features/business/use-money";
+import { Combobox } from "@/components/ui/combobox";
 
 interface SplitRow {
   id: number;
@@ -28,6 +28,7 @@ let nextRowId = 0;
  */
 export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
   const { t } = useTranslation(["pos", "common"]);
+  const paymentMethodOptions = Object.values(PaymentMethod).map((m) => ({ value: m, label: t(`common:paymentMethods.${m}`) }));
   const money = useMoney();
   const [isSplit, setIsSplit] = React.useState(false);
   const [method, setMethod] = React.useState<PaymentMethod>(PaymentMethod.CASH);
@@ -94,21 +95,13 @@ export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
       <div className="space-y-2">
         {rows.map((row) => (
           <div key={row.id} className="flex items-center gap-2">
-            <Select
+            <Combobox
               value={row.method}
-              onValueChange={(v) => updateRow(row.id, { method: v as PaymentMethod })}
-            >
-              <SelectTrigger className="w-32 shrink-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(PaymentMethod).map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {t(`common:paymentMethods.${m}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(v) => v !== null && updateRow(row.id, { method: v as PaymentMethod })}
+              className="w-32 shrink-0"
+              aria-label={t("payment.method")}
+              options={paymentMethodOptions}
+            />
             <Input
               type="number"
               step="0.01"
@@ -146,18 +139,12 @@ export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
 
   return (
     <div className="space-y-2">
-      <Select value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {Object.values(PaymentMethod).map((m) => (
-            <SelectItem key={m} value={m}>
-              {t(`common:paymentMethods.${m}`)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Combobox
+        value={method}
+        onChange={(v) => v !== null && setMethod(v as PaymentMethod)}
+        aria-label={t("payment.method")}
+        options={paymentMethodOptions}
+      />
 
       {method === PaymentMethod.CASH && (
         <div className="space-y-1">

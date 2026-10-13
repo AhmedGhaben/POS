@@ -95,5 +95,12 @@
     "PAYMENT_PROBLEM": "Payment problem",
     "TRAINING": "Training or test",
     "OTHER": "Other"
+  },
+  "combobox": {
+    "select": "Select...",
+    "search": "Type to search...",
+    "empty": "No matches.",
+    "other": "Other: “{{text}}”",
+    "more": "{{count}} more: keep typing to narrow down"
   }
 }

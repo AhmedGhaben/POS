@@ -17,7 +17,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
+import { productOptions } from "@/lib/options";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createPurchase, fetchPurchases } from "@/features/purchases/api";
@@ -118,20 +119,14 @@ export function PurchasesPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("purchases.supplier")}</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("purchases.selectSupplier")} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {suppliersQuery.data?.map((supplier) => (
-                            <SelectItem key={supplier.id} value={supplier.id}>
-                              {supplier.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Combobox
+                          value={field.value}
+                          onChange={(v) => field.onChange(v ?? "")}
+                          placeholder={t("purchases.selectSupplier")}
+                          options={(suppliersQuery.data ?? []).map((s) => ({ value: s.id, label: s.name, description: s.phone ?? undefined }))}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -146,20 +141,14 @@ export function PurchasesPage() {
                         name={`lines.${index}.productId`}
                         render={({ field }) => (
                           <FormItem className="flex-1">
-                            <Select value={field.value} onValueChange={field.onChange}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder={t("columns.product")} />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {productsQuery.data?.map((product) => (
-                                  <SelectItem key={product.id} value={product.id}>
-                                    {product.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <Combobox
+                                value={field.value}
+                                onChange={(v) => field.onChange(v ?? "")}
+                                placeholder={t("columns.product")}
+                                options={productOptions(productsQuery.data)}
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}

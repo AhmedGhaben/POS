@@ -23,7 +23,8 @@
     "remove": "Remove {{name}}",
     "discount": "Discount",
     "discountNamed": "Discount on {{name}}",
-    "discountOff": "{{label}} off (-{{amount}})"
+    "discountOff": "{{label}} off (-{{amount}})",
+    "quantityFor": "Quantity of {{name}}"
   },
   "customer": {
     "walkIn": "Walk-in customer",
@@ -34,7 +35,10 @@
     "phone": "Phone (optional)",
     "email": "Email (optional)",
     "create": "Create & select",
-    "creating": "Creating..."
+    "creating": "Creating...",
+    "typeToSearch": "Type a name or phone number",
+    "noMatch": "No customer found.",
+    "newTitle": "New customer"
   },
   "payment": {
     "removePayment": "Remove payment",
@@ -45,7 +49,8 @@
     "tendered": "Tendered amount (optional)",
     "tenderedTooLow": "Tendered amount is less than the total",
     "changeDue": "Change due: {{amount}}",
-    "split": "+ Split payment"
+    "split": "+ Split payment",
+    "method": "Payment method"
   },
   "checkout": {
     "title": "Checkout",
@@ -144,5 +149,21 @@
     "overMax": "You can give at most {{max}}% off.",
     "apply": "Apply",
     "remove": "Remove discount"
+  },
+  "held": {
+    "hold": "Hold order",
+    "holdTitle": "Put this order on hold",
+    "note": "Note",
+    "notePlaceholder": "Optional, e.g. customer in blue",
+    "title": "Held orders",
+    "description": "Orders put on hold on this till. They don't take stock or a document number until they're completed.",
+    "empty": "No orders on hold.",
+    "untitled": "Order on hold",
+    "summary_one": "{{count}} item · {{time}} · {{name}}",
+    "summary_other": "{{count}} items · {{time}} · {{name}}",
+    "resume": "Resume",
+    "resumeNamed": "Resume {{name}}",
+    "discard": "Discard held order",
+    "swapped": "The order that was in the till is now on hold."
   }
 }

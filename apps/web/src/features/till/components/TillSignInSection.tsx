@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { useDeviceStore } from "@/features/desktop/bridge";
 import { SetPinDialog } from "./SetPinDialog";
 
@@ -43,18 +43,15 @@ export function TillSignInSection() {
         <div className="grid gap-3 sm:grid-cols-2 sm:items-end">
           <div className="space-y-1.5">
             <Label>{t("pinSignIn.autoLock")}</Label>
-            <Select value={String(autoLock)} onValueChange={(v) => void setAutoLock(Number(v))}>
-              <SelectTrigger aria-label={t("pinSignIn.autoLock")}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {AUTO_LOCK_CHOICES.map((m) => (
-                  <SelectItem key={m} value={String(m)}>
-                    {m === 0 ? t("pinSignIn.never") : t("pinSignIn.minutes", { count: m })}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={String(autoLock)}
+              onChange={(v) => v !== null && void setAutoLock(Number(v))}
+              aria-label={t("pinSignIn.autoLock")}
+              options={AUTO_LOCK_CHOICES.map((m) => ({
+                value: String(m),
+                label: m === 0 ? t("pinSignIn.never") : t("pinSignIn.minutes", { count: m }),
+              }))}
+            />
           </div>
           <Button variant="outline" onClick={() => setPinOpen(true)}>
             {t("pinSignIn.setMyPin")}

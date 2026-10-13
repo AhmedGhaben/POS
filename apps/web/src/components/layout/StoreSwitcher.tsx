@@ -1,4 +1,4 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/features/auth/store";
 
@@ -14,17 +14,12 @@ export function StoreSwitcher() {
   }
 
   return (
-    <Select value={currentStoreId ?? undefined} onValueChange={setCurrentStoreId}>
-      <SelectTrigger className="w-[200px]">
-        <SelectValue placeholder={t("shell.selectStore")} />
-      </SelectTrigger>
-      <SelectContent>
-        {stores.map((store) => (
-          <SelectItem key={store.id} value={store.id}>
-            {store.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Combobox
+      value={currentStoreId ?? undefined}
+      onChange={(v) => v !== null && setCurrentStoreId(v)}
+      placeholder={t("shell.selectStore")}
+      className="w-[200px]"
+      options={stores.map((store) => ({ value: store.id, label: store.name }))}
+    />
   );
 }

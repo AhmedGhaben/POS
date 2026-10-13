@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuthStore } from "@/features/auth/store";
 import { BUSINESS_QUERY_KEY, fetchBusiness, updateBusiness } from "@/features/business/api";
@@ -188,20 +188,13 @@ export function SettingsPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t("money.currency")}</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {currencies.map((c) => (
-                              <SelectItem key={c.code} value={c.code}>
-                                {c.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <Combobox
+                            value={field.value}
+                            onChange={(v) => field.onChange(v ?? "")}
+                            options={currencies.map((c) => ({ value: c.code, label: c.label }))}
+                          />
+                        </FormControl>
                         {currency && <FormDescription>{t("money.example", { amount: formatMoney(1234.5, currency) })}</FormDescription>}
                         <FormMessage />
                       </FormItem>
@@ -279,20 +272,14 @@ export function SettingsPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t("documents.language")}</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <FormControl>
-                            <SelectTrigger aria-label={t("documents.language")}>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {LANGUAGES.map((l) => (
-                              <SelectItem key={l.code} value={l.code}>
-                                {l.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <Combobox
+                            value={field.value}
+                            onChange={(v) => v !== null && field.onChange(v)}
+                            aria-label={t("documents.language")}
+                            options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))}
+                          />
+                        </FormControl>
                         <FormDescription>{t("documents.languageHint")}</FormDescription>
                         <FormMessage />
                       </FormItem>
