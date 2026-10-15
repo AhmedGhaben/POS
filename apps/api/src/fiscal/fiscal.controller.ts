@@ -10,6 +10,7 @@ import { Public } from "../common/decorators/public.decorator";
 import { CurrentTerminal, TerminalKeyGuard } from "../till/terminal-key.guard";
 import type { TillTerminal } from "../till/till-auth.service";
 import { FiscalService } from "./fiscal.service";
+import { SaftExportService } from "./saft-export.service";
 
 /**
  * Fiscal documents: read and print them. There's no route to change or
@@ -18,7 +19,10 @@ import { FiscalService } from "./fiscal.service";
  */
 @Controller("fiscal-documents")
 export class FiscalController {
-  constructor(private readonly fiscal: FiscalService) {}
+  constructor(
+    private readonly fiscal: FiscalService,
+    private readonly saftExport: SaftExportService,
+  ) {}
 
   @Get()
   @UseGuards(RolesGuard)
@@ -86,5 +90,32 @@ export class FiscalController {
   @Get(":id")
   get(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
     return this.fiscal.get(user.businessId, id);
+  }
+
+  @Post("saft/export")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  async exportSaft(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query("storeId") storeId?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
+    const end = endDate ? new Date(endDate) : new Date();
+
+    const xml = await this.saftExport.exportFacturacao({
+      businessId: user.businessId,
+      storeId,
+      startDate: start,
+      endDate: end,
+      type: "FACTURACAO",
+    });
+
+    return {
+      fileName: `SAFT-AO-${start.toISOString().split("T")[0]}-${end.toISOString().split("T")[0]}.xml`,
+      content: xml,
+      mimeType: "application/xml",
+    };
   }
 }

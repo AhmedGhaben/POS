@@ -1,4 +1,6 @@
 {
+  "title": "Reports",
+  "description": "View and export reports, SAF-T files, and tax documents.",
   "noStore": "No store selected.",
   "store": "store",
   "plan": "{{plan}} plan",
@@ -7,6 +9,21 @@
   "tabs": {
     "overview": "Overview",
     "comparison": "Store comparison"
+  },
+  "saft": {
+    "title": "SAF-T Files",
+    "description": "Export fiscal documents in SAF-T format for AGT and your accountant.",
+    "exportInfo": "Download SAF-T (Standard Audit File - Tax) files for audit reporting.",
+    "exportDescription": "Export fiscal documents in the SAF-T format required by AGT and your accountant.",
+    "export": "Export SAF-T",
+    "type": "SAF-T Type",
+    "facturacao": "Facturação (Sales)",
+    "inventarios": "Inventários (Inventory)",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "selectDateRange": "Please select a date range",
+    "exportSuccess": "SAF-T file exported successfully",
+    "exportError": "Failed to export SAF-T file"
   },
   "kpi": {
     "revenue": "Revenue",

@@ -1,4 +1,6 @@
 {
+  "title": "Relatórios",
+  "description": "Veja e exporte relatórios, arquivos SAF-T e documentos fiscais.",
   "noStore": "Nenhuma loja selecionada.",
   "store": "loja",
   "plan": "Plano {{plan}}",
@@ -7,6 +9,21 @@
   "tabs": {
     "overview": "Visão geral",
     "comparison": "Comparar lojas"
+  },
+  "saft": {
+    "title": "Arquivos SAF-T",
+    "description": "Exporte documentos fiscais em formato SAF-T para a AGT e seu contador.",
+    "exportInfo": "Baixe arquivos SAF-T (Standard Audit File - Tax) para fins de auditoria.",
+    "exportDescription": "Exporte documentos fiscais no formato SAF-T exigido pela AGT e seu contador.",
+    "export": "Exportar SAF-T",
+    "type": "Tipo de SAF-T",
+    "facturacao": "Faturamento (Vendas)",
+    "inventarios": "Inventários",
+    "startDate": "Data de Início",
+    "endDate": "Data de Fim",
+    "selectDateRange": "Selecione um intervalo de datas",
+    "exportSuccess": "Arquivo SAF-T exportado com sucesso",
+    "exportError": "Falha ao exportar arquivo SAF-T"
   },
   "kpi": {
     "revenue": "Faturamento",
