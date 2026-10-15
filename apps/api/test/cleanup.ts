@@ -17,6 +17,7 @@ export async function deleteBusiness(prisma: PrismaService, businessId: string):
     prisma.fiscalDocumentLine.deleteMany({ where: { document: { businessId } } }),
     prisma.fiscalDocument.deleteMany({ where: { businessId } }),
     prisma.documentSeries.deleteMany({ where: { businessId } }),
+    prisma.fiscalChainAlert.deleteMany({ where: { businessId } }),
     prisma.invoice.deleteMany({ where: { businessId } }),
     prisma.invoiceCounter.deleteMany({ where: { businessId } }),
     prisma.returnLineItem.deleteMany({ where: { return: inStores } }),

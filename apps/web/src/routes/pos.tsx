@@ -162,9 +162,11 @@ export function PosPage() {
       .catch(() => undefined);
   }, [shift, currentStoreId, terminalId]);
   // Where this till's document series are, so it can number its own (offline too).
+  // Its signing key too: fetched, rotated, or dropped if the till's access was withdrawn.
   React.useEffect(() => {
     if (!terminalId || isWorkingOffline()) return;
     void syncTillSeries({ id: terminalId }).catch(() => undefined);
+    void useDeviceStore.getState().refreshTill(true);
   }, [terminalId]);
   // Log out with a shift open: close it first (blind count, report, then sign out).
   const closeRequested = useCloseShiftRequest((s) => s.requested);

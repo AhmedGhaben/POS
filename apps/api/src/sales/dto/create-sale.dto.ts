@@ -8,6 +8,7 @@ import {
   IsISO8601,
   IsInt,
   Matches,
+  MaxLength,
   IsNumber,
   IsOptional,
   IsString,
@@ -74,6 +75,21 @@ export class FiscalNumberDto {
   @IsInt()
   @Min(1)
   number!: number;
+
+  /** The till's signature (RSA-SHA1, Base64) over the document and the previous one's hash. */
+  @IsOptional()
+  @Matches(/^[A-Za-z0-9+/=]{20,700}$/)
+  hash?: string;
+
+  /** When the till signed it (its SystemEntryDate). */
+  @IsOptional()
+  @IsISO8601()
+  signedAt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  keyVersion?: string;
 }
 
 /** Present when the till rang the sale up without reaching the server. */

@@ -139,7 +139,8 @@
     "doneOffline": "Venda cancelada. Será sincronizada quando o caixa voltar a ter conexão.",
     "handBack": "Devolva {{amount}} em dinheiro.",
     "printSlip": "Imprimir comprovante de cancelamento",
-    "approval": "Cancelar a venda {{receipt}} ({{total}})"
+    "approval": "Cancelar a venda {{receipt}} ({{total}})",
+    "annulRule": "Esta venda é uma Fatura-Recibo. A lei só permite anulá-la por um destes dois motivos. Para outros casos (preço ou quantidade errados, o cliente devolve algo) faça uma devolução: ela emite uma nota de crédito."
   },
   "discount": {
     "titleSale": "Desconto na venda toda",
@@ -207,5 +208,8 @@
     "selling": "Vendendo a pró-forma {{number}}: esta venda a fatura.",
     "detach": "Vender sem ela",
     "notOpen": "A pró-forma {{number}} não está mais em aberto."
+  },
+  "fiscal": {
+    "cantIssueOffline": "Esta venda não pode ser concluída sem conexão: as faturas têm de ser assinadas quando são emitidas e este caixa ainda não tem chave de assinatura. Conecte-se ao servidor (ou registre o caixa) e tente de novo."
   }
 }

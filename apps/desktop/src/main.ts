@@ -38,6 +38,7 @@ import {
   resumeSession,
   setTerminalKey,
 } from "./till";
+import { clearSigningKey, refreshSigningKey, signDocument, signingStatus } from "./fiscal-signing";
 
 // Tests (and a second profile on one PC) point the app at another data folder.
 if (process.env.POS_DESKTOP_USER_DATA) {
@@ -205,11 +206,19 @@ function registerIpc() {
 
   handle("terminal:set", z.tuple([terminalSchema.nullable()]), (terminal) => {
     updateConfig({ terminal });
-    if (!terminal) setTerminalKey(null);
+    if (!terminal) {
+      setTerminalKey(null);
+      clearSigningKey("the till was unregistered");
+    }
     log.info(terminal ? `[terminal] this till is ${terminal.code} "${terminal.name}"` : "[terminal] cleared");
   });
 
   handle("till:has-key", z.tuple([]), hasTerminalKey);
+
+  // Fiscal signing: the page asks for signatures; the key stays here.
+  handle("signing:status", z.tuple([]), signingStatus);
+  handle("signing:refresh", z.tuple([]), refreshSigningKey);
+  handle("signing:sign", z.tuple([z.string().min(10).max(2000)]), signDocument);
 
   handle("staff:list", z.tuple([]), listStaff);
 

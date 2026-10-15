@@ -132,26 +132,26 @@ describe("Angola phase 3: checkout (e2e)", () => {
       const a = (await sell()).body;
       const b = (await sell()).body;
 
-      await http().post("/sales/void").set(auth(cashierToken)).send({ storeId, saleId: a.id, reason: "WRONG_ITEMS" }).expect(403);
+      await http().post("/sales/void").set(auth(cashierToken)).send({ storeId, saleId: a.id, reason: "ANNUL_N" }).expect(403);
       const token = (await approve("VOID_SALE", { details: { saleId: a.id } }).expect(200)).body.token;
       // Not for another permission, not for someone else.
-      await http().post("/sales/void").set(auth(managerToken)).set("X-Override-Token", token).send({ storeId, saleId: b.id, reason: "OTHER" }).expect(200);
+      await http().post("/sales/void").set(auth(managerToken)).set("X-Override-Token", token).send({ storeId, saleId: b.id, reason: "ANNUL_N" }).expect(200);
       const wrongPerm = await approve("PROCESS_RETURN").expect(200);
       await http()
         .post("/sales/void")
         .set(auth(cashierToken))
         .set("X-Override-Token", wrongPerm.body.token)
-        .send({ storeId, saleId: a.id, reason: "WRONG_ITEMS" })
+        .send({ storeId, saleId: a.id, reason: "ANNUL_N" })
         .expect(403);
 
-      await http().post("/sales/void").set(auth(cashierToken)).set("X-Override-Token", token).send({ storeId, saleId: a.id, reason: "WRONG_ITEMS" }).expect(200);
+      await http().post("/sales/void").set(auth(cashierToken)).set("X-Override-Token", token).send({ storeId, saleId: a.id, reason: "ANNUL_N" }).expect(200);
       // Used up.
       const c = (await sell()).body;
       const again = await http()
         .post("/sales/void")
         .set(auth(cashierToken))
         .set("X-Override-Token", token)
-        .send({ storeId, saleId: c.id, reason: "WRONG_ITEMS" })
+        .send({ storeId, saleId: c.id, reason: "ANNUL_N" })
         .expect(403);
       expect(again.body.message).toBe("The manager's approval is no longer valid");
 

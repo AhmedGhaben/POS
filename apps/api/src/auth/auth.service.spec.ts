@@ -316,10 +316,11 @@ describe("AuthService", () => {
 
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
       expect(prisma.business.create).toHaveBeenCalledWith({
-        data: { name: "Corner Cafe", plan: Plan.SIMPLE, language: "en" },
+        // Angola by default: kwanzas and Portuguese (Angola).
+        data: { name: "Corner Cafe", plan: Plan.SIMPLE, country: "AO", currency: "AOA", language: "pt-AO" },
       });
       expect(prisma.store.create).toHaveBeenCalledWith({
-        data: { businessId: "biz-new", name: "Main Street", timezone: "Europe/Paris" },
+        data: { businessId: "biz-new", name: "Main Street", timezone: "Europe/Paris", country: "AO", ivaRegime: "GERAL" },
       });
       expect(prisma.user.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
@@ -341,16 +342,19 @@ describe("AuthService", () => {
       );
     });
 
-    it("defaults the store timezone to UTC", async () => {
+    it("defaults the store timezone and the language to the country's (Angola: Africa/Luanda, pt-AO)", async () => {
       const prisma = buildPrismaMock();
       prisma.user.findUnique.mockResolvedValue(null);
       prisma.user.create.mockResolvedValue(NEW_OWNER);
       const { service } = buildService(prisma);
 
-      await service.register({ ...REGISTER_DTO, timezone: undefined });
+      await service.register({ ...REGISTER_DTO, timezone: undefined, language: undefined });
 
       expect(prisma.store.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ timezone: "UTC" }),
+        data: expect.objectContaining({ timezone: "Africa/Luanda" }),
+      });
+      expect(prisma.business.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ currency: "AOA", language: "pt-AO" }),
       });
     });
 

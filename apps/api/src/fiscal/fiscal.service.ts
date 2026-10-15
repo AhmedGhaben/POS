@@ -6,7 +6,6 @@ import { priceSaleCents, unitDecimals } from "../sales/pricing";
 import type { CreateProformaDto } from "./dto/create-proforma.dto";
 import { documentLine, documentTotals, partOfLine, type DocumentLineData, type SourceLine } from "./document-lines";
 import {
-  ANNULMENT_REASONS,
   documentNumber,
   fiscalTimeZone,
   fixed2,
@@ -45,6 +44,11 @@ export interface Buyer {
 export interface RequestedNumber {
   series: string;
   number: number;
+  /** The till signed it when it was issued (decision: sign on the till). */
+  hash?: string;
+  /** When the till signed it: the document's SystemEntryDate. */
+  signedAt?: string;
+  keyVersion?: string;
 }
 
 const SALE_FOR_DOCUMENT = {
@@ -52,6 +56,8 @@ const SALE_FOR_DOCUMENT = {
   payments: true,
 } satisfies Prisma.SaleInclude;
 type SaleForDocument = Prisma.SaleGetPayload<{ include: typeof SALE_FOR_DOCUMENT }>;
+
+export { annulmentCode } from "./fiscal-format";
 
 export const DOCUMENT_INCLUDE = {
   lines: { include: { taxes: true }, orderBy: { lineNumber: "asc" } },
@@ -146,6 +152,7 @@ export class FiscalService {
       documentType: "FR",
       terminal: input.terminal,
       requested: input.requested,
+      offline: sale.createdOffline,
       at: sale.createdAt,
       userId: input.userId,
       buyer: input.buyer,
@@ -212,13 +219,20 @@ export class FiscalService {
   }
 
   /** Cancelling a sale annuls its Factura-Recibo (status A), with why and who. */
-  async annulForSale(tx: Tx, saleId: string, reasonCode: string, userId: string, at: Date, note?: string | null) {
-    const documents = await tx.fiscalDocument.findMany({ where: { saleId, documentType: { in: ["FR", "FT"] }, status: "N" }, select: { id: true } });
+  /**
+   * Annuls a sale's Factura-Recibo (status A) for one of the reasons the law
+   * allows (I or N, AGT documentCancelReason), with its wording, when and who.
+   */
+  async annulForSale(tx: Tx, saleId: string, code: "I" | "N", userId: string, at: Date) {
+    const documents = await tx.fiscalDocument.findMany({
+      where: { saleId, documentType: { in: ["FR", "FT"] }, status: "N" },
+      select: { id: true, store: { select: { country: true } } },
+    });
     for (const d of documents) {
-      const reason = note?.trim() ? `${ANNULMENT_REASONS[reasonCode] ?? ANNULMENT_REASONS.OTHER}: ${note.trim()}` : ANNULMENT_REASONS[reasonCode] ?? ANNULMENT_REASONS.OTHER;
+      const reason = countryConfig(d.store.country)?.annulmentReasons[code] ?? code;
       await tx.fiscalDocument.update({
         where: { id: d.id },
-        data: { status: "A", statusDate: at, statusReason: reason.slice(0, 50), statusReasonCode: reasonCode, statusById: userId },
+        data: { status: "A", statusDate: at, statusReason: reason, statusReasonCode: code, statusById: userId },
       });
     }
   }
@@ -264,26 +278,70 @@ export class FiscalService {
       returnId?: string;
       referencedDocumentId?: string | null;
       reason?: string;
+      /** An upload of something rung up offline (an out-of-order number is then worth flagging). */
+      offline?: boolean;
     },
   ) {
-    const { issuer } = input;
-    const local = localDateTime(input.at, issuer.timeZone);
+    const { issuer, requested } = input;
+    // A till-signed document was entered when the till signed it.
+    const at = requested?.hash && requested.signedAt ? new Date(requested.signedAt) : input.at;
+    const local = localDateTime(at, issuer.timeZone);
     const series = await this.lockSeries(tx, issuer, input.documentType, input.terminal, local.year, input.requested);
-    const number = input.requested?.number ?? series.nextNumber;
+    const number = requested?.number ?? series.nextNumber;
     if (number !== series.nextNumber) {
       if (number > series.nextNumber) {
+        // Queued work uploads in order: a later number arriving first means a
+        // document is missing or out of order. Recorded outside this
+        // transaction, which is about to roll back.
+        if (input.offline) {
+          await this.alert({
+            issuer,
+            terminalId: input.terminal?.id ?? null,
+            seriesId: series.id,
+            kind: "NUMBER_GAP",
+            documentNo: documentNumber(input.documentType, series.code, number),
+            detail: `${documentNumber(input.documentType, series.code, number)} arrived while ${series.nextNumber} hadn't`,
+          });
+        }
         throw new ConflictException({
           message: `Document ${number} of ${series.code} came before ${series.nextNumber}; the till will send them in order`,
           code: "FISCAL_NUMBER_AHEAD",
         });
       }
-      throw new UnprocessableEntityException({ message: `Document number ${number} of ${series.code} was already used`, code: "FISCAL_NUMBER_USED", nextNumber: series.nextNumber });
+      throw new UnprocessableEntityException({
+        message: `Document number ${number} of ${series.code} was already used`,
+        code: "FISCAL_NUMBER_USED",
+        nextNumber: series.nextNumber,
+        lastHash: series.lastHash,
+      });
     }
     const documentNo = documentNumber(input.documentType, series.code, number);
     const totals = documentTotals(input.lines);
-    const hash = this.signer.sign(
-      hashMessage({ invoiceDate: local.date, systemEntryDate: local.dateTime, documentNo, grossTotal: fixed2(totals.grossTotal), previousHash: series.lastHash }),
-    );
+    const message = hashMessage({ invoiceDate: local.date, systemEntryDate: local.dateTime, documentNo, grossTotal: fixed2(totals.grossTotal), previousHash: series.lastHash });
+    // A till signs its own documents; the server checks the signature covers
+    // this document over the previous one's hash. What the customer holds is
+    // the till's, so it's kept either way, and a mismatch goes to managers.
+    let hash: string;
+    let chainVerified = true;
+    if (requested?.hash) {
+      hash = requested.hash;
+      chainVerified = this.signer.verify(message, hash);
+      const keyOk = !requested.keyVersion || requested.keyVersion === this.signer.keyVersion;
+      if (!chainVerified || !keyOk) {
+        await this.alert({
+          issuer,
+          terminalId: input.terminal?.id ?? null,
+          seriesId: series.id,
+          kind: keyOk ? "SIGNATURE_MISMATCH" : "KEY_VERSION",
+          documentNo,
+          detail: keyOk
+            ? `${documentNo}: the till's signature doesn't match the document as received (edited, or signed over a different previous document)`
+            : `${documentNo}: signed with key version ${requested.keyVersion}, the server has ${this.signer.keyVersion}`,
+        });
+      }
+    } else {
+      hash = this.signer.sign(message);
+    }
     const buyer = input.buyer;
     const document = await tx.fiscalDocument.create({
       data: {
@@ -295,14 +353,16 @@ export class FiscalService {
         number,
         documentNo,
         status: "N",
-        statusDate: input.at,
+        statusDate: at,
         invoiceDate: new Date(`${local.date}T00:00:00Z`),
-        systemEntryDate: input.at,
+        systemEntryDate: at,
         period: local.month,
         sourceId: input.userId,
         hash,
         hashControl: this.certificate() ? this.signer.keyVersion : "0",
         hashExcerpt: hashExcerpt(hash),
+        signedBy: requested?.hash ? "TILL" : "SERVER",
+        chainVerified,
         seller: issuer.seller,
         customerId: buyer?.id ?? null,
         buyerName: buyer?.name ?? "Consumidor Final",
@@ -452,10 +512,55 @@ export class FiscalService {
     if (!terminal) throw new NotFoundException("Till not found");
     const series = await this.prisma.documentSeries.findMany({
       where: { terminalId },
-      select: { documentType: true, code: true, year: true, nextNumber: true },
+      select: { documentType: true, code: true, year: true, nextNumber: true, lastHash: true },
       orderBy: [{ year: "desc" }],
     });
     return { terminalCode: terminal.code, prefix: terminalSeriesCode(terminal.code, 2000).split("-")[0], series };
+  }
+
+  /**
+   * The signing key for a registered till (asked with its till key, never by
+   * a page), so it signs every document as it issues it, offline too. Each
+   * hand-over is logged; a deactivated till can't get it (its key no longer
+   * works) and drops the one it had.
+   */
+  async signingKeyFor(terminal: { id: string; businessId: string }) {
+    await this.prisma.auditLog.create({
+      data: { businessId: terminal.businessId, action: "FISCAL_SIGNING_KEY_ISSUED", entityType: "Terminal", entityId: terminal.id, metadata: { keyVersion: this.signer.keyVersion } },
+    });
+    return {
+      privateKeyPem: this.signer.privateKeyPem(),
+      keyVersion: this.signer.keyVersion,
+      /** HashControl the till prints: "0" until the software is certified. */
+      hashControl: this.certificate() ? this.signer.keyVersion : "0",
+      certificate: this.certificate(),
+    };
+  }
+
+  /** Something wrong in a hash chain, for managers. Written on its own, outside any document transaction. */
+  private async alert(a: { issuer: IssuerContext; terminalId: string | null; seriesId: string; kind: string; documentNo: string; detail: string }) {
+    const open = await this.prisma.fiscalChainAlert.findFirst({
+      where: { businessId: a.issuer.businessId, seriesId: a.seriesId, kind: a.kind, documentNo: a.documentNo, resolvedAt: null },
+      select: { id: true },
+    });
+    if (open) return;
+    await this.prisma.fiscalChainAlert.create({
+      data: { businessId: a.issuer.businessId, storeId: a.issuer.storeId, terminalId: a.terminalId, seriesId: a.seriesId, kind: a.kind, documentNo: a.documentNo, detail: a.detail },
+    });
+  }
+
+  alerts(businessId: string, includeResolved = false) {
+    return this.prisma.fiscalChainAlert.findMany({
+      where: { businessId, ...(includeResolved ? {} : { resolvedAt: null }) },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+  }
+
+  async resolveAlert(businessId: string, id: string, userId: string) {
+    const alert = await this.prisma.fiscalChainAlert.findFirst({ where: { id, businessId } });
+    if (!alert) throw new NotFoundException("Alert not found");
+    return this.prisma.fiscalChainAlert.update({ where: { id }, data: { resolvedAt: new Date(), resolvedById: userId } });
   }
 
   /** Re-checks a series' hash chain from the first document (for audits and tests). */

@@ -125,7 +125,7 @@ test.describe.serial("Angola phase 6: products, units, tax and stock", () => {
     await search.fill(`0,5*${barcode}`);
     await search.press("Enter");
     await expect(page.getByLabel(`Quantity of ${name}`)).toHaveValue("0.5");
-    await expect(page.getByText(/2,500\.00\/kg/).first()).toBeVisible();
+    await expect(page.getByText(/2.500,00 Kz\/kg/).first()).toBeVisible();
 
     await page.getByRole("button", { name: /^Charge/ }).click();
     const done = page.getByRole("dialog");

@@ -11,6 +11,7 @@ import {
   sellFirstProduct,
   SwitchableProxy,
   tempUserData,
+  registerTill,
 } from "./helpers";
 
 /**
@@ -78,6 +79,8 @@ test.describe.serial("Part B: silent printing", () => {
     await connect(page, proxy.url);
     await login(page);
     await restock(page);
+    // Selling offline needs the till's signing key (Angola).
+    await registerTill(page, "Print Till");
   });
 
   test.afterAll(async () => {

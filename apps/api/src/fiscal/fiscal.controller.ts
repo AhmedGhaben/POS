@@ -6,6 +6,9 @@ import { RolesGuard } from "../common/guards/roles.guard";
 import { StoreAccessGuard } from "../common/guards/store-access.guard";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { CreateProformaDto } from "./dto/create-proforma.dto";
+import { Public } from "../common/decorators/public.decorator";
+import { CurrentTerminal, TerminalKeyGuard } from "../till/terminal-key.guard";
+import type { TillTerminal } from "../till/till-auth.service";
 import { FiscalService } from "./fiscal.service";
 
 /**
@@ -40,6 +43,32 @@ export class FiscalController {
       skip: skip ? Number(skip) : undefined,
     });
     return { items, total };
+  }
+
+  /**
+   * The signing key, for a registered till only: asked with the till's key
+   * (X-Terminal-Key) by the Windows app's main process, never by a page.
+   */
+  @Public()
+  @UseGuards(TerminalKeyGuard)
+  @Get("signing-key")
+  signingKey(@CurrentTerminal() terminal: TillTerminal) {
+    return this.fiscal.signingKeyFor(terminal);
+  }
+
+  /** Breaks in a hash chain (a signature that doesn't match, a missing or re-ordered document). */
+  @Get("alerts")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  alerts(@CurrentUser() user: AuthenticatedUser, @Query("all") all?: string) {
+    return this.fiscal.alerts(user.businessId, all === "true");
+  }
+
+  @Post("alerts/:id/resolve")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  resolveAlert(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.fiscal.resolveAlert(user.businessId, id, user.userId);
   }
 
   /** A till's series and next numbers (it numbers its own documents, offline too). */

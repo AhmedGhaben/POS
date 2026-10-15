@@ -43,7 +43,7 @@ describe("Cancelling a sale (e2e)", () => {
       })
       .expect(201);
   const voidSale = (token: string, body: object) =>
-    http().post("/sales/void").set(auth(token)).send({ storeId, reason: "WRONG_ITEMS", ...body });
+    http().post("/sales/void").set(auth(token)).send({ storeId, reason: "ANNUL_N", ...body });
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -105,11 +105,11 @@ describe("Cancelling a sale (e2e)", () => {
     const revenueBefore = (await http().get(`/reports/store/${storeId}/summary`).set(auth(ownerToken)).expect(200)).body
       .revenue;
 
-    const res = await voidSale(ownerToken, { saleId: sale.id, reason: "CUSTOMER_CHANGED_MIND", note: " changed mind " }).expect(200);
+    const res = await voidSale(ownerToken, { saleId: sale.id, reason: "ANNUL_I", note: " wrong customer " }).expect(200);
     expect(res.body).toMatchObject({
       status: "VOIDED",
-      voidReason: "CUSTOMER_CHANGED_MIND",
-      voidNote: "changed mind",
+      voidReason: "ANNUL_I",
+      voidNote: "wrong customer",
       voidedBy: { firstName: "Vera" },
       cashier: { firstName: "Vera" },
     });

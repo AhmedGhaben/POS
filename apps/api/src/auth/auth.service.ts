@@ -13,6 +13,7 @@ import * as bcrypt from "bcrypt";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { emailLanguage, type Language } from "../common/i18n/languages";
+import { countryConfig } from "../countries";
 import { parseDurationMs } from "../common/utils/duration";
 import { generateOpaqueToken, hashToken } from "../common/utils/tokens";
 import { normalizeEmail } from "../common/transforms/normalize-email";
@@ -145,8 +146,17 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
     const user = await this.prisma.$transaction(async (tx) => {
+      // Currency, language, time zone and IVA regime come from the country
+      // (Angola: AOA, pt-AO, Africa/Luanda, Regime Geral).
+      const country = countryConfig(dto.country ?? "AO");
       const business = await tx.business.create({
-        data: { name: dto.businessName.trim(), plan: Plan.SIMPLE, language: dto.language ?? "en" },
+        data: {
+          name: dto.businessName.trim(),
+          plan: Plan.SIMPLE,
+          country: country?.code ?? "AO",
+          currency: country?.currency ?? "USD",
+          language: dto.language ?? country?.defaultLanguage ?? "en",
+        },
       });
       // Every sale without a chosen customer goes to "Consumidor Final".
       await tx.customer.create({ data: finalConsumerData(business.id) });
@@ -154,7 +164,9 @@ export class AuthService {
         data: {
           businessId: business.id,
           name: dto.storeName.trim(),
-          timezone: dto.timezone ?? "UTC",
+          timezone: dto.timezone ?? country?.timeZone ?? "UTC",
+          country: country?.code ?? "AO",
+          ivaRegime: country?.defaultIvaRegime ?? "GERAL",
         },
       });
       return tx.user.create({
@@ -183,7 +195,8 @@ export class AuthService {
 
   private async buildSession(user: User): Promise<LoginResult> {
     const [allStores, business] = await Promise.all([
-      this.prisma.store.findMany({ where: { businessId: user.businessId, isActive: true } }),
+      // Oldest first: the business's first store is the default one.
+      this.prisma.store.findMany({ where: { businessId: user.businessId, isActive: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
       this.prisma.business.findUniqueOrThrow({ where: { id: user.businessId } }),
     ]);
 

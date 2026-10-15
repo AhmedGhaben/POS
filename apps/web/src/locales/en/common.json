@@ -98,7 +98,9 @@
     "CUSTOMER_CHANGED_MIND": "Customer changed their mind",
     "PAYMENT_PROBLEM": "Payment problem",
     "TRAINING": "Training or test",
-    "OTHER": "Other"
+    "OTHER": "Other",
+    "ANNUL_I": "I: the customer was wrongly identified (Anulada por incorrecta identificação do adquirente)",
+    "ANNUL_N": "N: the document never reached the customer (Anulada por não ter sido enviado o documento ao adquirente)"
   },
   "combobox": {
     "select": "Select...",

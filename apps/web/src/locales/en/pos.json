@@ -139,7 +139,8 @@
     "doneOffline": "Sale cancelled. It will sync when the till is back online.",
     "handBack": "Hand back {{amount}} in cash.",
     "printSlip": "Print cancellation slip",
-    "approval": "Cancel sale {{receipt}} ({{total}})"
+    "approval": "Cancel sale {{receipt}} ({{total}})",
+    "annulRule": "This sale is a Factura-Recibo. The law only allows annulling it for one of these two reasons. For anything else (wrong price or quantity, the customer returns something) make a return instead: it issues a credit note."
   },
   "discount": {
     "titleSale": "Discount on the whole sale",
@@ -207,5 +208,8 @@
     "selling": "Selling proforma {{number}}: this sale invoices it.",
     "detach": "Sell without it",
     "notOpen": "Proforma {{number}} isn't open any more."
+  },
+  "fiscal": {
+    "cantIssueOffline": "This sale can't be completed offline: invoices must be signed when they're issued, and this till has no signing key yet. Connect to the server (or register the till) and try again."
   }
 }

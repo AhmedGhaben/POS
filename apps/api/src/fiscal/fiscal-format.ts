@@ -58,14 +58,11 @@ export function fixed2(value: { toFixed(n: number): string }): string {
 }
 
 /**
- * Why a document was annulled, as written on it (SAF-T Reason, 50
- * characters at most), by the till's cancel reason. A sale cancelled on the
- * spot is annulled; anything after that is a credit note.
+ * The AGT annulment code of a cancel reason: I, the customer was wrongly
+ * identified; N, the document never reached the customer. Only these two
+ * annul a fiscal document (the wording is in the country config); anything
+ * else is corrected with a credit note. Same as @pos/shared annulmentCode.
  */
-export const ANNULMENT_REASONS: Record<string, string> = {
-  WRONG_ITEMS: "Erro na emissão: artigos errados",
-  CUSTOMER_CHANGED_MIND: "Venda não concretizada: cliente desistiu",
-  PAYMENT_PROBLEM: "Venda não concretizada: falha no pagamento",
-  TRAINING: "Emitido por engano (formação)",
-  OTHER: "Anulação do documento",
-};
+export function annulmentCode(reason: string): "I" | "N" | null {
+  return reason === "ANNUL_I" ? "I" : reason === "ANNUL_N" ? "N" : null;
+}

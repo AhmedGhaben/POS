@@ -1170,6 +1170,10 @@ model FiscalDocument {
   hashControl          String
   /// Characters 1, 11, 21, 31 of the hash.
   hashExcerpt          String
+  /// TILL: signed by the till when issued (and checked here); SERVER: signed here.
+  signedBy             String           @default("SERVER")
+  /// The signature checks out against the document and the previous one's hash.
+  chainVerified        Boolean          @default(true)
   /// Seller details when issued: business, store, regime, certificate.
   seller               Json
   customerId           String?
@@ -1256,4 +1260,27 @@ model FiscalDocumentLineTax {
 
   @@index([lineId])
   @@map("fiscal_document_line_taxes")
+}
+
+/// Something wrong in a series' hash chain, for managers to look at: a
+/// till's signature that doesn't match the document as received (edited or
+/// signed over a different previous document), a number that arrived out of
+/// order (missing or re-ordered documents), or an unknown key version.
+model FiscalChainAlert {
+  id           String    @id @default(cuid())
+  businessId   String
+  storeId      String
+  terminalId   String?
+  seriesId     String?
+  documentId   String?
+  /// SIGNATURE_MISMATCH, NUMBER_GAP, KEY_VERSION
+  kind         String
+  documentNo   String?
+  detail       String
+  createdAt    DateTime  @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+
+  @@index([businessId, resolvedAt])
+  @@map("fiscal_chain_alerts")
 }

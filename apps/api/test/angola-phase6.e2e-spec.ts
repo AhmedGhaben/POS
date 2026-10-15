@@ -251,7 +251,7 @@ describe("Angola phase 6: products, tax and stock (e2e)", () => {
       expect(await stockOf(item.id)).toEqual({ quantity: 36, averageCost: 130 });
 
       // Cancelling puts it back at that cost.
-      await http().post("/sales/void").set(auth(ownerToken)).send({ storeId, saleId: sale.id, reason: "WRONG_ITEMS" }).expect(200);
+      await http().post("/sales/void").set(auth(ownerToken)).send({ storeId, saleId: sale.id, reason: "ANNUL_N" }).expect(200);
       expect(await stockOf(item.id)).toEqual({ quantity: 40, averageCost: 130 });
     });
 

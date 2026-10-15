@@ -1,6 +1,15 @@
 import { create } from "zustand";
 
 /** The till's identity as stored on this computer by the desktop app. */
+export interface SigningStatus {
+  hasKey: boolean;
+  keyVersion: string | null;
+  /** "0" until the software is certified. */
+  hashControl: string | null;
+  /** Windows data protection is available to keep the key. */
+  secureStorage: boolean;
+}
+
 export interface DesktopTerminal {
   id: string;
   name: string;
@@ -147,6 +156,12 @@ export interface PosDesktopApi {
     /** Absent before 0.2.3. */
     hasKey?(): Promise<boolean>;
   };
+  /** Fiscal signing on the till (absent before 0.2.4): the key stays in the main process. */
+  signing?: {
+    status(): Promise<SigningStatus>;
+    refresh(): Promise<SigningStatus & { ok: boolean }>;
+    sign(message: string): Promise<{ hash: string; keyVersion: string }>;
+  };
   /** PIN sign-in (absent before 0.2.3). */
   staff?: {
     list(): Promise<TillStaffMember[]>;
@@ -235,6 +250,8 @@ interface DeviceState {
   setDisplay: (display: DisplaySettings) => Promise<void>;
   /** Re-reads the key and the staff list, fetching a fresh list when online. */
   refreshTill: (fetch?: boolean) => Promise<void>;
+  /** This till's signing key (it signs its own fiscal documents); null in a browser. */
+  signing: SigningStatus | null;
   setAutoLockMinutes: (minutes: number) => Promise<void>;
 }
 
@@ -243,6 +260,7 @@ let unsubscribeUpdates: (() => void) | null = null;
 export const useDeviceStore = create<DeviceState>((set, get) => ({
   terminal: null,
   hasKey: false,
+  signing: null,
   staff: [],
   autoLockMinutes: 0,
   printing: null,
@@ -272,8 +290,12 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
   refreshTill: async (fetch = true) => {
     if (!desktop?.terminal.hasKey || !desktop.staff) return;
     if (fetch) await desktop.staff.refresh().catch(() => undefined);
+    // The signing key: fetched (or rotated) with the till's key, dropped if access was withdrawn.
+    const signing = desktop.signing
+      ? await (fetch ? desktop.signing.refresh() : desktop.signing.status()).catch(() => null)
+      : null;
     const [hasKey, staff] = await Promise.all([desktop.terminal.hasKey(), desktop.staff.list()]);
-    set({ hasKey, staff });
+    set({ hasKey, staff, signing });
   },
   setAutoLockMinutes: async (minutes) => {
     if (!desktop) return;

@@ -140,6 +140,14 @@ const configSchema = z.object({
   terminal: terminalSchema.nullable().optional().catch(undefined),
   /** The till's secret key, protected with DPAPI (see till.ts). */
   terminalKey: z.string().max(2000).nullable().optional().catch(undefined),
+  /**
+   * The key the till signs its fiscal documents with, encrypted with DPAPI
+   * (never stored in plain text), and its version (see fiscal-signing.ts).
+   */
+  signingKey: z.string().max(8000).nullable().optional().catch(undefined),
+  signingKeyVersion: z.string().max(20).nullable().optional().catch(undefined),
+  /** HashControl to print: "0" until the software is certified. */
+  signingHashControl: z.string().max(20).nullable().optional().catch(undefined),
   /** Someone signed in with their PIN while offline; the server session follows. */
   pinResume: z
     .object({ userId: z.string().min(1).max(64), verifiedAt: z.string().datetime() })

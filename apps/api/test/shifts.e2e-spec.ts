@@ -162,7 +162,7 @@ describe("Shifts (e2e)", () => {
       .send({ storeId, terminalId, shiftClientId: shiftId, lineItems: [{ productId, quantity: 1 }], payments: [{ method: "CASH", amount: 10 }] })
       .expect(403);
 
-    await http().post("/sales/void").set(auth(ownerToken)).send({ storeId, saleId: cancelled.id, reason: "WRONG_ITEMS" }).expect(200);
+    await http().post("/sales/void").set(auth(ownerToken)).send({ storeId, saleId: cancelled.id, reason: "ANNUL_N" }).expect(200);
     await http()
       .post("/returns")
       .set(auth(ownerToken))

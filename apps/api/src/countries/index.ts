@@ -67,3 +67,8 @@ export function lineTax(config: CountryConfig | null, regime: IvaRegime | null |
   const code = (product.taxCode ?? "NOR") as TaxCode;
   return { taxType: "IVA", taxCode: code === "ISE" ? "NOR" : code, rate, exemptionCode: null };
 }
+
+/** The country whose currency this is, for labelling amounts ("Kz" for AOA). */
+export function countryForCurrency(currency: string | null | undefined): CountryConfig | null {
+  return Object.values(COUNTRIES).find((c) => c.currency === currency) ?? null;
+}

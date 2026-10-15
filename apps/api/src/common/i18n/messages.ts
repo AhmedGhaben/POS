@@ -313,7 +313,16 @@ const EXACT: Record<string, Translations> = {
   "A returned product wasn't on the sale": { "pt-PT": "Um dos produtos devolvidos não fazia parte da venda", "pt-BR": "Um dos produtos devolvidos não fazia parte da venda" },
   "Only a till numbers its own documents": { "pt-PT": "Só uma caixa numera os seus próprios documentos", "pt-BR": "Só um caixa numera os próprios documentos" },
   "Document not found": { "pt-PT": "Documento não encontrado", "pt-BR": "Documento não encontrado" },
+  "Alert not found": { "pt-PT": "Alerta não encontrado", "pt-BR": "Alerta não encontrado" },
+  "This till's access was withdrawn; it can't issue documents": {
+    "pt-PT": "O acesso desta caixa foi retirado; já não pode emitir documentos",
+    "pt-BR": "O acesso deste caixa foi retirado; ele não pode mais emitir documentos",
+  },
   "Till not found": { "pt-PT": "Caixa não encontrada", "pt-BR": "Caixa não encontrado" },
+  "This sale's Factura-Recibo can only be annulled if the customer was wrongly identified or it never reached the customer. Otherwise make a return (credit note).": {
+    "pt-PT": "A Factura-Recibo desta venda só pode ser anulada se o cliente foi mal identificado ou se o documento não lhe chegou a ser entregue. Nos outros casos faça uma devolução (nota de crédito).",
+    "pt-BR": "A Fatura-Recibo desta venda só pode ser anulada se o cliente foi identificado errado ou se o documento não chegou a ser entregue. Nos outros casos faça uma devolução (nota de crédito).",
+  },
   "Every sale already has its Factura-Recibo; print that instead": {
     "pt-PT": "Cada venda já tem a sua Factura-Recibo; imprima essa",
     "pt-BR": "Cada venda já tem sua Fatura-Recibo; imprima essa",

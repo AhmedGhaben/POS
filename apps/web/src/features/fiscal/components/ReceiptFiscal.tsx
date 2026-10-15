@@ -1,4 +1,4 @@
-import { countryConfig, findExemption, type CustomerDto, type SaleDto } from "@pos/shared";
+import { annulmentCode, countryConfig, findExemption, type CustomerDto, type SaleDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
 import { useDocumentLanguage } from "@/i18n/use-document-language";
 import { AgtQr } from "./AgtQr";
@@ -14,13 +14,21 @@ export function ReceiptFiscalTop({ sale, customer: chosen }: { sale: SaleDto; cu
   const country = useAuthStore((s) => s.business?.country);
   if (!doc) return null;
   const config = countryConfig(doc.seller?.country ?? country);
+  const code = sale.voidReason ? annulmentCode(sale.voidReason) : null;
+  // The legal wording, in Portuguese whatever the language (AGT documentCancelReason).
+  const annulled = code ? config?.annulmentReasons[code] : null;
   const buyerName = customer && !customer.isFinalConsumer ? customer.name : "Consumidor Final";
   const buyerNif = customer && !customer.isFinalConsumer && customer.taxId ? customer.taxId : (config?.finalConsumerTaxId ?? "999999999");
   return (
     <div className="text-center">
       <p className="text-sm font-bold">{documentTitle(doc.documentType, doc.seller?.country ?? country)}</p>
       <p className="font-bold">{doc.documentNo}</p>
-      {(doc.status === "A" || sale.status === "VOIDED") && <p className="font-bold">*** {ANNULLED_STAMP} ***</p>}
+      {(doc.status === "A" || sale.status === "VOIDED") && (
+        <>
+          <p className="font-bold">*** {ANNULLED_STAMP} ***</p>
+          {annulled && <p>{annulled}</p>}
+        </>
+      )}
       <p>{t("fiscal.receiptCustomer", { name: buyerName })}</p>
       <p>{t("fiscal.nif", { nif: buyerNif })}</p>
     </div>

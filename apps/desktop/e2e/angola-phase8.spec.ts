@@ -67,9 +67,10 @@ test.describe.serial("Angola phase 8: fiscal documents at the till", () => {
     await expect(receipt).toContainText("Factura-Recibo");
     await expect(receipt).toContainText(`FR ${series}/1`);
     await expect(receipt).toContainText("NIF: 999999999");
-    await expect(receipt).toContainText("Processado por programa não validado");
+    // Signed on the till: the 4 hash characters lead the certification line.
+    await expect(receipt).toContainText(/[^ ]{4}-Processado por programa não validado/);
     await expect(receipt).toContainText("DOCUMENTO SEM VALIDADE FISCAL");
-    const qr = receipt.locator("svg[data-qr]").first();
+    const qr = receipt.locator("[data-qr]").first();
     await expect(qr).toHaveAttribute("data-qr", new RegExp(`document=FR%20${series}/1$`));
 
     // The A4 copy is the same document, from the server.
@@ -80,12 +81,22 @@ test.describe.serial("Angola phase 8: fiscal documents at the till", () => {
     await closeDialog(page);
   });
 
-  test("offline, the till still numbers the next one; it signs when it uploads", async () => {
+  test("the till holds its signing key; the page can't fetch it", async () => {
+    const status = await page.evaluate(() =>
+      (window as unknown as { posDesktop: { signing: { status(): Promise<{ hasKey: boolean; keyVersion: string | null; secureStorage: boolean }> } } }).posDesktop.signing.status(),
+    );
+    expect(status).toMatchObject({ hasKey: true, keyVersion: "1", secureStorage: true });
+    const blocked = await page.evaluate(async () => (await fetch("/api/fiscal-documents/signing-key")).status);
+    expect(blocked).toBe(403);
+  });
+
+  test("offline, the till numbers and signs the next one: the receipt has its hash characters", async () => {
     proxy.setMode("bad-gateway");
     const receipt = await sell(page);
     await expect(receipt).toContainText("Saved offline");
     await expect(receipt).toContainText(`FR ${series}/2`);
-    await expect(receipt).toContainText("Signature pending");
+    await expect(receipt).toContainText(/[^ ]{4}-Processado por programa não validado/);
+    await expect(receipt).not.toContainText("Signature pending");
     await closeDialog(page);
 
     // Back online: the queue uploads it (the background sync checks every 30 s).
@@ -97,6 +108,13 @@ test.describe.serial("Angola phase 8: fiscal documents at the till", () => {
         return ((await res.json()) as { items: { documentNo: string }[] }).items.map((d) => d.documentNo);
       });
     await expect.poll(serverNumbers, { timeout: 70_000 }).toContain(`FR ${series}/2`);
+    // The server checked the till's signatures over the chain: no alerts.
+    const alerts = await page.evaluate(async () => {
+      const auth = JSON.parse(localStorage.getItem("pos-auth")!).state;
+      const res = await fetch("/api/fiscal-documents/alerts", { headers: { Authorization: `Bearer ${auth.accessToken}` } });
+      return (await res.json()) as { documentNo: string | null }[];
+    });
+    expect(alerts.filter((a) => a.documentNo?.includes(series))).toEqual([]);
   });
 
   test("the documents list shows them; the next online sale carries on at 3", async () => {

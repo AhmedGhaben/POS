@@ -96,7 +96,7 @@ test.describe.serial("Part D: customer displays", () => {
     await page.getByRole("button", { name: /^Charge/ }).click();
     await expect(page.getByRole("dialog")).toContainText("Sale complete");
     const paid = await poleShows(/PAID.*CHANGE/s);
-    expect(paid).toMatch(/CHANGE\s+\S+ 0\.00/);
+    expect(paid).toMatch(/CHANGE\s+0,00 Kz/);
     await page.keyboard.press("Escape");
     await poleShows(/Hello from Demo/);
   });

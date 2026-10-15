@@ -1,6 +1,8 @@
 import { PaymentMethod, SaleStatus } from "@pos/shared";
 import type { CreateSaleDto, SaleDto, SaleLineItemDto, SalePaymentDto } from "@pos/shared";
 import { currentTaxContext, linePrice, priceCart, productTax, type CartLine } from "./hooks/useCart";
+import { hashExcerpt } from "@/features/fiscal/hash";
+import { useDeviceStore } from "@/features/desktop/bridge";
 
 /**
  * Receipt number for a sale rung up offline. Must match the API's
@@ -97,9 +99,18 @@ export function buildOfflineSale(localId: string, dto: CreateSaleDto, lines: Car
     status: SaleStatus.COMPLETED,
     createdAt: dto.offline?.createdAt ?? new Date().toISOString(),
     createdOffline: true,
-    // The till numbered it: the receipt carries its real number (its hash comes when it uploads).
+    // The till numbered and signed it: the receipt is the document, number and hash characters included.
     fiscalDocuments: dto.fiscal
-      ? [{ id: "", documentType: "FR", documentNo: `FR ${dto.fiscal.series}/${dto.fiscal.number}`, status: "N", hashExcerpt: "", hashControl: "0" }]
+      ? [
+          {
+            id: "",
+            documentType: "FR",
+            documentNo: `FR ${dto.fiscal.series}/${dto.fiscal.number}`,
+            status: "N",
+            hashExcerpt: dto.fiscal.hash ? hashExcerpt(dto.fiscal.hash) : "",
+            hashControl: useDeviceStore.getState().signing?.hashControl ?? "0",
+          },
+        ]
       : undefined,
     pricesIncludeTax: priced.taxIncluded,
     queued: true,

@@ -13,6 +13,7 @@ import {
   SwitchableProxy,
   tempUserData,
   logOut,
+  registerTill,
 } from "./helpers";
 
 /**
@@ -51,11 +52,11 @@ test.describe.serial("Till: cancel a sale", () => {
     await page.getByRole("dialog").waitFor({ state: "hidden" });
   }
 
-  async function cancelLatest(reason: string) {
+  async function cancelLatest(reason: string | RegExp) {
     await page.getByRole("button", { name: "Recent sales" }).click();
     const latest = page.getByTestId("recent-sale").first();
     await latest.getByRole("button", { name: "Cancel sale" }).click();
-    await page.getByLabel(reason).check();
+    await page.getByRole("radio", { name: reason }).check();
     await page.getByRole("dialog").getByRole("button", { name: "Cancel sale" }).click();
   }
 
@@ -66,7 +67,22 @@ test.describe.serial("Till: cancel a sale", () => {
     await connect(page, proxy.url);
     await login(page);
     await restock(page);
+    // A shift a previous run left open would skip the float's drawer kick this test counts from.
+    await page.evaluate(async () => {
+      const auth = JSON.parse(localStorage.getItem("pos-auth")!).state;
+      const headers = { Authorization: `Bearer ${auth.accessToken}`, "Content-Type": "application/json" };
+      const current = await (await fetch(`/api/shifts/current?storeId=${auth.currentStoreId}`, { headers })).json();
+      if (current?.shift?.status === "OPEN") {
+        await fetch("/api/shifts/close", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ storeId: auth.currentStoreId, shiftClientId: current.shift.clientId, countedCash: 0 }),
+        });
+      }
+    });
 
+    // Selling offline needs the till's signing key (Angola).
+    await registerTill(page, "Void Till");
     await page.goto("app://pos/device");
     await page.getByRole("combobox", { name: "Drawer connection" }).click();
     await page.getByRole("option", { name: "Network printer (IP address)" }).click();
@@ -92,7 +108,7 @@ test.describe.serial("Till: cancel a sale", () => {
     await expect.poll(() => printer.jobs.length).toBe(1);
     const saleId = (await salesWithStatus(page))[0].id;
 
-    await cancelLatest("Customer changed their mind");
+    await cancelLatest(/^N: the document never reached the customer/);
     const dialog = page.getByRole("dialog");
     await expect(dialog).toContainText("Sale cancelled");
     await expect(dialog).toContainText(/Hand back .+ in cash/);
@@ -102,7 +118,7 @@ test.describe.serial("Till: cancel a sale", () => {
     expect(printer.jobs[1]).toBe(KICK);
 
     const sale = (await salesWithStatus(page)).find((s) => s.id === saleId)!;
-    expect(sale).toMatchObject({ status: "VOIDED", voidReason: "CUSTOMER_CHANGED_MIND" });
+    expect(sale).toMatchObject({ status: "VOIDED", voidReason: "ANNUL_N" });
 
     await dialog.getByRole("button", { name: "Close", exact: true }).first().click();
     const row = page.getByTestId("recent-sale").first();
@@ -128,7 +144,7 @@ test.describe.serial("Till: cancel a sale", () => {
     await expect(page.getByTestId("recent-sale").first()).toContainText("Waiting to upload");
     await page.keyboard.press("Escape");
 
-    await cancelLatest("Wrong items or price");
+    await cancelLatest(/^I: the customer was wrongly identified/);
     await expect(page.getByRole("dialog")).toContainText("It will sync when the till is back online");
     await page.getByRole("dialog").getByRole("button", { name: "Close", exact: true }).first().click();
     await expect(page.getByTestId("recent-sale").first()).toContainText("Cancelled");
@@ -140,7 +156,7 @@ test.describe.serial("Till: cancel a sale", () => {
       .toBe(0);
     // The offline sale is the newest one, already cancelled.
     const [latest] = await salesWithStatus(page);
-    expect(latest).toMatchObject({ createdOffline: true, status: "VOIDED", voidReason: "WRONG_ITEMS" });
+    expect(latest).toMatchObject({ createdOffline: true, status: "VOIDED", voidReason: "ANNUL_I" });
   });
 
   test("a cashier without the permission cancels with a manager's approval (PIN)", async () => {
@@ -150,7 +166,7 @@ test.describe.serial("Till: cancel a sale", () => {
     await openPosWithProducts(page);
     await sellFirstProduct(page);
 
-    await cancelLatest("Wrong items or price");
+    await cancelLatest(/^I: the customer was wrongly identified/);
     const approval = page.getByRole("dialog", { name: "Manager approval" });
     await expect(approval).toContainText("Cancel sale");
     // Cancelling the approval leaves the sale alone.
@@ -166,7 +182,7 @@ test.describe.serial("Till: cancel a sale", () => {
     for (const digit of OWNER_PIN) await page.keyboard.press(digit);
     await page.keyboard.press("Enter");
     await expect(page.getByRole("dialog")).toContainText("Sale cancelled");
-    expect((await salesWithStatus(page))[0]).toMatchObject({ status: "VOIDED", voidReason: "WRONG_ITEMS" });
+    expect((await salesWithStatus(page))[0]).toMatchObject({ status: "VOIDED", voidReason: "ANNUL_I" });
     // Close the slip and Recent sales, then sign out (closing the cashier's shift).
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog").filter({ hasText: "Sale cancelled" })).toHaveCount(0);

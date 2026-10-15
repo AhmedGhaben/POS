@@ -37,6 +37,13 @@ export const AO: CountryConfig = {
   defaultLanguage: "pt-AO",
   timeZone: "Africa/Luanda",
   currencyWords: { singular: "kwanza", plural: "kwanzas", centSingular: "cêntimo", centPlural: "cêntimos" },
+  // ISO 4217 is AOA (stored, exported, SAF-T CurrencyCode); printed as Kz ("AKZ" also seen on Angolan receipts).
+  currencyLabel: "Kz",
+  // AGT e-invoicing spec DS.120, 4.1.6 documentCancelReason (Decreto Presidencial 71/25, art. 8.º, n.ºs 8 e 9).
+  annulmentReasons: {
+    I: "Anulada por incorrecta identificação do adquirente",
+    N: "Anulada por não ter sido enviado o documento ao adquirente",
+  },
   // Alphanumeric, e.g. 000415195LA035 (companies) or 9-10 digits.
   taxIdPattern: /^[A-Z0-9]{9,14}$/i,
   taxIdLabel: "NIF",

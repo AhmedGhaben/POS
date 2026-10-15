@@ -57,6 +57,15 @@
     "tab": "Fiscal documents",
     "legacyTab": "Older invoices (INV)",
     "legacyNote": "Invoices issued before sales became fiscal documents.",
-    "sellProforma": "Sell in the till"
+    "sellProforma": "Sell in the till",
+    "alertsTitle_one": "{{count}} problem in the documents' hash chain",
+    "alertsTitle_other": "{{count}} problems in the documents' hash chain",
+    "alertsHint": "Found when documents arrived from a till. Each may mean a document was changed, is missing or came out of order: check the till and the documents, then mark it checked.",
+    "alertChecked": "Checked",
+    "alertKinds": {
+      "SIGNATURE_MISMATCH": "Signature doesn't match",
+      "NUMBER_GAP": "Missing or out-of-order number",
+      "KEY_VERSION": "Unknown key version"
+    }
   }
 }

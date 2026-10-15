@@ -11,6 +11,7 @@ import {
   SwitchableProxy,
   tempUserData,
   logOut,
+  registerTill,
 } from "./helpers";
 
 /**
@@ -31,7 +32,10 @@ const sales = (page: Page) => serverSales(page) as unknown as Promise<SaleRow[]>
 /** The total on the Charge button, as a number. */
 async function chargeAmount(page: Page) {
   const text = (await page.getByRole("button", { name: /^Charge/ }).textContent()) ?? "";
-  return Number(text.replace(/[^\d.,]/g, "").replace(/,/g, ""));
+  // "1 234,56 Kz" (Angola) or "$1,234.56": the last separator is the decimal one.
+  const digits = text.replace(/[^\d.,]/g, "");
+  const decimal = Math.max(digits.lastIndexOf(","), digits.lastIndexOf("."));
+  return decimal < 0 ? Number(digits) : Number(`${digits.slice(0, decimal).replace(/[.,]/g, "")}.${digits.slice(decimal + 1)}`);
 }
 
 test.describe.serial("Till: discounts", () => {
@@ -63,6 +67,8 @@ test.describe.serial("Till: discounts", () => {
     await connect(page, proxy.url);
     await login(page);
     await restock(page);
+    // Selling offline needs the till's signing key (Angola).
+    await registerTill(page, "Discount Till");
     await openPosWithProducts(page);
   });
 

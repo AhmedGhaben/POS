@@ -302,3 +302,19 @@ export class FakePrinter {
     if (s) await new Promise<void>((r) => s.close(() => r()));
   }
 }
+
+/**
+ * Registers this till (device page). In Angola a sale is a fiscal document
+ * the till must sign as it issues it, so selling offline needs a registered
+ * till holding its signing key (fetched with the till's key on registering).
+ */
+export async function registerTill(page: Page, name = `Test Till ${Date.now()}`) {
+  await page.goto("app://pos/device");
+  await page.getByLabel("Till name").fill(name);
+  await page.getByRole("button", { name: "Register this till" }).click();
+  await page.getByText(/^POS-\d{3}$/).waitFor();
+  await page.waitForFunction(async () => {
+    const status = await (window as unknown as { posDesktop: { signing: { status(): Promise<{ hasKey: boolean }> } } }).posDesktop.signing.status();
+    return status.hasKey;
+  });
+}

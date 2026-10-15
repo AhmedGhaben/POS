@@ -11,7 +11,7 @@ export class StoresService {
 
   async findAccessible(businessId: string, userId: string, role: Role) {
     if (role === Role.OWNER) {
-      return this.prisma.store.findMany({ where: { businessId, isActive: true } });
+      return this.prisma.store.findMany({ where: { businessId, isActive: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] });
     }
     return this.prisma.store.findMany({
       where: {
@@ -19,16 +19,22 @@ export class StoresService {
         isActive: true,
         storeUsers: { some: { userId } },
       },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     });
   }
 
-  create(businessId: string, dto: CreateStoreDto) {
+  /** A new store takes the business's country: its time zone and default IVA regime. */
+  async create(businessId: string, dto: CreateStoreDto) {
+    const business = await this.prisma.business.findUnique({ where: { id: businessId }, select: { country: true } });
+    const country = countryConfig(business?.country);
     return this.prisma.store.create({
       data: {
         businessId,
         name: dto.name,
         address: dto.address,
-        timezone: dto.timezone ?? "UTC",
+        timezone: dto.timezone ?? country?.timeZone ?? "UTC",
+        country: country?.code ?? business?.country ?? "AO",
+        ivaRegime: country?.defaultIvaRegime ?? "GERAL",
       },
     });
   }

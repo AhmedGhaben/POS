@@ -1,6 +1,7 @@
 import { IsEmail, IsIn, IsOptional, IsString, IsTimeZone, MaxLength, MinLength } from "class-validator";
 import { NormalizeEmail } from "../../common/transforms/normalize-email";
 import { SUPPORTED_LANGUAGES } from "../../common/i18n/languages";
+import { COUNTRIES } from "../../countries";
 
 export class RegisterDto {
   @IsString()
@@ -40,4 +41,9 @@ export class RegisterDto {
   @IsOptional()
   @IsIn(SUPPORTED_LANGUAGES)
   language?: string;
+
+  /** The business's country (country config code); Angola by default. */
+  @IsOptional()
+  @IsIn(Object.keys(COUNTRIES))
+  country?: string;
 }

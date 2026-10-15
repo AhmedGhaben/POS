@@ -117,6 +117,16 @@ const posDesktop = {
     /** Whether this till has its key (kept in the main process, never shown). */
     hasKey: (): Promise<boolean> => ipcRenderer.invoke("till:has-key"),
   },
+  signing: {
+    /** Whether this till holds its signing key (kept by Windows' protection, never shown). */
+    status: (): Promise<{ hasKey: boolean; keyVersion: string | null; hashControl: string | null; secureStorage: boolean }> =>
+      ipcRenderer.invoke("signing:status"),
+    /** Fetches or rotates the key from the server (with the till's key); drops it if access was withdrawn. */
+    refresh: (): Promise<{ ok: boolean; hasKey: boolean; keyVersion: string | null; hashControl: string | null; secureStorage: boolean }> =>
+      ipcRenderer.invoke("signing:refresh"),
+    /** Signs a document's hash message. */
+    sign: (message: string): Promise<{ hash: string; keyVersion: string }> => ipcRenderer.invoke("signing:sign", message),
+  },
   staff: {
     /** Who can sign in on this till with a PIN (saved for offline use). */
     list: (): Promise<StaffMember[]> => ipcRenderer.invoke("staff:list"),

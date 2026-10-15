@@ -58,7 +58,7 @@ describe("Business settings (e2e)", () => {
     businessId = reg.body.user.businessId;
     ownerToken = reg.body.accessToken;
     storeId = reg.body.stores[0].id;
-    expect(reg.body.business).toMatchObject({ name: "E2E Settings Shop", currency: "USD", logoUrl: null });
+    expect(reg.body.business).toMatchObject({ name: "E2E Settings Shop", currency: "AOA", logoUrl: null });
 
     await http()
       .post("/employees")

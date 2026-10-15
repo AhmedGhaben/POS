@@ -98,7 +98,9 @@
     "CUSTOMER_CHANGED_MIND": "O cliente desistiu",
     "PAYMENT_PROBLEM": "Problema no pagamento",
     "TRAINING": "Treinamento ou teste",
-    "OTHER": "Outro"
+    "OTHER": "Outro",
+    "ANNUL_I": "I: Anulada por incorrecta identificação do adquirente",
+    "ANNUL_N": "N: Anulada por não ter sido enviado o documento ao adquirente"
   },
   "combobox": {
     "select": "Selecionar...",

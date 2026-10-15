@@ -70,6 +70,24 @@ describe("Angola phase 7: country config and company data (e2e)", () => {
     expect(store).toMatchObject({ country: "AO", ivaRegime: "GERAL", pricesIncludeTax: true });
   });
 
+  it("a new Angolan business takes the country's defaults: AOA, pt-AO, Africa/Luanda", async () => {
+    const reg = await http()
+      .post("/auth/register")
+      .send({ businessName: "E2E Defaults Lda", storeName: "Loja", firstName: "Ana", lastName: "Owner", email: `p7-defaults-${RUN}@e2e.test`, password: PASSWORD })
+      .expect(201);
+    try {
+      const business = await prisma.business.findUniqueOrThrow({ where: { id: reg.body.user.businessId } });
+      expect(business).toMatchObject({ country: "AO", currency: "AOA", language: "pt-AO" });
+      const store = await prisma.store.findUniqueOrThrow({ where: { id: reg.body.stores[0].id } });
+      expect(store).toMatchObject({ country: "AO", timezone: "Africa/Luanda", ivaRegime: "GERAL" });
+      // A second store follows the business's country too.
+      const second = await http().post("/stores").set(auth(reg.body.accessToken)).send({ name: "Loja 2" });
+      if (second.status === 201) expect(second.body).toMatchObject({ timezone: "Africa/Luanda", country: "AO" });
+    } finally {
+      await deleteBusiness(prisma, reg.body.user.businessId);
+    }
+  });
+
   it("company data: alphanumeric NIF, legal form and province from the lists, CAE", async () => {
     const res = await http()
       .patch("/businesses/me")

@@ -57,6 +57,15 @@
     "tab": "Documentos fiscais",
     "legacyTab": "Facturas antigas (INV)",
     "legacyNote": "Facturas emitidas antes de as vendas passarem a ser documentos fiscais.",
-    "sellProforma": "Vender na caixa"
+    "sellProforma": "Vender na caixa",
+    "alertsTitle_one": "{{count}} problema na cadeia de assinaturas dos documentos",
+    "alertsTitle_other": "{{count}} problemas na cadeia de assinaturas dos documentos",
+    "alertsHint": "Detetados quando os documentos chegaram de uma caixa. Cada um pode indicar um documento alterado, em falta ou fora de ordem: verifique a caixa e os documentos e marque como verificado.",
+    "alertChecked": "Verificado",
+    "alertKinds": {
+      "SIGNATURE_MISMATCH": "Assinatura não corresponde",
+      "NUMBER_GAP": "Número em falta ou fora de ordem",
+      "KEY_VERSION": "Versão de chave desconhecida"
+    }
   }
 }

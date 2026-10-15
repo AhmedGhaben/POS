@@ -2,7 +2,8 @@ import { Type } from "class-transformer";
 import { IsIn, IsISO8601, IsOptional, IsString, IsUUID, MaxLength, ValidateNested } from "class-validator";
 import { OfflineOverrideDto } from "../../overrides/dto/override.dto";
 
-export const VOID_REASONS = ["WRONG_ITEMS", "CUSTOMER_CHANGED_MIND", "PAYMENT_PROBLEM", "TRAINING", "OTHER"] as const;
+/** ANNUL_I / ANNUL_N: the only reasons a fiscal document (Angola) may be annulled. */
+export const VOID_REASONS = ["WRONG_ITEMS", "CUSTOMER_CHANGED_MIND", "PAYMENT_PROBLEM", "TRAINING", "OTHER", "ANNUL_I", "ANNUL_N"] as const;
 export type VoidReason = (typeof VOID_REASONS)[number];
 
 /**

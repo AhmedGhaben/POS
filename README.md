@@ -59,18 +59,28 @@ Prisma backend.
     the older documents, readable but no longer issued)
 - **Fiscal documents (Angola)**: every completed sale is a
   **Factura-Recibo** (FR), every return a **Nota de Crédito** (NC) pointing
-  at the FR and the lines it corrects, and cancelling a sale annuls its FR
-  (status A, with the reason). Proformas (PF) can be saved from a quote and
-  sold later from the till.
+  at the FR and the lines it corrects. Proformas (PF) can be saved from a
+  quote and sold later from the till.
+  - **Annulling** an FR (status A) is only allowed for the two reasons the
+    law gives (AGT `documentCancelReason`): **I**, the customer was wrongly
+    identified, or **N**, the document never reached the customer. The
+    cancel dialog says so; anything else is a return (credit note). The code
+    and its Portuguese wording are kept and printed.
   - **Series** per till per document type per year (`FR POS001-2026/57`),
-    gap-free. A registered till numbers its own, so a receipt printed
-    offline already has its real number; the server checks numbers arrive
-    in order (a gap waits in the queue). Browser sales use the store's
-    series (`WEB1-2026`).
-  - **Hash chain**: each document is signed (RSA-SHA1, Base64) over
-    `InvoiceDate;SystemEntryDate;InvoiceNo;GrossTotal;previous hash`; the
-    printout shows hash characters 1, 11, 21, 31 before the certification
-    line. HashControl is 0 until the software is certified.
+    gap-free. Browser sales use the store's series (`WEB1-2026`), numbered
+    and signed by the server.
+  - **Signed on the till**: a registered till numbers and signs every
+    document as it issues it (RSA-SHA1, Base64, over
+    `InvoiceDate;SystemEntryDate;InvoiceNo;GrossTotal;previous hash`), so
+    the receipt carries hash characters 1, 11, 21, 31 online or offline.
+    The key reaches a till only with its till key (registration), is kept
+    encrypted by Windows (DPAPI) and never shown to the page, has a version
+    (HashControl once certified, 0 until then) so it can be rotated, and is
+    dropped when the till's access is withdrawn. The server checks every
+    signature over the chain on upload and flags breaks (signature that
+    doesn't match, missing or re-ordered numbers, unknown key version) to
+    managers on the Invoices page. Without its key a till can't sell
+    offline in Angola.
   - **Immutable**: no route changes or deletes a document, and a database
     trigger refuses it too (only annulling, or a proforma becoming
     invoiced).
@@ -81,6 +91,14 @@ Prisma backend.
     reasons, the amount in words, the hash line, the AGT QR code, and
     "DOCUMENTO SEM VALIDADE FISCAL" until certified. **Invoices** lists every
     document (filter by type, date, customer/NIF) for reprinting.
+  - **AGT QR code**: Model 2, error correction M, byte mode, UTF-8, a
+    350 x 350 px PNG with a 4-module quiet zone; version 8 for the AGT link
+    (version 4 holds only 62 bytes). The centre logo is off until tested on
+    real prints.
+  - **Kwanzas**: stored and exported as AOA (ISO 4217), printed "Kz"
+    (country setting) in the Portuguese format, e.g. "245 000,00 Kz". A
+    new business takes its country's currency, language (pt-AO), time
+    zone (Africa/Luanda) and IVA regime.
 - **Products & stock**: categories, per-store inventory, purchases,
   returns, transfers between stores, low-stock alerts, and **CSV
   import/export** with a validating preview.

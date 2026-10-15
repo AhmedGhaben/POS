@@ -19,6 +19,7 @@ import { IssueInvoiceDialog } from "@/features/invoices/components/IssueInvoiceD
 import { printDocument } from "@/features/desktop/printing";
 import { fetchSalesByStore } from "@/features/sales/api";
 import { FiscalDocumentsList } from "@/features/fiscal/components/FiscalDocumentsList";
+import { ChainAlerts } from "@/features/fiscal/components/ChainAlerts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate, formatDateTime } from "@/lib/format";
 
@@ -131,6 +132,7 @@ export function InvoicesPage() {
         <h1 className="text-2xl font-semibold">{t("common:nav.invoices")}</h1>
         <p className="text-sm text-muted-foreground">{t("fiscal.subtitle")}</p>
       </div>
+      <ChainAlerts />
       <Tabs defaultValue="documents">
         <TabsList>
           <TabsTrigger value="documents">{t("fiscal.tab")}</TabsTrigger>

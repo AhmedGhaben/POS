@@ -103,6 +103,13 @@ export interface CountryConfig {
   timeZone: string;
   /** The currency in words, for amounts written out on documents. */
   currencyWords: CurrencyWords;
+  /** How amounts are labelled on screen and on paper (Angola: "Kz", or "AKZ"); stored and exported as the ISO code. */
+  currencyLabel: string;
+  /**
+   * The only reasons a fiscal document may be annulled, by code, with the
+   * wording printed and exported. Anything else is corrected with a credit note.
+   */
+  annulmentReasons: Record<string, string>;
   /** Tax ID pattern (alphanumeric in Angola, e.g. 000415195LA035). */
   taxIdPattern: RegExp;
   taxIdLabel: string;

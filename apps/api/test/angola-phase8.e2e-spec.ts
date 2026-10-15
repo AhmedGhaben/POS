@@ -64,7 +64,7 @@ describe("Angola phase 8: fiscal documents (e2e)", () => {
     businessId = reg.body.user.businessId;
     ownerToken = reg.body.accessToken;
     storeId = reg.body.stores[0].id;
-    await http().patch("/businesses/me").set(auth(ownerToken)).send({ legalName: "E2E Facturas, Lda", taxId: "5417000123", currency: "AOA" }).expect(200);
+    await http().patch("/businesses/me").set(auth(ownerToken)).send({ legalName: "E2E Facturas, Lda", taxId: "5417000123" }).expect(200);
     const email = `p8-cashier-${RUN}@e2e.test`;
     await http()
       .post("/employees")
@@ -150,7 +150,7 @@ describe("Angola phase 8: fiscal documents (e2e)", () => {
     it("an older till that doesn't number gets the next number from the server; the till reads where its series is", async () => {
       expect((await sale({ terminalId: terminal.id }).expect(201)).body.fiscalDocuments[0].documentNo).toBe(`FR ${series()}/3`);
       const res = (await http().get(`/fiscal-documents/series/till/${terminal.id}`).set(auth(cashierToken)).expect(200)).body;
-      expect(res.series).toEqual([{ documentType: "FR", code: series(), year: YEAR, nextNumber: 4 }]);
+      expect(res.series).toEqual([{ documentType: "FR", code: series(), year: YEAR, nextNumber: 4, lastHash: expect.any(String) }]);
       expect(res.prefix).toBe(series().split("-")[0]);
     });
 
@@ -164,12 +164,89 @@ describe("Angola phase 8: fiscal documents (e2e)", () => {
     });
   });
 
-  describe("cancelling, returns and immutability", () => {
-    it("cancelling a sale annuls its FR with the reason; the number stays used", async () => {
-      const s = (await sale().expect(201)).body;
-      await http().post("/sales/void").set(auth(ownerToken)).send({ storeId, saleId: s.id, reason: "WRONG_ITEMS" }).expect(200);
+  describe("the till signs its own documents", () => {
+    let tillKey: string;
+    let pem: string;
+    let keyVersion: string;
+    const series = () => `${terminal.code.replace(/-/g, "")}-${YEAR}`;
+    // What the till does: the message over the previous document's hash, signed with its key.
+    const tillSigned = async (number: number, grossTotal: string, tamper = false) => {
+      const state = (await http().get(`/fiscal-documents/series/till/${terminal.id}`).set(auth(ownerToken)).expect(200)).body;
+      const previousHash = state.series.find((s: { code: string }) => s.code === series())?.lastHash ?? "";
+      const signedAt = new Date().toISOString();
+      const local = localDateTime(new Date(signedAt), "Africa/Luanda");
+      const message = hashMessage({ invoiceDate: local.date, systemEntryDate: local.dateTime, documentNo: `FR ${series()}/${number}`, grossTotal: tamper ? "1.00" : grossTotal, previousHash });
+      return { series: series(), number, hash: new RsaSha1Signer(pem).sign(message), signedAt, keyVersion };
+    };
+
+    it("a registered till gets the signing key with its till key; nobody else does", async () => {
+      tillKey = (await http().post(`/terminals/${terminal.id}/key`).set(auth(ownerToken)).expect(201)).body.key;
+      const res = (await http().get("/fiscal-documents/signing-key").set("X-Terminal-Key", tillKey).expect(200)).body;
+      expect(res).toMatchObject({ keyVersion: "1", hashControl: "0", certificate: null });
+      expect(res.privateKeyPem).toMatch(/BEGIN RSA PRIVATE KEY/);
+      pem = res.privateKeyPem;
+      keyVersion = res.keyVersion;
+      await http().get("/fiscal-documents/signing-key").expect(401);
+      await http().get("/fiscal-documents/signing-key").set(auth(ownerToken)).expect(401);
+      expect(await prisma.auditLog.count({ where: { businessId, action: "FISCAL_SIGNING_KEY_ISSUED" } })).toBe(1);
+    });
+
+    it("a till-signed document keeps the till's hash, and the server checks it over the chain", async () => {
+      const next = (await http().get(`/fiscal-documents/series/till/${terminal.id}`).set(auth(ownerToken)).expect(200)).body.series[0].nextNumber;
+      const fiscal = await tillSigned(next, "20.00");
+      const s = (await sale({ terminalId: terminal.id, fiscal }).expect(201)).body;
       const d = await doc(s.fiscalDocuments[0].id);
-      expect(d).toMatchObject({ status: "A", statusReasonCode: "WRONG_ITEMS", statusReason: "Erro na emissão: artigos errados" });
+      expect(d).toMatchObject({ hash: fiscal.hash, signedBy: "TILL", chainVerified: true });
+      expect(d.hashExcerpt).toBe([0, 10, 20, 30].map((i) => fiscal.hash[i]).join(""));
+      const seriesRow = await prisma.documentSeries.findFirstOrThrow({ where: { businessId, code: series() } });
+      expect((await app.get(FiscalService).verifyChain(seriesRow.id)).valid).toBe(true);
+    });
+
+    it("a signature that doesn't match what arrived is kept as printed and flagged to managers", async () => {
+      const next = (await http().get(`/fiscal-documents/series/till/${terminal.id}`).set(auth(ownerToken)).expect(200)).body.series[0].nextNumber;
+      const fiscal = await tillSigned(next, "20.00", true);
+      const s = (await sale({ terminalId: terminal.id, fiscal }).expect(201)).body;
+      expect((await doc(s.fiscalDocuments[0].id)).chainVerified).toBe(false);
+      const alerts = (await http().get("/fiscal-documents/alerts").set(auth(ownerToken)).expect(200)).body;
+      expect(alerts[0]).toMatchObject({ kind: "SIGNATURE_MISMATCH", documentNo: `FR ${series()}/${next}`, resolvedAt: null });
+      await http().get("/fiscal-documents/alerts").set(auth(cashierToken)).expect(403);
+      await http().post(`/fiscal-documents/alerts/${alerts[0].id}/resolve`).set(auth(ownerToken)).expect(201);
+      expect((await http().get("/fiscal-documents/alerts").set(auth(ownerToken)).expect(200)).body).toHaveLength(0);
+    });
+
+    it("an offline upload that skips a number waits, and the gap is flagged", async () => {
+      const next = (await http().get(`/fiscal-documents/series/till/${terminal.id}`).set(auth(ownerToken)).expect(200)).body.series[0].nextNumber;
+      const fiscal = await tillSigned(next + 1, "20.00");
+      await sale({ terminalId: terminal.id, fiscal, offline: { createdAt: new Date().toISOString() } }).expect(409);
+      const alerts = (await http().get("/fiscal-documents/alerts").set(auth(ownerToken)).expect(200)).body;
+      expect(alerts[0]).toMatchObject({ kind: "NUMBER_GAP", documentNo: `FR ${series()}/${next + 1}` });
+    });
+
+    it("a deactivated till loses the key and can't issue signed documents", async () => {
+      await http().patch(`/terminals/${terminal.id}`).set(auth(ownerToken)).send({ isActive: false }).expect(200);
+      await http().get("/fiscal-documents/signing-key").set("X-Terminal-Key", tillKey).expect(401);
+      const next = (await http().get(`/fiscal-documents/series/till/${terminal.id}`).set(auth(ownerToken)).expect(200)).body.series[0].nextNumber;
+      await sale({ terminalId: terminal.id, fiscal: await tillSigned(next, "20.00") }).expect(403);
+      await http().patch(`/terminals/${terminal.id}`).set(auth(ownerToken)).send({ isActive: true }).expect(200);
+    });
+  });
+
+  describe("cancelling, returns and immutability", () => {
+    it("an FR is annulled only for I (wrong customer) or N (never reached the customer); anything else needs a credit note", async () => {
+      const s = (await sale().expect(201)).body;
+      const refused = await http().post("/sales/void").set(auth(ownerToken)).send({ storeId, saleId: s.id, reason: "WRONG_ITEMS" }).expect(400);
+      expect(refused.body.message).toMatch(/credit note/);
+      expect((await doc(s.fiscalDocuments[0].id)).status).toBe("N");
+
+      await http().post("/sales/void").set(auth(ownerToken)).send({ storeId, saleId: s.id, reason: "ANNUL_I" }).expect(200);
+      expect(await doc(s.fiscalDocuments[0].id)).toMatchObject({
+        status: "A",
+        statusReasonCode: "I",
+        statusReason: "Anulada por incorrecta identificação do adquirente",
+      });
+      const n = (await sale().expect(201)).body;
+      await http().post("/sales/void").set(auth(ownerToken)).send({ storeId, saleId: n.id, reason: "ANNUL_N" }).expect(200);
+      expect(await doc(n.fiscalDocuments[0].id)).toMatchObject({ statusReasonCode: "N", statusReason: "Anulada por não ter sido enviado o documento ao adquirente" });
     });
 
     it("a return is a credit note pointing at the FR and its line, for what was refunded", async () => {

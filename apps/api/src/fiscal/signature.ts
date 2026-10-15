@@ -14,6 +14,12 @@ export interface SignatureProvider {
   readonly keyVersion: string;
   sign(message: string): string;
   verify(message: string, signature: string): boolean;
+  /**
+   * The private key, PEM, to hand to a registered till so it signs its own
+   * documents (offline too). Only ever sent over a till-key-authenticated
+   * request; the till keeps it in the OS secure store.
+   */
+  privateKeyPem(): string;
 }
 
 export const SIGNATURE_PROVIDER = Symbol("SIGNATURE_PROVIDER");
@@ -32,7 +38,15 @@ export class RsaSha1Signer implements SignatureProvider {
   }
 
   verify(message: string, signature: string): boolean {
-    return createVerify("RSA-SHA1").update(message, "utf8").verify(this.publicKey, signature, "base64");
+    try {
+      return createVerify("RSA-SHA1").update(message, "utf8").verify(this.publicKey, signature, "base64");
+    } catch {
+      return false;
+    }
+  }
+
+  privateKeyPem(): string {
+    return this.privateKey.export({ type: "pkcs1", format: "pem" }).toString();
   }
 
   /** SHA-256 of the public key, to tell keys apart in logs (never the key itself). */

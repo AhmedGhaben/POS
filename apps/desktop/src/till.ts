@@ -137,7 +137,7 @@ export function listStaff(): PublicStaffMember[] {
   return readStaff().map(({ id, firstName, lastName, role }) => ({ id, firstName, lastName, role }));
 }
 
-async function serverFetch(apiPath: string, init: { method?: string; body?: unknown } = {}) {
+export async function serverFetch(apiPath: string, init: { method?: string; body?: unknown } = {}) {
   const serverUrl = getConfig().serverUrl;
   if (!serverUrl) throw new Error("No server address configured");
   const headers = new Headers({ "Content-Type": "application/json" });

@@ -11,6 +11,7 @@ import {
   SwitchableProxy,
   tempUserData,
   logOut,
+  registerTill,
 } from "./helpers";
 
 /**
@@ -51,7 +52,7 @@ test.describe.serial("A0: desktop shell, auth and offline", () => {
     expect(env).toEqual({
       require: "undefined",
       process: "undefined",
-      bridge: ["app", "approval", "display", "drawer", "hardware", "log", "pin", "printers", "printing", "settings", "staff", "terminal", "updates"],
+      bridge: ["app", "approval", "display", "drawer", "hardware", "log", "pin", "printers", "printing", "settings", "signing", "staff", "terminal", "updates"],
     });
   });
 
@@ -112,6 +113,8 @@ test.describe.serial("A0: desktop shell, auth and offline", () => {
   });
 
   test("server goes down mid-session: the POS keeps selling", async () => {
+    // Selling offline needs the till's signing key (Angola).
+    await registerTill(page, "A0 Till");
     await openPosWithProducts(page);
     await proxy.down();
     const receipt = await sellFirstProduct(page);

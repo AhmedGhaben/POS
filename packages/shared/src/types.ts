@@ -422,6 +422,11 @@ export interface FiscalNumberDto {
   /** e.g. "POS001-2026" */
   series: string;
   number: number;
+  /** The till's signature over the document and the previous one's hash. */
+  hash?: string;
+  /** When the till signed it (its SystemEntryDate). */
+  signedAt?: string;
+  keyVersion?: string;
 }
 
 /** A manager's approval (POST /overrides) used by a sale. */
@@ -810,9 +815,30 @@ export interface PersonRefDto {
   lastName: string;
 }
 
-export type VoidReason = "WRONG_ITEMS" | "CUSTOMER_CHANGED_MIND" | "PAYMENT_PROBLEM" | "TRAINING" | "OTHER";
+export type VoidReason =
+  | "WRONG_ITEMS"
+  | "CUSTOMER_CHANGED_MIND"
+  | "PAYMENT_PROBLEM"
+  | "TRAINING"
+  | "OTHER"
+  // Annulling a fiscal document (Angola): the only two reasons the law allows.
+  | "ANNUL_I"
+  | "ANNUL_N";
 
+/** Cancel reasons for a sale that isn't a fiscal document. */
 export const VOID_REASONS: VoidReason[] = ["WRONG_ITEMS", "CUSTOMER_CHANGED_MIND", "PAYMENT_PROBLEM", "TRAINING", "OTHER"];
+
+/**
+ * A sale whose Factura-Recibo exists can only be annulled for these:
+ * I, the customer was wrongly identified; N, the document never reached
+ * the customer. Anything else (price, quantity, a return) is a credit note.
+ */
+export const ANNUL_REASONS: VoidReason[] = ["ANNUL_I", "ANNUL_N"];
+
+/** The AGT code (I or N) of an annulment reason. */
+export function annulmentCode(reason: string): "I" | "N" | null {
+  return reason === "ANNUL_I" ? "I" : reason === "ANNUL_N" ? "N" : null;
+}
 
 /** Cancels a sale, named by id or (when it may not have synced yet) by its clientId. */
 export interface VoidSaleDto {
@@ -1181,7 +1207,7 @@ export interface TillSeriesDto {
   terminalCode: string;
   /** The till's series prefix, e.g. "POS001" (series "POS001-2026"). */
   prefix: string;
-  series: { documentType: FiscalDocumentType; code: string; year: number; nextNumber: number }[];
+  series: { documentType: FiscalDocumentType; code: string; year: number; nextNumber: number; lastHash?: string }[];
 }
 
 export interface CreateProformaDto {
@@ -1189,4 +1215,17 @@ export interface CreateProformaDto {
   customerId?: string;
   lineItems: { productId: string; quantity: number; unitPrice?: number; discount?: DiscountInput | null }[];
   discount?: DiscountInput | null;
+}
+
+/** A break in a series' hash chain, for managers (GET /fiscal-documents/alerts). */
+export interface FiscalChainAlertDto {
+  id: string;
+  storeId: string;
+  terminalId: string | null;
+  /** SIGNATURE_MISMATCH, NUMBER_GAP, KEY_VERSION */
+  kind: string;
+  documentNo: string | null;
+  detail: string;
+  createdAt: string;
+  resolvedAt: string | null;
 }

@@ -9,6 +9,7 @@ import {
   restock,
   SwitchableProxy,
   tempUserData,
+  registerTill,
 } from "./helpers";
 
 /**
@@ -70,6 +71,8 @@ test.describe.serial("Till: shifts", () => {
     await connect(page, proxy.url);
     await login(page);
     await restock(page);
+    // Selling offline needs the till's signing key (Angola).
+    await registerTill(page, "Shift Till");
     // Close any shift a previous run left open in a browser for this owner.
     const { shift: open } = await api<{ shift: ShiftRow | null }>(page, `/shifts/current?storeId=${await storeId(page)}`);
     if (open) await api(page, "/shifts/close", { method: "POST", body: { storeId: await storeId(page), shiftClientId: open.clientId, countedCash: 0 } });
@@ -142,7 +145,7 @@ test.describe.serial("Till: shifts", () => {
     const dialog = page.getByRole("dialog");
     await expect(dialog).toContainText("Close the till");
     await dialog.getByLabel("Count by note and coin").check();
-    await dialog.getByLabel(/Number of .*5,000|Number of .*5 000|Number of .*5000/).fill("1");
+    await dialog.getByLabel(/Number of 5.?000/).fill("1");
     await expect(dialog.getByTestId("count-total")).toContainText("5");
     await dialog.getByRole("button", { name: "Close the till" }).click();
     await expect(dialog).toContainText("Till closed");

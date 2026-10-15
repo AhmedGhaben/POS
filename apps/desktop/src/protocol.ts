@@ -109,6 +109,11 @@ async function forwardToServer(request: Request, url: URL): Promise<Response> {
     return Response.json({ message: "No server address configured" }, { status: 503 });
   }
   const target = `${serverUrl}${url.pathname.slice("/api".length)}${url.search}`;
+  // The signing key is fetched by the main process only (fiscal-signing.ts):
+  // the page may ask for signatures, never for the key.
+  if (/^\/api\/fiscal-documents\/signing-key\/?$/i.test(url.pathname)) {
+    return Response.json({ message: "Not available to the page" }, { status: 403 });
+  }
 
   const headers = new Headers(request.headers);
   for (const h of ["origin", "referer", "cookie", "host", "x-terminal-key"]) headers.delete(h);

@@ -64,14 +64,14 @@ test.describe.serial("Products: edit and archive", () => {
     await dialog.getByRole("button", { name: "Save changes" }).click();
     await expect(dialog).toBeHidden();
     await expect(page.getByRole("cell", { name: "Lavender soap", exact: true })).toBeVisible();
-    await expect(page.getByRole("cell", { name: /3\.75/ })).toBeVisible();
+    await expect(page.getByRole("cell", { name: /3,75/ })).toBeVisible();
   });
 
   test("the till sells it under the new name and price", async () => {
     const results = await posSearch(sku);
     await expect(results).toHaveCount(1);
     await expect(results.first()).toContainText("Lavender soap");
-    await expect(results.first()).toContainText("3.75");
+    await expect(results.first()).toContainText("3,75");
   });
 
   test("a SKU that's already taken is refused with a clear message", async () => {

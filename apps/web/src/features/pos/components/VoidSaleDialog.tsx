@@ -1,7 +1,8 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { DrawerOpenReason, PaymentMethod, Permission, VOID_REASONS, type SaleDto, type StoreDto, type VoidReason } from "@pos/shared";
+import { ANNUL_REASONS, DrawerOpenReason, PaymentMethod, Permission, VOID_REASONS, type SaleDto, type StoreDto, type VoidReason } from "@pos/shared";
+import { saleDocument } from "@/features/fiscal/sale-document";
 import { useHasPermission } from "@/features/auth/use-permission";
 import { requestApproval, type Approval } from "@/features/overrides/approval";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,11 @@ export function VoidSaleDialog({ sale, store, onClose, onVoided }: VoidSaleDialo
   const money = useMoney();
   const hasDrawer = useHasDrawer();
   const canVoid = useHasPermission(Permission.VOID_SALE);
-  const [reason, setReason] = React.useState<VoidReason>("WRONG_ITEMS");
+  // A sale that is a Factura-Recibo can only be annulled for I or N (the law);
+  // the cashier has to pick one, there's no default.
+  const fiscal = !!sale && !!saleDocument(sale);
+  const reasons = fiscal ? ANNUL_REASONS : VOID_REASONS;
+  const [reason, setReason] = React.useState<VoidReason | null>("WRONG_ITEMS");
   const [note, setNote] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -41,21 +46,21 @@ export function VoidSaleDialog({ sale, store, onClose, onVoided }: VoidSaleDialo
 
   React.useEffect(() => {
     if (sale) {
-      setReason("WRONG_ITEMS");
+      setReason(saleDocument(sale) ? null : "WRONG_ITEMS");
       setNote("");
       setError(null);
       setVoided(null);
     }
   }, [sale]);
 
-  const needsNote = reason === "OTHER" && !note.trim();
+  const needsNote = !reason || (reason === "OTHER" && !note.trim());
   const cashBack = (voided ?? sale)?.payments
     .filter((p) => p.method === PaymentMethod.CASH)
     .reduce((sum, p) => sum + Number(p.amount), 0) ?? 0;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!sale || needsNote) return;
+    if (!sale || !reason || needsNote) return;
     // Without VOID_SALE, a manager approves this one cancellation.
     let approval: Approval | null = null;
     if (!canVoid) {
@@ -95,9 +100,14 @@ export function VoidSaleDialog({ sale, store, onClose, onVoided }: VoidSaleDialo
               <DialogDescription>{t("void.description", { amount: money(sale.total) })}</DialogDescription>
             </DialogHeader>
             <form className="space-y-4" onSubmit={submit}>
+              {fiscal && (
+                <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                  {t("void.annulRule")}
+                </p>
+              )}
               <fieldset className="space-y-2">
                 <legend className="mb-1 text-sm font-medium">{t("void.reason")}</legend>
-                {VOID_REASONS.map((r) => (
+                {reasons.map((r) => (
                   <label key={r} className="flex items-center gap-3 text-sm">
                     <input
                       type="radio"

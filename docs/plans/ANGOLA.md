@@ -135,6 +135,25 @@ commit and push.
   - Tests: API unit 174 (hash vectors, chain, lines, dates), API e2e incl.
     `angola-phase8.e2e-spec.ts` (12), web unit 118 (amount in words, till
     numbering, queue waits on 409), desktop e2e `angola-phase8.spec.ts` (3).
+- **Phase 8 follow-ups from the owner** (2026-10-15):
+  - Annulment reasons are AGT's (DS.120 4.1.6 documentCancelReason, DP
+    71/25 art. 8.º n.ºs 8-9): I (wrong customer identification) and N
+    (document never sent/delivered). Cancel reasons `ANNUL_I` / `ANNUL_N`;
+    any other cancel of an FR is refused (make a return). The wording is in
+    the country config (`annulmentReasons`); N's is 58 characters, longer
+    than SAF-T Reason's 50: phase 8b exports it truncated or by code.
+  - Signing moved to the till (`apps/desktop/src/fiscal-signing.ts`): key
+    from `GET /fiscal-documents/signing-key` (till key only, audit-logged,
+    blocked for the page by the forwarder), DPAPI via safeStorage, signs
+    via IPC. Documents record `signedBy` (TILL/SERVER) and `chainVerified`;
+    `FiscalChainAlert` holds breaks. One software key for every till (AGT
+    certifies the producer's key); rotation is a new SAFT_KEY_VERSION.
+  - QR: PNG 350 px, quiet zone, byte mode; version 8. Logo off
+    (`QR_CENTER_LOGO`), to confirm with AGT. Real phone scans of 58/80 mm
+    prints still to do by hand.
+  - Currency/defaults from the country at sign-up (AOA, pt-AO,
+    Africa/Luanda, regime); migration `20261015120000_angola_country_defaults`
+    fixes existing Angolan businesses; AOA prints "Kz" (`currencyLabel`).
 
 ## Decisions (from the owner, 2026-10-13)
 

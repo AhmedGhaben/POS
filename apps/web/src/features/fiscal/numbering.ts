@@ -4,19 +4,30 @@ import type { FiscalNumberDto, TillSeriesDto } from "@pos/shared";
 import { apiClient } from "@/lib/api-client";
 
 /**
- * The till numbers its own documents (docs/plans/ANGOLA.md, decision 5):
- * one series per till per document type per year ("FR POS001-2026/57"),
- * gap-free, so a receipt printed offline already carries its real number.
- * The server checks every number arrives in order and signs the chain.
+ * The till numbers and signs its own documents (docs/plans/ANGOLA.md,
+ * decision 5 and phase 8): one series per till per document type per year
+ * ("FR POS001-2026/57"), gap-free, each document signed over the previous
+ * one's hash, so the receipt carries its number and hash characters even
+ * offline. The server checks every number arrives in order and every
+ * signature over the chain.
  *
- * A number is only used up once the sale is accepted or queued; a sale the
- * server refuses gives its number back. A till that has never read its
- * series from the server doesn't number at all (the server numbers on
- * upload), so a reinstalled till can't reuse numbers.
+ * A number (and its hash) is only used up once the sale is accepted or
+ * queued; a sale the server refuses gives it back. A till that has never
+ * read its series from the server doesn't number at all, so a reinstalled
+ * till can't reuse numbers or break the chain.
  */
 export interface LocalSeries {
   code: string;
   next: number;
+  /** The hash of the last document in the series: the next one signs over it. */
+  lastHash: string;
+}
+
+/** The number for the next document, and the hash it signs over. */
+export interface NextNumber {
+  series: string;
+  number: number;
+  previousHash: string;
 }
 
 interface NumberingState {
@@ -27,10 +38,10 @@ interface NumberingState {
   series: Record<string, LocalSeries>;
   /** Merges the server's view (never goes backwards: queued sales may be ahead of it). */
   sync: (terminalId: string, server: TillSeriesDto) => void;
-  /** The number used (sale accepted or queued). */
-  commit: (documentType: string, used: FiscalNumberDto) => void;
+  /** The number used (sale accepted or queued), and the hash it got. */
+  commit: (documentType: string, used: Pick<FiscalNumberDto, "series" | "number" | "hash">) => void;
   /** The server said where the series really is (a number was already used). */
-  adopt: (documentType: string, code: string, next: number) => void;
+  adopt: (documentType: string, code: string, next: number, lastHash: string) => void;
 }
 
 /** The series code for a till and year: POS-001 in 2026 is "POS001-2026". */
@@ -44,20 +55,29 @@ export function peekNumber(
   terminal: { id: string; code: string } | null | undefined,
   documentType: string,
   year: number,
-): FiscalNumberDto | null {
+): NextNumber | null {
   if (!terminal || state.terminalId !== terminal.id || !state.synced) return null;
   const code = seriesCode(terminal.code, year);
   const local = state.series[documentType];
-  return { series: code, number: local?.code === code ? local.next : 1 };
+  return local?.code === code ? { series: code, number: local.next, previousHash: local.lastHash } : { series: code, number: 1, previousHash: "" };
 }
 
-/** The local series after reading the server's: the further ahead of the two, per type. */
-export function mergeSeries(local: Record<string, LocalSeries>, server: TillSeriesDto, year: number): Record<string, LocalSeries> {
+/**
+ * The local series after reading the server's: whichever is further ahead.
+ * When the server is ahead (it numbered some itself), its next number and
+ * last hash are the ones to carry on from.
+ */
+export function mergeSeries(
+  local: Record<string, LocalSeries>,
+  server: Pick<TillSeriesDto, "series">,
+  year: number,
+): Record<string, LocalSeries> {
   const merged = { ...local };
   for (const s of server.series) {
     if (s.year !== year) continue;
     const mine = merged[s.documentType];
-    merged[s.documentType] = mine?.code === s.code ? { code: s.code, next: Math.max(mine.next, s.nextNumber) } : { code: s.code, next: s.nextNumber };
+    const serverSide = { code: s.code, next: s.nextNumber, lastHash: s.lastHash ?? "" };
+    merged[s.documentType] = mine?.code === s.code && mine.next >= s.nextNumber ? mine : serverSide;
   }
   return merged;
 }
@@ -75,10 +95,10 @@ export const useFiscalNumbering = create<NumberingState>()(
       },
       commit: (documentType, used) => {
         const current = get().series[documentType];
-        const next = current?.code === used.series ? Math.max(current.next, used.number + 1) : used.number + 1;
-        set({ series: { ...get().series, [documentType]: { code: used.series, next } } });
+        if (current?.code === used.series && current.next > used.number) return;
+        set({ series: { ...get().series, [documentType]: { code: used.series, next: used.number + 1, lastHash: used.hash ?? "" } } });
       },
-      adopt: (documentType, code, next) => set({ series: { ...get().series, [documentType]: { code, next } } }),
+      adopt: (documentType, code, next, lastHash) => set({ series: { ...get().series, [documentType]: { code, next, lastHash } } }),
     }),
     { name: "pos-fiscal-numbering" },
   ),

@@ -11,7 +11,7 @@ import { VoidSaleDto } from "./dto/void-sale.dto";
 import { priceSaleCents, unitDecimals, type DiscountInput, type PricedSale } from "./pricing";
 import { countryConfig, lineTax, type IvaRegime, type LineTax } from "../countries";
 import { recordMovement } from "../stock/stock";
-import { buyerOf, DOCUMENT_SUMMARY, FiscalService } from "../fiscal/fiscal.service";
+import { annulmentCode, buyerOf, DOCUMENT_SUMMARY, FiscalService } from "../fiscal/fiscal.service";
 
 /** How far an offline sale's clock may run ahead of the server's. */
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
@@ -256,6 +256,10 @@ export class SalesService {
 
     const terminal = await this.resolveTerminal(businessId, dto.terminalId);
     const terminalId = terminal?.id ?? null;
+    // A till whose access was withdrawn can't issue documents any more.
+    if (dto.fiscal?.hash && terminal && !terminal.isActive) {
+      throw new ForbiddenException("This till's access was withdrawn; it can't issue documents");
+    }
     // The shift was opened before this sale (the till uploads in order).
     const shift = await this.saleShift(dto, cashierId, terminalId);
     const customerId = dto.customerId || (await this.finalConsumerId(businessId));
@@ -465,6 +469,7 @@ export class SalesService {
         lineItems: { include: { product: true } },
         returns: { select: { id: true } },
         invoice: { select: { id: true } },
+        fiscalDocuments: { where: { documentType: { in: ["FR", "FT"] }, status: "N" }, select: { id: true } },
         shift: { select: { status: true } },
       },
     });
@@ -476,6 +481,14 @@ export class SalesService {
       }
       if (sale.returns.length > 0) {
         throw new BadRequestException("This sale has a return, so it can't be cancelled. Use Returns instead.");
+      }
+      // A Factura-Recibo can only be annulled for the two reasons the law
+      // allows (I, N); anything else is corrected with a credit note.
+      const annulment = annulmentCode(dto.reason);
+      if (sale.fiscalDocuments.length > 0 && !annulment) {
+        throw new BadRequestException(
+          "This sale's Factura-Recibo can only be annulled if the customer was wrongly identified or it never reached the customer. Otherwise make a return (credit note).",
+        );
       }
       if (sale.invoice) {
         throw new BadRequestException("An invoice was issued for this sale, so it can't be cancelled");
@@ -500,7 +513,7 @@ export class SalesService {
         });
         if (count === 0) return;
         // Its Factura-Recibo is annulled (status A), never deleted.
-        await this.fiscal.annulForSale(tx, sale.id, dto.reason, userId, voidedAt < sale.createdAt ? sale.createdAt : voidedAt, dto.note);
+        if (annulment) await this.fiscal.annulForSale(tx, sale.id, annulment, userId, voidedAt < sale.createdAt ? sale.createdAt : voidedAt);
         for (const li of sale.lineItems) {
           if (!li.product.trackStock) continue;
           await recordMovement(tx, {
@@ -531,11 +544,11 @@ export class SalesService {
 
   /** A till that's been removed is ignored rather than failing a sale that
    * already happened. */
-  private async resolveTerminal(businessId: string, terminalId?: string): Promise<{ id: string; code: string } | null> {
+  private async resolveTerminal(businessId: string, terminalId?: string): Promise<{ id: string; code: string; isActive: boolean } | null> {
     if (!terminalId) return null;
     const terminal = await this.prisma.terminal.findFirst({
       where: { id: terminalId, businessId },
-      select: { id: true, code: true },
+      select: { id: true, code: true, isActive: true },
     });
     if (!terminal) {
       this.logger.warn(`Ignoring unknown terminal ${terminalId} on a sale`);

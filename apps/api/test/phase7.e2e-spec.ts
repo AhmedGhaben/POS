@@ -3,6 +3,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
+import { PrismaService } from "../src/prisma/prisma.service";
 
 /**
  * Runs against the seeded dev database (apps/api/prisma/seed.ts). Covers
@@ -28,8 +29,18 @@ describe("POS API Phase 7 (e2e)", () => {
     await app.init();
   });
 
+  // Branches made in the demo business: put away after the suite, so they
+  // don't pile up in the shared demo data.
+  const createdStores: string[] = [];
+
   afterAll(async () => {
-    await app.close();
+    try {
+      if (createdStores.length) {
+        await app.get(PrismaService).store.updateMany({ where: { id: { in: createdStores } }, data: { isActive: false } });
+      }
+    } finally {
+      await app.close();
+    }
   });
 
   async function ownerToken(): Promise<string> {
@@ -54,6 +65,7 @@ describe("POS API Phase 7 (e2e)", () => {
       .set("Authorization", `Bearer ${ownerAuthToken}`)
       .send({ name: `Branch ${Date.now()}` })
       .expect(201);
+    createdStores.push(res.body.id);
     return res.body.id;
   }
 
