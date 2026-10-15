@@ -88,8 +88,50 @@ describe("Accountant export", () => {
     expect(vendas.rows[2][3]).toBe("Anulado");
     expect(vendas.rows[2].slice(13, 16)).toEqual([0, 0, 0]);
     expect(vendas.rows[3]).toEqual(["Total", null, null, null, null, null, null, 0, 0, 9.52, 0.48, 5, null, 14.52, 0.48, 15, null]);
-    expect(compras.rows).toEqual([["Total", null, null, null, null, null, 0, 0, 0, null, null]]);
+    expect(compras.rows).toEqual([["Total", null, null, null, null, null, 0, 0, 0, 0, 0, null, null]]);
     expect(movimentos.rows[1]).toEqual(["Total", null, null, null, null, null, 35]);
+  });
+
+  it("purchases with the supplier's document, and the IVA return's supplier annex (AGT's example)", () => {
+    const sheets = accountantSheets({
+      companyName: "K",
+      companyTaxId: "5417000123",
+      startDate: "2026-10-01",
+      endDate: "2026-10-31",
+      sales: [],
+      purchases: [
+        {
+          date: "2026-10-10",
+          number: "PO-1",
+          supplierDocType: "FT",
+          supplierDocumentNo: "FT 2019A1/12360",
+          supplierDocDate: "2026-10-09",
+          supplierTaxId: "1234567890",
+          supplierName: "Fornecedor Exemplo",
+          store: "Loja",
+          netTotal: D(300000),
+          taxTotal: D(42000),
+          total: D(342000),
+          status: "Recebida",
+          paymentStatus: "Parcialmente pago",
+          taxLines: [
+            { base: D(200000), taxAmount: D(28000), deductiblePercent: D(100), deductibleAmount: D(28000), typology: "MFI" },
+            { base: D(100000), taxAmount: D(14000), deductiblePercent: D(100), deductibleAmount: D(14000), typology: "INV" },
+          ],
+          withholdingPercent: D(50),
+          withholdingAmount: D(21000),
+        },
+      ],
+      movements: [],
+    });
+    expect(sheets.map((s) => s.name)).toEqual(["Vendas", "Compras", "Recebimentos e pagamentos", "Anexo Fornecedores"]);
+    expect(sheets[1].rows[0]).toEqual([{ date: "2026-10-10" }, "PO-1", "FT 2019A1/12360", "1234567890", "Fornecedor Exemplo", "Loja", 300000, 42000, 42000, 21000, 342000, "Recebida", "Parcialmente pago"]);
+    const annex = sheets[3];
+    expect(annex.header[0]).toBe("Nº Ordem");
+    expect(annex.rows).toEqual([
+      [{ int: 1 }, "1234567890", "Fornecedor Exemplo", "FT", { date: "2026-10-09" }, "FT 2019A1/12360", 342000, 200000, 28000, 100, 28000, "MFI", 50, 14000, null],
+      [{ int: 2 }, "1234567890", "Fornecedor Exemplo", "FT", { date: "2026-10-09" }, "FT 2019A1/12360", 342000, 100000, 14000, 100, 14000, "INV", 50, 7000, null],
+    ]);
   });
 
   it("Cabinda's 1% gets its own column", () => {

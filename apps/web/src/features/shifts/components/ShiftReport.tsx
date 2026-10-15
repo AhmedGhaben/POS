@@ -69,9 +69,19 @@ export function ShiftReport({
       {Number(s.discounts) > 0 && <Row label={t("report.discounts")} value={money(s.discounts)} />}
       {s.voided.count > 0 && <Row label={t("report.voided", { count: s.voided.count })} value={money(s.voided.total)} />}
       {s.returns.count > 0 && <Row label={t("report.returns", { count: s.returns.count })} value={money(s.returns.total)} />}
+      {Number(s.onCredit ?? 0) > 0 && <Row label={t("report.onCredit")} value={money(s.onCredit!)} />}
+      {s.receipts && s.receipts.count > 0 && (
+        <>
+          <Row label={t("report.receipts", { count: s.receipts.count })} value={money(s.receipts.total)} />
+          {(Object.entries(s.receipts.byMethod) as [PaymentMethod, string][]).map(([method, amount]) => (
+            <Row key={method} label={`  ${t(`common:paymentMethods.${method}`)}`} value={money(amount)} />
+          ))}
+        </>
+      )}
       <hr className="my-2 border-dashed" />
       <Row label={t("report.float")} value={money(data.openingFloat)} />
       <Row label={t("report.cashSales")} value={money(s.byMethod.CASH ?? 0)} />
+      {Number(s.receipts?.byMethod.CASH ?? 0) > 0 && <Row label={t("report.cashReceipts")} value={money(s.receipts!.byMethod.CASH!)} />}
       {Number(s.returns.cash) > 0 && <Row label={t("report.cashRefunds")} value={`-${money(s.returns.cash)}`} />}
       {s.movements.map((m) => (
         <Row
@@ -112,7 +122,7 @@ export function ShiftReport({
             <div key={sale.receiptNumber} className={sale.voided ? "line-through" : undefined}>
               <Row label={sale.receiptNumber} value={money(sale.total)} />
               <p className="pl-2 text-[10px]">
-                {dateTime(sale.at)} · {sale.method === "SPLIT" ? t("report.split") : t(`common:paymentMethods.${sale.method}`)}
+                {dateTime(sale.at)} · {sale.method === "SPLIT" ? t("report.split") : sale.method === "CREDIT" ? t("report.credit") : t(`common:paymentMethods.${sale.method}`)}
                 {sale.voided ? ` · ${t("report.cancelled")}` : ""}
               </p>
             </div>

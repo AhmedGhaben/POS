@@ -124,7 +124,12 @@ export class FiscalService {
     };
   }
 
-  /** The Factura-Recibo for a completed sale, inside the sale's transaction. */
+  /**
+   * The document for a completed sale, inside the sale's transaction: a
+   * Factura-Recibo (FR) when it was paid, a Factura (FT) when some of it was
+   * left on the customer's account (creditAmount). An FT is numbered here,
+   * never by the till (sales on credit happen online).
+   */
   async issueForSale(
     tx: Tx,
     input: {
@@ -147,9 +152,11 @@ export class FiscalService {
       });
       if (!referenced) throw new BadRequestException("That proforma isn't open any more");
     }
+    const onCredit = sale.creditAmount.gt(0);
+    if (onCredit && input.requested) throw new BadRequestException("A sale on credit is numbered by the server, not the till");
     const document = await this.write(tx, {
       issuer: input.issuer,
-      documentType: "FR",
+      documentType: onCredit ? "FT" : "FR",
       terminal: input.terminal,
       requested: input.requested,
       offline: sale.createdOffline,
@@ -158,7 +165,8 @@ export class FiscalService {
       buyer: input.buyer,
       pricesIncludeTax: sale.pricesIncludeTax,
       lines,
-      payments: payments(sale, input.issuer.config),
+      // An FT isn't paid by itself: what was paid at the till gets a receipt.
+      payments: onCredit ? null : payments(sale, input.issuer.config),
       saleId: sale.id,
       referencedDocumentId: referenced?.id ?? null,
     });
@@ -210,7 +218,10 @@ export class FiscalService {
       buyer: sale.customer ? buyerOf(sale.customer) : null,
       pricesIncludeTax: sale.pricesIncludeTax,
       lines,
-      payments: [{ method: ret.refundMethod, mechanism: input.issuer.config?.paymentMechanisms[ret.refundMethod] ?? "OU", amount: fixed2(ret.totalRefund) }],
+      // The money given back: on a sale on credit, what lowered the debt isn't.
+      payments: ret.totalRefund.gt(ret.accountCredit)
+        ? [{ method: ret.refundMethod, mechanism: input.issuer.config?.paymentMechanisms[ret.refundMethod] ?? "OU", amount: fixed2(ret.totalRefund.sub(ret.accountCredit)) }]
+        : [],
       returnId: ret.id,
       saleId: sale.id,
       referencedDocumentId: original?.id ?? null,
@@ -230,6 +241,16 @@ export class FiscalService {
     });
     for (const d of documents) {
       const reason = countryConfig(d.store.country)?.annulmentReasons[code] ?? code;
+      // An invoice on credit: what was paid with the sale goes back with it
+      // (its receipt is annulled too); later payments must be annulled first.
+      const receipts = await tx.customerPaymentAllocation.findMany({
+        where: { documentId: d.id, payment: { document: { status: "N" } } },
+        select: { payment: { select: { saleId: true, documentId: true } } },
+      });
+      if (receipts.some((r) => r.payment.saleId !== saleId)) {
+        throw new BadRequestException("Payments were received for this invoice. Annul those receipts first.");
+      }
+      for (const r of receipts) await this.annulReceipt(tx, r.payment.documentId, reason, userId, at);
       await tx.fiscalDocument.update({
         where: { id: d.id },
         data: { status: "A", statusDate: at, statusReason: reason, statusReasonCode: code, statusById: userId },
@@ -257,6 +278,39 @@ export class FiscalService {
   }
 
   /**
+   * A receipt (Recibo, RC) for money a customer paid towards their invoices:
+   * numbered and signed in its own series (the till's when taken at one),
+   * with no lines; what it settles is in CustomerPaymentAllocation.
+   */
+  async issueReceipt(
+    tx: Tx,
+    input: { issuer: IssuerContext; terminal: { id: string; code: string } | null; userId: string; buyer: Buyer; amount: Prisma.Decimal; method: string; at: Date },
+  ) {
+    const amount = input.amount.toDecimalPlaces(2);
+    return this.write(tx, {
+      issuer: input.issuer,
+      documentType: "RC",
+      terminal: input.terminal,
+      at: input.at,
+      userId: input.userId,
+      buyer: input.buyer,
+      pricesIncludeTax: false,
+      lines: [],
+      totals: { netTotal: amount, taxPayable: new Prisma.Decimal(0), grossTotal: amount, discountTotal: new Prisma.Decimal(0) },
+      payments: [{ method: input.method, mechanism: input.issuer.config?.paymentMechanisms[input.method] ?? "OU", amount: fixed2(amount) }],
+    });
+  }
+
+  /** Annuls a receipt (status A): the payment it records no longer settles anything. */
+  async annulReceipt(tx: Tx, documentId: string, reason: string, userId: string, at = new Date()) {
+    const { count } = await tx.fiscalDocument.updateMany({
+      where: { id: documentId, documentType: "RC", status: "N" },
+      data: { status: "A", statusDate: at, statusReason: reason.trim().slice(0, 200), statusById: userId },
+    });
+    if (count === 0) throw new BadRequestException("This receipt was already annulled");
+  }
+
+  /**
    * Numbers, signs and stores a document. The series row is locked for the
    * rest of the transaction, so documents in a series are written one at a
    * time and each signs over the one before.
@@ -273,6 +327,8 @@ export class FiscalService {
       buyer: Buyer | null;
       pricesIncludeTax: boolean;
       lines: DocumentLineData[];
+      /** For a document without lines (a receipt): its totals. */
+      totals?: ReturnType<typeof documentTotals>;
       payments: Prisma.InputJsonValue | null;
       saleId?: string;
       returnId?: string;
@@ -316,7 +372,7 @@ export class FiscalService {
       });
     }
     const documentNo = documentNumber(input.documentType, series.code, number);
-    const totals = documentTotals(input.lines);
+    const totals = input.totals ?? documentTotals(input.lines);
     const message = hashMessage({ invoiceDate: local.date, systemEntryDate: local.dateTime, documentNo, grossTotal: fixed2(totals.grossTotal), previousHash: series.lastHash });
     // A till signs its own documents; the server checks the signature covers
     // this document over the previous one's hash. What the customer holds is
@@ -501,9 +557,21 @@ export class FiscalService {
   }
 
   async get(businessId: string, id: string) {
-    const document = await this.prisma.fiscalDocument.findFirst({ where: { id, businessId }, include: DOCUMENT_INCLUDE });
+    const document = await this.prisma.fiscalDocument.findFirst({
+      where: { id, businessId },
+      include: {
+        ...DOCUMENT_INCLUDE,
+        // A receipt: what it settled, and the payment's reference.
+        customerPayment: { select: { reference: true, allocations: { select: { amount: true, document: { select: { documentNo: true, invoiceDate: true, grossTotal: true } } } } } },
+      },
+    });
     if (!document) throw new NotFoundException("Document not found");
-    return document;
+    const { customerPayment, ...rest } = document;
+    return {
+      ...rest,
+      paymentReference: customerPayment?.reference ?? null,
+      settled: customerPayment?.allocations.map((a) => ({ documentNo: a.document.documentNo, invoiceDate: a.document.invoiceDate, grossTotal: a.document.grossTotal, amount: a.amount })) ?? null,
+    };
   }
 
   /** A till's series and their next numbers, so it can carry on numbering (offline too). */

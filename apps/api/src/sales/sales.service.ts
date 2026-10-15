@@ -12,6 +12,7 @@ import { priceSaleCents, unitDecimals, type DiscountInput, type PricedSale } fro
 import { countryConfig, lineTax, type IvaRegime, type LineTax } from "../countries";
 import { recordMovement } from "../stock/stock";
 import { annulmentCode, buyerOf, DOCUMENT_SUMMARY, FiscalService } from "../fiscal/fiscal.service";
+import { CustomerAccountsService } from "../accounts/customer-accounts.service";
 
 /** How far an offline sale's clock may run ahead of the server's. */
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
@@ -90,6 +91,7 @@ export class SalesService {
     private readonly permissions: PermissionsService,
     private readonly overrides: OverridesService,
     private readonly fiscal: FiscalService,
+    private readonly accounts: CustomerAccountsService,
   ) {}
 
   async findByStore(storeId: string) {
@@ -184,6 +186,9 @@ export class SalesService {
         const need = await this.discountApproval(businessId, cashierId, role, priced);
         if (need) needed.push(need);
       }
+      if ((dto.creditAmount ?? 0) > 0 && !(await this.permissions.hasPermission(cashierId, role, Permission.SELL_ON_CREDIT))) {
+        needed.push({ permission: Permission.SELL_ON_CREDIT, message: "Selling on credit needs a manager's approval" });
+      }
       for (const { permission, message } of needed) {
         const token = dto.overrides?.find((o) => o.permission === permission)?.token;
         if (!token) {
@@ -229,11 +234,16 @@ export class SalesService {
       ? offlineReceiptNumber(dto.storeId, dto.clientId!)
       : `${dto.storeId.slice(-4).toUpperCase()}-${Date.now()}`;
 
+    // A sale on credit leaves part (or all) of the total on the customer's
+    // account; what was paid now and what's on credit make up the total.
+    const creditAmount = new Prisma.Decimal(dto.creditAmount ?? 0);
+    const onCredit = creditAmount.gt(0);
+    if (creditAmount.gt(total)) throw new BadRequestException("The amount on credit is more than the total");
     const paymentsTotal = dto.payments.reduce(
       (sum, p) => sum.add(new Prisma.Decimal(p.amount)),
       new Prisma.Decimal(0),
     );
-    if (paymentsTotal.sub(total).abs().gt(0.01)) {
+    if (paymentsTotal.add(creditAmount).sub(total).abs().gt(0.01)) {
       throw new BadRequestException("Payment amounts do not cover the total");
     }
 
@@ -267,6 +277,10 @@ export class SalesService {
     const buyer = await this.prisma.customer.findFirst({ where: { id: customerId, businessId } });
     if (!buyer) throw new NotFoundException("Customer not found");
     const issuer = await this.fiscal.issuer(businessId, dto.storeId);
+    if (onCredit) {
+      if (buyer.isFinalConsumer) throw new BadRequestException("Choose the customer to sell on credit to");
+      if (!issuer.config) throw new BadRequestException("Sales on credit and receipts need a store that issues fiscal documents");
+    }
     const createdAt = offline ? clampToNow(new Date(offline.createdAt)) : undefined;
     let sale: Prisma.SaleGetPayload<{ include: typeof SALE_INCLUDE }>;
     try {
@@ -274,6 +288,9 @@ export class SalesService {
         for (const approval of approvals) {
           await this.overrides.consume(approval.token, { userId: cashierId, businessId }, approval.permission, tx);
         }
+        // Within the customer's credit limit (locked until the sale is in).
+        // An offline upload records a sale that already happened.
+        if (onCredit && !offline) await this.accounts.checkCredit(tx, businessId, customerId, creditAmount);
         // Services and the like don't move stock. Offline, the goods already
         // left the shop: the sale is recorded even if the server's count says
         // there weren't enough. Online there must be enough.
@@ -311,7 +328,9 @@ export class SalesService {
             discountValue: saleDiscount ? new Prisma.Decimal(saleDiscount.value) : null,
             saleDiscountAmount: fromCents(priced.saleDiscount),
             total,
-            paymentMethod: dto.payments[0].method,
+            // All on credit: no payment leg (receipts show "on account").
+            paymentMethod: dto.payments[0]?.method ?? PaymentMethod.OTHER,
+            creditAmount,
             amountTendered,
             changeDue,
             clientId: dto.clientId,
@@ -331,15 +350,32 @@ export class SalesService {
         // Where sales are fiscal documents (the store's country has a fiscal
         // config: Angola), every completed sale is a Factura-Recibo, numbered
         // by the till that rang it up (or the store's series) and signed.
-        if (issuer.config) await this.fiscal.issueForSale(tx, {
-          issuer,
-          saleId: created.id,
-          terminal,
-          userId: cashierId,
-          buyer: buyerOf(buyer),
-          requested: dto.fiscal,
-          proformaId: dto.proformaId,
-        });
+        if (issuer.config) {
+          const document = await this.fiscal.issueForSale(tx, {
+            issuer,
+            saleId: created.id,
+            terminal,
+            userId: cashierId,
+            buyer: buyerOf(buyer),
+            requested: dto.fiscal,
+            proformaId: dto.proformaId,
+          });
+          // On credit, what was paid now is a receipt against the sale's own invoice.
+          if (onCredit && paymentsData.length > 0) {
+            await this.accounts.receiveWithSale(tx, {
+              businessId,
+              storeId: dto.storeId,
+              saleId: created.id,
+              invoiceId: document.id,
+              customer: buyer,
+              payments: paymentsData.map((p) => ({ method: p.method, amount: p.amount })),
+              shiftId: shift?.id ?? null,
+              terminal,
+              userId: cashierId,
+              at: created.createdAt,
+            });
+          }
+        }
         return tx.sale.findUniqueOrThrow({ where: { id: created.id }, include: SALE_INCLUDE });
       });
     } catch (error) {

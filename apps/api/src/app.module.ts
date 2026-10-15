@@ -36,6 +36,7 @@ import { TillAuthModule } from "./till/till-auth.module";
 import { OverridesModule } from "./overrides/overrides.module";
 import { CompanyModule } from "./company/company.module";
 import { FiscalModule } from "./fiscal/fiscal.module";
+import { AccountsModule } from "./accounts/accounts.module";
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { FiscalModule } from "./fiscal/fiscal.module";
     PermissionsModule,
     OverridesModule,
     FiscalModule,
+    AccountsModule,
     CompanyModule,
     TillAuthModule,
     AuthModule,

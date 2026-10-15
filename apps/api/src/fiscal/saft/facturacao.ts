@@ -143,11 +143,42 @@ export interface SaftPayment {
   systemEntryDateTime: string;
   customerId: string;
   methods: { mechanism: string; amount: Money; date: string }[];
-  /** One line per invoice settled. */
+  /** One line per invoice settled; amount without tax (CreditAmount). */
   lines: { lineNumber: number; originatingOn: string; invoiceDate: string; amount: Money }[];
   netTotal: Money;
   taxPayable: Money;
   grossTotal: Money;
+}
+
+export interface SaftSupplier {
+  id: string;
+  /** NIF; "999999999" when unknown. */
+  taxId: string;
+  name: string;
+  contact?: string | null;
+  address: SaftAddress;
+  phone?: string | null;
+  email?: string | null;
+}
+
+/** A supplier's document for a purchase (SAF-T PurchaseInvoices). */
+export interface SaftPurchaseInvoice {
+  /** The supplier's number, as on their document. */
+  invoiceNo: string;
+  /** The 4 hash characters on it, or "0". */
+  hash: string;
+  sourceId: string;
+  period: number;
+  date: string;
+  /** FT, FR, NC... */
+  purchaseType: string;
+  supplierId: string;
+  taxPayable: Money;
+  netTotal: Money;
+  grossTotal: Money;
+  deductible: { taxBase: Money; amount: Money; percentage: Money; type: string }[];
+  /** IVA cativo: percent and amount. */
+  withholding?: { percent: Money; amount: Money } | null;
 }
 
 export interface FacturacaoInput {
@@ -161,11 +192,13 @@ export interface FacturacaoInput {
   /** "Global", or the store the file is for. */
   taxEntity: string;
   customers: SaftCustomer[];
+  suppliers: SaftSupplier[];
   products: SaftProduct[];
   taxTable: SaftTaxTableEntry[];
   salesInvoices: SaftDocument[];
   workingDocuments: SaftDocument[];
   payments: SaftPayment[];
+  purchaseInvoices: SaftPurchaseInvoice[];
 }
 
 const ZERO = new Prisma.Decimal(0);
@@ -265,6 +298,26 @@ export function buildFacturacaoXml(input: FacturacaoInput): string {
     w.el("SelfBillingIndicator", 0);
     w.close("Customer");
   }
+  for (const su of input.suppliers) {
+    w.open("Supplier");
+    w.el("SupplierID", su.id);
+    w.el("AccountID", UNKNOWN);
+    w.el("SupplierTaxID", text(su.taxId, 20));
+    w.el("CompanyName", text(su.name, 100));
+    w.el("Contact", optionalText(su.contact, 50));
+    w.open("BillingAddress");
+    w.el("AddressDetail", text(su.address.detail, 250));
+    w.el("City", text(su.address.city, 50));
+    w.el("PostalCode", text(su.address.postalCode, 20));
+    w.el("Province", optionalText(su.address.province, 50));
+    // Suppliers' countries are ISO codes only (no "Desconhecido").
+    w.el("Country", /^[A-Z]{2}$/.test(su.address.country ?? "") ? su.address.country : "AO");
+    w.close("BillingAddress");
+    w.el("Telephone", optionalText(su.phone, 20));
+    w.el("Email", optionalText(su.email, 255));
+    w.el("SelfBillingIndicator", 0);
+    w.close("Supplier");
+  }
   for (const p of input.products) {
     w.open("Product");
     w.el("ProductType", p.type);
@@ -293,6 +346,7 @@ export function buildFacturacaoXml(input: FacturacaoInput): string {
   salesInvoices(w, input.salesInvoices);
   if (input.workingDocuments.length) workingDocuments(w, input.workingDocuments);
   if (input.payments.length) payments(w, input.payments);
+  if (input.purchaseInvoices.length) purchaseInvoices(w, input.purchaseInvoices);
   w.close("SourceDocuments");
 
   w.close("AuditFile");
@@ -467,4 +521,41 @@ function payments(w: XmlWriter, receipts: SaftPayment[]) {
     w.close("Payment");
   }
   w.close("Payments");
+}
+
+function purchaseInvoices(w: XmlWriter, invoices: SaftPurchaseInvoice[]) {
+  w.open("PurchaseInvoices");
+  w.el("NumberOfEntries", invoices.length);
+  for (const p of invoices) {
+    w.open("Invoice");
+    w.el("InvoiceNo", text(p.invoiceNo, 60));
+    w.el("Hash", text(p.hash, 172, "0"));
+    w.el("SourceID", text(p.sourceId, 30));
+    w.el("Period", p.period);
+    w.el("InvoiceDate", p.date);
+    w.el("PurchaseType", p.purchaseType);
+    w.el("SupplierID", p.supplierId);
+    w.open("DocumentTotals");
+    w.el("TaxPayable", m2(p.taxPayable));
+    w.el("NetTotal", m2(p.netTotal));
+    w.el("GrossTotal", m2(p.grossTotal));
+    for (const d of p.deductible) {
+      w.open("Deductible");
+      w.el("TaxBase", m2(d.taxBase));
+      w.el("DeductibleAmount", m2(d.amount));
+      w.el("DeductiblePercentage", dec(d.percentage));
+      w.el("DeductibleTaxType", d.type);
+      w.close("Deductible");
+    }
+    w.close("DocumentTotals");
+    if (p.withholding && p.withholding.amount.gt(0)) {
+      w.open("WithholdingTax");
+      w.el("WithholdingTaxType", "IVA");
+      w.el("WithholdingTaxDescription", p.withholding.percent.toFixed(2));
+      w.el("WithholdingTaxAmount", dec(p.withholding.amount));
+      w.close("WithholdingTax");
+    }
+    w.close("Invoice");
+  }
+  w.close("PurchaseInvoices");
 }

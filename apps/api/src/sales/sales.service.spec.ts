@@ -65,7 +65,7 @@ function buildPrismaMock(
         .fn()
         .mockResolvedValue(shift === undefined ? { id: "shift-1", status: ShiftStatus.OPEN, openedById: "cashier-1", terminalId: null } : shift),
     },
-    customer: { findFirst: jest.fn().mockResolvedValue({ id: "final-consumer" }) },
+    customer: { findFirst: jest.fn().mockResolvedValue({ id: "final-consumer" }), findUnique: jest.fn().mockResolvedValue(null) },
     business: { findUnique: jest.fn().mockResolvedValue({ maxDiscountPercent: null }) },
     $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(tx)),
     __tx: tx,
@@ -80,7 +80,13 @@ function buildService(prisma: unknown, opts: { permissions?: Permission[]; overr
   const permissions = { hasPermission: jest.fn(async (_u: string, _r: string, p: Permission) => (opts.permissions ?? []).includes(p)) };
   const overrides = opts.overrides ?? { consume: jest.fn(), recordOffline: jest.fn() };
   const fiscal = buildFiscalMock();
-  return { service: new SalesService(prisma as any, buildMailMock() as any, permissions as any, overrides as any, fiscal as any), overrides, fiscal };
+  const accounts = { checkCredit: jest.fn(), receiveWithSale: jest.fn() };
+  return {
+    service: new SalesService(prisma as any, buildMailMock() as any, permissions as any, overrides as any, fiscal as any, accounts as any),
+    overrides,
+    fiscal,
+    accounts,
+  };
 }
 
 function saleDto(extra: Record<string, unknown> = {}) {
@@ -199,6 +205,54 @@ describe("SalesService#create", () => {
     expect((sale as any).customerId).toBe("final-consumer");
     const chosen = await service.create("biz-1", "cashier-1", saleDto({ customerId: "cust-9" }));
     expect((chosen as any).customerId).toBe("cust-9");
+  });
+
+  describe("sales on credit (Angola phase 4)", () => {
+    const customer = { id: "cust-9", name: "Kianda", isFinalConsumer: false, taxId: "5000123456", address: null, city: null, postalCode: null, province: null, country: "AO" };
+    const creditSale = (extra: Record<string, unknown> = {}) =>
+      saleDto({ customerId: "cust-9", creditAmount: 6, payments: [{ method: PaymentMethod.CASH, amount: 4 }], ...extra });
+    const setup = (permissions: Permission[] = [Permission.SELL_ON_CREDIT]) => {
+      const prisma = buildPrismaMock(buildProduct(10));
+      prisma.customer.findFirst.mockResolvedValue(customer);
+      const built = buildService(prisma, { permissions });
+      built.fiscal.issuer.mockResolvedValue({ config: {} });
+      built.fiscal.issueForSale.mockResolvedValue({ id: "ft-1" });
+      return { prisma, ...built };
+    };
+
+    it("needs SELL_ON_CREDIT, or a manager's approval", async () => {
+      const { service } = setup([]);
+      await expect(service.create("biz-1", "cashier-1", creditSale())).rejects.toThrow("Selling on credit needs a manager's approval");
+    });
+
+    it("what's paid and what's on credit make up the total; credit can't be more than the total", async () => {
+      const { service } = setup();
+      await expect(service.create("biz-1", "cashier-1", creditSale({ creditAmount: 5 }))).rejects.toThrow("Payment amounts do not cover the total");
+      await expect(service.create("biz-1", "cashier-1", creditSale({ creditAmount: 11, payments: [] }))).rejects.toThrow("more than the total");
+    });
+
+    it("isn't for Consumidor Final", async () => {
+      const { service, prisma } = setup();
+      prisma.customer.findFirst.mockResolvedValue({ ...customer, isFinalConsumer: true });
+      await expect(service.create("biz-1", "cashier-1", creditSale())).rejects.toThrow(BadRequestException);
+    });
+
+    it("checks the limit inside the sale's transaction and takes what was paid as a receipt for the sale's invoice", async () => {
+      const { service, accounts, prisma } = setup();
+      const sale = await service.create("biz-1", "cashier-1", creditSale());
+      expect((sale as any).creditAmount.toString()).toBe("6");
+      expect(accounts.checkCredit).toHaveBeenCalledWith(prisma.__tx, "biz-1", "cust-9", new Prisma.Decimal(6));
+      const receipt = accounts.receiveWithSale.mock.calls[0][1];
+      expect(receipt).toMatchObject({ saleId: "sale-1", invoiceId: "ft-1", shiftId: "shift-1" });
+      expect(receipt.payments.map((p: { method: string; amount: Prisma.Decimal }) => [p.method, p.amount.toString()])).toEqual([["CASH", "4"]]);
+    });
+
+    it("all on credit: no payment legs, no receipt", async () => {
+      const { service, accounts } = setup();
+      const sale = await service.create("biz-1", "cashier-1", creditSale({ creditAmount: 10, payments: [] }));
+      expect((sale as any).paymentMethod).toBe(PaymentMethod.OTHER);
+      expect(accounts.receiveWithSale).not.toHaveBeenCalled();
+    });
   });
 
   it("never checks or moves stock for a product that doesn't track it", async () => {

@@ -187,6 +187,20 @@ Prisma backend.
   - Differences above an amount set in Settings → Tills are flagged. The
     **Shifts** page lists every shift with its difference and filters by
     status, cashier, till and flagged.
+- **Credit and payables (Angola)**:
+  - **Customers** page: credit limit (owners and managers), what each owes,
+    and their account: invoices on credit, receipts, take a payment, annul
+    a receipt (VOID_SALE).
+  - At the till, a chosen customer's sale can go **on their account**
+    (SELL_ON_CREDIT or a manager's approval, within the limit, online):
+    it's a **Factura (FT)**; anything paid now gets a **Recibo (RC)**. The
+    customer card shows what they owe and takes payments. Cash taken
+    counts in the shift; returns on unpaid invoices lower the debt first.
+  - **Purchases** record the supplier's document, IVA per rate (deductible
+    % and type), IVA cativo and what was paid; **Suppliers** shows what is
+    owed, takes payments and cancels mistaken ones.
+  - All of it reaches the SAF-T file (Payments, PurchaseInvoices) and the
+    accountant's workbook (including AGT's supplier annex layout).
 - **Staff**:
   - employees with optional logins (cashier or manager), limited to
     chosen stores

@@ -31,16 +31,18 @@ function tillTime(value: string | undefined): Date {
 
 /**
  * What should be in the drawer: opening float + cash sales (what the sales
- * kept, i.e. after change) − cash refunds + cash in − cash out.
+ * kept, i.e. after change) + cash customers paid towards their account −
+ * cash refunds + cash in − cash out.
  */
 export function computeExpectedCash(c: {
   openingFloat: Prisma.Decimal;
   cashSales: Prisma.Decimal;
+  cashReceipts?: Prisma.Decimal;
   cashRefunds: Prisma.Decimal;
   cashIn: Prisma.Decimal;
   cashOut: Prisma.Decimal;
 }): Prisma.Decimal {
-  return c.openingFloat.add(c.cashSales).sub(c.cashRefunds).add(c.cashIn).sub(c.cashOut);
+  return c.openingFloat.add(c.cashSales).add(c.cashReceipts ?? ZERO).sub(c.cashRefunds).add(c.cashIn).sub(c.cashOut);
 }
 
 /**
@@ -79,13 +81,17 @@ export interface ShiftSummary {
   discounts: string;
   voided: { count: number; total: string };
   returns: { count: number; total: string; cash: string };
+  /** Left on customers' accounts by sales on credit (for reference; not money). */
+  onCredit: string;
+  /** Money customers paid towards their accounts in this shift (receipts not taken with a sale). */
+  receipts: { count: number; total: string; byMethod: Partial<Record<PaymentMethod, string>> };
   cashIn: string;
   cashOut: string;
   movements: { id: string; type: "IN" | "OUT"; amount: string; reason: string; note: string | null; occurredAt: Date; user: string }[];
   byCashier: { id: string; name: string; count: number; total: string }[];
   /** Every sale, oldest first, for the report's optional full list. */
-  sales: { receiptNumber: string; at: Date; total: string; method: PaymentMethod | "SPLIT"; voided: boolean; cashier: string }[];
-  /** Opening float + cash taken - cash refunds + cash in - cash out. */
+  sales: { receiptNumber: string; at: Date; total: string; method: PaymentMethod | "SPLIT" | "CREDIT"; voided: boolean; cashier: string }[];
+  /** Opening float + cash taken (sales and receipts) - cash refunds + cash in - cash out. */
   expectedCash: string;
 }
 
@@ -309,7 +315,7 @@ export class ShiftsService {
 
   /** The end-of-shift report: sales, payments, discounts, cancels, returns, cash. */
   async summarize(shift: { id: string; openingFloat: Prisma.Decimal }): Promise<ShiftSummary> {
-    const [sales, returns, movements] = await Promise.all([
+    const [sales, returns, movements, receipts] = await Promise.all([
       this.prisma.sale.findMany({
         where: { shiftId: shift.id },
         orderBy: { createdAt: "asc" },
@@ -319,15 +325,21 @@ export class ShiftsService {
           status: true,
           total: true,
           discountTotal: true,
+          creditAmount: true,
           cashier: PERSON,
           payments: { select: { method: true, amount: true } },
         },
       }),
-      this.prisma.return.findMany({ where: { shiftId: shift.id }, select: { totalRefund: true, refundMethod: true } }),
+      this.prisma.return.findMany({ where: { shiftId: shift.id }, select: { totalRefund: true, refundMethod: true, accountCredit: true } }),
       this.prisma.cashMovement.findMany({
         where: { shiftId: shift.id },
         include: { user: PERSON },
         orderBy: { occurredAt: "asc" },
+      }),
+      // Paid towards an account here; what was paid with a sale is in that sale's payments.
+      this.prisma.customerPayment.findMany({
+        where: { shiftId: shift.id, saleId: null, document: { status: "N" } },
+        select: { method: true, amount: true },
       }),
     ]);
 
@@ -351,7 +363,11 @@ export class ShiftsService {
     }
 
     const cashSales = byMethod.get(PaymentMethod.CASH) ?? ZERO;
-    const cashRefunds = sum(returns.filter((r) => r.refundMethod === PaymentMethod.CASH).map((r) => r.totalRefund));
+    // What lowered a customer's debt on a sale on credit didn't leave the drawer.
+    const cashRefunds = sum(returns.filter((r) => r.refundMethod === PaymentMethod.CASH).map((r) => r.totalRefund.sub(r.accountCredit)));
+    const receiptsByMethod = new Map<PaymentMethod, Prisma.Decimal>();
+    for (const r of receipts) receiptsByMethod.set(r.method, (receiptsByMethod.get(r.method) ?? ZERO).add(r.amount));
+    const cashReceipts = receiptsByMethod.get(PaymentMethod.CASH) ?? ZERO;
     const cashIn = sum(movements.filter((m) => m.type === "IN").map((m) => m.amount));
     const cashOut = sum(movements.filter((m) => m.type === "OUT").map((m) => m.amount));
 
@@ -362,6 +378,12 @@ export class ShiftsService {
       discounts: sum(completed.map((s) => s.discountTotal)).toFixed(2),
       voided: { count: voided.length, total: sum(voided.map((s) => s.total)).toFixed(2) },
       returns: { count: returns.length, total: sum(returns.map((r) => r.totalRefund)).toFixed(2), cash: cashRefunds.toFixed(2) },
+      onCredit: sum(completed.map((s) => s.creditAmount)).toFixed(2),
+      receipts: {
+        count: receipts.length,
+        total: sum(receipts.map((r) => r.amount)).toFixed(2),
+        byMethod: Object.fromEntries([...receiptsByMethod].map(([m, v]) => [m, v.toFixed(2)])),
+      },
       cashIn: cashIn.toFixed(2),
       cashOut: cashOut.toFixed(2),
       movements: movements.map((m) => ({
@@ -378,11 +400,11 @@ export class ShiftsService {
         receiptNumber: s.receiptNumber,
         at: s.createdAt,
         total: s.total.toFixed(2),
-        method: s.payments.length === 1 ? s.payments[0].method : "SPLIT",
+        method: s.payments.length === 0 ? "CREDIT" : s.payments.length === 1 && s.creditAmount.isZero() ? s.payments[0].method : "SPLIT",
         voided: s.status === SaleStatus.VOIDED,
         cashier: `${s.cashier.firstName} ${s.cashier.lastName}`,
       })),
-      expectedCash: computeExpectedCash({ openingFloat: shift.openingFloat, cashSales, cashRefunds, cashIn, cashOut }).toFixed(2),
+      expectedCash: computeExpectedCash({ openingFloat: shift.openingFloat, cashSales, cashReceipts, cashRefunds, cashIn, cashOut }).toFixed(2),
     };
   }
 }

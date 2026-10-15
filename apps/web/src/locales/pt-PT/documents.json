@@ -17,7 +17,8 @@
     "copy": "2.ª VIA",
     "cancelled": "ANULADA",
     "saved": "Poupou {{amount}}",
-    "perUnit": "a {{price}}/{{unit}}"
+    "perUnit": "a {{price}}/{{unit}}",
+    "onAccount": "A crédito"
   },
   "quote": {
     "slipTitle": "ORÇAMENTO",
@@ -97,6 +98,11 @@
     "nif": "NIF: {{nif}}",
     "receiptCustomer": "Cliente: {{name}}",
     "receiptTax": "IVA {{rate}}%",
-    "pendingSignature": "Assinatura pendente (registado sem ligação)"
+    "pendingSignature": "Assinatura pendente (registado sem ligação)",
+    "settledDocument": "Documento liquidado",
+    "documentTotal": "Total do documento",
+    "amountSettled": "Valor pago",
+    "received": "Recebido",
+    "paymentReference": "Referência: {{reference}}"
   }
 }

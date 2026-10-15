@@ -50,11 +50,22 @@ export async function createSale(dto: CreateSaleDto, lines: CartLine[], approval
     // Uploaded later with the till's key, it stays this person's sale.
     actingUserId: useAuthStore.getState().user?.id,
   };
+  const gross = priceCart(lines, dto.discount ?? null).total;
+  // A sale on credit is a Factura the server numbers after checking the
+  // customer's credit: it needs the server, and never waits in the queue.
+  if ((dto.creditAmount ?? 0) > 0) {
+    if (isWorkingOffline()) throw new Error(i18n.t("pos:credit.needsOnline"));
+    try {
+      return await apiClient.post<SaleDto>("/sales", sale, { timeoutMs: SALE_TIMEOUT_MS });
+    } catch (err) {
+      if (isRetryableError(err)) throw new Error(i18n.t("pos:credit.needsOnline"));
+      throw err;
+    }
+  }
   // A registered till numbers and signs its Factura-Recibo itself, as it
   // issues it (where sales are fiscal documents), so the receipt has its
   // number and hash characters online or offline.
   const next = tillNumber();
-  const gross = priceCart(lines, dto.discount ?? null).total;
   if (next) sale.fiscal = await signForTill(next, gross);
   // The number is used once the sale is accepted or queued; a refused sale gives it back.
   const used = (result: SaleDto) => {

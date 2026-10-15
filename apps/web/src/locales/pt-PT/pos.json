@@ -202,7 +202,11 @@
     "spent": "Gasto",
     "last": "Última compra",
     "recent": "Últimas vendas",
-    "offline": "O histórico de compras precisa do servidor."
+    "offline": "O histórico de compras precisa do servidor.",
+    "owes": "Deve",
+    "noCredit": "Sem limite de crédito",
+    "creditLeft": "Crédito disponível {{amount}} de {{limit}}",
+    "receive": "Receber pagamento"
   },
   "proforma": {
     "selling": "A vender a pró-forma {{number}}: esta venda factura-a.",
@@ -211,5 +215,15 @@
   },
   "fiscal": {
     "cantIssueOffline": "Esta venda não pode ser concluída sem ligação: as facturas têm de ser assinadas quando são emitidas e esta caixa ainda não tem chave de assinatura. Ligue-se ao servidor (ou registe a caixa) e tente novamente."
+  },
+  "credit": {
+    "toggle": "Pôr na conta de {{name}}",
+    "approval": "Vender {{amount}} a crédito a {{name}}",
+    "checking": "A verificar o crédito do cliente…",
+    "noLimit": "Este cliente não tem limite de crédito. Defina-o na página Clientes.",
+    "available": "Crédito disponível: {{amount}} (deve {{balance}})",
+    "paidNow": "Pago agora (opcional)",
+    "onAccount": "A crédito: {{amount}}",
+    "needsOnline": "Vender a crédito precisa do servidor. Tente de novo quando a caixa estiver online."
   }
 }

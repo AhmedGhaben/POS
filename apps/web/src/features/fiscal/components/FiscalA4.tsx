@@ -31,6 +31,8 @@ export function FiscalA4({ doc }: { doc: FiscalDocumentDto }) {
     }
   }
   const anyDiscount = doc.lines.some((l) => Number(l.discountAmount) > 0);
+  // A receipt (RC) lists the invoices it settled instead of products.
+  const receipt = doc.documentType === "RC";
   const address = [s.address, [s.postalCode, s.city].filter(Boolean).join(" "), s.province ? config?.provinces.find((p) => p.code === s.province)?.name : null]
     .filter(Boolean)
     .join(", ");
@@ -107,6 +109,30 @@ export function FiscalA4({ doc }: { doc: FiscalDocumentDto }) {
         )}
       </section>
 
+      {receipt && (
+        <table className="relative mt-[8mm] w-full border-collapse">
+          <thead>
+            <tr className="border-b-2 border-black text-left text-[8.5pt]">
+              <th className="py-1.5 pr-2 font-semibold">{t("fiscal.settledDocument")}</th>
+              <th className="py-1.5 pr-2 font-semibold">{t("fiscal.issueDate")}</th>
+              <th className="py-1.5 pr-2 text-right font-semibold">{t("fiscal.documentTotal")}</th>
+              <th className="py-1.5 text-right font-semibold">{t("fiscal.amountSettled")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(doc.settled ?? []).map((a) => (
+              <tr key={a.documentNo} className="border-b border-neutral-300">
+                <td className="py-1 pr-2">{a.documentNo}</td>
+                <td className="py-1 pr-2">{date(a.invoiceDate.slice(0, 10) + "T12:00:00")}</td>
+                <td className="py-1 pr-2 text-right">{money(a.grossTotal)}</td>
+                <td className="py-1 text-right">{money(a.amount)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {!receipt && (
       <table className="relative mt-[8mm] w-full border-collapse">
         <thead>
           <tr className="border-b-2 border-black text-left text-[8.5pt]">
@@ -145,9 +171,11 @@ export function FiscalA4({ doc }: { doc: FiscalDocumentDto }) {
           })}
         </tbody>
       </table>
+      )}
 
       <section className="relative mt-4 flex items-start justify-between gap-6 break-inside-avoid">
         <div className="w-[95mm] space-y-2">
+          {!receipt && (
           <table className="w-full text-[8.5pt]">
             <thead>
               <tr className="border-b border-black text-left">
@@ -168,6 +196,7 @@ export function FiscalA4({ doc }: { doc: FiscalDocumentDto }) {
               ))}
             </tbody>
           </table>
+          )}
           {exemptions.size > 0 && (
             <div className="text-[8pt]">
               <p className="font-semibold">{t("fiscal.exemptions")}</p>
@@ -186,11 +215,14 @@ export function FiscalA4({ doc }: { doc: FiscalDocumentDto }) {
                   {MECHANISM_NAMES[p.mechanism] ?? p.mechanism}: {money(p.amount)}
                 </p>
               ))}
+              {doc.paymentReference && <p>{t("fiscal.paymentReference", { reference: doc.paymentReference })}</p>}
             </div>
           )}
         </div>
         <table className="w-[75mm]">
           <tbody>
+            {!receipt && (
+            <>
             <tr>
               <td className="py-0.5">{t("fiscal.netTotal")}</td>
               <td className="py-0.5 text-right">{money(doc.netTotal)}</td>
@@ -205,8 +237,10 @@ export function FiscalA4({ doc }: { doc: FiscalDocumentDto }) {
               <td className="py-0.5">{t("fiscal.taxTotal")}</td>
               <td className="py-0.5 text-right">{money(doc.taxPayable)}</td>
             </tr>
+            </>
+            )}
             <tr className="border-t-2 border-black text-[11pt] font-bold">
-              <td className="pt-1.5">{t("fiscal.total")}</td>
+              <td className="pt-1.5">{receipt ? t("fiscal.received") : t("fiscal.total")}</td>
               <td className="pt-1.5 text-right">{money(doc.grossTotal)}</td>
             </tr>
           </tbody>

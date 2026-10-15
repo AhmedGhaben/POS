@@ -15,7 +15,8 @@
     "thisDevice": "Este dispositivo",
     "pointOfSale": "Ponto de Venda",
     "shifts": "Turnos",
-    "reports": "Relatórios"
+    "reports": "Relatórios",
+    "customers": "Clientes"
   },
   "shell": {
     "openNavigation": "Abrir navegação",

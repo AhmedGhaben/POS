@@ -53,7 +53,40 @@
     "submit": "Registar compra",
     "done": "Compra registada",
     "poNumber": "N.º encomenda",
-    "empty": "Ainda não há compras."
+    "empty": "Ainda não há compras.",
+    "supplierDocument": "Documento do fornecedor",
+    "docType": "Tipo",
+    "docNo": "Número",
+    "docDate": "Data",
+    "docHash": "Caracteres do hash (ou 0)",
+    "hashInvalid": "4 caracteres como impressos, ou 0",
+    "iva": "IVA",
+    "ivaRate": "Taxa",
+    "noIva": "Sem IVA",
+    "deductible": "% dedutível",
+    "typology": "Tipologia",
+    "typologies": {
+      "INV": "Existências / inventário",
+      "OBC": "Outros bens de consumo",
+      "SERV": "Serviços",
+      "MFI": "Meios fixos e investimentos",
+      "IMPT": "Importação",
+      "SCE": "Serviços contratados no estrangeiro"
+    },
+    "withholding": "IVA cativo (retido para o Estado)",
+    "noWithholding": "Nenhum",
+    "paidNow": "Pago na receção",
+    "paidAmount": "Valor",
+    "paidMethod": "Pago com",
+    "net": "Sem IVA",
+    "withheld": "IVA cativo",
+    "toPay": "A pagar ao fornecedor",
+    "payment": "Pagamento",
+    "paymentStatus": {
+      "UNPAID": "Por pagar",
+      "PARTIAL": "Parcialmente paga",
+      "PAID": "Paga"
+    }
   },
   "returns": {
     "subtitle": "Processar reembolsos de uma venda anterior.",

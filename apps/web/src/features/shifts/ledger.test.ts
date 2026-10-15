@@ -58,6 +58,27 @@ describe("localSummary", () => {
     ]);
   });
 
+  it("credit: what went on account isn't cash; customers' cash payments are (annulled ones aren't)", () => {
+    const s = localSummary(
+      shift({
+        sales: [
+          { key: "a", total: 100, discount: 0, cashierId: "u1", cashier: "Ana", payments: [], voided: false, credit: 100 },
+          { key: "b", total: 60, discount: 0, cashierId: "u1", cashier: "Ana", payments: [{ method: PaymentMethod.CASH, amount: 20 }], voided: false, credit: 40 },
+        ],
+        receipts: [
+          { id: "r1", method: PaymentMethod.CASH, amount: 30 },
+          { id: "r2", method: PaymentMethod.BANK_TRANSFER, amount: 50 },
+          { id: "r3", method: PaymentMethod.CASH, amount: 999, voided: true },
+        ],
+      }),
+    );
+    // 100 + 20 (the second sale's deposit) + 30 (a receipt in cash)
+    expect(s.expectedCash).toBe("150.00");
+    expect(s.onCredit).toBe("140.00");
+    expect(s.receipts).toEqual({ count: 2, total: "80.00", byMethod: { CASH: "30.00", BANK_TRANSFER: "50.00" } });
+    expect(s.sales!.map((x) => x.method)).toEqual(["CREDIT", "SPLIT"]);
+  });
+
   it("an empty shift expects just the float", () => {
     expect(localSummary(shift({ openingFloat: 75.5 })).expectedCash).toBe("75.50");
   });

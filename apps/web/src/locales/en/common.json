@@ -15,7 +15,8 @@
     "thisDevice": "This device",
     "pointOfSale": "Point of Sale",
     "shifts": "Shifts",
-    "reports": "Reports"
+    "reports": "Reports",
+    "customers": "Customers"
   },
   "shell": {
     "openNavigation": "Open navigation",

@@ -77,7 +77,12 @@
     "byCashier": "Por operador",
     "allSales": "TODAS AS VENDAS",
     "split": "Dividido",
-    "cancelled": "cancelada"
+    "cancelled": "cancelada",
+    "credit": "A prazo",
+    "onCredit": "Vendido a prazo",
+    "receipts_one": "{{count}} recebimento de conta",
+    "receipts_other": "{{count}} recebimentos de conta",
+    "cashReceipts": "Dinheiro de recebimentos"
   },
   "page": {
     "description": "Cada turno de caixa com a contagem do dinheiro. As diferenças aparecem em vermelho.",

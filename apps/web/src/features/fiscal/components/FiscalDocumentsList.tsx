@@ -16,7 +16,7 @@ import { documentTitle } from "../fiscal-text";
 import { FiscalDocumentDialog } from "./FiscalDocumentDialog";
 
 const PAGE_SIZE = 25;
-const TYPES: FiscalDocumentType[] = ["FR", "FT", "NC", "PF"];
+const TYPES: FiscalDocumentType[] = ["FR", "FT", "NC", "RC", "PF"];
 
 /** Every fiscal document of the business, newest first: filter, open, reprint. */
 export function FiscalDocumentsList() {

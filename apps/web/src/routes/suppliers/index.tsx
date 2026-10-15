@@ -19,9 +19,12 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Combobox } from "@/components/ui/combobox";
 import { useAuthStore } from "@/features/auth/store";
-import { countryConfig } from "@pos/shared";
+import { countryConfig, type SupplierDto } from "@pos/shared";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { createSupplier, fetchSuppliers } from "@/features/suppliers/api";
+import { createSupplier } from "@/features/suppliers/api";
+import { fetchSuppliersWithBalance, SUPPLIERS_KEY } from "@/features/accounts/api";
+import { SupplierAccountSheet } from "@/features/accounts/components/SupplierAccountSheet";
+import { useMoney } from "@/features/business/use-money";
 
 const supplierSchema = z.object({
   name: z.string().min(1, "validation.required"),
@@ -46,11 +49,14 @@ const defaultValues = {
 };
 
 export function SuppliersPage() {
-  const { t } = useTranslation(["backoffice", "common"]);
+  const { t } = useTranslation(["backoffice", "common", "accounts"]);
+  const money = useMoney();
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [account, setAccount] = React.useState<SupplierDto | null>(null);
   const business = useAuthStore((s) => s.business);
   const queryClient = useQueryClient();
-  const suppliersQuery = useQuery({ queryKey: ["suppliers"], queryFn: fetchSuppliers });
+  // With what is owed to each (docs/plans/ANGOLA.md, phase 4).
+  const suppliersQuery = useQuery({ queryKey: SUPPLIERS_KEY, queryFn: fetchSuppliersWithBalance });
 
   const form = useForm<z.infer<typeof supplierSchema>>({
     resolver: zodResolver(supplierSchema),
@@ -235,6 +241,8 @@ export function SuppliersPage() {
                 <TableHead>{t("suppliers.contact")}</TableHead>
                 <TableHead>{t("fields.phone")}</TableHead>
                 <TableHead>{t("fields.email")}</TableHead>
+                <TableHead className="text-right">{t("accounts:supplierAccount.owed")}</TableHead>
+                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -245,11 +253,17 @@ export function SuppliersPage() {
                   <TableCell className="text-muted-foreground">{supplier.contactName ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{supplier.phone ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{supplier.email ?? "—"}</TableCell>
+                  <TableCell className={`text-right ${Number(supplier.balance) > 0 ? "font-semibold" : "text-muted-foreground"}`}>{money(supplier.balance ?? 0)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="ghost" onClick={() => setAccount(supplier)}>
+                      {t("accounts:customers.account")}
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {suppliersQuery.data?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="p-6 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="p-6 text-center text-muted-foreground">
                     {t("suppliers.empty")}
                   </TableCell>
                 </TableRow>
@@ -258,6 +272,7 @@ export function SuppliersPage() {
           </Table>
         </CardContent>
       </Card>
+      <SupplierAccountSheet supplier={account} onClose={() => setAccount(null)} />
     </div>
   );
 }

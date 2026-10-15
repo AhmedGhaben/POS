@@ -10,9 +10,11 @@ import { OthersShiftPanel } from "@/features/shifts/components/OthersShiftPanel"
 import { useCloseShiftRequest } from "@/features/shifts/close-request";
 import { CashMovementDialog } from "@/features/shifts/components/CashMovementDialog";
 import { CloseShiftDialog } from "@/features/shifts/components/CloseShiftDialog";
-import { isWorkingOffline } from "@/features/pos/offline-store";
+import { isWorkingOffline, useOfflineStore } from "@/features/pos/offline-store";
+import { CreditOption } from "@/features/pos/components/CreditOption";
+import { creditSplit, NO_CREDIT, type CreditChoice } from "@/features/pos/credit";
 import { useTranslation } from "react-i18next";
-import { DrawerOpenReason, fromCents, lineGrossCents, PaymentMethod, Permission } from "@pos/shared";
+import { countryConfig, DrawerOpenReason, fromCents, lineGrossCents, PaymentMethod, Permission } from "@pos/shared";
 import type { CustomerCardDto, CustomerDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -95,7 +97,15 @@ export function PosPage() {
   const [selectedCategoryId, setSelectedCategoryId] = React.useState<string | null>(null);
   const [payments, setPayments] = React.useState<SalePaymentInputDto[]>([]);
   const [paymentsValid, setPaymentsValid] = React.useState(true);
-  const [customer, setCustomer] = React.useState<CustomerDto | null>(null);
+  const [customer, setCustomerState] = React.useState<CustomerDto | null>(null);
+  // A sale on credit (online, fiscal stores): the rest of the total goes on the customer's account.
+  const [credit, setCredit] = React.useState<CreditChoice>(NO_CREDIT);
+  const [creditValid, setCreditValid] = React.useState(true);
+  const setCustomer = React.useCallback((c: CustomerDto | null) => {
+    setCustomerState(c);
+    setCredit(NO_CREDIT);
+  }, []);
+  const online = useOfflineStore((s) => !isWorkingOffline(s));
   const [receiptEmail, setReceiptEmail] = React.useState("");
   const [completedSale, setCompletedSale] = React.useState<SaleDto | null>(null);
   const [completedCustomer, setCompletedCustomer] = React.useState<CustomerDto | null>(null);
@@ -204,7 +214,7 @@ export function PosPage() {
         toast.error((error as Error).message);
       }
     })();
-  }, [searchParams, setSearchParams, restore, t]);
+  }, [searchParams, setSearchParams, restore, setCustomer, t]);
   const queryClient = useQueryClient();
 
   // Windows app with auto-print on: the receipt goes to the printer as soon
@@ -241,11 +251,12 @@ export function PosPage() {
           storeId: currentStoreId!,
           customerId: customer?.id ?? null,
           receiptEmail: receiptEmail.trim() || undefined,
-          payments,
+          payments: split.paidNow > 0 ? payments : [],
           lineItems: lines.map((l) => ({ productId: l.product.id, quantity: l.quantity, discount: l.discount ?? undefined })),
           discount: saleDiscount ?? undefined,
           shiftClientId: shift?.clientId,
           proformaId: proforma?.id,
+          creditAmount: split.onAccount > 0 ? split.onAccount : undefined,
         },
         lines,
         Object.values(approvals).filter((a): a is Approval => !!a),
@@ -267,12 +278,16 @@ export function PosPage() {
       setPaymentPanelKey((k) => k + 1);
       setCartSheetOpen(false);
       queryClient.invalidateQueries({ queryKey: ["inventory", currentStoreId] });
+      // What the customer has bought and owes changed.
+      if (sale.customerId) queryClient.invalidateQueries({ queryKey: ["customer-card", sale.customerId] });
     },
   });
 
   if (!currentStoreId) {
     return <p className="p-6 text-muted-foreground">{t("noStore")}</p>;
   }
+  const creditOffered = online && !!countryConfig(currentStore?.country ?? null);
+  const split = creditSplit(totals.total, credit);
 
   const checkoutPanel = (
     <>
@@ -324,14 +339,26 @@ export function PosPage() {
           value={receiptEmail}
           onChange={(e) => setReceiptEmail(e.target.value)}
         />
-        <PaymentPanel
-          key={paymentPanelKey}
-          total={totals.total}
-          onChange={(p, valid) => {
-            setPayments(p);
-            setPaymentsValid(valid);
-          }}
-        />
+        {creditOffered && (
+          <CreditOption
+            customer={customer}
+            total={totals.total}
+            value={credit}
+            onChange={setCredit}
+            onApproval={addApproval}
+            onValidity={setCreditValid}
+          />
+        )}
+        {split.paidNow > 0 && (
+          <PaymentPanel
+            key={`${paymentPanelKey}-${credit.on}`}
+            total={split.paidNow}
+            onChange={(p, valid) => {
+              setPayments(p);
+              setPaymentsValid(valid);
+            }}
+          />
+        )}
 
         {saleMutation.isError && (
           <p className="text-sm text-destructive">
@@ -344,7 +371,7 @@ export function PosPage() {
         <Button
           size="lg"
           className="w-full"
-          disabled={lines.length === 0 || !paymentsValid || saleMutation.isPending}
+          disabled={lines.length === 0 || (split.paidNow > 0 && !paymentsValid) || !creditValid || saleMutation.isPending}
           onClick={() => saleMutation.mutate()}
         >
           {saleMutation.isPending ? t("checkout.processing") : t("checkout.charge", { amount: money(totals.total) })}

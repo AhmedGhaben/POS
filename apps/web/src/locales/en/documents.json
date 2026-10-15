@@ -17,7 +17,8 @@
     "copy": "COPY",
     "cancelled": "CANCELLED",
     "saved": "You saved {{amount}}",
-    "perUnit": "@ {{price}}/{{unit}}"
+    "perUnit": "@ {{price}}/{{unit}}",
+    "onAccount": "On account"
   },
   "quote": {
     "slipTitle": "QUOTE",
@@ -97,6 +98,11 @@
     "nif": "NIF: {{nif}}",
     "receiptCustomer": "Customer: {{name}}",
     "receiptTax": "IVA {{rate}}%",
-    "pendingSignature": "Signature pending (recorded offline)"
+    "pendingSignature": "Signature pending (recorded offline)",
+    "settledDocument": "Document settled",
+    "documentTotal": "Document total",
+    "amountSettled": "Amount paid",
+    "received": "Received",
+    "paymentReference": "Reference: {{reference}}"
   }
 }

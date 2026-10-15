@@ -77,7 +77,12 @@
     "byCashier": "By cashier",
     "allSales": "ALL SALES",
     "split": "Split",
-    "cancelled": "cancelled"
+    "cancelled": "cancelled",
+    "credit": "On account",
+    "onCredit": "Sold on credit",
+    "receipts_one": "{{count}} account payment",
+    "receipts_other": "{{count}} account payments",
+    "cashReceipts": "Cash from account payments"
   },
   "page": {
     "description": "Each till shift with its cash count. Differences are shown in red.",

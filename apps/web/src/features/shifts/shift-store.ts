@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SaleDto } from "@pos/shared";
-import { ledgerSale, type LedgerMovement, type LocalShift } from "./ledger";
+import { ledgerSale, type LedgerMovement, type LedgerReceipt, type LocalShift } from "./ledger";
 
 /**
  * This device's open shift, kept on the device (localStorage) so the till
@@ -19,6 +19,8 @@ interface ShiftState {
   recordSale: (sale: SaleDto, cashierName: string) => void;
   recordVoid: (saleKey: string) => void;
   recordMovement: (movement: LedgerMovement) => void;
+  /** A customer paid towards their account here (or that receipt was annulled). */
+  recordReceipt: (receipt: LedgerReceipt) => void;
 }
 
 export const useShiftStore = create<ShiftState>()(
@@ -43,6 +45,12 @@ export const useShiftStore = create<ShiftState>()(
         const current = get().current;
         if (!current) return;
         set({ current: { ...current, movements: [...current.movements, movement] } });
+      },
+      recordReceipt: (receipt) => {
+        const current = get().current;
+        if (!current) return;
+        const receipts = (current.receipts ?? []).filter((r) => r.id !== receipt.id);
+        set({ current: { ...current, receipts: [...receipts, receipt] } });
       },
     }),
     { name: "pos-shift" },

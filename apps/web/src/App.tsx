@@ -31,6 +31,7 @@ import { ShiftsPage } from "@/routes/shifts";
 import { SetupPage } from "@/routes/setup";
 import { CustomerDisplayPage } from "@/routes/customer-display";
 import { ReportsPage } from "@/routes/reports";
+import { CustomersPage } from "@/routes/customers";
 
 /** Owner/Manager default to the back office; Cashier defaults straight to POS. */
 function DefaultLanding() {
@@ -75,6 +76,7 @@ export function App() {
               <Route path="/drawer-events" element={<DrawerEventsPage />} />
               <Route path="/shifts" element={<ShiftsPage />} />
               <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/customers" element={<CustomersPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>

@@ -95,6 +95,63 @@ const EXACT: Record<string, Translations> = {
   // Stores and business
   "Business not found": { "pt-PT": "Empresa não encontrada", "pt-BR": "Empresa não encontrada" },
   "Store not found": { "pt-PT": "Loja não encontrada", "pt-BR": "Loja não encontrada" },
+  // Credit, receipts and payables
+  "The payment is more than what is owed": { "pt-PT": "O pagamento é superior ao valor em dívida", "pt-BR": "O pagamento é maior do que o valor devido" },
+  "A payment can only go to this account's open documents, once each": {
+    "pt-PT": "Um pagamento só pode ser imputado aos documentos em aberto desta conta, uma vez cada",
+    "pt-BR": "Um pagamento só pode ir para os documentos em aberto desta conta, uma vez cada",
+  },
+  "An allocation is more than what is still owed on that document": {
+    "pt-PT": "Uma imputação é superior ao que ainda está em dívida nesse documento",
+    "pt-BR": "Uma alocação é maior do que o que ainda é devido nesse documento",
+  },
+  "The allocations must add up to the payment": { "pt-PT": "As imputações têm de somar o valor do pagamento", "pt-BR": "As alocações precisam somar o valor do pagamento" },
+  "Choose the customer to sell on credit to": { "pt-PT": "Escolha o cliente a quem vende a crédito", "pt-BR": "Escolha o cliente para quem vende a prazo" },
+  "This customer has no credit limit. Set one on the Customers page first.": {
+    "pt-PT": "Este cliente não tem limite de crédito. Defina-o primeiro na página Clientes.",
+    "pt-BR": "Este cliente não tem limite de crédito. Defina um primeiro na página Clientes.",
+  },
+  "Consumidor Final has no account": { "pt-PT": "O Consumidor Final não tem conta corrente", "pt-BR": "O Consumidor Final não tem conta" },
+  "Open a shift before taking payments": { "pt-PT": "Abra um turno antes de receber pagamentos", "pt-BR": "Abra um turno antes de receber pagamentos" },
+  "This shift belongs to someone else": { "pt-PT": "Este turno pertence a outra pessoa", "pt-BR": "Este turno pertence a outra pessoa" },
+  "Cash goes into a till: take it in your open shift": {
+    "pt-PT": "O numerário vai para uma caixa: receba-o no seu turno aberto",
+    "pt-BR": "Dinheiro vai para um caixa: receba no seu turno aberto",
+  },
+  "Sales on credit and receipts need a store that issues fiscal documents": {
+    "pt-PT": "Vendas a crédito e recibos precisam de uma loja que emita documentos fiscais",
+    "pt-BR": "Vendas a prazo e recibos precisam de uma loja que emita documentos fiscais",
+  },
+  "Payment not found": { "pt-PT": "Pagamento não encontrado", "pt-BR": "Pagamento não encontrado" },
+  "This was paid with a sale: cancel the sale instead": {
+    "pt-PT": "Este pagamento foi feito com uma venda: anule antes a venda",
+    "pt-BR": "Este pagamento foi feito com uma venda: cancele a venda",
+  },
+  "This payment was already cancelled": { "pt-PT": "Este pagamento já foi anulado", "pt-BR": "Este pagamento já foi cancelado" },
+  "Consumidor Final can't be changed": { "pt-PT": "O Consumidor Final não pode ser alterado", "pt-BR": "O Consumidor Final não pode ser alterado" },
+  "Only owners and managers set credit limits": {
+    "pt-PT": "Só o proprietário e os gerentes definem limites de crédito",
+    "pt-BR": "Só o proprietário e os gerentes definem limites de crédito",
+  },
+  "A sale on credit is numbered by the server, not the till": {
+    "pt-PT": "Uma venda a crédito é numerada pelo servidor, não pela caixa",
+    "pt-BR": "Uma venda a prazo é numerada pelo servidor, não pelo caixa",
+  },
+  "Payments were received for this invoice. Annul those receipts first.": {
+    "pt-PT": "Foram recebidos pagamentos desta fatura. Anule primeiro esses recibos.",
+    "pt-BR": "Foram recebidos pagamentos desta fatura. Anule esses recibos primeiro.",
+  },
+  "This receipt was already annulled": { "pt-PT": "Este recibo já foi anulado", "pt-BR": "Este recibo já foi anulado" },
+  "The IVA bases must add up to the purchase total without IVA": {
+    "pt-PT": "As bases de IVA têm de somar o total da compra sem IVA",
+    "pt-BR": "As bases do IVA precisam somar o total da compra sem IVA",
+  },
+  "IVA cativo needs IVA on the purchase": { "pt-PT": "O IVA cativo exige IVA na compra", "pt-BR": "O IVA cativo exige IVA na compra" },
+  "The amount on credit is more than the total": { "pt-PT": "O valor a crédito é superior ao total", "pt-BR": "O valor a prazo é maior que o total" },
+  "Selling on credit needs a manager's approval": {
+    "pt-PT": "Vender a crédito precisa da aprovação de um gerente",
+    "pt-BR": "Vender a prazo precisa da aprovação de um gerente",
+  },
   // SAF-T and accountant exports
   "Dates must be calendar dates in the form YYYY-MM-DD": {
     "pt-PT": "As datas devem ser datas do calendário no formato AAAA-MM-DD",
@@ -394,6 +451,13 @@ const PATTERNS: { re: RegExp; t: Translations }[] = [
     t: {
       "pt-PT": '"$1" não controla stock, por isso não pode ser transferido',
       "pt-BR": '"$1" não controla estoque, por isso não pode ser transferido',
+    },
+  },
+  {
+    re: /^That's more than this customer's credit allows \((\S+) left\)$/,
+    t: {
+      "pt-PT": "Isso ultrapassa o crédito deste cliente (restam $1)",
+      "pt-BR": "Isso passa do crédito deste cliente (restam $1)",
     },
   },
   {

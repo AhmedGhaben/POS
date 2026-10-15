@@ -4,12 +4,14 @@ import { PrismaService } from "../prisma/prisma.service";
 import { CreateReturnDto } from "./dto/create-return.dto";
 import { recordMovement } from "../stock/stock";
 import { DOCUMENT_SUMMARY, FiscalService } from "../fiscal/fiscal.service";
+import { CustomerAccountsService } from "../accounts/customer-accounts.service";
 
 @Injectable()
 export class ReturnsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly fiscal: FiscalService,
+    private readonly accounts: CustomerAccountsService,
   ) {}
 
   findByStore(storeId: string) {
@@ -70,6 +72,12 @@ export class ReturnsService {
       };
     });
 
+    // On a sale on credit, the return first lowers what the customer still
+    // owes on its invoice; only the rest goes back as money.
+    const owed = await this.accounts.openOnSale(this.prisma, sale.id);
+    const accountCredit = Prisma.Decimal.min(owed, totalRefund);
+    const moneyBack = totalRefund.sub(accountCredit);
+
     // Cash back leaves a drawer, so it happens in that till's open shift. A
     // credit note with no cash (refund by transfer, card, to the customer's
     // balance) can be done from the back office, linked to the person and store.
@@ -80,7 +88,7 @@ export class ReturnsService {
           select: { id: true, status: true, terminal: { select: { id: true, code: true } } },
         })
       : null;
-    if (refundMethod === PaymentMethod.CASH && shift?.status !== ShiftStatus.OPEN) {
+    if (refundMethod === PaymentMethod.CASH && moneyBack.gt(0) && shift?.status !== ShiftStatus.OPEN) {
       throw new BadRequestException("A cash refund has to be done at a till with an open shift");
     }
 
@@ -100,6 +108,7 @@ export class ReturnsService {
           reason: dto.reason,
           totalRefund,
           refundMethod,
+          accountCredit,
           shiftId: shift?.status === ShiftStatus.OPEN ? shift.id : null,
           lineItems: { create: lineItemsData },
         },

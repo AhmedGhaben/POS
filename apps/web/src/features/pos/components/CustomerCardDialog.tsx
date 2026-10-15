@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { SaleStatus, type CustomerCardDto, type CustomerDto } from "@pos/shared";
@@ -5,8 +6,15 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useMoney } from "@/features/business/use-money";
 import { apiClient } from "@/lib/api-client";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { ReceivePaymentDialog } from "@/features/accounts/components/ReceivePaymentDialog";
+import { FiscalDocumentDialog } from "@/features/fiscal/components/FiscalDocumentDialog";
 
-/** The customer card at the till: contact, NIF, what they've bought and their last sales. */
+/**
+ * The customer card at the till: contact, NIF, what they've bought, their
+ * last sales and their account (what they owe on credit, credit left), with
+ * "Receive payment" for money towards it.
+ */
 export function CustomerCardDialog({ customer, onClose }: { customer: CustomerDto | null; onClose: () => void }) {
   const { t } = useTranslation("pos");
   const money = useMoney();
@@ -14,8 +22,12 @@ export function CustomerCardDialog({ customer, onClose }: { customer: CustomerDt
     queryKey: ["customer-card", customer?.id],
     queryFn: () => apiClient.get<CustomerCardDto>(`/customers/${customer!.id}/card`),
     enabled: !!customer,
+    staleTime: 0,
   });
   const c = card.data?.customer ?? customer;
+  const account = card.data?.account;
+  const [receiving, setReceiving] = React.useState(false);
+  const [receipt, setReceipt] = React.useState<string | null>(null);
 
   return (
     <Dialog open={!!customer} onOpenChange={(open) => !open && onClose()}>
@@ -53,6 +65,23 @@ export function CustomerCardDialog({ customer, onClose }: { customer: CustomerDt
                 <p className="text-xs text-muted-foreground">{t("card.last")}</p>
               </div>
             </div>
+            {account && (account.creditLimit !== null || Number(account.balance) > 0) && (
+              <div className="flex items-center justify-between gap-3 rounded-md border p-3 text-sm">
+                <div>
+                  <p>
+                    {t("card.owes")} <span className="font-semibold">{money(account.balance)}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {account.creditLimit === null ? t("card.noCredit") : t("card.creditLeft", { amount: money(account.available ?? 0), limit: money(account.creditLimit) })}
+                  </p>
+                </div>
+                {Number(account.balance) > 0 && (
+                  <Button size="sm" onClick={() => setReceiving(true)}>
+                    {t("card.receive")}
+                  </Button>
+                )}
+              </div>
+            )}
             {card.data.recent.length > 0 && (
               <div className="space-y-1">
                 <p className="text-sm font-medium">{t("card.recent")}</p>
@@ -71,6 +100,16 @@ export function CustomerCardDialog({ customer, onClose }: { customer: CustomerDt
           </>
         )}
       </DialogContent>
+      {c && account && (
+        <ReceivePaymentDialog
+          customer={c}
+          balance={Number(account.balance)}
+          open={receiving}
+          onOpenChange={setReceiving}
+          onReceived={(payment) => setReceipt(payment.document.id)}
+        />
+      )}
+      <FiscalDocumentDialog documentId={receipt} onClose={() => setReceipt(null)} />
     </Dialog>
   );
 }

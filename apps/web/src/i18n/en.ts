@@ -1,5 +1,6 @@
 // The English files, for typing keys (see i18next.d.ts). Add each new
 // namespace here as well as its JSON files.
+import accounts from "../locales/en/accounts.json";
 import auth from "../locales/en/auth.json";
 import backoffice from "../locales/en/backoffice.json";
 import common from "../locales/en/common.json";
@@ -15,4 +16,4 @@ import settings from "../locales/en/settings.json";
 import shifts from "../locales/en/shifts.json";
 import stock from "../locales/en/stock.json";
 
-export const en = { auth, backoffice, common, device, documents, drawerEvents, employees, invoices, pos, products, reports, settings, shifts, stock };
+export const en = { accounts, auth, backoffice, common, device, documents, drawerEvents, employees, invoices, pos, products, reports, settings, shifts, stock };

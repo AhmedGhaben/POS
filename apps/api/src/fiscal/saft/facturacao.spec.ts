@@ -68,9 +68,11 @@ const input = (over: Partial<FacturacaoInput> = {}): FacturacaoInput => ({
     { type: "IVA", region: "AO", code: "NOR", percentage: D(14), description: "Taxa geral" },
     { type: "IVA", region: "AO", code: "ISE", percentage: D(0), description: "Isento" },
   ],
+  suppliers: [],
   salesInvoices: [doc()],
   workingDocuments: [],
   payments: [],
+  purchaseInvoices: [],
   ...over,
 });
 
@@ -152,6 +154,36 @@ describe("SAF-T (AO) Facturação file", () => {
     expect(xml).toContain("<Reason>N - Documento não foi entregue ao cliente nem por</Reason>");
     expect(xml).toContain("<TaxExemptionCode>M10</TaxExemptionCode>");
     expect(xml).toContain("<SettlementAmount>0.5</SettlementAmount>");
+  });
+
+  it("purchases: the supplier and their invoice with IVA per base and IVA cativo (the official example's figures)", async () => {
+    const xml = buildFacturacaoXml(
+      input({
+        suppliers: [{ id: "sup1", taxId: "1234567890", name: "Fornecedor Exemplo", contact: "Sr. Kiala", address: { detail: "Rua 1", city: "Luanda", country: "AO" } }],
+        purchaseInvoices: [
+          {
+            invoiceNo: "FT 2019A1/12360",
+            hash: "ZPi2",
+            sourceId: "user1",
+            period: 10,
+            date: "2026-10-09",
+            purchaseType: "FT",
+            supplierId: "sup1",
+            taxPayable: D(42000),
+            netTotal: D(300000),
+            grossTotal: D(342000),
+            deductible: [
+              { taxBase: D(200000), amount: D(28000), percentage: D(100), type: "MFI" },
+              { taxBase: D(100000), amount: D(14000), percentage: D(100), type: "INV" },
+            ],
+            withholding: { percent: D(50), amount: D(21000) },
+          },
+        ],
+      }),
+    );
+    expect(await saftSchemaErrors(xml)).toEqual([]);
+    expect(xml).toContain("<DeductibleTaxType>MFI</DeductibleTaxType>");
+    expect(xml).toContain("<WithholdingTaxDescription>50.00</WithholdingTaxDescription>");
   });
 
   it("escapes text and fills what the decree says to fill for consumidor final", () => {

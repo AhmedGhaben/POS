@@ -10,6 +10,8 @@ _In progress — updated at the end of the session._
 
 - Phase 8b (SAF-T + accountant exports) redone and built; date fix done
   (calendar dates in Luanda's time; month-end and year-end tests).
+- Phase 4 (credit sales, receipts, customer/supplier accounts, purchase
+  IVA) built.
 
 ---
 
@@ -61,6 +63,32 @@ mentioned a migration "prepared"; there is none in the repo.
 | 15 | Reports page in the menu for owners and managers; managers export the whole business like the fiscal documents list allows. | Consistent with the existing fiscal list permissions. |
 | 16 | Deadline reminders (Dashboard, Reports): monthly file from the 1st until 5 days after the 15th; inventory from 1 January until 5 days after 15 February; nothing once e-invoicing is active. | The country config's deadlines; no tracking of what was submitted. |
 | 17 | `formatCalendarDate` for `YYYY-MM-DD` strings in the web (formats in UTC). | `formatDate("2026-10-15")` shows the 14th west of Greenwich. |
+
+## Phase 4: credit and payables
+
+The previous log left three questions open; answered here.
+
+| # | Decision | Why |
+|---|----------|-----|
+| 1 | **Allocation: oldest first by default**, or chosen documents (API accepts explicit allocations; the UI uses oldest first). | What shops and accountants expect; explicit allocations cover the exceptions. |
+| 2 | **No overpayment / money on account**: a payment can't exceed what's owed (400). | An advance (adiantamento) is its own document in Angola; not built yet. |
+| 3 | **Currency**: the business currency only. | Plan: exchange fields only for non-AOA documents, later. |
+| 4 | A sale on credit = `Sale.creditAmount > 0`, not a new PaymentMethod; all on credit = no payment legs (`paymentMethod` OTHER, receipts show "On account"). | Keeps payment-method reports and the SAF-T mechanism map about real money. |
+| 5 | `creditLimit` null = **no credit at all**; over the limit is refused (no override). Only owners/managers set limits. | A manager can raise the limit in seconds; an override would make the limit meaningless. |
+| 6 | Credit sales and receipts are **online only** and only where sales are fiscal documents (Angola). The FT is numbered/signed by the server (in the till's FT series when sold at a till). Offline uploads that carry credit are accepted without the limit check. | The limit needs the server's balance; never drop an offline upload. |
+| 7 | What's paid at the till with a credit sale is a **receipt (RC) allocated to the sale's FT**, not FT payments. | That's what the document regime says an FT + payment is. |
+| 8 | Receipts are **FiscalDocument rows (type RC)**: own series, hash-chained (SAF-T Payments has no Hash, but it costs nothing), immutable; allocations in `CustomerPaymentAllocation`, also immutable by trigger. Annul = status A, with VOID_SALE. | Reuses numbering, printing, listing and the immutability we already trust. |
+| 9 | **Cash receipts need the receiver's open shift** (and cashiers need one for any method); the shift summary adds them to expected cash; receipts taken with a sale aren't counted twice. | Cash is in a drawer; the blind count must match. |
+| 10 | Cancelling a credit sale annuls the FT **and its own deposit receipt**; if later receipts exist, refused until they're annulled. | The deposit goes back with the cancel; later payments are separate decisions. |
+| 11 | A return on a sale on credit **lowers what's still owed first** (`Return.accountCredit`), the rest is money back (needing a shift only if cash). The NC's payments list only money given back. | Returning goods you haven't paid for shouldn't hand out cash. |
+| 12 | Purchases: one or more **IVA lines** whose bases must add up to the net total; tax = base × rate rounded half-up to the cent unless the supplier's figure is given; **IVA cativo** % of the IVA; owed to supplier = total − cativo. Existing purchases were marked **paid** by the migration. The UI offers one rate per purchase (API takes several). | Mirrors the supplier annex and SAF-T Deductible; old purchases predate payables. |
+| 13 | Supplier payments are not fiscal documents: **cancel** (kept, marked) instead of delete; business-level (no store), so a single-store accountant export leaves them out. | No AGT document for outgoing payments; supplier debts are per company. |
+| 14 | The accountant workbook gets a 4th sheet in **AGT's "Anexo de Fornecedores" layout** (one row per IVA base), with "Linha de destino no Modelo" left for the accountant. | The template is in docs/saft-ao/examples; the model-line mapping isn't documented. |
+| 15 | Customer card queries always refetch (`staleTime: 0`) and are invalidated after a sale. | Found by the desktop test: the 30 s cache showed a stale balance right after a credit sale. |
+
+**Not done (later or for the owner):** due dates / payment terms on
+invoices, interest, statements by email, supplier credit notes, advances,
+a receipt slip on 80 mm (receipts print on A4 for now).
 
 **Not done here, on purpose:** the always-on Docker API on :4000 (the
 installed app's) was not rebuilt — it serves the installed v0.2.3 tills,

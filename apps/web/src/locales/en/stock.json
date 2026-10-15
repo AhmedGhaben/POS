@@ -53,7 +53,40 @@
     "submit": "Record purchase",
     "done": "Purchase recorded",
     "poNumber": "PO #",
-    "empty": "No purchases yet."
+    "empty": "No purchases yet.",
+    "supplierDocument": "Supplier's document",
+    "docType": "Type",
+    "docNo": "Number",
+    "docDate": "Date",
+    "docHash": "Hash characters on it (or 0)",
+    "hashInvalid": "4 characters as printed, or 0",
+    "iva": "IVA",
+    "ivaRate": "Rate",
+    "noIva": "No IVA",
+    "deductible": "Deductible %",
+    "typology": "IVA type",
+    "typologies": {
+      "INV": "Stock for sale",
+      "OBC": "Other consumables",
+      "SERV": "Services",
+      "MFI": "Fixed assets and investment",
+      "IMPT": "Imports",
+      "SCE": "Services from abroad"
+    },
+    "withholding": "IVA cativo (withheld for the State)",
+    "noWithholding": "None",
+    "paidNow": "Paid on arrival",
+    "paidAmount": "Amount",
+    "paidMethod": "Paid with",
+    "net": "Without IVA",
+    "withheld": "IVA cativo",
+    "toPay": "To pay the supplier",
+    "payment": "Payment",
+    "paymentStatus": {
+      "UNPAID": "Unpaid",
+      "PARTIAL": "Part paid",
+      "PAID": "Paid"
+    }
   },
   "returns": {
     "subtitle": "Process refunds against a past sale.",

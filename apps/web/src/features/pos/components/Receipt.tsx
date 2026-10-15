@@ -24,8 +24,9 @@ export function Receipt({ sale, store, customer, copy }: ReceiptProps) {
   const changeDue = sale.changeDue !== null ? Number(sale.changeDue) : null;
   const saleDiscount = Number(sale.saleDiscountAmount ?? 0);
   // Pre-migration sales have no payments rows; fall back to the legacy single-method field.
+  const onAccount = Number(sale.creditAmount ?? 0);
   const payments =
-    sale.payments.length > 0
+    sale.payments.length > 0 || onAccount > 0
       ? sale.payments
       : [{ id: "legacy", method: sale.paymentMethod, amount: sale.total, tendered: null, change: null }];
 
@@ -100,6 +101,12 @@ export function Receipt({ sale, store, customer, copy }: ReceiptProps) {
           <span>{money(payment.amount)}</span>
         </div>
       ))}
+      {onAccount > 0 && (
+        <div className="flex justify-between font-semibold">
+          <span>{t("receipt.onAccount")}</span>
+          <span>{money(onAccount)}</span>
+        </div>
+      )}
       {sale.amountTendered !== null && (
         <div className="flex justify-between">
           <span>{t("receipt.tendered")}</span>

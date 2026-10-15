@@ -2,12 +2,13 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { Prisma } from "@prisma/client";
 import { createHash } from "crypto";
 import { buildXlsx } from "../common/xlsx";
+import { CustomerAccountsService } from "../accounts/customer-accounts.service";
 import { countryConfig } from "../countries";
 import { PrismaService } from "../prisma/prisma.service";
 import { fiscalTimeZone, localDateTime } from "./fiscal-format";
 import { FiscalService } from "./fiscal.service";
 import { AccountantMoneyMovement, AccountantPurchase, AccountantSale, AccountantTax, accountantSheets } from "./saft/accountant";
-import { buildFacturacaoXml, SaftCustomer, SaftDocument, SaftLine, SaftProduct, SaftTax, SaftTaxTableEntry } from "./saft/facturacao";
+import { buildFacturacaoXml, SaftCustomer, SaftDocument, SaftLine, SaftPayment, SaftProduct, SaftTax, SaftTaxTableEntry } from "./saft/facturacao";
 import { DRAFT_CSV, inventoryRows, InventoryFormat } from "./saft/inventario";
 import { addDays, dateColumnValue, exportPeriod, ExportPeriod, lastYearEnd, localDate, parseCalendarDate, previousMonth, startOfLocalDay } from "./saft/period";
 
@@ -42,6 +43,7 @@ const PAYMENT_METHOD_NAMES: Record<string, string> = {
   OTHER: "Outro",
 };
 const PURCHASE_STATUS_NAMES: Record<string, string> = { PENDING: "Pendente", RECEIVED: "Recebida", CANCELLED: "Cancelada" };
+const PURCHASE_PAYMENT_NAMES: Record<string, string> = { UNPAID: "Por pagar", PARTIAL: "Parcialmente pago", PAID: "Pago" };
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
 const dateOf = (d: Date) => d.toISOString().slice(0, 10);
@@ -58,6 +60,7 @@ export class SaftExportService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly fiscal: FiscalService,
+    private readonly accounts: CustomerAccountsService,
   ) {}
 
   /** SAF-T (AO) Facturação: the period's sales documents, working documents and receipts. */
@@ -128,6 +131,20 @@ export class SaftExportService {
 
     const sales = documents.filter((d) => !WORKING_TYPES.includes(d.documentType) && !PAYMENT_TYPES.includes(d.documentType));
     const working = documents.filter((d) => WORKING_TYPES.includes(d.documentType));
+    const payments = await this.receiptsFor(documents.filter((d) => PAYMENT_TYPES.includes(d.documentType)), zoneOf, customers.idFor);
+    // Purchases with the supplier's document, by the document's date.
+    const purchases = await this.prisma.purchase.findMany({
+      where: {
+        store: { businessId },
+        ...(ctx.store ? { storeId: ctx.store.id } : {}),
+        status: { not: "CANCELLED" },
+        supplierDocNo: { not: null },
+        supplierDocDate: { gte: dateColumnValue(period.startDate), lte: dateColumnValue(period.endDate) },
+      },
+      include: { supplier: true, taxLines: true },
+      orderBy: [{ supplierDocDate: "asc" }, { createdAt: "asc" }],
+    });
+    const suppliers = [...new Map(purchases.map((p) => [p.supplier.id, p.supplier])).values()];
     const xml = buildFacturacaoXml({
       company: {
         taxId: nif,
@@ -146,14 +163,43 @@ export class SaftExportService {
       dateCreated: localDateTime(now, ctx.timeZone).date,
       taxEntity: ctx.store ? ctx.store.name : "Global",
       customers: customers.list,
+      suppliers: suppliers.map((s) => ({
+        id: s.id,
+        taxId: s.taxId?.trim() || "999999999",
+        name: s.name,
+        contact: s.contactName,
+        address: { detail: s.address, city: s.city, postalCode: s.postalCode, province: this.provinceName(s.country, s.province), country: s.country },
+        phone: s.phone,
+        email: s.email,
+      })),
       products: await this.productsFor(businessId, documents),
       taxTable: await this.taxTableFor(businessId, documents),
       salesInvoices: sales.map(toDoc),
       workingDocuments: working.map(toDoc),
-      payments: [],
+      payments,
+      purchaseInvoices: purchases.map((p) => ({
+        invoiceNo: p.supplierDocNo!,
+        hash: p.supplierDocHash || "0",
+        sourceId: p.createdById,
+        period: p.supplierDocDate!.getUTCMonth() + 1,
+        date: dateOf(p.supplierDocDate!),
+        purchaseType: p.supplierDocType ?? "FT",
+        supplierId: p.supplier.id,
+        taxPayable: p.taxTotal,
+        netTotal: p.subtotal,
+        grossTotal: p.total,
+        deductible: p.taxLines.map((t) => ({ taxBase: t.base, amount: t.deductibleAmount, percentage: t.deductiblePercent, type: t.typology })),
+        withholding: p.withholdingPercent ? { percent: p.withholdingPercent, amount: p.withholdingAmount } : null,
+      })),
     });
 
-    await this.logExport(businessId, userId, "SAFT_FACTURACAO", { startDate: period.startDate, endDate: period.endDate, storeId: ctx.store?.id ?? null, documents: documents.length });
+    await this.logExport(businessId, userId, "SAFT_FACTURACAO", {
+      startDate: period.startDate,
+      endDate: period.endDate,
+      storeId: ctx.store?.id ?? null,
+      documents: documents.length,
+      purchases: purchases.length,
+    });
     return {
       fileName: `SAFT-AO_${nif}_${period.startDate}_${period.endDate}${ctx.store ? `_${this.fileSafe(ctx.store.name)}` : ""}.xml`,
       mimeType: "application/xml; charset=utf-8",
@@ -215,6 +261,16 @@ export class SaftExportService {
       include: { lines: { include: { taxes: true } } },
       orderBy: [{ invoiceDate: "asc" }, { systemEntryDate: "asc" }],
     });
+    // What's left to pay on each invoice (FT) on credit.
+    const ftCustomers = [...new Set(documents.filter((d) => d.documentType === "FT" && d.customerId).map((d) => d.customerId!))];
+    const invoiceState = new Map(
+      (await this.accounts.invoices(this.prisma, businessId, ftCustomers, { openOnly: false })).map((i) => [i.id, i]),
+    );
+    const ftStatus = (id: string) => {
+      const i = invoiceState.get(id);
+      if (!i || i.open.isZero()) return "Pago";
+      return i.open.lt(i.grossTotal) ? "Parcialmente pago" : "Por pagar";
+    };
     const sales: AccountantSale[] = documents.map((d) => {
       const taxes = new Map<string, AccountantTax>();
       for (const l of d.lines) {
@@ -237,13 +293,13 @@ export class SaftExportService {
         netTotal: d.netTotal,
         taxPayable: d.taxPayable,
         grossTotal: d.grossTotal,
-        paymentStatus: d.documentType === "FR" ? "Pago" : d.documentType === "FT" ? "Por pagar" : "",
+        paymentStatus: d.documentType === "FR" ? "Pago" : d.documentType === "FT" && d.status === "N" ? ftStatus(d.id) : "",
       };
     });
 
     const purchaseRows = await this.prisma.purchase.findMany({
       where: { store: { businessId }, ...storeFilter, createdAt: { gte: period.from, lt: period.until } },
-      include: { supplier: true },
+      include: { supplier: true, taxLines: true },
       orderBy: { createdAt: "asc" },
     });
     const purchases: AccountantPurchase[] = purchaseRows.map((p) => {
@@ -252,6 +308,9 @@ export class SaftExportService {
       return {
         date: localDate(p.createdAt, ctx.storeZones.get(p.storeId) ?? ctx.timeZone),
         number: p.purchaseNumber,
+        supplierDocType: p.supplierDocType,
+        supplierDocumentNo: p.supplierDocNo,
+        supplierDocDate: p.supplierDocDate ? dateOf(p.supplierDocDate) : null,
         supplierTaxId: p.supplier.taxId ?? "",
         supplierName: p.supplier.name,
         store: storeName.get(p.storeId) ?? "",
@@ -259,7 +318,10 @@ export class SaftExportService {
         taxTotal: p.taxTotal.times(k),
         total: p.total.times(k),
         status: PURCHASE_STATUS_NAMES[p.status] ?? p.status,
-        paymentStatus: "",
+        paymentStatus: k ? (PURCHASE_PAYMENT_NAMES[p.paymentStatus] ?? p.paymentStatus) : "",
+        taxLines: p.taxLines.map((t) => ({ base: t.base, taxAmount: t.taxAmount, deductiblePercent: t.deductiblePercent, deductibleAmount: t.deductibleAmount, typology: t.typology })),
+        withholdingPercent: p.withholdingPercent,
+        withholdingAmount: p.withholdingAmount.times(k),
       };
     });
 
@@ -278,6 +340,35 @@ export class SaftExportService {
         });
       }
     }
+    // Receipts (customers paying their invoices on credit) and payments to suppliers.
+    const receipts = await this.prisma.fiscalDocument.findMany({
+      where: { businessId, ...storeFilter, documentType: "RC", status: "N", invoiceDate: { gte: dateColumnValue(period.startDate), lte: dateColumnValue(period.endDate) } },
+      orderBy: [{ invoiceDate: "asc" }, { systemEntryDate: "asc" }],
+    });
+    for (const r of receipts) {
+      for (const p of this.paymentsOf(r)) {
+        movements.push({ date: dateOf(r.invoiceDate), documentNo: r.documentNo, kind: "Recebimento", taxId: r.buyerTaxId, name: r.buyerName, method: PAYMENT_METHOD_NAMES[p.method] ?? p.method, amount: D(p.amount) });
+      }
+    }
+    const supplierPayments = ctx.store
+      ? []
+      : await this.prisma.supplierPayment.findMany({
+          where: { businessId, cancelledAt: null, paidOn: { gte: dateColumnValue(period.startDate), lte: dateColumnValue(period.endDate) } },
+          include: { supplier: true },
+          orderBy: [{ paidOn: "asc" }, { createdAt: "asc" }],
+        });
+    for (const p of supplierPayments) {
+      movements.push({
+        date: dateOf(p.paidOn),
+        documentNo: p.reference ?? "",
+        kind: "Pagamento",
+        taxId: p.supplier.taxId ?? "",
+        name: p.supplier.name,
+        method: PAYMENT_METHOD_NAMES[p.method] ?? p.method,
+        amount: p.amount.negated(),
+      });
+    }
+    movements.sort((a, b) => a.date.localeCompare(b.date));
 
     const body = buildXlsx(
       accountantSheets({ companyName: ctx.business.legalName || ctx.business.name, companyTaxId: ctx.business.taxId ?? "", startDate: period.startDate, endDate: period.endDate, sales, purchases, movements }),
@@ -366,6 +457,51 @@ export class SaftExportService {
     }));
     if (anonymous && !finalConsumer) list.push({ id: fallbackId, taxId: "999999999", name: "Consumidor Final", finalConsumer: true, address: {} });
     return { list, idFor: (customerId: string | null) => (customerId ? (exportIds.get(customerId) ?? customerId) : fallbackId) };
+  }
+
+  /**
+   * Receipts (RC) for SAF-T Payments: one line per invoice settled, without
+   * tax in the proportion of that invoice (the decree's CreditAmount).
+   */
+  private async receiptsFor(
+    receipts: DocumentWithLines[],
+    zoneOf: (storeId: string) => string,
+    customerIdFor: (id: string | null) => string,
+  ): Promise<SaftPayment[]> {
+    const rows = await this.prisma.customerPayment.findMany({
+      where: { documentId: { in: receipts.map((r) => r.id) } },
+      include: { allocations: { include: { document: { select: { documentNo: true, invoiceDate: true, netTotal: true, grossTotal: true } } } } },
+    });
+    const byDocument = new Map(rows.map((p) => [p.documentId, p]));
+    return receipts.map((r) => {
+      const tz = zoneOf(r.storeId);
+      const date = dateOf(r.invoiceDate);
+      const lines = (byDocument.get(r.id)?.allocations ?? []).map((a, i) => ({
+        lineNumber: i + 1,
+        originatingOn: a.document.documentNo,
+        invoiceDate: dateOf(a.document.invoiceDate),
+        amount: a.document.grossTotal.isZero() ? a.amount : a.amount.times(a.document.netTotal).div(a.document.grossTotal).toDecimalPlaces(2),
+      }));
+      const netTotal = lines.reduce((s, l) => s.add(l.amount), D(0));
+      return {
+        paymentRefNo: r.documentNo,
+        paymentType: "RC",
+        period: r.period,
+        transactionDate: date,
+        status: r.status,
+        statusDateTime: localDateTime(r.statusDate, tz).dateTime,
+        statusReason: r.statusReason,
+        statusSourceId: r.statusById ?? r.sourceId,
+        sourceId: r.sourceId,
+        systemEntryDateTime: localDateTime(r.systemEntryDate, tz).dateTime,
+        customerId: customerIdFor(r.customerId),
+        methods: this.paymentsOf(r).map((m) => ({ mechanism: m.mechanism, amount: D(m.amount), date })),
+        lines,
+        netTotal,
+        taxPayable: r.grossTotal.sub(netTotal),
+        grossTotal: r.grossTotal,
+      };
+    });
   }
 
   /** One product entry per code the lines use (the SKU as sold), with what we know of it now. */

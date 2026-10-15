@@ -1,6 +1,7 @@
 import { Type } from "class-transformer";
 import {
   ArrayMinSize,
+  IsArray,
   IsBoolean,
   IsEmail,
   IsEnum,
@@ -165,10 +166,20 @@ export class CreateSaleDto {
   @IsEmail()
   receiptEmail?: string;
 
+  /** What was paid now; may be empty when it all goes on the customer's account (creditAmount). */
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => SalePaymentInputDto)
-  @ArrayMinSize(1)
   payments!: SalePaymentInputDto[];
+
+  /**
+   * The part left on the customer's account (a sale on credit, SELL_ON_CREDIT):
+   * the document is then a Factura (FT) and what was paid gets a receipt.
+   */
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  creditAmount?: number;
 
   @ValidateNested({ each: true })
   @Type(() => SaleLineItemInputDto)

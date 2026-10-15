@@ -44,6 +44,13 @@ enum IvaRegime {
   EXCLUSAO
 }
 
+/// How much of a purchase has been paid to the supplier.
+enum PurchasePaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+}
+
 enum PurchaseStatus {
   PENDING
   RECEIVED
@@ -183,25 +190,27 @@ model Business {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  stores          Store[]
-  users           User[]
-  categories      Category[]
-  products        Product[]
-  customers       Customer[]
-  suppliers       Supplier[]
-  employees       Employee[]
-  auditLogs       AuditLog[]
-  stockTransfers  StockTransfer[]
-  invoices        Invoice[]
-  terminals       Terminal[]
-  drawerEvents    DrawerEvent[]
-  invoiceCounters InvoiceCounter[]
-  shifts          Shift[]
-  pairingCodes    TerminalPairingCode[]
-  bankAccounts    BankAccount[]
-  taxRates        TaxRate[]
-  documentSeries  DocumentSeries[]
-  fiscalDocuments FiscalDocument[]
+  stores           Store[]
+  users            User[]
+  categories       Category[]
+  products         Product[]
+  customers        Customer[]
+  suppliers        Supplier[]
+  employees        Employee[]
+  auditLogs        AuditLog[]
+  stockTransfers   StockTransfer[]
+  invoices         Invoice[]
+  terminals        Terminal[]
+  drawerEvents     DrawerEvent[]
+  invoiceCounters  InvoiceCounter[]
+  shifts           Shift[]
+  pairingCodes     TerminalPairingCode[]
+  bankAccounts     BankAccount[]
+  taxRates         TaxRate[]
+  documentSeries   DocumentSeries[]
+  fiscalDocuments  FiscalDocument[]
+  customerPayments CustomerPayment[]
+  supplierPayments SupplierPayment[]
 
   @@map("businesses")
 }
@@ -279,21 +288,22 @@ model Store {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
-  storeUsers      StoreUser[]
-  inventoryItems  InventoryItem[]
-  sales           Sale[]
-  purchases       Purchase[]
-  expenses        Expense[]
-  returns         Return[]
-  employees       Employee[]
-  transfersOut    StockTransfer[]  @relation("TransferFrom")
-  transfersIn     StockTransfer[]  @relation("TransferTo")
-  terminals       Terminal[]
-  drawerEvents    DrawerEvent[]
-  shifts          Shift[]
-  stockMovements  StockMovement[]
-  documentSeries  DocumentSeries[]
-  fiscalDocuments FiscalDocument[]
+  storeUsers       StoreUser[]
+  inventoryItems   InventoryItem[]
+  sales            Sale[]
+  purchases        Purchase[]
+  expenses         Expense[]
+  returns          Return[]
+  employees        Employee[]
+  transfersOut     StockTransfer[]   @relation("TransferFrom")
+  transfersIn      StockTransfer[]   @relation("TransferTo")
+  terminals        Terminal[]
+  drawerEvents     DrawerEvent[]
+  shifts           Shift[]
+  stockMovements   StockMovement[]
+  documentSeries   DocumentSeries[]
+  fiscalDocuments  FiscalDocument[]
+  customerPayments CustomerPayment[]
 
   @@index([businessId])
   @@map("stores")
@@ -339,6 +349,8 @@ model User {
   shiftsClosed            Shift[]                  @relation("ShiftClosedBy")
   cashMovements           CashMovement[]
   drawerEvents            DrawerEvent[]
+  paymentsReceived        CustomerPayment[]        @relation("PaymentReceivedBy")
+  supplierPaymentsMade    SupplierPayment[]        @relation("SupplierPaymentCreatedBy")
 
   @@index([businessId])
   @@map("users")
@@ -644,11 +656,14 @@ model Customer {
   /// "Consumidor Final" (NIF 999999999): one per business, used for every
   /// sale where no customer was chosen. Can't be edited or deleted.
   isFinalConsumer Boolean  @default(false)
+  /// The most this customer may owe from sales on credit (Facturas); null = no credit.
+  creditLimit     Decimal? @db.Decimal(14, 2)
   createdAt       DateTime @default(now())
 
   sales           Sale[]
   fiscalDocuments FiscalDocument[]
   invoices        Invoice[]
+  payments        CustomerPayment[]
 
   @@index([businessId])
   @@map("customers")
@@ -701,12 +716,16 @@ model Sale {
   /// The prices included IVA (the store's setting when sold): the tax is part
   /// of the subtotal, so total = subtotal - discountTotal.
   pricesIncludeTax   Boolean       @default(false)
+  /// The part of the total left on the customer's account: a sale on credit,
+  /// whose document is a Factura (FT). payments + creditAmount = total.
+  creditAmount       Decimal       @default(0) @db.Decimal(14, 2)
 
-  lineItems       SaleLineItem[]
-  payments        SalePayment[]
-  returns         Return[]
-  invoice         Invoice?
-  fiscalDocuments FiscalDocument[]
+  lineItems        SaleLineItem[]
+  payments         SalePayment[]
+  returns          Return[]
+  invoice          Invoice?
+  fiscalDocuments  FiscalDocument[]
+  customerPayments CustomerPayment[]
 
   @@unique([storeId, clientId])
   @@index([storeId, createdAt])
@@ -783,6 +802,7 @@ model Supplier {
   updatedAt   DateTime @updatedAt
 
   purchases Purchase[]
+  payments  SupplierPayment[]
 
   @@index([businessId])
   @@map("suppliers")
@@ -829,10 +849,85 @@ model Purchase {
   status         PurchaseStatus @default(RECEIVED)
   createdAt      DateTime       @default(now())
 
-  lineItems PurchaseLineItem[]
+  /// The supplier's own document (SAF-T PurchaseInvoices, the IVA return's
+  /// supplier annex): type (FT, FR, NC...), number, date and the 4 hash
+  /// characters printed on it ("0" when it has none).
+  supplierDocType    String?
+  supplierDocNo      String?
+  supplierDocDate    DateTime?             @db.Date
+  supplierDocHash    String?
+  /// IVA cativo: the share of the supplier's IVA this business withholds.
+  withholdingPercent Decimal?              @db.Decimal(5, 2)
+  withholdingAmount  Decimal               @default(0) @db.Decimal(14, 2)
+  /// What has been paid to the supplier so far (allocations of supplier payments).
+  paidAmount         Decimal               @default(0) @db.Decimal(14, 2)
+  paymentStatus      PurchasePaymentStatus @default(UNPAID)
+
+  lineItems   PurchaseLineItem[]
+  taxLines    PurchaseTaxLine[]
+  allocations SupplierPaymentAllocation[]
 
   @@index([storeId, createdAt])
   @@map("purchases")
+}
+
+/// The IVA on a purchase, per rate: what was supported and how much of it
+/// can be deducted, and as what (SAF-T Deductible; the supplier annex's
+/// Tipologia: MFI, INV, OBC, SERV, IMPT, SCE).
+model PurchaseTaxLine {
+  id                String   @id @default(cuid())
+  purchaseId        String
+  purchase          Purchase @relation(fields: [purchaseId], references: [id])
+  taxRate           Decimal  @db.Decimal(5, 2)
+  base              Decimal  @db.Decimal(14, 2)
+  taxAmount         Decimal  @db.Decimal(14, 2)
+  deductiblePercent Decimal  @default(100) @db.Decimal(5, 2)
+  deductibleAmount  Decimal  @db.Decimal(14, 2)
+  typology          String   @default("INV")
+
+  @@index([purchaseId])
+  @@map("purchase_tax_lines")
+}
+
+/// Money paid to a supplier, set against their purchases (oldest first
+/// unless chosen). Not a fiscal document: a mistake is cancelled.
+model SupplierPayment {
+  id            String        @id @default(cuid())
+  businessId    String
+  business      Business      @relation(fields: [businessId], references: [id])
+  supplierId    String
+  supplier      Supplier      @relation(fields: [supplierId], references: [id])
+  amount        Decimal       @db.Decimal(14, 2)
+  method        PaymentMethod
+  /// Transfer or cheque reference.
+  reference     String?
+  /// The day it was paid.
+  paidOn        DateTime      @db.Date
+  note          String?
+  createdById   String
+  createdBy     User          @relation("SupplierPaymentCreatedBy", fields: [createdById], references: [id])
+  cancelledAt   DateTime?
+  cancelledById String?
+  cancelReason  String?
+  createdAt     DateTime      @default(now())
+
+  allocations SupplierPaymentAllocation[]
+
+  @@index([businessId, supplierId])
+  @@map("supplier_payments")
+}
+
+model SupplierPaymentAllocation {
+  id         String          @id @default(cuid())
+  paymentId  String
+  payment    SupplierPayment @relation(fields: [paymentId], references: [id])
+  purchaseId String
+  purchase   Purchase        @relation(fields: [purchaseId], references: [id])
+  amount     Decimal         @db.Decimal(14, 2)
+
+  @@index([paymentId])
+  @@index([purchaseId])
+  @@map("supplier_payment_allocations")
 }
 
 model PurchaseLineItem {
@@ -880,6 +975,9 @@ model Return {
   totalRefund   Decimal       @db.Decimal(14, 2)
   /// How the money went back; a cash refund comes out of the shift's cash.
   refundMethod  PaymentMethod @default(CASH)
+  /// The part of totalRefund that lowered what the customer still owed on a
+  /// sale on credit, instead of going back as money.
+  accountCredit Decimal       @default(0) @db.Decimal(14, 2)
   shiftId       String?
   shift         Shift?        @relation(fields: [shiftId], references: [id])
   createdAt     DateTime      @default(now())
@@ -1020,9 +1118,10 @@ model Shift {
   createdOffline       Boolean     @default(false)
   createdAt            DateTime    @default(now())
 
-  sales         Sale[]
-  returns       Return[]
-  cashMovements CashMovement[]
+  sales            Sale[]
+  returns          Return[]
+  cashMovements    CashMovement[]
+  customerPayments CustomerPayment[]
 
   @@unique([storeId, clientId])
   @@index([storeId, openedAt])
@@ -1203,7 +1302,11 @@ model FiscalDocument {
   referencingDocuments FiscalDocument[] @relation("DocumentReferences")
   createdAt            DateTime         @default(now())
 
-  lines FiscalDocumentLine[]
+  lines           FiscalDocumentLine[]
+  /// For a receipt (RC): the payment it records.
+  customerPayment CustomerPayment?            @relation("PaymentReceipt")
+  /// For an invoice (FT): the receipts that settled it.
+  settledBy       CustomerPaymentAllocation[]
 
   @@unique([seriesId, number])
   @@unique([businessId, documentNo])
@@ -1283,4 +1386,59 @@ model FiscalChainAlert {
 
   @@index([businessId, resolvedAt])
   @@map("fiscal_chain_alerts")
+}
+
+/// Money a customer paid towards their sales on credit (Facturas), recorded
+/// with a receipt (Recibo, RC: a fiscal document) and set against their
+/// open invoices, oldest first unless chosen. A mistake is annulled (the
+/// receipt's status A), never deleted.
+model CustomerPayment {
+  id           String         @id @default(cuid())
+  businessId   String
+  business     Business       @relation(fields: [businessId], references: [id])
+  storeId      String
+  store        Store          @relation(fields: [storeId], references: [id])
+  customerId   String
+  customer     Customer       @relation(fields: [customerId], references: [id])
+  /// The receipt (RC).
+  documentId   String         @unique
+  document     FiscalDocument @relation("PaymentReceipt", fields: [documentId], references: [id])
+  amount       Decimal        @db.Decimal(14, 2)
+  method       PaymentMethod
+  /// Transfer, cheque or Multicaixa reference.
+  reference    String?
+  /// Paid with a sale on credit (the part paid at the till): already in that
+  /// sale's payments, so a shift doesn't count it twice.
+  saleId       String?
+  sale         Sale?          @relation(fields: [saleId], references: [id])
+  /// The till shift it was taken in (cash goes into that drawer).
+  shiftId      String?
+  shift        Shift?         @relation(fields: [shiftId], references: [id])
+  receivedById String
+  receivedBy   User           @relation("PaymentReceivedBy", fields: [receivedById], references: [id])
+  /// Idempotency key, as for sales.
+  clientId     String?
+  receivedAt   DateTime
+  createdAt    DateTime       @default(now())
+
+  allocations CustomerPaymentAllocation[]
+
+  @@unique([storeId, clientId])
+  @@index([businessId, customerId])
+  @@index([shiftId])
+  @@map("customer_payments")
+}
+
+/// How much of a payment went to which invoice (FT).
+model CustomerPaymentAllocation {
+  id         String          @id @default(cuid())
+  paymentId  String
+  payment    CustomerPayment @relation(fields: [paymentId], references: [id])
+  documentId String
+  document   FiscalDocument  @relation(fields: [documentId], references: [id])
+  amount     Decimal         @db.Decimal(14, 2)
+
+  @@index([paymentId])
+  @@index([documentId])
+  @@map("customer_payment_allocations")
 }

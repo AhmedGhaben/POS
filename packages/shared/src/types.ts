@@ -343,7 +343,11 @@ export interface CreateCustomerDto extends Omit<AddressFields, "address"> {
   email?: string;
   address?: string;
   taxId?: string;
+  /** The most they may owe on credit; null = no credit (owners and managers only). */
+  creditLimit?: number | null;
 }
+
+export type UpdateCustomerDto = Partial<CreateCustomerDto>;
 
 export interface CustomerDto {
   id: string;
@@ -359,6 +363,18 @@ export interface CustomerDto {
   taxId: string | null;
   /** "Consumidor Final" (NIF 999999999), used when no customer is chosen. */
   isFinalConsumer?: boolean;
+  /** The most they may owe on credit; null = no credit. */
+  creditLimit?: string | null;
+  /** What they owe now (GET /customers?withBalance=true). */
+  balance?: string;
+}
+
+/** A customer's credit at a glance. */
+export interface CustomerCreditDto {
+  creditLimit: string | null;
+  balance: string;
+  /** What they may still buy on credit; null without a limit. */
+  available: string | null;
 }
 
 /** GET /customers/:id/card */
@@ -366,6 +382,69 @@ export interface CustomerCardDto {
   customer: CustomerDto;
   purchases: { count: number; total: string; lastAt: string | null };
   recent: { id: string; receiptNumber: string; createdAt: string; total: string; status: SaleStatus }[];
+  account?: CustomerCreditDto;
+}
+
+/** An invoice (FT) on a customer's account. */
+export interface AccountInvoiceDto {
+  id: string;
+  documentNo: string;
+  date: string;
+  storeId: string;
+  grossTotal: string;
+  paid: string;
+  /** Taken off by credit notes (returns). */
+  credited: string;
+  open: string;
+}
+
+/** A receipt (RC): money a customer paid towards their invoices. */
+export interface CustomerPaymentDto {
+  id: string;
+  storeId: string;
+  customerId: string;
+  amount: string;
+  method: PaymentMethod;
+  reference: string | null;
+  /** Paid with a sale on credit (at the till). */
+  saleId: string | null;
+  receivedAt: string;
+  receivedBy: PersonRefDto;
+  document: {
+    id: string;
+    documentNo: string;
+    status: FiscalDocumentStatus;
+    statusReason: string | null;
+    hashExcerpt: string;
+    hashControl: string;
+    invoiceDate: string;
+    systemEntryDate: string;
+    seller: FiscalSellerDto;
+    buyerName: string;
+    buyerTaxId: string;
+  };
+  allocations: { amount: string; documentId: string; documentNo: string; invoiceDate: string; grossTotal: string }[];
+}
+
+/** GET /customers/:id/account */
+export interface CustomerAccountDto extends CustomerCreditDto {
+  customer: CustomerDto;
+  invoices: AccountInvoiceDto[];
+  payments: CustomerPaymentDto[];
+}
+
+/** POST /customer-payments */
+export interface CreateCustomerPaymentDto {
+  storeId: string;
+  customerId: string;
+  amount: number;
+  method: PaymentMethod;
+  reference?: string;
+  /** Needed for cash (it goes into that drawer) and for cashiers. */
+  shiftClientId?: string;
+  clientId?: string;
+  /** Omitted = oldest invoices first. */
+  allocations?: { documentId: string; amount: number }[];
 }
 
 export interface SaleLineItemInputDto {
@@ -416,6 +495,11 @@ export interface CreateSaleDto {
   fiscal?: FiscalNumberDto;
   /** The proforma this sale invoices. */
   proformaId?: string;
+  /**
+   * Left on the customer's account (SELL_ON_CREDIT): the document is a
+   * Factura (FT); payments + creditAmount = total. Online only.
+   */
+  creditAmount?: number;
 }
 
 export interface FiscalNumberDto {
@@ -509,6 +593,8 @@ export interface SupplierDto {
   postalCode?: string | null;
   province?: string | null;
   country?: string;
+  /** What is owed to them (GET /suppliers?withBalance=true). */
+  balance?: string;
 }
 
 export interface CreateSupplierDto extends Omit<AddressFields, "address"> {
@@ -518,6 +604,56 @@ export interface CreateSupplierDto extends Omit<AddressFields, "address"> {
   phone?: string;
   email?: string;
   address?: string;
+}
+
+export type UpdateSupplierDto = Partial<CreateSupplierDto>;
+
+/** A purchase on a supplier's account. */
+export interface AccountPurchaseDto {
+  id: string;
+  purchaseNumber: string;
+  supplierDocNo: string | null;
+  date: string;
+  /** Total less IVA cativo. */
+  payable: string;
+  paid: string;
+  open: string;
+  paymentStatus: PurchasePaymentStatus;
+}
+
+export interface SupplierPaymentDto {
+  id: string;
+  supplierId: string;
+  amount: string;
+  method: PaymentMethod;
+  reference: string | null;
+  note: string | null;
+  paidOn: string;
+  createdBy: PersonRefDto;
+  createdAt: string;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+  allocations: { amount: string; purchaseId: string; purchaseNumber: string; supplierDocNo: string | null }[];
+}
+
+/** GET /suppliers/:id/account */
+export interface SupplierAccountDto {
+  supplier: SupplierDto;
+  balance: string;
+  purchases: AccountPurchaseDto[];
+  payments: SupplierPaymentDto[];
+}
+
+/** POST /supplier-payments */
+export interface CreateSupplierPaymentDto {
+  supplierId: string;
+  amount: number;
+  method: PaymentMethod;
+  reference?: string;
+  /** YYYY-MM-DD; default today. */
+  paidOn?: string;
+  note?: string;
+  allocations?: { purchaseId: string; amount: number }[];
 }
 
 export interface EmployeeDto {
@@ -585,10 +721,34 @@ export interface PurchaseLineItemInputDto {
   unitCost: number;
 }
 
+/** SAF-T PurchaseType: the kinds of supplier document. */
+export const SUPPLIER_DOCUMENT_TYPES = ["FT", "FR", "GF", "FG", "AC", "AR", "AF", "TV", "NL", "NC", "RC"] as const;
+export type SupplierDocumentType = (typeof SUPPLIER_DOCUMENT_TYPES)[number];
+/** The supplier annex's Tipologia (SAF-T DeductibleTaxType). */
+export const DEDUCTIBLE_TYPES = ["INV", "OBC", "SERV", "MFI", "IMPT", "SCE"] as const;
+export type DeductibleType = (typeof DEDUCTIBLE_TYPES)[number];
+export type PurchasePaymentStatus = "UNPAID" | "PARTIAL" | "PAID";
+
+export interface PurchaseTaxLineInputDto {
+  taxRate: number;
+  base: number;
+  taxAmount?: number;
+  deductiblePercent?: number;
+  typology?: DeductibleType;
+}
+
 export interface CreatePurchaseDto {
   storeId: string;
   supplierId: string;
   lineItems: PurchaseLineItemInputDto[];
+  /** The supplier's own document. */
+  supplierDocument?: { type: SupplierDocumentType; number: string; date: string; hash?: string };
+  /** IVA per rate; bases add up to the lines' total. None = no IVA. */
+  taxLines?: PurchaseTaxLineInputDto[];
+  /** IVA cativo: share of the IVA withheld for the State. */
+  withholdingPercent?: number;
+  /** Paid with the purchase (all or part). */
+  payment?: { amount: number; method: PaymentMethod; reference?: string };
 }
 
 export interface PurchaseLineItemDto {
@@ -613,6 +773,15 @@ export interface PurchaseDto {
   status: PurchaseStatus;
   createdAt: string;
   lineItems: PurchaseLineItemDto[];
+  supplierDocType?: SupplierDocumentType | null;
+  supplierDocNo?: string | null;
+  supplierDocDate?: string | null;
+  supplierDocHash?: string | null;
+  withholdingPercent?: string | null;
+  withholdingAmount?: string;
+  paidAmount?: string;
+  paymentStatus?: PurchasePaymentStatus;
+  taxLines?: { id: string; taxRate: string; base: string; taxAmount: string; deductiblePercent: string; deductibleAmount: string; typology: DeductibleType }[];
 }
 
 export interface TransferLineItemInputDto {
@@ -702,6 +871,8 @@ export interface ReturnDto {
   storeId: string;
   reason: string | null;
   totalRefund: string;
+  /** What lowered the customer's debt on a sale on credit (not money back). */
+  accountCredit?: string;
   createdAt: string;
   lineItems: ReturnLineItemDto[];
   /** Its Nota de Crédito (where sales are fiscal documents). */
@@ -789,6 +960,8 @@ export interface SaleDto {
   createdOffline?: boolean;
   /** The prices included IVA: the tax is part of the subtotal (absent on older sales = false). */
   pricesIncludeTax?: boolean;
+  /** Left on the customer's account (a sale on credit, document FT). */
+  creditAmount?: string;
   terminalId?: string | null;
   /** The till's idempotency key for this sale. */
   clientId?: string | null;
@@ -1023,8 +1196,8 @@ export interface ShiftSaleLineDto {
   receiptNumber: string;
   at: string;
   total: string;
-  /** The payment method, or "SPLIT" when paid several ways. */
-  method: PaymentMethod | "SPLIT";
+  /** The payment method, "SPLIT" when paid several ways, "CREDIT" when all on credit. */
+  method: PaymentMethod | "SPLIT" | "CREDIT";
   voided: boolean;
   cashier: string;
 }
@@ -1036,6 +1209,10 @@ export interface ShiftSummaryDto {
   discounts: string;
   voided: { count: number; total: string };
   returns: { count: number; total: string; cash: string };
+  /** Left on customers' accounts by sales on credit (not money). */
+  onCredit?: string;
+  /** Paid by customers towards their accounts in this shift. */
+  receipts?: { count: number; total: string; byMethod: Partial<Record<PaymentMethod, string>> };
   cashIn: string;
   cashOut: string;
   movements: { id: string; type: "IN" | "OUT"; amount: string; reason: CashMovementReason; note: string | null; occurredAt: string; user: string }[];
@@ -1185,6 +1362,9 @@ export interface FiscalDocumentDto {
   referencedDocument: { id: string; documentNo: string; documentType: FiscalDocumentType; invoiceDate: string } | null;
   lines: FiscalDocumentLineDto[];
   createdAt: string;
+  /** A receipt (RC): the invoices it settled, and the transfer/cheque reference. */
+  settled?: { documentNo: string; invoiceDate: string; grossTotal: string; amount: string }[] | null;
+  paymentReference?: string | null;
 }
 
 export interface FiscalDocumentListItemDto {

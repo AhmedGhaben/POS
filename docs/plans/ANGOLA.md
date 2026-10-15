@@ -173,6 +173,53 @@ commit and push.
   - Still open: real phone scans of 58/80 mm QR prints (by hand); the
     inventory circular; the producer NIF / product name for the header.
 
+- **Phase 4 (credit and payables) is built** (2026-10-16). Migration
+  `20261015200000_angola_phase4_credit` (existing purchases marked paid;
+  receipts and their allocations immutable by trigger, like documents).
+  - Sales on credit: `Sale.creditAmount` (payments + credit = total) makes
+    the document an FT, numbered by the server (online only: the till
+    never numbers or queues one). Needs SELL_ON_CREDIT or a manager's
+    approval, a named customer (not Consumidor Final) with a credit limit
+    (`Customer.creditLimit`, null = no credit), and room in it (checked
+    with the customer row locked). What's paid at the till becomes a
+    receipt allocated to the sale's FT.
+  - Receipts (RC): fiscal documents in their own series (the till's if
+    taken at one), no lines; `CustomerPayment` + allocations, oldest
+    invoices first unless chosen; no overpayment. Cash needs the person's
+    open shift (it's in the drawer: shift summary `receipts`, expected
+    cash); cashiers always need one. Annul with VOID_SALE (status A, the
+    invoices re-open). Cancelling a credit sale annuls its own deposit
+    receipt; later receipts must be annulled first.
+  - An invoice's open amount = total − live receipts − credit notes. A
+    return on a sale on credit lowers that first (`Return.accountCredit`),
+    only the rest goes back as money (and needs a shift if cash).
+  - Purchases: the supplier's document (type, number, date, 4 hash
+    characters), IVA per rate (`PurchaseTaxLine`: deductible %, typology
+    MFI/INV/OBC/SERV/IMPT/SCE), IVA cativo, paid on arrival; `paidAmount`
+    / `paymentStatus` kept from `SupplierPayment` allocations (owed =
+    total − IVA cativo); a payment made by mistake is cancelled.
+  - Routes: `GET /customers/:id/account`, `POST /customer-payments`,
+    `POST /customer-payments/:id/annul`, `PATCH /customers/:id`,
+    `GET /suppliers/:id/account`, `POST /supplier-payments`,
+    `POST /supplier-payments/:id/cancel`, `PATCH /suppliers/:id`,
+    `?withBalance=true` on both lists.
+  - SAF-T: Payments (lines without tax in the invoice's proportion),
+    Suppliers and PurchaseInvoices (Deductible per base, WithholdingTax);
+    accountant workbook: FT payment status, receipts and supplier payments,
+    purchases with deductible IVA and IVA cativo, and a 4th sheet laid out
+    as AGT's "Anexo de Fornecedores".
+  - Web: Customers page (balances, credit limit, account sheet: invoices,
+    receipts, receive, annul), Suppliers (owed, account, pay, cancel),
+    purchase form (supplier document, IVA, cativo, paid now, payment
+    column), till: "Put on X's account" with credit left and paid now,
+    customer card with what they owe and Receive payment, Recibo on A4,
+    shift report with receipts and what went on credit (and the till's own
+    ledger), RC in the Invoices list.
+  - Tests: API unit 215 (account maths, purchase IVA, credit sales, SAF-T
+    with purchases, the annex), API e2e 201 incl. `angola-phase4.e2e-spec.ts`
+    (16), web unit 142 (credit split, ledger, purchase totals), desktop e2e
+    `angola-phase4.spec.ts` (5).
+
 - **Phase 8 follow-ups (from the owner, 2026-10-15):**
   - Annulment reasons are AGT's (DS.120 4.1.6 documentCancelReason, DP
     71/25 art. 8.º n.ºs 8-9): I (wrong customer identification) and N

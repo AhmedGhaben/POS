@@ -202,7 +202,11 @@
     "spent": "Spent",
     "last": "Last purchase",
     "recent": "Last sales",
-    "offline": "Purchase history needs the server."
+    "offline": "Purchase history needs the server.",
+    "owes": "Owes",
+    "noCredit": "No credit limit",
+    "creditLeft": "Credit left {{amount}} of {{limit}}",
+    "receive": "Receive payment"
   },
   "proforma": {
     "selling": "Selling proforma {{number}}: this sale invoices it.",
@@ -211,5 +215,15 @@
   },
   "fiscal": {
     "cantIssueOffline": "This sale can't be completed offline: invoices must be signed when they're issued, and this till has no signing key yet. Connect to the server (or register the till) and try again."
+  },
+  "credit": {
+    "toggle": "Put on {{name}}'s account",
+    "approval": "Sell {{amount}} on credit to {{name}}",
+    "checking": "Checking the customer's credit…",
+    "noLimit": "This customer has no credit limit. Set one on the Customers page.",
+    "available": "Credit left: {{amount}} (owes {{balance}})",
+    "paidNow": "Paid now (optional)",
+    "onAccount": "On account: {{amount}}",
+    "needsOnline": "Selling on credit needs the server. Try again when the till is online."
   }
 }

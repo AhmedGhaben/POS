@@ -1,3 +1,4 @@
+import { PartialType } from "@nestjs/mapped-types";
 import { IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from "class-validator";
 import { AddressFieldsDto, TAX_ID_PATTERN } from "../../common/dto/address.dto";
 
@@ -25,3 +26,5 @@ export class CreateSupplierDto extends AddressFieldsDto {
   @IsEmail()
   email?: string;
 }
+
+export class UpdateSupplierDto extends PartialType(CreateSupplierDto) {}
