@@ -135,7 +135,24 @@ commit and push.
   - Tests: API unit 174 (hash vectors, chain, lines, dates), API e2e incl.
     `angola-phase8.e2e-spec.ts` (12), web unit 118 (amount in words, till
     numbering, queue waits on 409), desktop e2e `angola-phase8.spec.ts` (3).
-- **Phase 8 follow-ups from the owner** (2026-10-15):
+- **Phase 8 follow-ups from the owner** (2026-10-15): see below
+- **Phase 8b (SAF-T export) started** (2026-10-15):
+  - API: `SaftExportService` builds SAF-T XML manually, no external lib
+    dependencies, with proper Header, MasterFiles (Customer, Supplier,
+    Product, TaxTable), SourceDocuments (SalesInvoices). Endpoint
+    `POST /fiscal-documents/saft/export` returns XML file for download.
+  - Web: Reports page with SaftExportDialog for date range and store
+    selection, radio buttons for Facturação / Inventários type. Desktop
+    and web both build.
+  - Translation keys added in en, pt-PT, pt-BR.
+  - Still to do:
+    - Validate XML against SAFTAO1.01_01.xsd (libxml2-wasm or similar)
+    - SAF-T Inventários export (draft, pending circular from AGT)
+    - Accountant export (Excel/CSV)
+    - Handle N annulment text (58 chars) vs SAF-T Reason (50 char limit)
+    - Real phone scans of 58 mm and 80 mm thermal prints
+
+- **Phase 8 follow-ups (from the owner, 2026-10-15):**
   - Annulment reasons are AGT's (DS.120 4.1.6 documentCancelReason, DP
     71/25 art. 8.º n.ºs 8-9): I (wrong customer identification) and N
     (document never sent/delivered). Cancel reasons `ANNUL_I` / `ANNUL_N`;
