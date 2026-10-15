@@ -89,7 +89,12 @@ export interface UpdateStoreDto {
   pricesIncludeTax?: boolean;
   phone?: string | null;
   timezone?: string;
+  saleDocumentFormat?: SaleDocumentFormat;
+  documentCopies?: number;
 }
+
+/** What the till prints when a sale completes: the slip or the A4 document. */
+export type SaleDocumentFormat = "RECEIPT" | "A4";
 
 export interface StoreDto {
   id: string;
@@ -108,6 +113,10 @@ export interface StoreDto {
   phone: string | null;
   timezone: string;
   isActive: boolean;
+  /** What a completed sale prints (default the slip). */
+  saleDocumentFormat?: SaleDocumentFormat;
+  /** Copies of an A4 fiscal document: Original, Duplicado, Triplicado (default 1). */
+  documentCopies?: number;
 }
 
 /** Structured address (SAF-T) for customers and suppliers. */
@@ -784,6 +793,13 @@ export interface PurchaseDto {
   taxLines?: { id: string; taxRate: string; base: string; taxAmount: string; deductiblePercent: string; deductibleAmount: string; typology: DeductibleType }[];
 }
 
+/** GET /purchases/:id */
+export interface PurchaseDetailDto extends PurchaseDto {
+  store: { id: string; name: string };
+  createdBy: PersonRefDto;
+  allocations: { id: string; amount: string; payment: { paidOn: string; method: PaymentMethod; reference: string | null } }[];
+}
+
 export interface TransferLineItemInputDto {
   productId: string;
   quantity: number;
@@ -1362,6 +1378,8 @@ export interface FiscalDocumentDto {
   referencedDocument: { id: string; documentNo: string; documentType: FiscalDocumentType; invoiceDate: string } | null;
   lines: FiscalDocumentLineDto[];
   createdAt: string;
+  /** Times printed: 0 means the next print is the original, after that a "2ª Via". */
+  printCount?: number;
   /** A receipt (RC): the invoices it settled, and the transfer/cheque reference. */
   settled?: { documentNo: string; invoiceDate: string; grossTotal: string; amount: string }[] | null;
   paymentReference?: string | null;
@@ -1408,4 +1426,11 @@ export interface FiscalChainAlertDto {
   detail: string;
   createdAt: string;
   resolvedAt: string | null;
+}
+
+/** POST /fiscal-documents/:id/prints: logged before printing. */
+export interface DocumentPrintResultDto {
+  /** Printed before: mark it "2ª Via". */
+  reprint: boolean;
+  printCount: number;
 }

@@ -563,15 +563,30 @@ export class FiscalService {
         ...DOCUMENT_INCLUDE,
         // A receipt: what it settled, and the payment's reference.
         customerPayment: { select: { reference: true, allocations: { select: { amount: true, document: { select: { documentNo: true, invoiceDate: true, grossTotal: true } } } } } },
+        _count: { select: { prints: true } },
       },
     });
     if (!document) throw new NotFoundException("Document not found");
-    const { customerPayment, ...rest } = document;
+    const { customerPayment, _count, ...rest } = document;
     return {
       ...rest,
+      /** Times printed: 0 means the next print is the original. */
+      printCount: _count.prints,
       paymentReference: customerPayment?.reference ?? null,
       settled: customerPayment?.allocations.map((a) => ({ documentNo: a.document.documentNo, invoiceDate: a.document.invoiceDate, grossTotal: a.document.grossTotal, amount: a.amount })) ?? null,
     };
+  }
+
+  /**
+   * Logs a print of a document and says whether it's a reprint: the first
+   * print anywhere is the original, everything after is a "2ª Via".
+   */
+  async recordPrint(businessId: string, userId: string, documentId: string, kind: "RECEIPT" | "A4", copies = 1) {
+    const document = await this.prisma.fiscalDocument.findFirst({ where: { id: documentId, businessId }, select: { id: true } });
+    if (!document) throw new NotFoundException("Document not found");
+    const before = await this.prisma.documentPrint.count({ where: { documentId } });
+    await this.prisma.documentPrint.create({ data: { documentId, userId, kind, copies, reprint: before > 0 } });
+    return { reprint: before > 0, printCount: before + 1 };
   }
 
   /** A till's series and their next numbers, so it can carry on numbering (offline too). */

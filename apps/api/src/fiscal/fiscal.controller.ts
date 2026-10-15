@@ -7,6 +7,7 @@ import { RolesGuard } from "../common/guards/roles.guard";
 import { StoreAccessGuard } from "../common/guards/store-access.guard";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { CreateProformaDto } from "./dto/create-proforma.dto";
+import { RecordPrintDto } from "./dto/record-print.dto";
 import { Public } from "../common/decorators/public.decorator";
 import { CurrentTerminal, TerminalKeyGuard } from "../till/terminal-key.guard";
 import type { TillTerminal } from "../till/till-auth.service";
@@ -130,6 +131,12 @@ export class FiscalController {
     @Query("endDate") endDate?: string,
   ) {
     return sendFile(res, await this.saftExport.accountant(user.businessId, user.userId, { storeId, startDate, endDate }));
+  }
+
+  /** About to print a document: logged; the answer says whether it's a "2ª Via". */
+  @Post(":id/prints")
+  recordPrint(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() dto: RecordPrintDto) {
+    return this.fiscal.recordPrint(user.businessId, user.userId, id, dto.kind, dto.copies);
   }
 
   @Get(":id")

@@ -89,7 +89,20 @@
     },
     "regimeChangeLogged": "A mudança de regime fica registrada com seu nome e passa a ser impressa em todos os documentos.",
     "pricesIncludeTax": "Os preços de venda incluem IVA",
-    "pricesIncludeTaxHint": "Os documentos mostram o preço sem IVA calculado a partir dele, para que preço + IVA sempre dê o preço de venda."
+    "pricesIncludeTaxHint": "Os documentos mostram o preço sem IVA calculado a partir dele, para que preço + IVA sempre dê o preço de venda.",
+    "printing": "Impressão",
+    "saleDocumentFormat": "Depois de uma venda, imprimir",
+    "formats": {
+      "RECEIPT": "O cupom (impressora de cupons)",
+      "A4": "O documento A4"
+    },
+    "documentCopies": "Cópias A4",
+    "copies": {
+      "1": "Só o original",
+      "2": "Original + Duplicado",
+      "3": "Original + Duplicado + Triplicado"
+    },
+    "printingHint": "Impressoras, largura do papel e calibração são definidas em cada caixa (Este dispositivo). Qualquer impressão pode mudar as cópias ou a impressora só para ela."
   },
   "tills": {
     "title": "Caixas",

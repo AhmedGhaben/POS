@@ -15,6 +15,7 @@ import {
   Clock,
   FileSpreadsheet,
   Contact,
+  ListOrdered,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,6 +39,7 @@ export type NavLabel =
   | "shifts"
   | "reports"
   | "customers"
+  | "sales"
   | "expenses"
   | "suppliers"
   | "employees"
@@ -46,6 +48,7 @@ export type NavLabel =
 
 export const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", label: "dashboard", icon: LayoutDashboard },
+  { to: "/sales", label: "sales", icon: ListOrdered },
   { to: "/products", label: "products", icon: Package },
   { to: "/inventory", label: "inventory", icon: Boxes },
   { to: "/transfers", label: "transfers", icon: ArrowLeftRight },

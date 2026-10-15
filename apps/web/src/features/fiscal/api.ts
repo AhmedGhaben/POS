@@ -1,4 +1,4 @@
-import type { CreateProformaDto, FiscalDocumentDto, FiscalDocumentListItemDto, PagedDto } from "@pos/shared";
+import type { CreateProformaDto, DocumentPrintResultDto, FiscalDocumentDto, FiscalDocumentListItemDto, PagedDto } from "@pos/shared";
 import { apiClient } from "@/lib/api-client";
 
 export function fetchFiscalDocument(id: string) {
@@ -25,4 +25,9 @@ export function fetchFiscalDocuments(f: FiscalDocumentFilter) {
 
 export function createProforma(dto: CreateProformaDto) {
   return apiClient.post<FiscalDocumentDto>("/fiscal-documents/proformas", dto);
+}
+
+/** Logs a print of a document before it goes to the printer; says whether it's a "2ª Via". */
+export function recordPrint(id: string, kind: "RECEIPT" | "A4", copies = 1) {
+  return apiClient.post<DocumentPrintResultDto>(`/fiscal-documents/${id}/prints`, { kind, copies });
 }

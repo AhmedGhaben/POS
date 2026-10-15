@@ -10,7 +10,7 @@ import { desktop, type DesktopPrintJob } from "./bridge";
  * or no printer chosen yet) it opens the normal print dialog. A failed
  * silent print shows a toast with Retry; it never affects the sale.
  */
-export async function printDocument(options: { copies?: number } = {}): Promise<void> {
+export async function printDocument(options: { copies?: number; deviceName?: string } = {}): Promise<void> {
   const root = document.getElementById("print-root");
   const kind = root?.dataset.format === "a4" ? "a4" : "receipt";
   if (!desktop || !root?.innerHTML.trim()) {
@@ -19,7 +19,8 @@ export async function printDocument(options: { copies?: number } = {}): Promise<
   }
 
   const settings = await desktop.printing.get();
-  const deviceName = kind === "a4" ? settings.a4.deviceName : settings.receipt.deviceName;
+  // "Print options" may pick another printer for this one print.
+  const deviceName = options.deviceName ?? (kind === "a4" ? settings.a4.deviceName : settings.receipt.deviceName);
   if (!deviceName) {
     window.print();
     return;
@@ -30,6 +31,7 @@ export async function printDocument(options: { copies?: number } = {}): Promise<
     html: root.innerHTML,
     stylesheets: Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).map((l) => l.href),
     copies: options.copies,
+    deviceName: options.deviceName,
   };
   await sendJob(job);
 }

@@ -86,7 +86,23 @@
       "UNPAID": "Unpaid",
       "PARTIAL": "Part paid",
       "PAID": "Paid"
-    }
+    },
+    "from": "From",
+    "to": "To",
+    "allSuppliers": "All suppliers",
+    "allPayments": "Any",
+    "search": "Number or supplier",
+    "count_one": "{{count}} purchase",
+    "count_other": "{{count}} purchases",
+    "previous": "Previous",
+    "next": "Next",
+    "file": "purchases",
+    "date": "Date",
+    "a4Title": "Purchase",
+    "detailDescription": "The purchase as recorded, for the supplier file and the accountant (not a fiscal document).",
+    "deductibleShort": "{{percent}}% deductible",
+    "payments": "Payments",
+    "recordedBy": "Recorded by {{name}}"
   },
   "returns": {
     "subtitle": "Process refunds against a past sale.",

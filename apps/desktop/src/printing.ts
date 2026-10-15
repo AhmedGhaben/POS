@@ -23,6 +23,8 @@ export const printJobSchema = z.object({
   stylesheets: z.array(z.string().startsWith(`${APP_ORIGIN}/`).max(500)).max(10),
   /** Override the configured copies (e.g. test pages print once). */
   copies: z.number().int().min(1).max(5).optional(),
+  /** Override the configured printer for this one print ("Print options"). */
+  deviceName: z.string().min(1).max(300).optional(),
 });
 
 export type PrintJob = z.infer<typeof printJobSchema>;
@@ -100,7 +102,7 @@ function printOptions(job: PrintJob, settings: PrintingSettings, contentHeightPx
   if (job.kind === "a4") {
     return {
       silent: true,
-      deviceName: settings.a4.deviceName!,
+      deviceName: job.deviceName ?? settings.a4.deviceName!,
       copies: job.copies ?? settings.a4.copies,
       printBackground: true,
       pageSize: "A4",
@@ -114,7 +116,7 @@ function printOptions(job: PrintJob, settings: PrintingSettings, contentHeightPx
   const heightUm = Math.max(MIN_PAGE_HEIGHT_UM, Math.ceil((contentHeightPx / PX_PER_MM) * MICRONS_PER_MM));
   return {
     silent: true,
-    deviceName: r.deviceName!,
+    deviceName: job.deviceName ?? r.deviceName!,
     copies: job.copies ?? r.copies,
     printBackground: true,
     pageSize: { width: Math.round(r.paperWidthMm * MICRONS_PER_MM), height: heightUm },
@@ -124,7 +126,7 @@ function printOptions(job: PrintJob, settings: PrintingSettings, contentHeightPx
 
 async function runJob(job: PrintJob): Promise<PrintResult> {
   const settings = getPrinting();
-  const deviceName = job.kind === "a4" ? settings.a4.deviceName : settings.receipt.deviceName;
+  const deviceName = job.deviceName ?? (job.kind === "a4" ? settings.a4.deviceName : settings.receipt.deviceName);
   if (!deviceName) {
     return { ok: false, error: `No ${job.kind === "a4" ? "A4" : "receipt"} printer is set up on this till` };
   }

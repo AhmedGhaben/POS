@@ -16,7 +16,8 @@
     "pointOfSale": "Point of Sale",
     "shifts": "Shifts",
     "reports": "Reports",
-    "customers": "Customers"
+    "customers": "Customers",
+    "sales": "Sales"
   },
   "shell": {
     "openNavigation": "Open navigation",
@@ -110,5 +111,13 @@
     "empty": "No matches.",
     "other": "Other: “{{text}}”",
     "more": "{{count}} more: keep typing to narrow down"
+  },
+  "print": {
+    "options": "Print options",
+    "optionsDescription": "For this print only. The till's printers and the store's copies stay as they are.",
+    "copies": "Copies",
+    "printer": "Printer",
+    "tillPrinter": "This till's printer",
+    "windowsDefault": "Windows default"
   }
 }

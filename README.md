@@ -187,6 +187,18 @@ Prisma backend.
   - Differences above an amount set in Settings → Tills are flagged. The
     **Shifts** page lists every shift with its difference and filters by
     status, cashier, till and flagged.
+- **Sales history** (back office): every sale of the store by day
+  (the store's calendar days), status (cancelled, on credit) or receipt,
+  document number, customer or NIF; reprint the slip, print the A4
+  document, or issue an invoice where sales aren't fiscal documents; CSV.
+- **Printing fiscal documents**: the first print is the **original**
+  (with the store's copies: Original, Duplicado, Triplicado); every later
+  print says **"2ª Via"**, and each print is logged (who, when, how). A
+  store can print the A4 document after each sale instead of the slip
+  (Settings → Stores → Printing).
+- **Purchases** filtered by day, supplier, payment status or number, with
+  CSV export and an A4 printout of each purchase (supplier document, IVA,
+  IVA cativo, payments).
 - **Credit and payables (Angola)**:
   - **Customers** page: credit limit (owners and managers), what each owes,
     and their account: invoices on credit, receipts, take a payment, annul
@@ -359,7 +371,12 @@ it they're printed to the API console, links included.
   - Optional auto-print after each sale.
   - Per-printer calibration (paper and printable width, margin, text size,
     feed, copies) and a calibration receipt.
-  - In a browser, printing still uses the print dialog.
+  - In a browser, printing uses the print dialog. To print without it,
+    start Chrome or Edge with `--kiosk-printing` (e.g. a shortcut to
+    `chrome.exe --kiosk-printing https://your-pos-address`): it prints to
+    the default printer straight away.
+  - **Print options** beside every Print button: copies and (in the Windows
+    app) another printer, for that print only.
   - Real-printer checks: `docs/HARDWARE_CHECKLIST.md`.
 - **Cash drawer.** Plugged into the receipt printer (USB or network),
   any Windows printer, a network printer by IP, or a COM port.

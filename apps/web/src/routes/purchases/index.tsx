@@ -1,10 +1,10 @@
 import * as React from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Download, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,14 +21,19 @@ import { Combobox } from "@/components/ui/combobox";
 import { productOptions } from "@/lib/options";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { createPurchase, fetchPurchases } from "@/features/purchases/api";
+import { createPurchase, fetchPurchasePage, type PurchasesFilter } from "@/features/purchases/api";
+import { PurchaseDetailDialog } from "@/features/purchases/components/PurchaseDetailDialog";
+import { downloadCsv } from "@/lib/csv";
+import { formatDateTime } from "@/lib/format";
+
+const PAGE = 25;
 import { fetchSuppliers } from "@/features/suppliers/api";
 import { fetchProducts } from "@/features/products/api";
 import { useAuthStore } from "@/features/auth/store";
 import { useMoney } from "@/features/business/use-money";
 import { fetchTaxRates, TAX_RATES_QUERY_KEY } from "@/features/business/api";
 import { Badge } from "@/components/ui/badge";
-import { DEDUCTIBLE_TYPES, PAYMENT_METHOD_ORDER, PaymentMethod, SUPPLIER_DOCUMENT_TYPES, type CreatePurchaseDto, type DeductibleType, type SupplierDocumentType } from "@pos/shared";
+import { DEDUCTIBLE_TYPES, PAYMENT_METHOD_ORDER, PaymentMethod, SUPPLIER_DOCUMENT_TYPES, type CreatePurchaseDto, type DeductibleType, type PurchaseDto, type SupplierDocumentType } from "@pos/shared";
 import { purchaseTotals } from "@/features/purchases/totals";
 
 const lineSchema = z.object({
@@ -79,11 +84,47 @@ export function PurchasesPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const queryClient = useQueryClient();
 
+  // Filters (docs/plans/ANGOLA.md, phase 5): calendar dates are the store's days.
+  const [from, setFrom] = React.useState("");
+  const [to, setTo] = React.useState("");
+  const [supplierFilter, setSupplierFilter] = React.useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = React.useState<string | null>(null);
+  const [search, setSearch] = React.useState("");
+  const [page, setPage] = React.useState(0);
+  const [openId, setOpenId] = React.useState<string | null>(null);
+  React.useEffect(() => setPage(0), [from, to, supplierFilter, statusFilter, search, currentStoreId]);
+  const filter: Omit<PurchasesFilter, "take" | "skip"> = {
+    storeId: currentStoreId!,
+    from: from || undefined,
+    to: to || undefined,
+    supplierId: supplierFilter ?? undefined,
+    paymentStatus: statusFilter ?? undefined,
+    search: search.trim() || undefined,
+  };
   const purchasesQuery = useQuery({
-    queryKey: ["purchases", currentStoreId],
-    queryFn: () => fetchPurchases(currentStoreId!),
+    queryKey: ["purchases", currentStoreId, filter, page],
+    queryFn: () => fetchPurchasePage({ ...filter, take: PAGE, skip: page * PAGE }),
     enabled: !!currentStoreId,
+    placeholderData: keepPreviousData,
   });
+  const total = purchasesQuery.data?.total ?? 0;
+  async function exportCsv() {
+    const rows: PurchaseDto[] = [];
+    for (let skip = 0; skip < Math.min(total, 5000); skip += 200) rows.push(...(await fetchPurchasePage({ ...filter, take: 200, skip })).items);
+    downloadCsv(`${t("purchases.file")}.csv`, [
+      { header: t("purchases.date"), value: (p: PurchaseDto) => formatDateTime(p.createdAt) },
+      { header: t("purchases.poNumber"), value: (p: PurchaseDto) => p.purchaseNumber },
+      { header: t("purchases.supplier"), value: (p: PurchaseDto) => p.supplier.name },
+      { header: "NIF", value: (p: PurchaseDto) => p.supplier.taxId ?? "" },
+      { header: t("purchases.docNo"), value: (p: PurchaseDto) => p.supplierDocNo ?? "" },
+      { header: t("purchases.net"), value: (p: PurchaseDto) => p.subtotal },
+      { header: t("purchases.iva"), value: (p: PurchaseDto) => p.taxTotal },
+      { header: t("columns.total"), value: (p: PurchaseDto) => p.total },
+      { header: t("purchases.withheld"), value: (p: PurchaseDto) => p.withholdingAmount ?? "0" },
+      { header: t("purchases.paidAmount"), value: (p: PurchaseDto) => p.paidAmount ?? "" },
+      { header: t("purchases.payment"), value: (p: PurchaseDto) => (p.paymentStatus ? t(`purchases.paymentStatus.${p.paymentStatus}`) : "") },
+    ], rows);
+  }
   const suppliersQuery = useQuery({ queryKey: ["suppliers"], queryFn: fetchSuppliers });
   const productsQuery = useQuery({ queryKey: ["products"], queryFn: () => fetchProducts() });
   const ratesQuery = useQuery({ queryKey: TAX_RATES_QUERY_KEY, queryFn: fetchTaxRates });
@@ -442,6 +483,43 @@ export function PurchasesPage() {
         </Dialog>
       </div>
 
+      <div className="mb-4 grid gap-3 sm:grid-cols-5">
+        <div className="space-y-1.5">
+          <Label htmlFor="purchases-from">{t("purchases.from")}</Label>
+          <Input id="purchases-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="purchases-to">{t("purchases.to")}</Label>
+          <Input id="purchases-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="purchases-supplier">{t("purchases.supplier")}</Label>
+          <Combobox
+            id="purchases-supplier"
+            value={supplierFilter}
+            onChange={setSupplierFilter}
+            placeholder={t("purchases.allSuppliers")}
+            clearLabel={t("purchases.allSuppliers")}
+            options={(suppliersQuery.data ?? []).map((s) => ({ value: s.id, label: s.name, description: s.taxId ?? undefined }))}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="purchases-status">{t("purchases.payment")}</Label>
+          <Combobox
+            id="purchases-status"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            placeholder={t("purchases.allPayments")}
+            clearLabel={t("purchases.allPayments")}
+            options={(["UNPAID", "PARTIAL", "PAID"] as const).map((s) => ({ value: s, label: t(`purchases.paymentStatus.${s}`) }))}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="purchases-search">{t("purchases.search")}</Label>
+          <Input id="purchases-search" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+      </div>
+
       <Card>
         <CardContent className="overflow-x-auto p-0">
           <Table>
@@ -456,8 +534,8 @@ export function PurchasesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {purchasesQuery.data?.map((purchase) => (
-                <TableRow key={purchase.id}>
+              {purchasesQuery.data?.items.map((purchase) => (
+                <TableRow key={purchase.id} className="cursor-pointer" onClick={() => setOpenId(purchase.id)}>
                   <TableCell className="font-mono text-xs">{purchase.purchaseNumber}</TableCell>
                   <TableCell>{purchase.supplier.name}</TableCell>
                   <TableCell className="text-muted-foreground">{purchase.supplierDocNo ?? "—"}</TableCell>
@@ -470,7 +548,7 @@ export function PurchasesPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {purchasesQuery.data?.length === 0 && (
+              {purchasesQuery.data?.items.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="p-6 text-center text-muted-foreground">
                     {t("purchases.empty")}
@@ -481,6 +559,21 @@ export function PurchasesPage() {
           </Table>
         </CardContent>
       </Card>
+      <div className="mt-3 flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">{t("purchases.count", { count: total })}</span>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" disabled={total === 0} onClick={() => void exportCsv()}>
+            <Download className="mr-2 h-4 w-4" aria-hidden /> {t("common:actions.exportCsv")}
+          </Button>
+          <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+            {t("purchases.previous")}
+          </Button>
+          <Button variant="outline" size="sm" disabled={(page + 1) * PAGE >= total} onClick={() => setPage((p) => p + 1)}>
+            {t("purchases.next")}
+          </Button>
+        </div>
+      </div>
+      <PurchaseDetailDialog purchaseId={openId} onClose={() => setOpenId(null)} />
     </div>
   );
 }

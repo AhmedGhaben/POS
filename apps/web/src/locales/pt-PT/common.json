@@ -16,7 +16,8 @@
     "pointOfSale": "Ponto de Venda",
     "shifts": "Turnos",
     "reports": "Relatórios",
-    "customers": "Clientes"
+    "customers": "Clientes",
+    "sales": "Vendas"
   },
   "shell": {
     "openNavigation": "Abrir navegação",
@@ -110,5 +111,13 @@
     "empty": "Sem resultados.",
     "other": "Outro: “{{text}}”",
     "more": "Mais {{count}}: continue a escrever para filtrar"
+  },
+  "print": {
+    "options": "Opções de impressão",
+    "optionsDescription": "Só para esta impressão. As impressoras da caixa e as cópias da loja ficam como estão.",
+    "copies": "Cópias",
+    "printer": "Impressora",
+    "tillPrinter": "Impressora desta caixa",
+    "windowsDefault": "Predefinida do Windows"
   }
 }

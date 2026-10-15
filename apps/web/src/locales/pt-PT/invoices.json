@@ -41,7 +41,7 @@
   },
   "fiscal": {
     "document": "Documento",
-    "reprintNote": "Impresso tal como foi emitido; não pode ser alterado.",
+    "reprintNote": "Já foi impresso: esta impressão diz \"2ª Via\". É impresso tal como foi emitido e não pode ser alterado.",
     "type": "Tipo de documento",
     "allTypes": "Todos os tipos",
     "from": "De",
@@ -66,6 +66,7 @@
       "SIGNATURE_MISMATCH": "Assinatura não corresponde",
       "NUMBER_GAP": "Número em falta ou fora de ordem",
       "KEY_VERSION": "Versão de chave desconhecida"
-    }
+    },
+    "firstPrintNote": "Primeira impressão: o original (e as cópias da loja). As seguintes dizem \"2ª Via\"."
   }
 }

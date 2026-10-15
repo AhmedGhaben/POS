@@ -95,6 +95,8 @@ const EXACT: Record<string, Translations> = {
   // Stores and business
   "Business not found": { "pt-PT": "Empresa não encontrada", "pt-BR": "Empresa não encontrada" },
   "Store not found": { "pt-PT": "Loja não encontrada", "pt-BR": "Loja não encontrada" },
+  "Choose a store": { "pt-PT": "Escolha uma loja", "pt-BR": "Escolha uma loja" },
+  "Purchase not found": { "pt-PT": "Compra não encontrada", "pt-BR": "Compra não encontrada" },
   // Credit, receipts and payables
   "The payment is more than what is owed": { "pt-PT": "O pagamento é superior ao valor em dívida", "pt-BR": "O pagamento é maior do que o valor devido" },
   "A payment can only go to this account's open documents, once each": {

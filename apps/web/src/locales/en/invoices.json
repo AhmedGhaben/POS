@@ -41,7 +41,7 @@
   },
   "fiscal": {
     "document": "Document",
-    "reprintNote": "Printed from the document as it was issued; it can't be changed.",
+    "reprintNote": "Printed before: this print says \"2ª Via\". It's printed from the document as issued and can't be changed.",
     "type": "Document type",
     "allTypes": "All types",
     "from": "From",
@@ -66,6 +66,7 @@
       "SIGNATURE_MISMATCH": "Signature doesn't match",
       "NUMBER_GAP": "Missing or out-of-order number",
       "KEY_VERSION": "Unknown key version"
-    }
+    },
+    "firstPrintNote": "First print: the original (and the store's copies). Later prints say \"2ª Via\"."
   }
 }

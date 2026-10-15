@@ -10,7 +10,7 @@ import { ANNULLED_STAMP, certificationLine, documentQrValue, documentTitle, MECH
  * reprint reads the same years later. Amounts are without tax per line;
  * taxes are summed per rate, exempt lines show their legal reason.
  */
-export function FiscalA4({ doc }: { doc: FiscalDocumentDto }) {
+export function FiscalA4({ doc, copyLabel }: { doc: FiscalDocumentDto; /** Original, Duplicado... or "2ª Via"; default Original. */ copyLabel?: string }) {
   const { t, money, qty, date, dateTime } = useDocumentLanguage(doc.currency);
   const s = doc.seller;
   const config = countryConfig(s.country);
@@ -64,7 +64,7 @@ export function FiscalA4({ doc }: { doc: FiscalDocumentDto }) {
         <div className="text-right">
           <p className="text-[16pt] font-bold">{documentTitle(doc.documentType, s.country)}</p>
           <p className="text-[12pt] font-semibold">{doc.documentNo}</p>
-          <p className="mt-1 text-neutral-600">{t("fiscal.original")}</p>
+          <p className="mt-1 font-medium text-neutral-700">{copyLabel ?? t("fiscal.original")}</p>
           <table className="ml-auto mt-2">
             <tbody>
               <tr>

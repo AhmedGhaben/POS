@@ -40,5 +40,34 @@
       "MAINTENANCE": "Manutenção",
       "OTHER": "Outro"
     }
+  },
+  "sales": {
+    "subtitle": "Todas as vendas de {{store}}: encontre, reimprima, imprima o documento.",
+    "noStore": "Escolha uma loja.",
+    "from": "De",
+    "to": "A",
+    "status": "Estado",
+    "allStatuses": "Todos",
+    "completed": "Concluída",
+    "cancelled": "Anulada",
+    "onAccount": "A crédito",
+    "search": "Pesquisar",
+    "searchPlaceholder": "Talão, documento, cliente ou NIF",
+    "date": "Data",
+    "document": "Documento",
+    "customer": "Cliente",
+    "cashier": "Operador",
+    "paidWith": "Pago com",
+    "tax": "IVA",
+    "total": "Total",
+    "empty": "Nenhuma venda corresponde.",
+    "count_one": "{{count}} venda",
+    "count_other": "{{count}} vendas",
+    "previous": "Anterior",
+    "next": "Seguinte",
+    "reprintSlip": "Reimprimir talão",
+    "a4Document": "Documento A4",
+    "issueInvoice": "Emitir fatura",
+    "file": "vendas"
   }
 }

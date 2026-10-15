@@ -11,6 +11,8 @@ import { PrintArea } from "@/components/print/PrintArea";
 import { useAuthStore } from "@/features/auth/store";
 import { useMoney } from "@/features/business/use-money";
 import { printDocument } from "@/features/desktop/printing";
+import { PrintButton } from "@/components/print/PrintButton";
+import { logSlipPrint } from "@/features/fiscal/print-log";
 import { listOutbox } from "@/lib/offline-db";
 import { formatDateTime } from "@/lib/format";
 import { fetchRecentSales } from "../api";
@@ -135,7 +137,12 @@ export function RecentSalesSheet({ open, onOpenChange, storeId, store }: RecentS
               </PrintArea>
             </>
           )}
-          <Button onClick={() => void printDocument()}>{t("common:actions.print")}</Button>
+          <PrintButton
+            onPrint={({ copies, deviceName }) => {
+              if (reprint) logSlipPrint(reprint, copies);
+              return printDocument({ copies, deviceName });
+            }}
+          />
         </DialogContent>
       </Dialog>
 

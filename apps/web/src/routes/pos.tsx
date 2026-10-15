@@ -45,6 +45,8 @@ import { createSale } from "@/features/pos/api";
 import { useAuthStore } from "@/features/auth/store";
 import { ApiError, apiClient } from "@/lib/api-client";
 import { printDocument } from "@/features/desktop/printing";
+import { PrintButton } from "@/components/print/PrintButton";
+import { logSlipPrint } from "@/features/fiscal/print-log";
 import { useDeviceStore } from "@/features/desktop/bridge";
 import { syncTillSeries } from "@/features/fiscal/numbering";
 import { fetchFiscalDocument } from "@/features/fiscal/api";
@@ -188,6 +190,8 @@ export function PosPage() {
   // Kept separate from completedSale: only one dialog (and print area) is mounted at a time.
   const [invoiceFor, setInvoiceFor] = React.useState<{ sale: SaleDto; customer: CustomerDto | null } | null>(null);
   const [viewingDocument, setViewingDocument] = React.useState<string | null>(null);
+  // Opened right after a sale in a store that prints A4: print the original at once.
+  const [autoPrintDocument, setAutoPrintDocument] = React.useState(false);
   // A Factura Pró-forma being sold (opened from Invoices): the sale invoices it.
   const [proforma, setProforma] = React.useState<{ id: string; documentNo: string } | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -231,6 +235,8 @@ export function PosPage() {
 
   // Customer display (pole or second screen): cart, then paid/change.
   useCustomerDisplay(lines, totals.total, completedSale);
+  // The store prints A4 documents after a sale (Settings → Stores), when the sale has one on the server.
+  const a4Document = completedSale && currentStore?.saleDocumentFormat === "A4" ? (saleDocument(completedSale)?.id ?? null) : null;
   React.useEffect(() => {
     if (!completedSale || !autoPrint || autoPrintedFor.current === completedSale.id) return;
     const saleId = completedSale.id;
@@ -238,10 +244,17 @@ export function PosPage() {
     // doesn't count as printed.
     const frame = requestAnimationFrame(() => {
       autoPrintedFor.current = saleId;
+      if (a4Document) {
+        setAutoPrintDocument(true);
+        setViewingDocument(a4Document);
+        setCompletedSale(null);
+        return;
+      }
+      logSlipPrint(completedSale);
       void printDocument();
     });
     return () => cancelAnimationFrame(frame);
-  }, [completedSale, autoPrint]);
+  }, [completedSale, autoPrint, a4Document]);
   const checkoutAreaRef = React.useRef<HTMLDivElement>(null);
 
   const saleMutation = useMutation({
@@ -512,7 +525,14 @@ export function PosPage() {
         customer={invoiceFor?.customer ?? null}
         onClose={() => setInvoiceFor(null)}
       />
-      <FiscalDocumentDialog documentId={viewingDocument} onClose={() => setViewingDocument(null)} />
+      <FiscalDocumentDialog
+        documentId={viewingDocument}
+        autoPrint={autoPrintDocument}
+        onClose={() => {
+          setViewingDocument(null);
+          setAutoPrintDocument(false);
+        }}
+      />
 
       <OpenDrawerDialog open={drawerDialogOpen} onOpenChange={setDrawerDialogOpen} />
       {shift && <CashMovementDialog shift={shift} open={movementOpen} onOpenChange={setMovementOpen} />}
@@ -603,9 +623,15 @@ export function PosPage() {
             </>
           )}
           <div className="grid grid-cols-2 gap-2">
-            <Button onClick={() => void printDocument()}>{t("complete.printReceipt")}</Button>
+            <PrintButton
+              label={t("complete.printReceipt")}
+              onPrint={({ copies, deviceName }) => {
+                if (completedSale) logSlipPrint(completedSale, copies);
+                return printDocument({ copies, deviceName });
+              }}
+            />
             <Button
-              variant="outline"
+              variant={a4Document ? "default" : "outline"}
               // A sale still queued offline has no document on the server yet.
               disabled={!!completedSale && !!saleDocument(completedSale) && !saleDocument(completedSale)!.id}
               onClick={() => {

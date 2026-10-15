@@ -126,6 +126,14 @@ enum CostingMethod {
   WEIGHTED_AVERAGE
 }
 
+/// What the till prints when a sale completes.
+enum SaleDocumentFormat {
+  /// The 80/58 mm slip (the till's receipt printer).
+  RECEIPT
+  /// The A4 document.
+  A4
+}
+
 enum StockMovementType {
   /// Stock that was already there when movements started being recorded.
   OPENING
@@ -265,28 +273,33 @@ model TaxRate {
 }
 
 model Store {
-  id               String        @id @default(cuid())
-  businessId       String
-  business         Business      @relation(fields: [businessId], references: [id])
-  name             String
-  address          String?
-  city             String?
-  postalCode       String?
+  id                 String             @id @default(cuid())
+  businessId         String
+  business           Business           @relation(fields: [businessId], references: [id])
+  name               String
+  address            String?
+  city               String?
+  postalCode         String?
   /// Province code from the country config (e.g. LA, CA = Cabinda).
-  province         String?
+  province           String?
   /// The country config that applies here (taxes, documents, money).
-  country          String        @default("AO")
+  country            String             @default("AO")
   /// Only the owner changes it; it's logged and printed on documents.
-  ivaRegime        IvaRegime     @default(GERAL)
+  ivaRegime          IvaRegime          @default(GERAL)
   /// Shelf prices include IVA; documents show the net price worked out from them.
-  pricesIncludeTax Boolean       @default(true)
+  pricesIncludeTax   Boolean            @default(true)
   /// How this store's stock is valued (its book value): weighted average cost.
-  costingMethod    CostingMethod @default(WEIGHTED_AVERAGE)
-  phone            String?
-  timezone         String        @default("UTC")
-  isActive         Boolean       @default(true)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  costingMethod      CostingMethod      @default(WEIGHTED_AVERAGE)
+  /// Printing: what a completed sale prints, and how many copies of an A4
+  /// document (Original, Duplicado, Triplicado). The printer, paper width and
+  /// calibration belong to each till (This device).
+  saleDocumentFormat SaleDocumentFormat @default(RECEIPT)
+  documentCopies     Int                @default(1)
+  phone              String?
+  timezone           String             @default("UTC")
+  isActive           Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   storeUsers       StoreUser[]
   inventoryItems   InventoryItem[]
@@ -1307,6 +1320,8 @@ model FiscalDocument {
   customerPayment CustomerPayment?            @relation("PaymentReceipt")
   /// For an invoice (FT): the receipts that settled it.
   settledBy       CustomerPaymentAllocation[]
+  /// Every time it was printed: the first is the original, later ones "2ª Via".
+  prints          DocumentPrint[]
 
   @@unique([seriesId, number])
   @@unique([businessId, documentNo])
@@ -1441,4 +1456,22 @@ model CustomerPaymentAllocation {
   @@index([paymentId])
   @@index([documentId])
   @@map("customer_payment_allocations")
+}
+
+/// A fiscal document printed (who, when, how): the first print is the
+/// original; anything printed after is a "2ª Via".
+model DocumentPrint {
+  id         String         @id @default(cuid())
+  documentId String
+  document   FiscalDocument @relation(fields: [documentId], references: [id])
+  userId     String?
+  /// RECEIPT or A4
+  kind       String
+  copies     Int            @default(1)
+  /// Printed after the first time: marked "2ª Via".
+  reprint    Boolean
+  printedAt  DateTime       @default(now())
+
+  @@index([documentId])
+  @@map("document_prints")
 }

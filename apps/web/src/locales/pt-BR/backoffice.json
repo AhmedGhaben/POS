@@ -40,5 +40,34 @@
       "MAINTENANCE": "Manutenção",
       "OTHER": "Outro"
     }
+  },
+  "sales": {
+    "subtitle": "Todas as vendas de {{store}}: encontre, reimprima, imprima o documento.",
+    "noStore": "Escolha uma loja.",
+    "from": "De",
+    "to": "Até",
+    "status": "Situação",
+    "allStatuses": "Todas",
+    "completed": "Concluída",
+    "cancelled": "Cancelada",
+    "onAccount": "A prazo",
+    "search": "Buscar",
+    "searchPlaceholder": "Cupom, documento, cliente ou NIF",
+    "date": "Data",
+    "document": "Documento",
+    "customer": "Cliente",
+    "cashier": "Operador",
+    "paidWith": "Pago com",
+    "tax": "IVA",
+    "total": "Total",
+    "empty": "Nenhuma venda encontrada.",
+    "count_one": "{{count}} venda",
+    "count_other": "{{count}} vendas",
+    "previous": "Anterior",
+    "next": "Próxima",
+    "reprintSlip": "Reimprimir cupom",
+    "a4Document": "Documento A4",
+    "issueInvoice": "Emitir fatura",
+    "file": "vendas"
   }
 }

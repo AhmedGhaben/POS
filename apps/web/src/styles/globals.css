@@ -122,6 +122,10 @@
   }
   /* A4 documents: the 15 mm on-screen padding becomes the page margin, so
    * long invoices keep their margins on every page. */
+  /* Several copies (Original, Duplicado...) print one after the other. */
+  .a4-doc + .a4-doc {
+    break-before: page;
+  }
   .a4-doc {
     page: a4;
     width: auto !important;

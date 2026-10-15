@@ -40,5 +40,34 @@
       "MAINTENANCE": "Maintenance",
       "OTHER": "Other"
     }
+  },
+  "sales": {
+    "subtitle": "Every sale at {{store}}: find it, reprint it, print its document.",
+    "noStore": "Choose a store.",
+    "from": "From",
+    "to": "To",
+    "status": "Status",
+    "allStatuses": "All",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "onAccount": "On account",
+    "search": "Search",
+    "searchPlaceholder": "Receipt, document, customer or NIF",
+    "date": "Date",
+    "document": "Document",
+    "customer": "Customer",
+    "cashier": "Cashier",
+    "paidWith": "Paid with",
+    "tax": "IVA",
+    "total": "Total",
+    "empty": "No sales match.",
+    "count_one": "{{count}} sale",
+    "count_other": "{{count}} sales",
+    "previous": "Previous",
+    "next": "Next",
+    "reprintSlip": "Reprint slip",
+    "a4Document": "A4 document",
+    "issueInvoice": "Issue invoice",
+    "file": "sales"
   }
 }

@@ -89,7 +89,20 @@
     },
     "regimeChangeLogged": "Changing the regime is recorded with your name, and it's printed on every document from now on.",
     "pricesIncludeTax": "Shelf prices include IVA",
-    "pricesIncludeTaxHint": "Documents show the price without IVA worked out from it, so price + IVA always equals the shelf price."
+    "pricesIncludeTaxHint": "Documents show the price without IVA worked out from it, so price + IVA always equals the shelf price.",
+    "printing": "Printing",
+    "saleDocumentFormat": "After a sale, print",
+    "formats": {
+      "RECEIPT": "The slip (receipt printer)",
+      "A4": "The A4 document"
+    },
+    "documentCopies": "A4 copies",
+    "copies": {
+      "1": "Original only",
+      "2": "Original + Duplicado",
+      "3": "Original + Duplicado + Triplicado"
+    },
+    "printingHint": "Printers, paper width and calibration are set on each till (This device). Any print can change copies or printer just for itself."
   },
   "tills": {
     "title": "Tills",

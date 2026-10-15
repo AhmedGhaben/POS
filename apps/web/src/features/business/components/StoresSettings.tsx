@@ -2,7 +2,7 @@ import * as React from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { countryConfig, type IvaRegime, type StoreDto } from "@pos/shared";
+import { countryConfig, type IvaRegime, type SaleDocumentFormat, type StoreDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,8 @@ interface StoreForm {
   timezone: string;
   ivaRegime: IvaRegime;
   pricesIncludeTax: boolean;
+  saleDocumentFormat: SaleDocumentFormat;
+  documentCopies: number;
 }
 
 function EditStoreDialog({ store, onClose }: { store: StoreDto | null; onClose: () => void }) {
@@ -53,6 +55,8 @@ function EditStoreDialog({ store, onClose }: { store: StoreDto | null; onClose: 
       timezone: store.timezone,
       ivaRegime: store.ivaRegime ?? "GERAL",
       pricesIncludeTax: store.pricesIncludeTax ?? true,
+      saleDocumentFormat: store.saleDocumentFormat ?? "RECEIPT",
+      documentCopies: store.documentCopies ?? 1,
     });
     setError(null);
   }, [store]);
@@ -161,6 +165,33 @@ function EditStoreDialog({ store, onClose }: { store: StoreDto | null; onClose: 
                 </label>
               </div>
             )}
+            <div className="space-y-2 rounded-md border p-3">
+              <p className="text-sm font-medium">{t("stores.printing")}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="store-sale-format">{t("stores.saleDocumentFormat")}</Label>
+                  <Combobox
+                    id="store-sale-format"
+                    value={form.saleDocumentFormat}
+                    onChange={(v) => v && setForm((f) => (f ? { ...f, saleDocumentFormat: v as SaleDocumentFormat } : f))}
+                    options={[
+                      { value: "RECEIPT", label: t("stores.formats.RECEIPT") },
+                      { value: "A4", label: t("stores.formats.A4") },
+                    ]}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="store-copies">{t("stores.documentCopies")}</Label>
+                  <Combobox
+                    id="store-copies"
+                    value={String(form.documentCopies)}
+                    onChange={(v) => v && setForm((f) => (f ? { ...f, documentCopies: Number(v) } : f))}
+                    options={[1, 2, 3].map((n) => ({ value: String(n), label: t(n === 1 ? "stores.copies.1" : n === 2 ? "stores.copies.2" : "stores.copies.3") }))}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">{t("stores.printingHint")}</p>
+            </div>
             <p className="text-xs text-muted-foreground">{t("stores.printedHint")}</p>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={mutation.isPending}>

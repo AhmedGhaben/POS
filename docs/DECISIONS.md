@@ -12,6 +12,8 @@ _In progress — updated at the end of the session._
   (calendar dates in Luanda's time; month-end and year-end tests).
 - Phase 4 (credit sales, receipts, customer/supplier accounts, purchase
   IVA) built.
+- CI fixed (red since 13 Oct).
+- Phase 5 (sales history, purchase filters/print, 2ª Via, print options) built.
 
 ---
 
@@ -89,6 +91,34 @@ The previous log left three questions open; answered here.
 **Not done (later or for the owner):** due dates / payment terms on
 invoices, interest, statements by email, supplier credit notes, advances,
 a receipt slip on 80 mm (receipts print on A4 for now).
+
+## Phase 5: purchases, history, printing
+
+| # | Decision | Why |
+|---|----------|-----|
+| 1 | **Printer, paper width, calibration and default copies stay per till** (This device, already built). The store gets only: what a sale prints (slip or A4) and how many A4 copies. | They describe hardware; a store-wide printer name can't exist on every till. |
+| 2 | **Print options** on every Print button: copies (1–5) and, in the Windows app, another printer — for that print only. | "Overridable per print" without touching the till's setup. |
+| 3 | **"2ª Via"** from a server print log: the first print of a document anywhere is the original; every later print, on every copy, says "2ª Via". Offline prints at the till aren't logged (best-effort). | Fiscal documents are immutable (no counter column); a separate log also says who reprinted what. |
+| 4 | First-print copies are labelled **Original / Duplicado / Triplicado** (store setting, max 3), each its own A4 page, sent as one print job. Slips print the same slip N times (one cut at the end). | Portuguese/Angolan practice; one job keeps them together. |
+| 5 | Store set to **A4 after a sale**: with the till's auto-print on, the A4 document opens and prints its original; otherwise the A4 button is the main one. Offline sales (no server document yet) print the slip. | The FR is numbered/signed on the server or till; the A4 needs the stored document. |
+| 6 | History lists need a store and are owner/manager only; dates are the store's calendar days (same rules as SAF-T); CSV exports up to 5 000 rows. | Consistent with the exports; keeps cashiers at the till. |
+| 7 | Purchase A4 printout is an internal record, **not** a fiscal document (no hash, no AGT wording). | It's the supplier's document that's fiscal. |
+| 8 | Chrome/Edge `--kiosk-printing` documented in the README for browser tills. | The plan asked for it; nothing to build. |
+
+**Not run:** the desktop e2e `apps/desktop/e2e/angola-phase5.spec.ts` was
+written but not run: it needs this branch's API from source on :4100, which
+the system stopped for low memory, and I was told not to restart it on my
+own. Run it with the API on :4100:
+`POS_TEST_API_URL=http://localhost:4100 npx playwright test e2e/angola-phase5.spec.ts`.
+
+## CI
+
+CI had been red since phase 6 (13 October): on a freshly seeded database
+the demo store's prices include IVA, and three old suites priced sales as
+price + tax; another used the UTC date for "today". Fixed in `e06caef`
+(test helper `test/sale-total.ts`), checked on a throwaway freshly seeded
+local database `pos_ci` (left in the local Postgres; drop it with
+`DROP DATABASE pos_ci;` if unwanted). CI green again.
 
 **Not done here, on purpose:** the always-on Docker API on :4000 (the
 installed app's) was not rebuilt — it serves the installed v0.2.3 tills,

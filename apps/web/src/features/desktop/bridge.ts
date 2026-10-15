@@ -99,6 +99,8 @@ export interface DesktopPrintJob {
   html: string;
   stylesheets: string[];
   copies?: number;
+  /** This print only: another printer than the till's (ignored by apps before 0.2.4). */
+  deviceName?: string;
 }
 
 export type DesktopPrintResult = { ok: true; deviceName: string } | { ok: false; error: string };

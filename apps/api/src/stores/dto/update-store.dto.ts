@@ -1,6 +1,6 @@
 import { Transform } from "class-transformer";
-import { IvaRegime } from "@prisma/client";
-import { IsBoolean, IsEnum, IsIn, IsOptional, IsString, IsTimeZone, MaxLength, MinLength } from "class-validator";
+import { IvaRegime, SaleDocumentFormat } from "@prisma/client";
+import { IsBoolean, IsEnum, IsIn, IsInt, IsOptional, IsString, IsTimeZone, Max, MaxLength, Min, MinLength } from "class-validator";
 import { COUNTRIES } from "../../countries";
 
 const BlankToNull = () =>
@@ -46,4 +46,16 @@ export class UpdateStoreDto {
   @IsOptional()
   @IsTimeZone()
   timezone?: string;
+
+  /** What a completed sale prints: the slip (RECEIPT) or the A4 document. */
+  @IsOptional()
+  @IsEnum(SaleDocumentFormat)
+  saleDocumentFormat?: SaleDocumentFormat;
+
+  /** Copies of an A4 fiscal document: Original, Duplicado, Triplicado. */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(3)
+  documentCopies?: number;
 }

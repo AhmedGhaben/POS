@@ -15,6 +15,7 @@ export async function deleteBusiness(prisma: PrismaService, businessId: string):
     prisma.$executeRaw`SELECT set_config('pos.allow_fiscal_delete', 'on', true)`,
     prisma.customerPaymentAllocation.deleteMany({ where: { payment: { businessId } } }),
     prisma.customerPayment.deleteMany({ where: { businessId } }),
+    prisma.documentPrint.deleteMany({ where: { document: { businessId } } }),
     prisma.fiscalDocumentLineTax.deleteMany({ where: { line: { document: { businessId } } } }),
     prisma.fiscalDocumentLine.deleteMany({ where: { document: { businessId } } }),
     prisma.fiscalDocument.deleteMany({ where: { businessId } }),

@@ -4,6 +4,7 @@ import { SlipHeader } from "@/features/documents/components/SlipHeader";
 import { useDocumentLanguage } from "@/i18n/use-document-language";
 import { discountLabel } from "../discount-label";
 import { ReceiptFiscalBottom, ReceiptFiscalTop } from "@/features/fiscal/components/ReceiptFiscal";
+import { REPRINT_LABEL } from "@/features/fiscal/fiscal-text";
 import { saleDocument } from "@/features/fiscal/sale-document";
 
 interface ReceiptProps {
@@ -41,7 +42,8 @@ export function Receipt({ sale, store, customer, copy }: ReceiptProps) {
           {sale.voidedAt && <p>{dateTime(sale.voidedAt)}</p>}
         </div>
       )}
-      {copy && <p className="text-center font-bold">{t("receipt.copy")}</p>}
+      {/* A fiscal document printed again is a "2ª Via" (legal wording, in Portuguese). */}
+      {copy && <p className="text-center font-bold">{saleDocument(sale) ? REPRINT_LABEL : t("receipt.copy")}</p>}
       <ReceiptFiscalTop sale={sale} customer={customer} />
       <p className="text-center">{dateTime(sale.createdAt)}</p>
       <p className="text-center">{t("receipt.number", { number: sale.receiptNumber })}</p>

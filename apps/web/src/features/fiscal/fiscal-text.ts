@@ -11,6 +11,21 @@ export const NOT_VALID_WATERMARK = "DOCUMENTO SEM VALIDADE FISCAL";
 
 export const ANNULLED_STAMP = "ANULADO";
 
+/** Printed on a fiscal document printed again after its first print. */
+export const REPRINT_LABEL = "2ª Via";
+
+/** The copies printed when a document is issued. */
+const COPY_NAMES = ["Original", "Duplicado", "Triplicado", "Quadruplicado", "Quintuplicado"];
+
+/**
+ * The label on each copy of a print: Original, Duplicado... the first time;
+ * "2ª Via" on every copy of a later print.
+ */
+export function copyLabels(copies: number, reprint: boolean): string[] {
+  const n = Math.min(Math.max(Math.trunc(copies) || 1, 1), COPY_NAMES.length);
+  return Array.from({ length: n }, (_, i) => (reprint ? REPRINT_LABEL : COPY_NAMES[i]));
+}
+
 /** "Factura-Recibo", "Nota de Crédito"... from the country config. */
 export function documentTitle(type: FiscalDocumentType, country: string | null | undefined): string {
   return countryConfig(country ?? "AO")?.documentTypes[type] ?? type;

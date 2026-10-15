@@ -86,7 +86,23 @@
       "UNPAID": "Por pagar",
       "PARTIAL": "Parcialmente paga",
       "PAID": "Paga"
-    }
+    },
+    "from": "De",
+    "to": "A",
+    "allSuppliers": "Todos os fornecedores",
+    "allPayments": "Qualquer",
+    "search": "Número ou fornecedor",
+    "count_one": "{{count}} compra",
+    "count_other": "{{count}} compras",
+    "previous": "Anterior",
+    "next": "Seguinte",
+    "file": "compras",
+    "date": "Data",
+    "a4Title": "Compra",
+    "detailDescription": "A compra como foi registada, para o arquivo do fornecedor e o contabilista (não é um documento fiscal).",
+    "deductibleShort": "{{percent}}% dedutível",
+    "payments": "Pagamentos",
+    "recordedBy": "Registada por {{name}}"
   },
   "returns": {
     "subtitle": "Processar reembolsos de uma venda anterior.",

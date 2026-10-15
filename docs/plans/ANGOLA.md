@@ -173,6 +173,26 @@ commit and push.
   - Still open: real phone scans of 58/80 mm QR prints (by hand); the
     inventory circular; the producer NIF / product name for the header.
 
+- **Phase 5 (purchases, history, printing) is built** (2026-10-16).
+  Migration `20261016090000_angola_phase5_printing`.
+  - `GET /purchases?storeId&supplierId&paymentStatus&search&from&to&take&skip`,
+    `GET /purchases/:id`, `GET /sales?storeId&from&to&status&cashierId&search`
+    (owner/manager; dates = the store's calendar days, `common/store-period.ts`).
+  - Print log: `POST /fiscal-documents/:id/prints` (`DocumentPrint`): the
+    first print anywhere is the original, later ones "2ª Via";
+    `printCount` on the document. A4 copies labelled Original / Duplicado /
+    Triplicado (`Store.documentCopies`), one per page; slips reprinted from
+    history say "2ª Via" (fiscal) or COPY. Offline prints aren't logged.
+  - `Store.saleDocumentFormat` (RECEIPT/A4): A4 makes auto-print open and
+    print the sale's A4 document (online sales; offline ones print the slip).
+  - Print options on every print: copies, and another printer in the
+    Windows app (`deviceName` on the print job; ignored by apps before 0.2.4).
+  - Web: Sales page (filters, paging, CSV, reprint, A4, issue invoice),
+    purchases filters/paging/CSV/detail with A4 print, store Printing settings.
+  - Tests: API e2e incl. `angola-phase5.e2e-spec.ts` (7), web unit 145
+    (copy labels), desktop unit 28. Desktop e2e `angola-phase5.spec.ts`
+    written but **not run yet** (see docs/DECISIONS.md).
+
 - **Phase 4 (credit and payables) is built** (2026-10-16). Migration
   `20261015200000_angola_phase4_credit` (existing purchases marked paid;
   receipts and their allocations immutable by trigger, like documents).

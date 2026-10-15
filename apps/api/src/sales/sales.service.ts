@@ -11,6 +11,7 @@ import { VoidSaleDto } from "./dto/void-sale.dto";
 import { priceSaleCents, unitDecimals, type DiscountInput, type PricedSale } from "./pricing";
 import { countryConfig, lineTax, type IvaRegime, type LineTax } from "../countries";
 import { recordMovement } from "../stock/stock";
+import { storeDateRange } from "../common/store-period";
 import { annulmentCode, buyerOf, DOCUMENT_SUMMARY, FiscalService } from "../fiscal/fiscal.service";
 import { CustomerAccountsService } from "../accounts/customer-accounts.service";
 
@@ -102,6 +103,33 @@ export class SalesService {
       take: 50,
     });
     return sales.map(withSoldNames);
+  }
+
+  /** Sales history: newest first, filtered and paged (dates are the store's calendar days). */
+  async list(storeId: string, f: { from?: string; to?: string; status?: string; cashierId?: string; search?: string; take: number; skip: number }) {
+    const createdAt = await storeDateRange(this.prisma, storeId, f.from, f.to);
+    const where: Prisma.SaleWhereInput = {
+      storeId,
+      ...(createdAt ? { createdAt } : {}),
+      ...(f.status === "COMPLETED" || f.status === "VOIDED" ? { status: f.status } : {}),
+      ...(f.status === "CREDIT" ? { creditAmount: { gt: 0 } } : {}),
+      ...(f.cashierId ? { cashierId: f.cashierId } : {}),
+      ...(f.search
+        ? {
+            OR: [
+              { receiptNumber: { contains: f.search, mode: "insensitive" } },
+              { fiscalDocuments: { some: { documentNo: { contains: f.search, mode: "insensitive" } } } },
+              { customer: { name: { contains: f.search, mode: "insensitive" } } },
+              { customer: { taxId: { contains: f.search } } },
+            ],
+          }
+        : {}),
+    };
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.sale.findMany({ where, include: SALE_INCLUDE, orderBy: { createdAt: "desc" }, take: f.take, skip: f.skip }),
+      this.prisma.sale.count({ where }),
+    ]);
+    return { items: items.map(withSoldNames), total };
   }
 
   async create(businessId: string, cashierId: string, dto: CreateSaleDto, role: Role = Role.CASHIER) {

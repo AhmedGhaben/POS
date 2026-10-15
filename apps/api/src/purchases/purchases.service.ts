@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { Prisma, PurchasePaymentStatus } from "@prisma/client";
+import { storeDateRange } from "../common/store-period";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreatePurchaseDto } from "./dto/create-purchase.dto";
 import { recordMovement } from "../stock/stock";
@@ -26,6 +27,38 @@ export class PurchasesService {
       orderBy: { createdAt: "desc" },
       take: 50,
     });
+  }
+
+  /**
+   * A store's purchases, newest first, filtered by supplier, payment
+   * status, the supplier's document number or ours, and calendar dates in
+   * the store's time zone.
+   */
+  async list(storeId: string, f: { supplierId?: string; paymentStatus?: string; search?: string; from?: string; to?: string; take: number; skip: number }) {
+    const createdAt = await storeDateRange(this.prisma, storeId, f.from, f.to);
+    const where: Prisma.PurchaseWhereInput = {
+      storeId,
+      ...(f.supplierId ? { supplierId: f.supplierId } : {}),
+      ...(f.paymentStatus && ["UNPAID", "PARTIAL", "PAID"].includes(f.paymentStatus) ? { paymentStatus: f.paymentStatus as PurchasePaymentStatus, status: { not: "CANCELLED" } } : {}),
+      ...(f.search
+        ? { OR: [{ purchaseNumber: { contains: f.search, mode: "insensitive" } }, { supplierDocNo: { contains: f.search, mode: "insensitive" } }, { supplier: { name: { contains: f.search, mode: "insensitive" } } }] }
+        : {}),
+      ...(createdAt ? { createdAt } : {}),
+    };
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.purchase.findMany({ where, include: PURCHASE_INCLUDE, orderBy: { createdAt: "desc" }, take: f.take, skip: f.skip }),
+      this.prisma.purchase.count({ where }),
+    ]);
+    return { items, total };
+  }
+
+  async get(businessId: string, id: string) {
+    const purchase = await this.prisma.purchase.findFirst({
+      where: { id, store: { businessId } },
+      include: { ...PURCHASE_INCLUDE, store: { select: { id: true, name: true } }, createdBy: { select: { id: true, firstName: true, lastName: true } }, allocations: { where: { payment: { cancelledAt: null } }, include: { payment: { select: { paidOn: true, method: true, reference: true } } } } },
+    });
+    if (!purchase) throw new NotFoundException("Purchase not found");
+    return purchase;
   }
 
   async create(businessId: string, createdById: string, dto: CreatePurchaseDto) {
