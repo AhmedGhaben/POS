@@ -118,4 +118,41 @@ export class FiscalController {
       mimeType: "application/xml",
     };
   }
+
+  @Post("saft/inventarios")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  async exportInventarios(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query("storeId") storeId?: string,
+  ) {
+    const csv = await this.saftExport.exportInventarios(user.businessId, storeId);
+
+    return {
+      fileName: `SAFT-Inventarios-${new Date().toISOString().split("T")[0]}.csv`,
+      content: csv,
+      mimeType: "text/csv",
+    };
+  }
+
+  @Post("saft/accountant")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  async exportAccountantReport(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query("storeId") storeId?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
+    const end = endDate ? new Date(endDate) : new Date();
+
+    const csv = await this.saftExport.exportAccountantReport(user.businessId, storeId, start, end);
+
+    return {
+      fileName: `Accountant-Export-${start.toISOString().split("T")[0]}-${end.toISOString().split("T")[0]}.csv`,
+      content: csv,
+      mimeType: "text/csv",
+    };
+  }
 }

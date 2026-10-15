@@ -14,8 +14,68 @@ interface SaftExportOptions {
 export class SaftExportService {
   constructor(private prisma: PrismaService) {}
 
+  async exportInventarios(businessId: string, storeId?: string): Promise<string> {
+    // SAF-T de Inventários: Stock at 31 Dec (or end of previous month)
+    // CSV format: product code, description, inventory type, quantity, unit, book value
+    const products = await this.prisma.product.findMany({
+      where: { businessId, trackStock: true, isActive: true },
+    });
+
+    const stores = storeId
+      ? [await this.prisma.store.findUnique({ where: { id: storeId } })]
+      : await this.prisma.store.findMany({ where: { businessId } });
+
+    let csv = "ProductCode,Description,InventoryType,Quantity,Unit,BookValue\n";
+
+    for (const product of products) {
+      for (const store of stores.filter((s): s is NonNullable<typeof s> => s !== null)) {
+        const inventory = await this.prisma.inventoryItem.findUnique({
+          where: { storeId_productId: { storeId: store.id, productId: product.id } },
+        });
+
+        if (inventory) {
+          const bookValue = inventory.quantity.toNumber() * inventory.averageCost.toNumber();
+          csv += `"${product.sku}","${product.name.replace(/"/g, '""')}","${product.inventoryType || "M"}","${inventory.quantity.toString()}","${product.unit}","${bookValue.toFixed(2)}"\n`;
+        }
+      }
+    }
+
+    return csv;
+  }
+
+  async exportAccountantReport(businessId: string, storeId?: string, startDate?: Date, endDate?: Date): Promise<string> {
+    // Excel-compatible CSV: sales and purchases documents for accountant
+    const from = startDate || new Date(new Date().getFullYear(), 0, 1);
+    const to = endDate || new Date();
+
+    const docs = await this.prisma.fiscalDocument.findMany({
+      where: {
+        businessId,
+        ...(storeId && { storeId }),
+        invoiceDate: { gte: from, lte: to },
+      },
+      include: { customer: true },
+    });
+
+    let csv = "Date,DocumentNo,Type,CustomerName,CustomerNIF,NetTotal,TaxTotal,GrossTotal,PaymentStatus\n";
+
+    for (const doc of docs) {
+      const date = new Date(doc.invoiceDate).toISOString().split("T")[0];
+      const customer = doc.customer?.name || doc.buyerName;
+      const nif = doc.customer?.taxId || doc.buyerTaxId;
+      csv += `${date},"${doc.documentNo}","${doc.documentType}","${customer.replace(/"/g, '""')}","${nif}","${doc.netTotal.toFixed(2)}","${doc.taxPayable.toFixed(2)}","${doc.grossTotal.toFixed(2)}","COMPLETED"\n`;
+    }
+
+    return csv;
+  }
+
   async exportFacturacao(options: SaftExportOptions): Promise<string> {
     const { businessId, storeId, startDate, endDate } = options;
+
+    // Validate dates
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      throw new BadRequestException("Invalid date format");
+    }
 
     // Load business, stores, fiscal documents, customers, suppliers, products
     const [business, stores, documents, customers, suppliers, products, taxRates] = await Promise.all([
@@ -67,8 +127,12 @@ export class SaftExportService {
     storeId?: string,
   ): string {
     const tz = fiscalTimeZone(null, "Africa/Luanda");
+    // For endDate, if it's at 23:59:59, use it as-is; otherwise subtract 1 day to get the end of that day
+    const adjustedEndDate = endDate.getHours() === 0 && endDate.getMinutes() === 0 && endDate.getSeconds() === 0
+      ? new Date(endDate.getTime() - 1000) // If exactly midnight, go back 1 second
+      : endDate;
     const startDt = localDateTime(startDate, tz);
-    const endDt = localDateTime(endDate, tz);
+    const endDt = localDateTime(adjustedEndDate, tz);
     const now = new Date();
     const createdDt = localDateTime(now, tz);
 
