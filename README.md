@@ -99,6 +99,12 @@ Prisma backend.
     (country setting) in the Portuguese format, e.g. "245 000,00 Kz". A
     new business takes its country's currency, language (pt-AO), time
     zone (Africa/Luanda) and IVA regime.
+  - **Electronic invoicing with AGT** (behind a server flag, off by
+    default): invoices, invoice-receipts, credit/debit notes and receipts are
+    queued and sent to AGT signed (RS256), with retries and AGT's limits
+    respected; the **AGT page** shows what's waiting, accepted and rejected
+    (with AGT's errors) and corrects a rejected document with a new one; the
+    top bar shows what's still waiting and turns red on a rejection.
   - **Files for AGT and the accountant** (Reports, owner and manager; every
     file generated is in the audit log):
     - **SAF-T (AO) Facturação** for a month or any period within one year,
@@ -337,6 +343,12 @@ it they're printed to the API console, links included.
 | `SAFT_PRIVATE_KEY` or `SAFT_PRIVATE_KEY_FILE` | RSA private key (PEM, 1024-bit) that signs the fiscal documents' hash chain. Keep it in secrets, never in the repo. Without it a temporary key is used (fine until certified) |
 | `SAFT_KEY_VERSION` | The key's version, printed as HashControl once certified (default 1) |
 | `AGT_SOFTWARE_CERTIFICATE` | The software's AGT validation number (e.g. `77/AGT/2019`). Unset: documents say "DOCUMENTO SEM VALIDADE FISCAL" and HashControl is 0; set: the API won't start without the real key |
+| `AGT_EINVOICE_ENABLED` | `1` turns on sending documents to AGT (electronic invoicing). Off by default; also needs the business's setting |
+| `AGT_EINVOICE_URL` | AGT's e-invoicing API (default: the homologation server `https://sifphml.minfin.gov.ao/sigt/fe/v1`) |
+| `AGT_EINVOICE_USER`, `AGT_EINVOICE_PASSWORD` | The credentials AGT gives the software producer (Basic auth) |
+| `AGT_SOFTWARE_KEY` or `AGT_SOFTWARE_KEY_FILE` | RSA private key (PEM, 2048+ bits) for the software's signature; secrets only |
+| `AGT_DOCUMENT_KEY` or `AGT_DOCUMENT_KEY_FILE` | RSA key for documents' signatures (default: the software key) |
+| `AGT_QUEUE_INTERVAL_MS` | How often the queue runs (default 15000; 0 turns the timer off) |
 | `SAFT_PRODUCER_TAX_ID`, `SAFT_PRODUCT_ID`, `SAFT_PRODUCT_VERSION` | The software maker's NIF, "Product name/Company name" and version written in every SAF-T file's header. Placeholders (`999999999`, `POS/POS`, `0.2.3`) until the software is registered with AGT |
 
 ## Windows desktop app

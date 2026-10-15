@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { StoreSwitcher } from "./StoreSwitcher";
+import { AgtIndicator } from "@/features/agt/components/AgtIndicator";
 import { SidebarNav } from "./Sidebar";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuthStore } from "@/features/auth/store";
@@ -57,6 +58,7 @@ export function BackOfficeTopBar() {
         <kbd className="hidden items-center gap-1 rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-flex">
           <span>⌘</span>K
         </kbd>
+        <AgtIndicator />
         <StoreSwitcher />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

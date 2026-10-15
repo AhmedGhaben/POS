@@ -14,6 +14,7 @@ _In progress — updated at the end of the session._
   IVA) built.
 - CI fixed (red since 13 Oct).
 - Phase 5 (sales history, purchase filters/print, 2ª Via, print options) built.
+- Phase 9 (AGT e-invoicing behind a flag; send + status + correct) built.
 
 ---
 
@@ -110,6 +111,26 @@ written but not run: it needs this branch's API from source on :4100, which
 the system stopped for low memory, and I was told not to restart it on my
 own. Run it with the API on :4100:
 `POS_TEST_API_URL=http://localhost:4100 npx playwright test e2e/angola-phase5.spec.ts`.
+
+## Phase 9: AGT e-invoicing
+
+| # | Decision | Why |
+|---|----------|-----|
+| 1 | **Off unless the server is configured**: `AGT_EINVOICE_ENABLED=1` plus user, password and signing key; and the business's "electronic invoicing" setting. Either off: nothing is queued. Without keys the API logs an error and stays off (it still starts). | A flag, as the plan says; a half-configured server must not queue documents it can't send. |
+| 2 | Default URL is AGT's **homologation** server; production is set explicitly with `AGT_EINVOICE_URL`. | Nothing reaches production by accident. |
+| 3 | Only **registarFactura + obterEstado** are built. **solicitarSerie/listarSeries are not**: with e-invoicing, series must be requested from AGT, which changes how documents are numbered (today the till numbers its own series offline). **consultarFactura/listarFacturas/validarDocumento** are not built either (lookups and the buyer's confirmation; no screen needs them yet). | Numbering is the riskiest change in the system and needs its own phase and the owner's say; the two built services are what sending needs. |
+| 4 | Documents queued: **FT, FR, NC, ND, RC**; not proformas, not purchases. | The spec's document types for registarFactura. |
+| 5 | `operationType` per line: goods **TB**, services **SE** (others TB). | The spec lists the codes without saying which to use for a plain sale; a guess to confirm in homologation. |
+| 6 | `companyName` in the document signature = **the buyer's name**. | The spec's field is ambiguous (issuer or customer); it sits with the customer's fields. To confirm in homologation. |
+| 7 | Retries: 30 s doubling to 1 h; status checks 30 s growing to 10 min; **429/E98 waits 5 min**; obterEstado 9 resends the request. | The spec says to back off on E98 and not to poll aggressively. |
+| 8 | A **rejected document is never resent**. It is corrected by issuing a new document (new number) and linking it on the AGT page; that one goes out with `documentStatus` C and `rejectedDocumentNo`. Must be the same type and not sent yet. | The spec: a rejected number can't be reused; corrections reference it. Fiscal documents are immutable here anyway. |
+| 9 | Signing key for documents defaults to the software key (`AGT_DOCUMENT_KEY` can differ); minimum 2048 bits. Separate from the 1024-bit SAF-T hash key. | The spec asks RS256 with 2048+; the SAF-T hash key is a different, fixed requirement. |
+| 10 | The queue runs inside the API (every 15 s, `AGT_QUEUE_INTERVAL_MS`; 0 disables the timer, for tests) and claims work by `nextAttemptAt`, so it survives restarts. | One process today; DB-backed so nothing is lost. |
+
+**Not verified against AGT**: no homologation credentials, so everything was
+tested against a fake AGT built from the published docs. The installed
+v0.2.3 tills and the Docker API on :4000 are untouched (the flag is off by
+default there anyway).
 
 ## CI
 

@@ -173,6 +173,32 @@ commit and push.
   - Still open: real phone scans of 58/80 mm QR prints (by hand); the
     inventory circular; the producer NIF / product name for the header.
 
+- **Phase 9 (AGT e-invoicing, behind a flag) is built** (2026-10-16).
+  Migration `20261016120000_angola_phase9_agt` (`AgtSubmission`, `AgtStatus`).
+  Built against AGT's published spec (quiosqueagt.minfin.gov.ao, faturação
+  electrónica v1); never run against AGT's servers.
+  - `src/agt/`: RS256 compact JWS (`jws.ts`, keys of 2048+ bits from env or
+    secret files only), the registarFactura document (`payload.ts`: lines
+    with credit/debit amounts and taxes, receipts with `paymentReceipt`,
+    corrections with `documentStatus` C and `rejectedDocumentNo`), the
+    queue (`agt-queue.service.ts`): FT/FR/NC/ND/RC queued in the same
+    transaction as the document when the server flag and the business's
+    `eInvoicingActive` are both on; sent 30 per request with Basic auth;
+    obterEstado until 0/1/2 (7/8 wait, 9 resends); retries 30 s doubling to
+    1 h; 429/E98 waits 5 min; a 400 naming a document rejects that one.
+  - `GET /agt/status`, `GET /agt/submissions?status`, `POST
+    /agt/submissions/:id/retry`, `POST /agt/submissions/:id/correct`
+    (owner/manager).
+  - Web: AGT page (`/agt`: counts, list, AGT's errors, try now, correct with
+    a new document of the same type), indicator in the top bar (waiting;
+    red when something was rejected), link from Settings.
+  - Only registarFactura and obterEstado are used. Not built:
+    solicitarSerie/listarSeries (series registered with AGT; changes
+    numbering), consultarFactura/listarFacturas, validarDocumento (buyer's
+    confirmation). See docs/DECISIONS.md, phase 9.
+  - Tests: API unit `agt.spec.ts` (JWS, payloads, timing), API e2e
+    `angola-phase9.e2e-spec.ts` (6, against a fake AGT on localhost).
+
 - **Phase 5 (purchases, history, printing) is built** (2026-10-16).
   Migration `20261016090000_angola_phase5_printing`.
   - `GET /purchases?storeId&supplierId&paymentStatus&search&from&to&take&skip`,

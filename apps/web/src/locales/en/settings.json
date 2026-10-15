@@ -137,7 +137,8 @@
   "agt": {
     "title": "Electronic invoicing (AGT)",
     "eInvoicing": "Documents are sent to AGT in real time",
-    "eInvoicingHint": "Once it's on, the monthly SAF-T invoicing file is no longer required, so its reminder stops. You can still generate the file at any time."
+    "eInvoicingHint": "Once it's on, the monthly SAF-T invoicing file is no longer required, so its reminder stops. You can still generate the file at any time.",
+    "openQueue": "See what was sent to AGT"
   },
   "rates": {
     "title": "Tax rates",

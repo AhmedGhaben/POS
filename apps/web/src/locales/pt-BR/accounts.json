@@ -75,5 +75,45 @@
     "paidOn": "Pago em",
     "payButton": "Pagar {{amount}}",
     "paid": "{{amount}} pago"
+  },
+  "agt": {
+    "title": "Faturamento eletrônico (AGT)",
+    "off": "O envio à AGT não está configurado neste servidor (credenciais e chave de assinatura). Os documentos não estão sendo enviados.",
+    "businessOff": "O faturamento eletrônico está desligado para esta empresa (Configurações). Os novos documentos não entram na fila.",
+    "on": "Os documentos são enviados à AGT automaticamente ({{environment}}).",
+    "environments": {
+      "homologation": "ambiente de testes",
+      "production": "produção"
+    },
+    "statuses": {
+      "QUEUED": "Aguardando envio",
+      "SENT": "Enviado, aguardando a AGT",
+      "VALID": "Aceito",
+      "REJECTED": "Rejeitado"
+    },
+    "document": "Documento",
+    "customer": "Cliente",
+    "total": "Total",
+    "status": "Status",
+    "details": "Detalhes",
+    "empty": "Nada aqui.",
+    "previous": "Anterior",
+    "next": "Próxima",
+    "correctionOf": "Correção de {{number}}",
+    "willRetry": "Nova tentativa às {{at}}: {{error}}",
+    "correctedAlready": "Uma correção já foi vinculada.",
+    "retryNow": "Tentar agora",
+    "retried": "Será enviado na próxima passagem.",
+    "correct": "Corrigir",
+    "correctTitle": "Corrigir {{number}}",
+    "correctDescription": "Emita um novo documento do mesmo tipo com os dados corretos e escolha-o aqui. Ele é enviado à AGT como correção do rejeitado.",
+    "newDocument": "Novo documento",
+    "sendCorrection": "Enviar como correção",
+    "corrected": "A correção está na fila para a AGT.",
+    "indicator": "AGT: {{pending}} aguardando, {{rejected}} rejeitados",
+    "pendingShort_one": "{{count}} para a AGT",
+    "pendingShort_other": "{{count}} para a AGT",
+    "rejectedShort_one": "{{count}} rejeitado pela AGT",
+    "rejectedShort_other": "{{count}} rejeitados pela AGT"
   }
 }

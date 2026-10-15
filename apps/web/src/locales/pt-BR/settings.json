@@ -137,7 +137,8 @@
   "agt": {
     "title": "Faturamento eletrônico (AGT)",
     "eInvoicing": "Os documentos são enviados à AGT em tempo real",
-    "eInvoicingHint": "Com isso ligado, o arquivo SAF-T mensal de faturamento deixa de ser obrigatório e o lembrete some. Você ainda pode gerar o arquivo quando quiser."
+    "eInvoicingHint": "Com isso ligado, o arquivo SAF-T mensal de faturamento deixa de ser obrigatório e o lembrete some. Você ainda pode gerar o arquivo quando quiser.",
+    "openQueue": "Ver o que foi enviado à AGT"
   },
   "rates": {
     "title": "Alíquotas",

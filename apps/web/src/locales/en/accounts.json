@@ -75,5 +75,45 @@
     "paidOn": "Paid on",
     "payButton": "Pay {{amount}}",
     "paid": "{{amount}} paid"
+  },
+  "agt": {
+    "title": "Electronic invoicing (AGT)",
+    "off": "Sending to AGT isn't set up on this server (credentials and signing key). Documents aren't being sent.",
+    "businessOff": "Electronic invoicing is off for this business (Settings). New documents aren't queued.",
+    "on": "Documents are sent to AGT automatically ({{environment}}).",
+    "environments": {
+      "homologation": "test environment",
+      "production": "production"
+    },
+    "statuses": {
+      "QUEUED": "Waiting to send",
+      "SENT": "Sent, awaiting AGT",
+      "VALID": "Accepted",
+      "REJECTED": "Rejected"
+    },
+    "document": "Document",
+    "customer": "Customer",
+    "total": "Total",
+    "status": "Status",
+    "details": "Details",
+    "empty": "Nothing here.",
+    "previous": "Previous",
+    "next": "Next",
+    "correctionOf": "Correction of {{number}}",
+    "willRetry": "Will try again at {{at}}: {{error}}",
+    "correctedAlready": "A correction has been linked.",
+    "retryNow": "Try now",
+    "retried": "It will be sent on the next pass.",
+    "correct": "Correct",
+    "correctTitle": "Correct {{number}}",
+    "correctDescription": "Issue a new document of the same type with the right details, then pick it here. It is sent to AGT as the correction of the rejected one.",
+    "newDocument": "New document",
+    "sendCorrection": "Send as correction",
+    "corrected": "The correction is queued for AGT.",
+    "indicator": "AGT: {{pending}} waiting, {{rejected}} rejected",
+    "pendingShort_one": "{{count}} to AGT",
+    "pendingShort_other": "{{count}} to AGT",
+    "rejectedShort_one": "{{count}} rejected by AGT",
+    "rejectedShort_other": "{{count}} rejected by AGT"
   }
 }

@@ -126,6 +126,16 @@ enum CostingMethod {
   WEIGHTED_AVERAGE
 }
 
+/// A document's way to AGT (e-invoicing, phase 9).
+enum AgtStatus {
+  /// Waiting to be sent (first time, or again after a failed send).
+  QUEUED
+  /// Sent; waiting for AGT's verdict (requestId).
+  SENT
+  VALID
+  REJECTED
+}
+
 /// What the till prints when a sale completes.
 enum SaleDocumentFormat {
   /// The 80/58 mm slip (the till's receipt printer).
@@ -1322,6 +1332,8 @@ model FiscalDocument {
   settledBy       CustomerPaymentAllocation[]
   /// Every time it was printed: the first is the original, later ones "2ª Via".
   prints          DocumentPrint[]
+  /// Its submission to AGT, where the business has e-invoicing on.
+  agtSubmission   AgtSubmission?
 
   @@unique([seriesId, number])
   @@unique([businessId, documentNo])
@@ -1474,4 +1486,38 @@ model DocumentPrint {
 
   @@index([documentId])
   @@map("document_prints")
+}
+
+/// A fiscal document sent to AGT (registarFactura, then obterEstado until
+/// a verdict). Created with the document when e-invoicing is on; worked by
+/// AgtQueueService with backoff.
+model AgtSubmission {
+  id                     String         @id @default(cuid())
+  businessId             String
+  documentId             String         @unique
+  document               FiscalDocument @relation(fields: [documentId], references: [id])
+  status                 AgtStatus      @default(QUEUED)
+  /// AGT's requestID once sent (one request carries up to 30 documents).
+  requestId              String?
+  /// Sends tried, and status checks made for the current request.
+  attempts               Int            @default(0)
+  polls                  Int            @default(0)
+  /// When the queue may next send it or ask about it.
+  nextAttemptAt          DateTime       @default(now())
+  /// The last failure (network, HTTP, request-level AGT error).
+  lastError              String?
+  /// AGT's errors for this document: [{ code, description }].
+  errors                 Json?
+  /// Sent as a correction (documentStatus C) of this rejected document number.
+  correctionOfDocumentNo String?
+  /// For a rejected one: the document that corrected it.
+  correctedByDocumentId  String?
+  sentAt                 DateTime?
+  decidedAt              DateTime?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  @@index([status, nextAttemptAt])
+  @@index([businessId, status])
+  @@map("agt_submissions")
 }

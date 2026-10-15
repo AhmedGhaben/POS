@@ -14,6 +14,7 @@ import {
   terminalSeriesCode,
 } from "./fiscal-format";
 import { hashExcerpt, hashMessage, SIGNATURE_PROVIDER, type SignatureProvider } from "./signature";
+import { AGT_DOCUMENT_TYPES, agtFlagOn } from "../agt/agt-config";
 
 type Tx = Prisma.TransactionClient;
 
@@ -27,6 +28,8 @@ export interface IssuerContext {
   /** Frozen on the document. */
   seller: Prisma.InputJsonObject;
   finalConsumerTaxId: string;
+  /** Documents also go to AGT (phase 9: the feature flag and the business's e-invoicing setting). */
+  eInvoicing: boolean;
 }
 
 export interface Buyer {
@@ -99,6 +102,7 @@ export class FiscalService {
       timeZone: fiscalTimeZone(store.timezone, config?.timeZone),
       currency: b.currency,
       finalConsumerTaxId: config?.finalConsumerTaxId ?? "999999999",
+      eInvoicing: !!config && b.eInvoicingActive && agtFlagOn(),
       seller: {
         name: b.name,
         legalName: b.legalName,
@@ -441,6 +445,10 @@ export class FiscalService {
       include: DOCUMENT_INCLUDE,
     });
     await tx.documentSeries.update({ where: { id: series.id }, data: { nextNumber: number + 1, lastHash: hash } });
+    // E-invoicing: queued for AGT with the document (sent by AgtQueueService).
+    if (issuer.eInvoicing && AGT_DOCUMENT_TYPES.includes(input.documentType)) {
+      await tx.agtSubmission.create({ data: { businessId: issuer.businessId, documentId: document.id } });
+    }
     return document;
   }
 

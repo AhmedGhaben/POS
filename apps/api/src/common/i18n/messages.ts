@@ -97,6 +97,24 @@ const EXACT: Record<string, Translations> = {
   "Store not found": { "pt-PT": "Loja não encontrada", "pt-BR": "Loja não encontrada" },
   "Choose a store": { "pt-PT": "Escolha uma loja", "pt-BR": "Escolha uma loja" },
   "Purchase not found": { "pt-PT": "Compra não encontrada", "pt-BR": "Compra não encontrada" },
+  // AGT e-invoicing
+  "Submission not found": { "pt-PT": "Envio não encontrado", "pt-BR": "Envio não encontrado" },
+  "Only documents waiting to be sent can be retried": {
+    "pt-PT": "Só se pode reenviar documentos que aguardam envio",
+    "pt-BR": "Só é possível reenviar documentos aguardando envio",
+  },
+  "Only a rejected document not yet corrected can be corrected": {
+    "pt-PT": "Só se pode corrigir um documento rejeitado ainda não corrigido",
+    "pt-BR": "Só é possível corrigir um documento rejeitado ainda não corrigido",
+  },
+  "The correcting document must be a new document not yet sent to AGT": {
+    "pt-PT": "O documento de correção tem de ser um documento novo ainda não enviado à AGT",
+    "pt-BR": "O documento de correção precisa ser um documento novo ainda não enviado à AGT",
+  },
+  "The correcting document must be of the same type": {
+    "pt-PT": "O documento de correção tem de ser do mesmo tipo",
+    "pt-BR": "O documento de correção precisa ser do mesmo tipo",
+  },
   // Credit, receipts and payables
   "The payment is more than what is owed": { "pt-PT": "O pagamento é superior ao valor em dívida", "pt-BR": "O pagamento é maior do que o valor devido" },
   "A payment can only go to this account's open documents, once each": {

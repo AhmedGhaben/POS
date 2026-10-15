@@ -16,6 +16,7 @@ export async function deleteBusiness(prisma: PrismaService, businessId: string):
     prisma.customerPaymentAllocation.deleteMany({ where: { payment: { businessId } } }),
     prisma.customerPayment.deleteMany({ where: { businessId } }),
     prisma.documentPrint.deleteMany({ where: { document: { businessId } } }),
+    prisma.agtSubmission.deleteMany({ where: { businessId } }),
     prisma.fiscalDocumentLineTax.deleteMany({ where: { line: { document: { businessId } } } }),
     prisma.fiscalDocumentLine.deleteMany({ where: { document: { businessId } } }),
     prisma.fiscalDocument.deleteMany({ where: { businessId } }),

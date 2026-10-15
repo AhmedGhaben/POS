@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -332,6 +332,9 @@ export function SettingsPage() {
                           <div>
                             <FormLabel>{t("agt.eInvoicing")}</FormLabel>
                             <FormDescription>{t("agt.eInvoicingHint")}</FormDescription>
+                            <Link to="/agt" className="text-sm font-medium underline underline-offset-4">
+                              {t("agt.openQueue")}
+                            </Link>
                           </div>
                         </div>
                       </FormItem>
