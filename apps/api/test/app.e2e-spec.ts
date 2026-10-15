@@ -3,6 +3,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { ensureShift } from "./shift-helper";
+import { saleTotal } from "./sale-total";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
 
 /**
@@ -98,8 +99,7 @@ describe("POS API (e2e)", () => {
     expect(before).toBeDefined();
 
     const quantity = 2;
-    const lineSubtotal = Number(product.sellPrice) * quantity;
-    const total = lineSubtotal + (lineSubtotal * Number(product.taxRate ?? 0)) / 100;
+    const total = await saleTotal(app, STORE_ID, product, quantity);
 
     const saleRes = await request(app.getHttpServer())
       .post("/sales")

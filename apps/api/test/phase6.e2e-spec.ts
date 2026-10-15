@@ -3,6 +3,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { ensureShift } from "./shift-helper";
+import { saleTotal } from "./sale-total";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
 
 /**
@@ -119,8 +120,7 @@ describe("POS API Phase 6 (e2e)", () => {
       .expect(200);
     const product = productsRes.body[0];
     // Only costPrice is redacted for a cashier — sellPrice/taxRate are still present.
-    const lineSubtotal = Number(product.sellPrice);
-    const total = lineSubtotal + (lineSubtotal * Number(product.taxRate ?? 0)) / 100;
+    const total = await saleTotal(app, STORE_ID, product, 1);
 
     const saleRes = await request(app.getHttpServer())
       .post("/sales")

@@ -6,6 +6,8 @@ import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter
 import { PrismaService } from "../src/prisma/prisma.service";
 import { deleteBusiness } from "./cleanup";
 import { ensureShift } from "./shift-helper";
+import { localDateTime } from "../src/fiscal/fiscal-format";
+import { addDays } from "../src/fiscal/saft/period";
 
 /** A 1x1 PNG. */
 const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
@@ -267,10 +269,11 @@ describe("Angola phase 6: products, tax and stock (e2e)", () => {
     });
 
     it("stock at a date: today has it, at its book value; the day before it didn't exist", async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      // Calendar dates in the store's time zone (Luanda), not UTC's.
+      const today = localDateTime(new Date(), "Africa/Luanda").date;
       const rows = (await http().get(`/stores/${storeId}/inventory/at?date=${today}`).set(auth(ownerToken)).expect(200)).body;
       expect(rows.find((r: { productId: string }) => r.productId === item.id)).toMatchObject({ quantity: "38", averageCost: "130", value: "4940.00", inventoryType: "M", productType: "P" });
-      const yesterday = new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10);
+      const yesterday = addDays(today, -1);
       const before = (await http().get(`/stores/${storeId}/inventory/at?date=${yesterday}`).set(auth(ownerToken)).expect(200)).body;
       expect(before.find((r: { productId: string }) => r.productId === item.id)).toBeUndefined();
       await http().get(`/stores/${storeId}/inventory/at?date=31-12-2025`).set(auth(ownerToken)).expect(400);
