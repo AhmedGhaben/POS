@@ -35,6 +35,7 @@ import { PermissionsModule } from "./common/permissions/permissions.module";
 import { TillAuthModule } from "./till/till-auth.module";
 import { OverridesModule } from "./overrides/overrides.module";
 import { CompanyModule } from "./company/company.module";
+import { FiscalModule } from "./fiscal/fiscal.module";
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { CompanyModule } from "./company/company.module";
     PrismaModule,
     PermissionsModule,
     OverridesModule,
+    FiscalModule,
     CompanyModule,
     TillAuthModule,
     AuthModule,

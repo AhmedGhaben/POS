@@ -11,6 +11,7 @@ import { VoidSaleDto } from "./dto/void-sale.dto";
 import { priceSaleCents, unitDecimals, type DiscountInput, type PricedSale } from "./pricing";
 import { countryConfig, lineTax, type IvaRegime, type LineTax } from "../countries";
 import { recordMovement } from "../stock/stock";
+import { buyerOf, DOCUMENT_SUMMARY, FiscalService } from "../fiscal/fiscal.service";
 
 /** How far an offline sale's clock may run ahead of the server's. */
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
@@ -59,6 +60,8 @@ const SALE_INCLUDE = {
   payments: true,
   cashier: PERSON,
   voidedBy: PERSON,
+  fiscalDocuments: DOCUMENT_SUMMARY,
+  customer: { select: { id: true, name: true, taxId: true, isFinalConsumer: true } },
 } satisfies Prisma.SaleInclude;
 
 /**
@@ -86,6 +89,7 @@ export class SalesService {
     private readonly mail: MailService,
     private readonly permissions: PermissionsService,
     private readonly overrides: OverridesService,
+    private readonly fiscal: FiscalService,
   ) {}
 
   async findByStore(storeId: string) {
@@ -250,10 +254,15 @@ export class SalesService {
       return { method: p.method, amount, tendered, change };
     });
 
-    const terminalId = await this.resolveTerminal(businessId, dto.terminalId);
+    const terminal = await this.resolveTerminal(businessId, dto.terminalId);
+    const terminalId = terminal?.id ?? null;
     // The shift was opened before this sale (the till uploads in order).
     const shift = await this.saleShift(dto, cashierId, terminalId);
     const customerId = dto.customerId || (await this.finalConsumerId(businessId));
+    // The buyer and seller frozen on the sale's Factura-Recibo.
+    const buyer = await this.prisma.customer.findFirst({ where: { id: customerId, businessId } });
+    if (!buyer) throw new NotFoundException("Customer not found");
+    const issuer = await this.fiscal.issuer(businessId, dto.storeId);
     const createdAt = offline ? clampToNow(new Date(offline.createdAt)) : undefined;
     let sale: Prisma.SaleGetPayload<{ include: typeof SALE_INCLUDE }>;
     try {
@@ -315,7 +324,19 @@ export class SalesService {
         if (movementIds.length > 0) {
           await tx.stockMovement.updateMany({ where: { id: { in: movementIds } }, data: { saleId: created.id } });
         }
-        return created;
+        // Where sales are fiscal documents (the store's country has a fiscal
+        // config: Angola), every completed sale is a Factura-Recibo, numbered
+        // by the till that rang it up (or the store's series) and signed.
+        if (issuer.config) await this.fiscal.issueForSale(tx, {
+          issuer,
+          saleId: created.id,
+          terminal,
+          userId: cashierId,
+          buyer: buyerOf(buyer),
+          requested: dto.fiscal,
+          proformaId: dto.proformaId,
+        });
+        return tx.sale.findUniqueOrThrow({ where: { id: created.id }, include: SALE_INCLUDE });
       });
     } catch (error) {
       // Two copies of the same sale raced and the other one won. Usually a
@@ -478,6 +499,8 @@ export class SalesService {
           },
         });
         if (count === 0) return;
+        // Its Factura-Recibo is annulled (status A), never deleted.
+        await this.fiscal.annulForSale(tx, sale.id, dto.reason, userId, voidedAt < sale.createdAt ? sale.createdAt : voidedAt, dto.note);
         for (const li of sale.lineItems) {
           if (!li.product.trackStock) continue;
           await recordMovement(tx, {
@@ -508,16 +531,16 @@ export class SalesService {
 
   /** A till that's been removed is ignored rather than failing a sale that
    * already happened. */
-  private async resolveTerminal(businessId: string, terminalId?: string): Promise<string | null> {
+  private async resolveTerminal(businessId: string, terminalId?: string): Promise<{ id: string; code: string } | null> {
     if (!terminalId) return null;
     const terminal = await this.prisma.terminal.findFirst({
       where: { id: terminalId, businessId },
-      select: { id: true },
+      select: { id: true, code: true },
     });
     if (!terminal) {
       this.logger.warn(`Ignoring unknown terminal ${terminalId} on a sale`);
     }
-    return terminal?.id ?? null;
+    return terminal ?? null;
   }
 
   private async emailReceiptIfRequested(

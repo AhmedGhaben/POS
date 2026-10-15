@@ -5,6 +5,7 @@ import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { generateOpaqueToken } from "../common/utils/tokens";
 import { toBusinessSettings } from "../businesses/businesses.service";
 import { withSoldNames } from "../sales/sales.service";
+import { countryConfig } from "../countries";
 import { IssueInvoiceDto } from "./dto/issue-invoice.dto";
 import { ListInvoicesDto } from "./dto/list-invoices.dto";
 
@@ -81,6 +82,11 @@ export class InvoicesService {
     if (sale.status === "VOIDED") throw new BadRequestException("This sale was cancelled");
 
     const business = await this.prisma.business.findUniqueOrThrow({ where: { id: user.businessId } });
+    // Where sales are fiscal documents (Angola), each sale already is its
+    // Factura-Recibo; these older invoices stay readable but no new ones.
+    if (countryConfig(business.country)) {
+      throw new BadRequestException("Every sale already has its Factura-Recibo; print that instead");
+    }
     const settings = toBusinessSettings(business);
     const seller: SellerSnapshot = {
       name: settings.name,

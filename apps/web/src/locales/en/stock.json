@@ -72,7 +72,8 @@
     "refundMethod": "Refund by",
     "cashNeedsShift": "Cash refunds come out of a drawer: do them at a till with your shift open, or refund another way.",
     "approval": "Process a return / credit note",
-    "notApproved": "The return wasn't approved."
+    "notApproved": "The return wasn't approved.",
+    "document": "Credit note"
   },
   "stockAt": {
     "title": "Stock at a date",

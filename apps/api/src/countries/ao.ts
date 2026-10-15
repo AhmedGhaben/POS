@@ -35,6 +35,8 @@ export const AO: CountryConfig = {
   currency: "AOA",
   locale: "pt-AO",
   defaultLanguage: "pt-AO",
+  timeZone: "Africa/Luanda",
+  currencyWords: { singular: "kwanza", plural: "kwanzas", centSingular: "cêntimo", centPlural: "cêntimos" },
   // Alphanumeric, e.g. 000415195LA035 (companies) or 9-10 digits.
   taxIdPattern: /^[A-Z0-9]{9,14}$/i,
   taxIdLabel: "NIF",

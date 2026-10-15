@@ -3,6 +3,8 @@ import { useAuthStore } from "@/features/auth/store";
 import { SlipHeader } from "@/features/documents/components/SlipHeader";
 import { useDocumentLanguage } from "@/i18n/use-document-language";
 import { discountLabel } from "../discount-label";
+import { ReceiptFiscalBottom, ReceiptFiscalTop } from "@/features/fiscal/components/ReceiptFiscal";
+import { saleDocument } from "@/features/fiscal/sale-document";
 
 interface ReceiptProps {
   sale: SaleDto;
@@ -39,9 +41,10 @@ export function Receipt({ sale, store, customer, copy }: ReceiptProps) {
         </div>
       )}
       {copy && <p className="text-center font-bold">{t("receipt.copy")}</p>}
+      <ReceiptFiscalTop sale={sale} customer={customer} />
       <p className="text-center">{dateTime(sale.createdAt)}</p>
       <p className="text-center">{t("receipt.number", { number: sale.receiptNumber })}</p>
-      {customer && <p className="text-center">{customer.name}</p>}
+      {customer && !saleDocument(sale) && <p className="text-center">{customer.name}</p>}
       <hr className="my-2 border-dashed" />
       {sale.lineItems.map((line) => {
         const lineDiscount = Number(line.lineDiscountAmount ?? 0);
@@ -112,6 +115,7 @@ export function Receipt({ sale, store, customer, copy }: ReceiptProps) {
       {Number(sale.discountTotal) > 0 && (
         <p className="mt-2 text-center">{t("receipt.saved", { amount: money(sale.discountTotal) })}</p>
       )}
+      <ReceiptFiscalBottom sale={sale} />
       <p className="mt-2 whitespace-pre-line text-center">{business?.receiptFooter || t("receipt.thankYou")}</p>
     </div>
   );

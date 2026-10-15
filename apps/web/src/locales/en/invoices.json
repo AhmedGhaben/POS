@@ -38,5 +38,25 @@
     },
     "viewPrint": "View / print",
     "empty": "No invoices yet. Issue one from the POS after a sale (\"A4 invoice\"), or for a past sale here."
+  },
+  "fiscal": {
+    "document": "Document",
+    "reprintNote": "Printed from the document as it was issued; it can't be changed.",
+    "type": "Document type",
+    "allTypes": "All types",
+    "from": "From",
+    "to": "To",
+    "searchPlaceholder": "Number, customer or NIF",
+    "number": "Number",
+    "customer": "Customer",
+    "tax": "IVA",
+    "annulled": "Annulled",
+    "invoiced": "Invoiced",
+    "empty": "No documents yet.",
+    "subtitle": "Every sale is a Factura-Recibo; returns are credit notes. Documents can't be changed: a sale is cancelled (annulled) or corrected with a return.",
+    "tab": "Fiscal documents",
+    "legacyTab": "Older invoices (INV)",
+    "legacyNote": "Invoices issued before sales became fiscal documents.",
+    "sellProforma": "Sell in the till"
   }
 }

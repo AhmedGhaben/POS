@@ -108,6 +108,33 @@ commit and push.
     `angola-phase6.e2e-spec.ts` (18), web unit 110 (pricing with IVA,
     decimal quantities, product tax choice), desktop e2e
     `angola-phase6.spec.ts` (5).
+- **Phase 8 (fiscal documents) is built** (2026-10-15). Migration
+  `20261015090000_angola_phase8_fiscal_documents` (with the immutability
+  triggers: they aren't in the Prisma schema, so `migrate diff` won't show
+  them; test clean-up sets `pos.allow_fiscal_delete`). Notes:
+  - `src/fiscal/`: `signature.ts` (SignatureProvider, RSA-SHA1, test
+    vectors with the test key in `fiscal/testing/`, never valid in
+    production), `fiscal.service.ts` (series, numbering, hash chain, FR /
+    NC / PF, annulment), `document-lines.ts` (amounts without tax per line).
+    Issued only where the store's country has a fiscal config (Angola).
+  - Numbering on the till: the till sends `fiscal: { series, number }`; the
+    server refuses a number ahead (409 FISCAL_NUMBER_AHEAD, the queue
+    waits: 409s are now retried) or used (422 FISCAL_NUMBER_USED with the
+    next number; the till adopts it and retries once). A till that never
+    read its series doesn't number (the server does), so a reinstall can't
+    reuse numbers. The hash is computed on the server when the sale
+    arrives (the private key stays there); an offline receipt has the
+    number but not the 4 hash characters.
+  - Annulment reasons: the till's cancel reasons map to a Portuguese text
+    (`ANNULMENT_REASONS`). The original spec's "reason I/N" isn't in the
+    documents we have: to confirm.
+  - The AGT QR link is longer than QR version 4 holds: error correction M,
+    smallest version that fits, drawn as inline SVG (prints immediately).
+  - New businesses still default to USD even in Angola (registration):
+    to change with the onboarding.
+  - Tests: API unit 174 (hash vectors, chain, lines, dates), API e2e incl.
+    `angola-phase8.e2e-spec.ts` (12), web unit 118 (amount in words, till
+    numbering, queue waits on 409), desktop e2e `angola-phase8.spec.ts` (3).
 
 ## Decisions (from the owner, 2026-10-13)
 

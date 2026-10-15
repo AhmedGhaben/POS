@@ -163,7 +163,10 @@ describe("Cancelling a sale (e2e)", () => {
     expect(r1.body.message).toContain("Use Returns instead");
 
     const invoiced = (await sell()).body;
-    await http().post(`/sales/${invoiced.id}/invoice`).set(auth(ownerToken)).send({ buyerName: "Acme" }).expect(201);
+    // An invoice from before sales were fiscal documents (they can't be issued now in Angola).
+    await prisma.invoice.create({
+      data: { businessId: businessId!, saleId: invoiced.id, year: 2026, sequence: 1, number: "INV-2026-0001", seller: {}, buyerName: "Acme" },
+    });
     await voidSale(ownerToken, { saleId: invoiced.id }).expect(400);
 
     const old = (await sell()).body;

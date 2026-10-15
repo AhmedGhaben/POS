@@ -11,6 +11,12 @@ export async function deleteBusiness(prisma: PrismaService, businessId: string):
   const byUsers = { userId: { in: users } };
 
   await prisma.$transaction([
+    // Fiscal documents are immutable; only a clean-up session may delete them.
+    prisma.$executeRaw`SELECT set_config('pos.allow_fiscal_delete', 'on', true)`,
+    prisma.fiscalDocumentLineTax.deleteMany({ where: { line: { document: { businessId } } } }),
+    prisma.fiscalDocumentLine.deleteMany({ where: { document: { businessId } } }),
+    prisma.fiscalDocument.deleteMany({ where: { businessId } }),
+    prisma.documentSeries.deleteMany({ where: { businessId } }),
     prisma.invoice.deleteMany({ where: { businessId } }),
     prisma.invoiceCounter.deleteMany({ where: { businessId } }),
     prisma.returnLineItem.deleteMany({ where: { return: inStores } }),

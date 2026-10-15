@@ -37,12 +37,11 @@ function buildPrismaMock(
 ) {
   // Mimics what Prisma actually returns for a nested `{ create: [...] }` write
   // under `include`: the resolved rows, not the write-input wrapper.
-  const saleCreate = jest.fn().mockImplementation(({ data }) => ({
-    id: "sale-1",
-    ...data,
-    lineItems: data.lineItems.create,
-    payments: data.payments.create,
-  }));
+  let created: unknown = null;
+  const saleCreate = jest.fn().mockImplementation(({ data }) => {
+    created = { id: "sale-1", ...data, lineItems: data.lineItems.create, payments: data.payments.create };
+    return created;
+  });
   const tx = {
     inventoryItem: {
       findUnique: jest.fn().mockResolvedValue({ quantity: stockQty }),
@@ -54,7 +53,8 @@ function buildPrismaMock(
       create: jest.fn(({ data }) => ({ id: "mov-1", ...data })),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
-    sale: { create: saleCreate },
+    // The sale is read back after its Factura-Recibo is issued.
+    sale: { create: saleCreate, findUniqueOrThrow: jest.fn(() => created) },
   };
   return {
     product: { findMany: jest.fn().mockResolvedValue([product]) },
@@ -72,10 +72,15 @@ function buildPrismaMock(
   };
 }
 
+function buildFiscalMock() {
+  return { issuer: jest.fn().mockResolvedValue({}), issueForSale: jest.fn().mockResolvedValue({}), annulForSale: jest.fn() };
+}
+
 function buildService(prisma: unknown, opts: { permissions?: Permission[]; overrides?: Record<string, jest.Mock> } = {}) {
   const permissions = { hasPermission: jest.fn(async (_u: string, _r: string, p: Permission) => (opts.permissions ?? []).includes(p)) };
   const overrides = opts.overrides ?? { consume: jest.fn(), recordOffline: jest.fn() };
-  return { service: new SalesService(prisma as any, buildMailMock() as any, permissions as any, overrides as any), overrides };
+  const fiscal = buildFiscalMock();
+  return { service: new SalesService(prisma as any, buildMailMock() as any, permissions as any, overrides as any, fiscal as any), overrides, fiscal };
 }
 
 function saleDto(extra: Record<string, unknown> = {}) {

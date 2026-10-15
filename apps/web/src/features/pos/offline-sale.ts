@@ -97,6 +97,10 @@ export function buildOfflineSale(localId: string, dto: CreateSaleDto, lines: Car
     status: SaleStatus.COMPLETED,
     createdAt: dto.offline?.createdAt ?? new Date().toISOString(),
     createdOffline: true,
+    // The till numbered it: the receipt carries its real number (its hash comes when it uploads).
+    fiscalDocuments: dto.fiscal
+      ? [{ id: "", documentType: "FR", documentNo: `FR ${dto.fiscal.series}/${dto.fiscal.number}`, status: "N", hashExcerpt: "", hashControl: "0" }]
+      : undefined,
     pricesIncludeTax: priced.taxIncluded,
     queued: true,
     clientId: localId,

@@ -72,7 +72,8 @@
     "refundMethod": "Reembolso por",
     "cashNeedsShift": "Reembolsos em dinheiro saem de uma gaveta: faça-os numa caixa com o seu turno aberto, ou reembolse de outra forma.",
     "approval": "Fazer uma devolução / nota de crédito",
-    "notApproved": "A devolução não foi autorizada."
+    "notApproved": "A devolução não foi autorizada.",
+    "document": "Nota de crédito"
   },
   "stockAt": {
     "title": "Stock numa data",

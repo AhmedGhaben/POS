@@ -412,6 +412,16 @@ export interface CreateSaleDto {
   overrides?: SaleOverrideDto[];
   /** Offline: approvals the till checked itself (approver's PIN). */
   offlineOverrides?: OfflineOverrideDto[];
+  /** The number the till gave the sale's Factura-Recibo in its own series. */
+  fiscal?: FiscalNumberDto;
+  /** The proforma this sale invoices. */
+  proformaId?: string;
+}
+
+export interface FiscalNumberDto {
+  /** e.g. "POS001-2026" */
+  series: string;
+  number: number;
 }
 
 /** A manager's approval (POST /overrides) used by a sale. */
@@ -689,6 +699,8 @@ export interface ReturnDto {
   totalRefund: string;
   createdAt: string;
   lineItems: ReturnLineItemDto[];
+  /** Its Nota de Crédito (where sales are fiscal documents). */
+  fiscalDocument?: FiscalDocumentSummaryDto | null;
 }
 
 export interface ReportSummaryDto {
@@ -778,6 +790,10 @@ export interface SaleDto {
   /** Client-only: a receipt built on the till for a sale still waiting in the outbox. */
   queued?: boolean;
   lineItems: SaleLineItemDto[];
+  /** Its Factura-Recibo (where sales are fiscal documents; absent on older sales). */
+  fiscalDocuments?: FiscalDocumentSummaryDto[];
+  /** The buyer (Consumidor Final when none was chosen). */
+  customer?: { id: string; name: string; taxId: string | null; isFinalConsumer?: boolean } | null;
   payments: SalePaymentDto[];
   /** Who rang it up (sales from the server). */
   cashier?: PersonRefDto;
@@ -1030,4 +1046,147 @@ export interface ShiftDto {
   store: { id: string; name: string };
   /** On single-shift answers (open, close, current, report). */
   summary?: ShiftSummaryDto;
+}
+
+// ---- Fiscal documents (docs/plans/ANGOLA.md, phase 8) ----
+
+/** FR Factura-Recibo, FT Factura, NC Nota de Crédito, ND Nota de Débito, RC Recibo, PF Factura Pró-forma. */
+export type FiscalDocumentType = "FR" | "FT" | "NC" | "ND" | "RC" | "PF";
+
+/** N normal, A annulled, F invoiced (proformas). */
+export type FiscalDocumentStatus = "N" | "A" | "F";
+
+export interface FiscalDocumentSummaryDto {
+  id: string;
+  documentType: FiscalDocumentType;
+  documentNo: string;
+  status: FiscalDocumentStatus;
+  /** Characters 1, 11, 21, 31 of the hash. */
+  hashExcerpt: string;
+  /** "0" until the software is certified. */
+  hashControl: string;
+  /** The seller when issued (absent on a receipt the till made offline). */
+  seller?: FiscalSellerDto;
+}
+
+export interface FiscalDocumentLineTaxDto {
+  id: string;
+  taxType: string;
+  taxCountryRegion: string;
+  taxCode: string;
+  percentage: string;
+  amount: string;
+  exemptionCode: string | null;
+  exemptionReason: string | null;
+}
+
+export interface FiscalDocumentLineDto {
+  id: string;
+  lineNumber: number;
+  productId: string | null;
+  productCode: string;
+  productDescription: string;
+  quantity: string;
+  unit: string;
+  /** Without tax, after discounts. */
+  unitPrice: string;
+  discountAmount: string;
+  netAmount: string;
+  taxAmount: string;
+  grossAmount: string;
+  referenceDocumentNo: string | null;
+  referenceLineNumber: number | null;
+  taxes: FiscalDocumentLineTaxDto[];
+}
+
+/** The seller as it was when the document was issued. */
+export interface FiscalSellerDto {
+  name: string;
+  legalName: string | null;
+  taxId: string | null;
+  registrationNumber: string | null;
+  legalForm: string | null;
+  address: string | null;
+  city: string | null;
+  postalCode: string | null;
+  province: string | null;
+  country: string;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  logoUrl: string | null;
+  eacCode: string | null;
+  invoiceFooter: string | null;
+  currency: string;
+  store: { id: string; name: string; address: string | null; city: string | null; province: string | null; phone: string | null };
+  ivaRegime: IvaRegime;
+  /** The software's AGT certificate when issued; null: "sem validade fiscal". */
+  certificate: string | null;
+}
+
+export interface FiscalDocumentDto {
+  id: string;
+  businessId: string;
+  storeId: string;
+  terminalId: string | null;
+  documentType: FiscalDocumentType;
+  number: number;
+  documentNo: string;
+  status: FiscalDocumentStatus;
+  statusDate: string;
+  statusReason: string | null;
+  statusReasonCode: string | null;
+  invoiceDate: string;
+  systemEntryDate: string;
+  hash: string;
+  hashControl: string;
+  hashExcerpt: string;
+  seller: FiscalSellerDto;
+  customerId: string | null;
+  buyerName: string;
+  buyerTaxId: string;
+  buyerAddress: { address: string | null; city: string | null; postalCode: string | null; province: string | null; country: string } | null;
+  currency: string;
+  pricesIncludeTax: boolean;
+  netTotal: string;
+  taxPayable: string;
+  grossTotal: string;
+  discountTotal: string;
+  payments: { method: PaymentMethod; mechanism: string; amount: string }[] | null;
+  reason: string | null;
+  saleId: string | null;
+  returnId: string | null;
+  referencedDocument: { id: string; documentNo: string; documentType: FiscalDocumentType; invoiceDate: string } | null;
+  lines: FiscalDocumentLineDto[];
+  createdAt: string;
+}
+
+export interface FiscalDocumentListItemDto {
+  id: string;
+  documentType: FiscalDocumentType;
+  documentNo: string;
+  status: FiscalDocumentStatus;
+  invoiceDate: string;
+  systemEntryDate: string;
+  buyerName: string;
+  buyerTaxId: string;
+  grossTotal: string;
+  taxPayable: string;
+  storeId: string;
+  saleId: string | null;
+}
+
+/** GET /fiscal-documents/series/till/:terminalId */
+export interface TillSeriesDto {
+  terminalCode: string;
+  /** The till's series prefix, e.g. "POS001" (series "POS001-2026"). */
+  prefix: string;
+  series: { documentType: FiscalDocumentType; code: string; year: number; nextNumber: number }[];
+}
+
+export interface CreateProformaDto {
+  storeId: string;
+  customerId?: string;
+  lineItems: { productId: string; quantity: number; unitPrice?: number; discount?: DiscountInput | null }[];
+  discount?: DiscountInput | null;
 }

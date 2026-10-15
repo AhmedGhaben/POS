@@ -3,15 +3,19 @@ import { PaymentMethod, Prisma, ShiftStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateReturnDto } from "./dto/create-return.dto";
 import { recordMovement } from "../stock/stock";
+import { DOCUMENT_SUMMARY, FiscalService } from "../fiscal/fiscal.service";
 
 @Injectable()
 export class ReturnsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly fiscal: FiscalService,
+  ) {}
 
   findByStore(storeId: string) {
     return this.prisma.return.findMany({
       where: { storeId },
-      include: { lineItems: { include: { product: true } }, sale: true },
+      include: { lineItems: { include: { product: true } }, sale: true, fiscalDocument: DOCUMENT_SUMMARY },
       orderBy: { createdAt: "desc" },
       take: 50,
     });
@@ -20,7 +24,7 @@ export class ReturnsService {
   async create(processedById: string, dto: CreateReturnDto) {
     const sale = await this.prisma.sale.findUnique({
       where: { id: dto.saleId },
-      include: { lineItems: true, returns: { include: { lineItems: true } } },
+      include: { lineItems: true, returns: { include: { lineItems: true } }, store: { select: { businessId: true } } },
     });
     if (!sale || sale.storeId !== dto.storeId) {
       throw new NotFoundException("Sale not found for this store");
@@ -54,7 +58,8 @@ export class ReturnsService {
 
       // What the customer actually paid per item: after discounts, with tax.
       const unitPrice = saleLine.unitPrice;
-      const lineTotal = saleLine.lineTotal.div(saleLine.quantity).mul(li.quantity).toDecimalPlaces(2);
+      // Same proportion as the credit note's line (fiscal/document-lines.ts#partOfLine).
+      const lineTotal = saleLine.lineTotal.mul(li.quantity).div(saleLine.quantity).toDecimalPlaces(2);
       totalRefund = totalRefund.add(lineTotal);
 
       return {
@@ -72,13 +77,14 @@ export class ReturnsService {
     const shift = dto.shiftClientId
       ? await this.prisma.shift.findUnique({
           where: { storeId_clientId: { storeId: dto.storeId, clientId: dto.shiftClientId } },
-          select: { id: true, status: true },
+          select: { id: true, status: true, terminal: { select: { id: true, code: true } } },
         })
       : null;
     if (refundMethod === PaymentMethod.CASH && shift?.status !== ShiftStatus.OPEN) {
       throw new BadRequestException("A cash refund has to be done at a till with an open shift");
     }
 
+    const issuer = await this.fiscal.issuer(sale.store.businessId, dto.storeId);
     const products = await this.prisma.product.findMany({
       where: { id: { in: dto.lineItems.map((li) => li.productId) } },
       select: { id: true, name: true, costPrice: true, trackStock: true },
@@ -114,7 +120,18 @@ export class ReturnsService {
           userId: processedById,
         });
       }
-      return created;
+      // The Nota de Crédito, in the till's series when it was done at a till.
+      if (issuer.config) await this.fiscal.issueCreditNote(tx, {
+        issuer,
+        returnId: created.id,
+        terminal: shift?.status === ShiftStatus.OPEN ? (shift.terminal ?? null) : null,
+        userId: processedById,
+        reason: dto.reason ?? null,
+      });
+      return tx.return.findUniqueOrThrow({
+        where: { id: created.id },
+        include: { lineItems: { include: { product: true } }, fiscalDocument: DOCUMENT_SUMMARY },
+      });
     });
   }
 }

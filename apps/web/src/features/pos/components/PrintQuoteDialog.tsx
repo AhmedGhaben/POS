@@ -1,7 +1,11 @@
 import * as React from "react";
-import { Printer } from "lucide-react";
+import { FileCheck, Printer } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import type { CustomerDto, DiscountInput, StoreDto } from "@pos/shared";
+import { countryConfig, type CustomerDto, type DiscountInput, type StoreDto } from "@pos/shared";
+import { createProforma } from "@/features/fiscal/api";
+import { isWorkingOffline } from "@/features/pos/offline-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +26,8 @@ interface PrintQuoteDialogProps {
   saleDiscount?: DiscountInput | null;
   store: StoreDto | undefined;
   customer: CustomerDto | null;
+  /** A proforma was saved (numbered and signed): show it. */
+  onProforma?: (documentId: string) => void;
 }
 
 /** Scale of the A4 on-screen preview (210 mm ≈ 794 px). */
@@ -31,7 +37,7 @@ const A4_PREVIEW_SCALE = 0.55;
  * Prints the cart as a quote without creating a sale, taking payment or
  * touching stock. Nothing is saved, so it works offline.
  */
-export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = null, store, customer }: PrintQuoteDialogProps) {
+export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = null, store, customer, onProforma }: PrintQuoteDialogProps) {
   const { t } = useTranslation("pos");
   // The printed quote is for the customer: business language.
   const doc = useDocumentLanguage();
@@ -47,6 +53,23 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = nul
   }, [open, customer]);
 
   const docLines = React.useMemo(() => linesFromCart(lines, saleDiscount), [lines, saleDiscount]);
+  // Where sales are fiscal documents a quote can be kept as a Factura Pró-forma
+  // (numbered and signed on the server), and sold from later.
+  const fiscal = !!countryConfig(store?.country ?? null) && !isWorkingOffline();
+  const proformaMutation = useMutation({
+    mutationFn: () =>
+      createProforma({
+        storeId: store!.id,
+        customerId: customer && !customer.isFinalConsumer ? customer.id : undefined,
+        lineItems: lines.map((l) => ({ productId: l.product.id, quantity: l.quantity, unitPrice: l.unitPrice ?? undefined, discount: l.discount ?? null })),
+        discount: saleDiscount,
+      }),
+    onSuccess: (document) => {
+      onOpenChange(false);
+      onProforma?.(document.id);
+    },
+    onError: (error) => toast.error((error as Error).message),
+  });
   const reference = quoteReference(store?.id ?? "0000", issuedAt);
   const name = forName.trim() || undefined;
   const date = doc.longDate(issuedAt);
@@ -111,6 +134,11 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = nul
         <Button onClick={() => void printDocument()} disabled={lines.length === 0}>
           <Printer className="mr-2 h-4 w-4" /> {format === "receipt" ? t("quote.printSlip") : t("quote.printA4")}
         </Button>
+        {fiscal && store && (
+          <Button variant="outline" disabled={lines.length === 0 || proformaMutation.isPending} onClick={() => proformaMutation.mutate()}>
+            <FileCheck className="mr-2 h-4 w-4" /> {t("quote.saveProforma")}
+          </Button>
+        )}
 
         {open && <PrintArea format={format}>{format === "receipt" ? slip : a4}</PrintArea>}
       </DialogContent>

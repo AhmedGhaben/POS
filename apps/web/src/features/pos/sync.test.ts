@@ -82,6 +82,14 @@ describe("drainOutbox", () => {
     expect(h.db.get("c2")!.state).toBe("synced");
   });
 
+  it("a 409 (an earlier document number hasn't arrived yet) stops the run and keeps the entry waiting", async () => {
+    const h = harness([entry(1), entry(2)], () => new ApiError(409, "Document 58 of POS001-2026 came before 57"));
+    expect(await h.result).toEqual({ synced: 0, failed: 0, interrupted: true });
+    expect(h.db.get("c1")!.state).toBe("pending");
+    // Later sales never overtake it.
+    expect(h.uploaded).toEqual(["c1"]);
+  });
+
   it("skips failed entries until someone retries them", async () => {
     const h = harness([entry(1, "failed"), entry(2)], () => ({ id: "ok" }));
     await h.result;

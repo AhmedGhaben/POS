@@ -20,6 +20,9 @@ export function SlipHeader({ store }: { store: StoreDto | undefined }) {
       )}
       {businessName && <p className="text-center text-sm font-semibold">{businessName}</p>}
       <p className={businessName ? "text-center" : "text-center text-sm font-semibold"}>{storeName}</p>
+      {business?.legalName && business.legalName !== business.name && business.legalName !== storeName && (
+        <p className="text-center">{business.legalName}</p>
+      )}
       {store?.address && <p className="whitespace-pre-line text-center">{store.address}</p>}
       {store?.phone && <p className="text-center">{store.phone}</p>}
       {business?.taxId && <p className="text-center">{t("taxId", { id: business.taxId })}</p>}

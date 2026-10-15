@@ -2,7 +2,7 @@ import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FilePlus, Printer } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { SaleDto } from "@pos/shared";
+import { countryConfig, type SaleDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,8 @@ import { InvoiceDocument } from "@/features/invoices/components/InvoiceDocument"
 import { IssueInvoiceDialog } from "@/features/invoices/components/IssueInvoiceDialog";
 import { printDocument } from "@/features/desktop/printing";
 import { fetchSalesByStore } from "@/features/sales/api";
+import { FiscalDocumentsList } from "@/features/fiscal/components/FiscalDocumentsList";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate, formatDateTime } from "@/lib/format";
 
 const PAGE_SIZE = 25;
@@ -114,7 +116,38 @@ function PastSalePicker({ open, onClose, onPick }: { open: boolean; onClose: () 
   );
 }
 
+/**
+ * Where sales are fiscal documents (Angola) every sale already is its
+ * Factura-Recibo: this page lists those documents first, with the older
+ * INV invoices in their own tab. Elsewhere it's the invoices page as before.
+ */
 export function InvoicesPage() {
+  const { t } = useTranslation(["invoices", "common"]);
+  const fiscal = !!countryConfig(useAuthStore((s) => s.business?.country));
+  if (!fiscal) return <LegacyInvoices canIssue />;
+  return (
+    <div className="mx-auto max-w-5xl p-6">
+      <div className="mb-4">
+        <h1 className="text-2xl font-semibold">{t("common:nav.invoices")}</h1>
+        <p className="text-sm text-muted-foreground">{t("fiscal.subtitle")}</p>
+      </div>
+      <Tabs defaultValue="documents">
+        <TabsList>
+          <TabsTrigger value="documents">{t("fiscal.tab")}</TabsTrigger>
+          <TabsTrigger value="legacy">{t("fiscal.legacyTab")}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="documents" className="mt-4">
+          <FiscalDocumentsList />
+        </TabsContent>
+        <TabsContent value="legacy" className="mt-4">
+          <LegacyInvoices canIssue={false} embedded />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function LegacyInvoices({ canIssue, embedded = false }: { canIssue: boolean; embedded?: boolean }) {
   const { t } = useTranslation(["invoices", "common"]);
   const money = useMoney();
   const [page, setPage] = React.useState(1);
@@ -129,17 +162,19 @@ export function InvoicesPage() {
   const pageCount = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
+    <div className={embedded ? "" : "mx-auto max-w-4xl p-6"}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">{t("common:nav.invoices")}</h1>
+          {!embedded && <h1 className="text-2xl font-semibold">{t("common:nav.invoices")}</h1>}
           <p className="text-sm text-muted-foreground">
-            {t("page.subtitle")} {data ? t("page.total", { count: data.total }) : ""}
+            {embedded ? t("fiscal.legacyNote") : t("page.subtitle")} {data ? t("page.total", { count: data.total }) : ""}
           </p>
         </div>
-        <Button onClick={() => setPickerOpen(true)}>
-          <FilePlus className="mr-2 h-4 w-4" /> {t("page.pastSale")}
-        </Button>
+        {canIssue && (
+          <Button onClick={() => setPickerOpen(true)}>
+            <FilePlus className="mr-2 h-4 w-4" /> {t("page.pastSale")}
+          </Button>
+        )}
       </div>
 
       <Card>

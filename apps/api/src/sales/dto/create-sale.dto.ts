@@ -6,6 +6,8 @@ import {
   IsEnum,
   IsIn,
   IsISO8601,
+  IsInt,
+  Matches,
   IsNumber,
   IsOptional,
   IsString,
@@ -62,6 +64,16 @@ export class SaleLineItemInputDto {
   @ValidateNested()
   @Type(() => DiscountDto)
   discount?: DiscountDto;
+}
+
+/** The number the till gave the sale's document in its own series ("FR POS001-2026/57"). */
+export class FiscalNumberDto {
+  @Matches(/^[A-Z0-9]+-\d{4}$/)
+  series!: string;
+
+  @IsInt()
+  @Min(1)
+  number!: number;
 }
 
 /** Present when the till rang the sale up without reaching the server. */
@@ -152,4 +164,15 @@ export class CreateSaleDto {
   @ValidateNested()
   @Type(() => DiscountDto)
   discount?: DiscountDto;
+
+  /** A till numbers its own documents; without this the server numbers it. */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => FiscalNumberDto)
+  fiscal?: FiscalNumberDto;
+
+  /** The proforma this sale invoices (it becomes "invoiced"). */
+  @IsOptional()
+  @IsString()
+  proformaId?: string;
 }

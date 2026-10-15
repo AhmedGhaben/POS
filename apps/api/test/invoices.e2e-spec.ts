@@ -74,6 +74,9 @@ describe("Invoices (e2e)", () => {
       .body.id;
     // These tests price without tax (added at the till); new stores price with IVA in.
     await prisma.store.updateMany({ where: { businessId }, data: { pricesIncludeTax: false } });
+    // Legacy invoices are for countries where sales aren't fiscal documents.
+    await prisma.business.update({ where: { id: businessId }, data: { country: "XX" } });
+    await prisma.store.updateMany({ where: { businessId }, data: { country: "XX" } });
 
     await http()
       .patch("/businesses/me")

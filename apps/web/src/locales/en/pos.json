@@ -84,7 +84,8 @@
     "forLabel": "For (optional)",
     "forPlaceholder": "Customer or company name",
     "printSlip": "Print quote",
-    "printA4": "Print A4 quotation"
+    "printA4": "Print A4 quotation",
+    "saveProforma": "Save as proforma"
   },
   "drawer": {
     "title": "Open cash drawer",
@@ -201,5 +202,10 @@
     "last": "Last purchase",
     "recent": "Last sales",
     "offline": "Purchase history needs the server."
+  },
+  "proforma": {
+    "selling": "Selling proforma {{number}}: this sale invoices it.",
+    "detach": "Sell without it",
+    "notOpen": "Proforma {{number}} isn't open any more."
   }
 }

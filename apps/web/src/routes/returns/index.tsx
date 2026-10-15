@@ -21,6 +21,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createReturn, fetchReturns } from "@/features/returns/api";
+import { FiscalDocumentDialog } from "@/features/fiscal/components/FiscalDocumentDialog";
 import { useCurrentShift } from "@/features/shifts/shift-store";
 import { useHasPermission } from "@/features/auth/use-permission";
 import { approvalHeaders, requestApproval, type Approval } from "@/features/overrides/approval";
@@ -64,6 +65,7 @@ export function ReturnsPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const queryClient = useQueryClient();
 
+  const [viewingDocument, setViewingDocument] = React.useState<string | null>(null);
   const returnsQuery = useQuery({
     queryKey: ["returns", currentStoreId],
     queryFn: () => fetchReturns(currentStoreId!),
@@ -118,12 +120,14 @@ export function ReturnsPage() {
         approvalHeaders(approval),
       );
     },
-    onSuccess: () => {
+    onSuccess: (ret) => {
       queryClient.invalidateQueries({ queryKey: ["returns", currentStoreId] });
       queryClient.invalidateQueries({ queryKey: ["inventory", currentStoreId] });
       setDialogOpen(false);
       form.reset(defaultValues);
       toast.success(t("returns.done"));
+      // Its credit note, ready to print for the customer.
+      if (ret.fiscalDocument) setViewingDocument(ret.fiscalDocument.id);
     },
     onError: (error) => {
       toast.error((error as Error).message);
@@ -268,6 +272,7 @@ export function ReturnsPage() {
                 <TableHead>{t("columns.date")}</TableHead>
                 <TableHead>{t("columns.items")}</TableHead>
                 <TableHead>{t("returns.reason")}</TableHead>
+                <TableHead>{t("returns.document")}</TableHead>
                 <TableHead className="text-right">{t("returns.refund")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -279,12 +284,21 @@ export function ReturnsPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{ret.lineItems.length}</TableCell>
                   <TableCell className="text-muted-foreground">{ret.reason ?? "—"}</TableCell>
+                  <TableCell>
+                    {ret.fiscalDocument ? (
+                      <Button variant="link" className="h-auto p-0" onClick={() => setViewingDocument(ret.fiscalDocument!.id)}>
+                        {ret.fiscalDocument.documentNo}
+                      </Button>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">{money(ret.totalRefund)}</TableCell>
                 </TableRow>
               ))}
               {returnsQuery.data?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="p-6 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="p-6 text-center text-muted-foreground">
                     {t("returns.empty")}
                   </TableCell>
                 </TableRow>
@@ -293,6 +307,7 @@ export function ReturnsPage() {
           </Table>
         </CardContent>
       </Card>
+      <FiscalDocumentDialog documentId={viewingDocument} onClose={() => setViewingDocument(null)} />
     </div>
   );
 }

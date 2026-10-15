@@ -99,6 +99,10 @@ export interface CountryConfig {
   locale: string;
   /** Screen/document language for new businesses here. */
   defaultLanguage: string;
+  /** Dates on fiscal documents, for stores left on UTC. */
+  timeZone: string;
+  /** The currency in words, for amounts written out on documents. */
+  currencyWords: CurrencyWords;
   /** Tax ID pattern (alphanumeric in Angola, e.g. 000415195LA035). */
   taxIdPattern: RegExp;
   taxIdLabel: string;
@@ -127,6 +131,14 @@ export interface CountryConfig {
   inventoryTypes: { code: string; name: string }[];
   /** The inventory types are our best guess until the official list is published. */
   inventoryTypesDraft: boolean;
+}
+
+/** "kwanza" / "kwanzas", "cêntimo" / "cêntimos"; masculine nouns in Portuguese. */
+export interface CurrencyWords {
+  singular: string;
+  plural: string;
+  centSingular: string;
+  centPlural: string;
 }
 
 export type SaftProductType = "P" | "S" | "O" | "E" | "I";

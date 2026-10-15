@@ -13,7 +13,7 @@ import { CloseShiftDialog } from "@/features/shifts/components/CloseShiftDialog"
 import { isWorkingOffline } from "@/features/pos/offline-store";
 import { useTranslation } from "react-i18next";
 import { DrawerOpenReason, fromCents, lineGrossCents, PaymentMethod, Permission } from "@pos/shared";
-import type { CustomerDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
+import type { CustomerCardDto, CustomerDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,8 @@ import { Receipt } from "@/features/pos/components/Receipt";
 import { PrintArea } from "@/components/print/PrintArea";
 import { PrintQuoteDialog } from "@/features/pos/components/PrintQuoteDialog";
 import { IssueInvoiceDialog } from "@/features/invoices/components/IssueInvoiceDialog";
+import { FiscalDocumentDialog } from "@/features/fiscal/components/FiscalDocumentDialog";
+import { saleDocument } from "@/features/fiscal/sale-document";
 import { PaymentPanel } from "@/features/pos/components/PaymentPanel";
 import { RecentSalesSheet } from "@/features/pos/components/RecentSalesSheet";
 import { HeldOrdersSheet } from "@/features/pos/components/HeldOrdersSheet";
@@ -39,9 +41,13 @@ import { CustomerSearchCombobox } from "@/features/pos/components/CustomerSearch
 import { linePrice, useCart, type CartLine } from "@/features/pos/hooks/useCart";
 import { createSale } from "@/features/pos/api";
 import { useAuthStore } from "@/features/auth/store";
-import { ApiError } from "@/lib/api-client";
+import { ApiError, apiClient } from "@/lib/api-client";
 import { printDocument } from "@/features/desktop/printing";
 import { useDeviceStore } from "@/features/desktop/bridge";
+import { syncTillSeries } from "@/features/fiscal/numbering";
+import { fetchFiscalDocument } from "@/features/fiscal/api";
+import { posFetchProducts } from "@/features/pos/catalog";
+import { useSearchParams } from "react-router-dom";
 import { openCashDrawer, useCanOpenDrawer, useHasDrawer } from "@/features/desktop/drawer";
 import { OpenDrawerDialog } from "@/features/desktop/components/OpenDrawerDialog";
 import { useCustomerDisplay } from "@/features/desktop/customer-display";
@@ -155,6 +161,11 @@ export function PosPage() {
       })
       .catch(() => undefined);
   }, [shift, currentStoreId, terminalId]);
+  // Where this till's document series are, so it can number its own (offline too).
+  React.useEffect(() => {
+    if (!terminalId || isWorkingOffline()) return;
+    void syncTillSeries({ id: terminalId }).catch(() => undefined);
+  }, [terminalId]);
   // Log out with a shift open: close it first (blind count, report, then sign out).
   const closeRequested = useCloseShiftRequest((s) => s.requested);
   React.useEffect(() => {
@@ -164,6 +175,34 @@ export function PosPage() {
   }, [closeRequested, shift, othersShift]);
   // Kept separate from completedSale: only one dialog (and print area) is mounted at a time.
   const [invoiceFor, setInvoiceFor] = React.useState<{ sale: SaleDto; customer: CustomerDto | null } | null>(null);
+  const [viewingDocument, setViewingDocument] = React.useState<string | null>(null);
+  // A Factura Pró-forma being sold (opened from Invoices): the sale invoices it.
+  const [proforma, setProforma] = React.useState<{ id: string; documentNo: string } | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  React.useEffect(() => {
+    const id = searchParams.get("proforma");
+    if (!id) return;
+    setSearchParams({}, { replace: true });
+    void (async () => {
+      try {
+        const doc = await fetchFiscalDocument(id);
+        if (doc.documentType !== "PF" || doc.status !== "N") {
+          toast.error(t("proforma.notOpen", { number: doc.documentNo }));
+          return;
+        }
+        const products = new Map((await posFetchProducts()).map((p) => [p.id, p]));
+        const restored: CartLine[] = doc.lines.flatMap((l) => {
+          const product = l.productId ? products.get(l.productId) : undefined;
+          return product ? [{ product, quantity: Number(l.quantity) }] : [];
+        });
+        restore(restored, null);
+        if (doc.customerId) setCustomer((await apiClient.get<CustomerCardDto>(`/customers/${doc.customerId}/card`)).customer);
+        setProforma({ id: doc.id, documentNo: doc.documentNo });
+      } catch (error) {
+        toast.error((error as Error).message);
+      }
+    })();
+  }, [searchParams, setSearchParams, restore, t]);
   const queryClient = useQueryClient();
 
   // Windows app with auto-print on: the receipt goes to the printer as soon
@@ -204,6 +243,7 @@ export function PosPage() {
           lineItems: lines.map((l) => ({ productId: l.product.id, quantity: l.quantity, discount: l.discount ?? undefined })),
           discount: saleDiscount ?? undefined,
           shiftClientId: shift?.clientId,
+          proformaId: proforma?.id,
         },
         lines,
         Object.values(approvals).filter((a): a is Approval => !!a),
@@ -218,6 +258,7 @@ export function PosPage() {
       useShiftStore.getState().recordSale(sale, cashier ? `${cashier.firstName} ${cashier.lastName}` : "");
       setCompletedSale(sale);
       setCompletedCustomer(customer);
+      setProforma(null);
       clear();
       setCustomer(null);
       setReceiptEmail("");
@@ -394,6 +435,14 @@ export function PosPage() {
         <ProductSearchInput onSelect={addProduct} suppressRefocusRef={checkoutAreaRef} />
         <CategoryFilter selectedCategoryId={selectedCategoryId} onSelect={setSelectedCategoryId} />
         <ProductGrid categoryId={selectedCategoryId} onSelect={addProduct} />
+        {proforma && (
+          <div className="mb-2 flex items-center justify-between rounded-md border border-sky-300 bg-sky-50 px-3 py-2 text-sm dark:border-sky-800 dark:bg-sky-950" role="status">
+            <span>{t("proforma.selling", { number: proforma.documentNo })}</span>
+            <Button variant="ghost" size="sm" onClick={() => setProforma(null)}>
+              {t("proforma.detach")}
+            </Button>
+          </div>
+        )}
         <Cart
           lines={lines}
           priced={priced.lines}
@@ -434,6 +483,7 @@ export function PosPage() {
         customer={invoiceFor?.customer ?? null}
         onClose={() => setInvoiceFor(null)}
       />
+      <FiscalDocumentDialog documentId={viewingDocument} onClose={() => setViewingDocument(null)} />
 
       <OpenDrawerDialog open={drawerDialogOpen} onOpenChange={setDrawerDialogOpen} />
       {shift && <CashMovementDialog shift={shift} open={movementOpen} onOpenChange={setMovementOpen} />}
@@ -502,6 +552,7 @@ export function PosPage() {
         saleDiscount={saleDiscount}
         store={currentStore}
         customer={customer}
+        onProforma={setViewingDocument}
       />
 
       <Dialog open={!!completedSale} onOpenChange={(open) => !open && setCompletedSale(null)}>
@@ -526,8 +577,13 @@ export function PosPage() {
             <Button onClick={() => void printDocument()}>{t("complete.printReceipt")}</Button>
             <Button
               variant="outline"
+              // A sale still queued offline has no document on the server yet.
+              disabled={!!completedSale && !!saleDocument(completedSale) && !saleDocument(completedSale)!.id}
               onClick={() => {
-                setInvoiceFor({ sale: completedSale!, customer: completedCustomer });
+                const document = completedSale ? saleDocument(completedSale) : null;
+                // Where sales are fiscal documents, the A4 is the sale's own Factura-Recibo.
+                if (document) setViewingDocument(document.id);
+                else setInvoiceFor({ sale: completedSale!, customer: completedCustomer });
                 setCompletedSale(null);
               }}
             >

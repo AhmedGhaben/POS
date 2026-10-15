@@ -84,7 +84,8 @@
     "forLabel": "Para (opcional)",
     "forPlaceholder": "Nome do cliente ou da empresa",
     "printSlip": "Imprimir orçamento",
-    "printA4": "Imprimir orçamento A4"
+    "printA4": "Imprimir orçamento A4",
+    "saveProforma": "Guardar como pró-forma"
   },
   "drawer": {
     "title": "Abrir gaveta de dinheiro",
@@ -201,5 +202,10 @@
     "last": "Última compra",
     "recent": "Últimas vendas",
     "offline": "O histórico de compras precisa do servidor."
+  },
+  "proforma": {
+    "selling": "A vender a pró-forma {{number}}: esta venda factura-a.",
+    "detach": "Vender sem ela",
+    "notOpen": "A pró-forma {{number}} já não está em aberto."
   }
 }

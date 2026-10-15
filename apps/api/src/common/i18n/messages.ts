@@ -308,6 +308,16 @@ const EXACT: Record<string, Translations> = {
   },
   "Photo not found": { "pt-PT": "Fotografia não encontrada", "pt-BR": "Foto não encontrada" },
   "Give the date as YYYY-MM-DD": { "pt-PT": "Indique a data como AAAA-MM-DD", "pt-BR": "Informe a data como AAAA-MM-DD" },
+  // Fiscal documents
+  "That proforma isn't open any more": { "pt-PT": "Essa factura pró-forma já não está em aberto", "pt-BR": "Essa fatura pró-forma não está mais em aberto" },
+  "A returned product wasn't on the sale": { "pt-PT": "Um dos produtos devolvidos não fazia parte da venda", "pt-BR": "Um dos produtos devolvidos não fazia parte da venda" },
+  "Only a till numbers its own documents": { "pt-PT": "Só uma caixa numera os seus próprios documentos", "pt-BR": "Só um caixa numera os próprios documentos" },
+  "Document not found": { "pt-PT": "Documento não encontrado", "pt-BR": "Documento não encontrado" },
+  "Till not found": { "pt-PT": "Caixa não encontrada", "pt-BR": "Caixa não encontrado" },
+  "Every sale already has its Factura-Recibo; print that instead": {
+    "pt-PT": "Cada venda já tem a sua Factura-Recibo; imprima essa",
+    "pt-BR": "Cada venda já tem sua Fatura-Recibo; imprima essa",
+  },
 };
 
 /** Messages with a value inside; `$1` is the captured value. */
@@ -319,6 +329,22 @@ const PATTERNS: { re: RegExp; t: Translations }[] = [
   {
     re: /^Insufficient stock for "(.+)"$/,
     t: { "pt-PT": 'Stock insuficiente de "$1"', "pt-BR": 'Estoque insuficiente de "$1"' },
+  },
+  {
+    re: /^Series (\S+) isn't this till's$/,
+    t: { "pt-PT": "A série $1 não é desta caixa", "pt-BR": "A série $1 não é deste caixa" },
+  },
+  {
+    re: /^Series (\S+) belongs to another till$/,
+    t: { "pt-PT": "A série $1 pertence a outra caixa", "pt-BR": "A série $1 pertence a outro caixa" },
+  },
+  {
+    re: /^Document (\d+) of (\S+) came before (\d+); the till will send them in order$/,
+    t: { "pt-PT": "O documento $1 da série $2 chegou antes do $3; a caixa envia-os por ordem", "pt-BR": "O documento $1 da série $2 chegou antes do $3; o caixa envia em ordem" },
+  },
+  {
+    re: /^Document number (\d+) of (\S+) was already used$/,
+    t: { "pt-PT": "O número $1 da série $2 já foi usado", "pt-BR": "O número $1 da série $2 já foi usado" },
   },
   {
     re: /^"(.+)" is sold in whole units$/,

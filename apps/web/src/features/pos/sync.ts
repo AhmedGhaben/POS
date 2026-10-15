@@ -4,6 +4,9 @@ import { listOutbox, tidyOutbox, updateOutbox, type OutboxEntry, type OutboxPatc
 import { desktopLog } from "@/features/desktop/bridge";
 import { useOfflineStore, type ServerState } from "./offline-store";
 import { refreshCatalog } from "./catalog";
+import { syncTillSeries } from "@/features/fiscal/numbering";
+import { useAuthStore } from "@/features/auth/store";
+import { useDeviceStore } from "@/features/desktop/bridge";
 
 export interface SyncResult {
   synced: number;
@@ -22,9 +25,11 @@ export interface DrainDeps {
 /**
  * Uploads pending entries oldest first. A server that can't be reached,
  * errors, or wants a fresh login stops the run with the entry left
- * `pending`, so later sales never overtake it. A rejection (4xx: the server
- * understood and said no) marks just that entry `failed` for a manager to
- * review, and the run carries on.
+ * `pending`, so later sales never overtake it. So does a 409: something it
+ * depends on hasn't reached the server yet (an earlier document number, its
+ * shift). A rejection (any other 4xx: the server understood and said no)
+ * marks just that entry `failed` for a manager to review, and the run
+ * carries on.
  */
 export async function drainOutbox(deps: DrainDeps): Promise<SyncResult> {
   const now = deps.now ?? (() => new Date());
@@ -44,7 +49,7 @@ export async function drainOutbox(deps: DrainDeps): Promise<SyncResult> {
       result.synced++;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      if (isRetryableError(err) || (err instanceof ApiError && err.status === 401)) {
+      if (isRetryableError(err) || (err instanceof ApiError && (err.status === 401 || err.status === 409))) {
         await deps.update(entry.clientId, { state: "pending", lastError: message });
         result.interrupted = true;
         break;
@@ -169,6 +174,8 @@ export function startSyncEngine(): () => void {
     if (reachable) {
       const result = await syncOutbox().catch(() => null);
       await refreshCatalog().catch(() => {});
+      // Where this till's document series are on the server (it numbers its own).
+      if (useAuthStore.getState().accessToken) await syncTillSeries(useDeviceStore.getState().terminal).catch(() => {});
       delay = result?.interrupted ? Math.min(delay * 2, MAX_INTERVAL_MS) : BASE_INTERVAL_MS;
     } else {
       // A health check is cheap: keep looking every 30 s so sales go up

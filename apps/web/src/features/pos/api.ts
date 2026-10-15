@@ -1,4 +1,4 @@
-import { SaleStatus } from "@pos/shared";
+import { countryConfig, SaleStatus } from "@pos/shared";
 import type { CreateCustomerDto, CreateSaleDto, CustomerDto, ProductDto, SaleDto, VoidReason, VoidSaleDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
 import { useDeviceStore } from "@/features/desktop/bridge";
@@ -10,6 +10,7 @@ import { currentTaxContext, linePrice, productTax, type CartLine } from "./hooks
 import { approvalHeaders, type Approval } from "@/features/overrides/approval";
 import { buildOfflineSale } from "./offline-sale";
 import { isWorkingOffline, useOfflineStore } from "./offline-store";
+import { peekNumber, useFiscalNumbering } from "@/features/fiscal/numbering";
 
 /** Long enough for a slow connection, short enough not to hold up a queue. */
 const SALE_TIMEOUT_MS = 8_000;
@@ -46,18 +47,52 @@ export async function createSale(dto: CreateSaleDto, lines: CartLine[], approval
     terminalId: useDeviceStore.getState().terminal?.id,
     // Uploaded later with the till's key, it stays this person's sale.
     actingUserId: useAuthStore.getState().user?.id,
+    // The till numbers its Factura-Recibo itself (where sales are fiscal documents).
+    fiscal: tillNumber() ?? undefined,
+  };
+  // The number is used once the sale is accepted or queued; a refused sale gives it back.
+  const used = (result: SaleDto) => {
+    if (sale.fiscal) useFiscalNumbering.getState().commit("FR", sale.fiscal);
+    return result;
   };
   if (isWorkingOffline()) {
-    return queueSaleOffline(sale, lines, approvals);
+    return used(await queueSaleOffline(sale, lines, approvals));
   }
   try {
-    return await apiClient.post<SaleDto>("/sales", sale, { timeoutMs: SALE_TIMEOUT_MS });
+    return used(await postSale(sale));
   } catch (err) {
-    if (isRetryableError(err) || (err instanceof ApiError && err.status === 401)) {
-      return queueSaleOffline(sale, lines, approvals);
+    // Sales still waiting in the queue come first: this one joins them.
+    if (isRetryableError(err) || (err instanceof ApiError && (err.status === 401 || fiscalCode(err) === "FISCAL_NUMBER_AHEAD"))) {
+      return used(await queueSaleOffline(sale, lines, approvals));
     }
     throw err;
   }
+}
+
+/**
+ * Sends a sale; if its number was already used (the till's count fell
+ * behind the server's), takes the server's next number and tries once more.
+ */
+async function postSale(sale: CreateSaleDto): Promise<SaleDto> {
+  try {
+    return await apiClient.post<SaleDto>("/sales", sale, { timeoutMs: SALE_TIMEOUT_MS });
+  } catch (err) {
+    const next = err instanceof ApiError && fiscalCode(err) === "FISCAL_NUMBER_USED" ? (err.body as { nextNumber?: number }).nextNumber : undefined;
+    if (!sale.fiscal || !next) throw err;
+    useFiscalNumbering.getState().adopt("FR", sale.fiscal.series, next);
+    sale.fiscal = { series: sale.fiscal.series, number: next };
+    return apiClient.post<SaleDto>("/sales", sale, { timeoutMs: SALE_TIMEOUT_MS });
+  }
+}
+
+function fiscalCode(err: ApiError): string | undefined {
+  return (err.body as { code?: string } | undefined)?.code;
+}
+
+/** This till's next FR number, when it numbers its own (a till, in a country with fiscal documents). */
+function tillNumber() {
+  if (!countryConfig(currentTaxContext().country)) return null;
+  return peekNumber(useFiscalNumbering.getState(), useDeviceStore.getState().terminal, "FR", new Date().getFullYear());
 }
 
 async function queueSaleOffline(sale: CreateSaleDto, lines: CartLine[], approvals: Approval[]): Promise<SaleDto> {

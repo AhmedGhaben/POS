@@ -38,5 +38,25 @@
     },
     "viewPrint": "Ver / imprimir",
     "empty": "Nenhuma fatura ainda. Emita uma no PDV depois de uma venda (\"Fatura A4\"), ou aqui para uma venda anterior."
+  },
+  "fiscal": {
+    "document": "Documento",
+    "reprintNote": "Impresso como foi emitido; não pode ser alterado.",
+    "type": "Tipo de documento",
+    "allTypes": "Todos os tipos",
+    "from": "De",
+    "to": "Até",
+    "searchPlaceholder": "Número, cliente ou NIF",
+    "number": "Número",
+    "customer": "Cliente",
+    "tax": "IVA",
+    "annulled": "Anulado",
+    "invoiced": "Faturado",
+    "empty": "Ainda não há documentos.",
+    "subtitle": "Cada venda é uma Fatura-Recibo; as devoluções são notas de crédito. Os documentos não podem ser alterados: uma venda é anulada ou corrigida com uma devolução.",
+    "tab": "Documentos fiscais",
+    "legacyTab": "Faturas antigas (INV)",
+    "legacyNote": "Faturas emitidas antes de as vendas virarem documentos fiscais.",
+    "sellProforma": "Vender no caixa"
   }
 }

@@ -200,6 +200,8 @@ model Business {
   pairingCodes    TerminalPairingCode[]
   bankAccounts    BankAccount[]
   taxRates        TaxRate[]
+  documentSeries  DocumentSeries[]
+  fiscalDocuments FiscalDocument[]
 
   @@map("businesses")
 }
@@ -277,19 +279,21 @@ model Store {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
-  storeUsers     StoreUser[]
-  inventoryItems InventoryItem[]
-  sales          Sale[]
-  purchases      Purchase[]
-  expenses       Expense[]
-  returns        Return[]
-  employees      Employee[]
-  transfersOut   StockTransfer[] @relation("TransferFrom")
-  transfersIn    StockTransfer[] @relation("TransferTo")
-  terminals      Terminal[]
-  drawerEvents   DrawerEvent[]
-  shifts         Shift[]
-  stockMovements StockMovement[]
+  storeUsers      StoreUser[]
+  inventoryItems  InventoryItem[]
+  sales           Sale[]
+  purchases       Purchase[]
+  expenses        Expense[]
+  returns         Return[]
+  employees       Employee[]
+  transfersOut    StockTransfer[]  @relation("TransferFrom")
+  transfersIn     StockTransfer[]  @relation("TransferTo")
+  terminals       Terminal[]
+  drawerEvents    DrawerEvent[]
+  shifts          Shift[]
+  stockMovements  StockMovement[]
+  documentSeries  DocumentSeries[]
+  fiscalDocuments FiscalDocument[]
 
   @@index([businessId])
   @@map("stores")
@@ -442,9 +446,10 @@ model Terminal {
   createdAt   DateTime  @default(now())
   lastSeenAt  DateTime?
 
-  sales        Sale[]
-  drawerEvents DrawerEvent[]
-  shifts       Shift[]
+  sales          Sale[]
+  drawerEvents   DrawerEvent[]
+  shifts         Shift[]
+  documentSeries DocumentSeries[]
 
   @@unique([businessId, sequence])
   @@index([storeId])
@@ -641,8 +646,9 @@ model Customer {
   isFinalConsumer Boolean  @default(false)
   createdAt       DateTime @default(now())
 
-  sales    Sale[]
-  invoices Invoice[]
+  sales           Sale[]
+  fiscalDocuments FiscalDocument[]
+  invoices        Invoice[]
 
   @@index([businessId])
   @@map("customers")
@@ -696,10 +702,11 @@ model Sale {
   /// of the subtotal, so total = subtotal - discountTotal.
   pricesIncludeTax   Boolean       @default(false)
 
-  lineItems SaleLineItem[]
-  payments  SalePayment[]
-  returns   Return[]
-  invoice   Invoice?
+  lineItems       SaleLineItem[]
+  payments        SalePayment[]
+  returns         Return[]
+  invoice         Invoice?
+  fiscalDocuments FiscalDocument[]
 
   @@unique([storeId, clientId])
   @@index([storeId, createdAt])
@@ -877,7 +884,8 @@ model Return {
   shift         Shift?        @relation(fields: [shiftId], references: [id])
   createdAt     DateTime      @default(now())
 
-  lineItems ReturnLineItem[]
+  lineItems      ReturnLineItem[]
+  fiscalDocument FiscalDocument?
 
   @@index([storeId, createdAt])
   @@map("returns")
@@ -1090,4 +1098,162 @@ model TerminalPairingCode {
 
   @@index([codeHash])
   @@map("terminal_pairing_codes")
+}
+
+/// A numbering series: one per till (or per store, for sales from a
+/// browser) per document type per year, e.g. "POS001-2026" for FR documents
+/// reads "FR POS001-2026/57". Gap-free; never reused or renumbered. The hash
+/// chain runs along it.
+model DocumentSeries {
+  id            String    @id @default(cuid())
+  businessId    String
+  business      Business  @relation(fields: [businessId], references: [id])
+  storeId       String
+  store         Store     @relation(fields: [storeId], references: [id])
+  /// The till that numbers it; null for a store's own series (browser, back office).
+  terminalId    String?
+  terminal      Terminal? @relation(fields: [terminalId], references: [id])
+  /// FR, FT, NC, ND, RC, PF...
+  documentType  String
+  code          String
+  year          Int
+  /// The next number to use.
+  nextNumber    Int       @default(1)
+  /// The hash of the last document, which the next one signs over.
+  lastHash      String    @default("")
+  /// Registered with AGT (solicitarSerie, phase 9).
+  agtRegistered Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  documents FiscalDocument[]
+
+  @@unique([businessId, documentType, code])
+  @@index([terminalId])
+  @@map("document_series")
+}
+
+/// A fiscal document (Factura-Recibo, Factura, Nota de Crédito...) or a
+/// proforma. Immutable once written: a database trigger refuses changes,
+/// except annulling it (status N to A) or marking a proforma invoiced (F).
+model FiscalDocument {
+  id                   String           @id @default(cuid())
+  businessId           String
+  business             Business         @relation(fields: [businessId], references: [id])
+  storeId              String
+  store                Store            @relation(fields: [storeId], references: [id])
+  terminalId           String?
+  seriesId             String
+  series               DocumentSeries   @relation(fields: [seriesId], references: [id])
+  documentType         String
+  number               Int
+  /// "FR POS001-2026/57"
+  documentNo           String
+  /// N normal, A annulled (F invoiced, for proformas).
+  status               String           @default("N")
+  statusDate           DateTime
+  /// Why it was annulled (and who did it).
+  statusReason         String?
+  statusReasonCode     String?
+  statusById           String?
+  /// The day of the sale, where the store is.
+  invoiceDate          DateTime         @db.Date
+  /// When it was recorded (the till's time for an offline sale).
+  systemEntryDate      DateTime
+  /// Month 1-12 of the fiscal year.
+  period               Int
+  /// The user who issued it (SourceID).
+  sourceId             String
+  /// P: produced by this software.
+  sourceBilling        String           @default("P")
+  hash                 String
+  /// "0" until the software is certified, then the key version.
+  hashControl          String
+  /// Characters 1, 11, 21, 31 of the hash.
+  hashExcerpt          String
+  /// Seller details when issued: business, store, regime, certificate.
+  seller               Json
+  customerId           String?
+  customer             Customer?        @relation(fields: [customerId], references: [id])
+  buyerName            String
+  buyerTaxId           String
+  /// Structured buyer address when issued (street, city, postal code, province, country).
+  buyerAddress         Json?
+  currency             String
+  pricesIncludeTax     Boolean
+  /// Without tax, after discounts.
+  netTotal             Decimal          @db.Decimal(14, 2)
+  taxPayable           Decimal          @db.Decimal(14, 2)
+  grossTotal           Decimal          @db.Decimal(14, 2)
+  discountTotal        Decimal          @default(0) @db.Decimal(14, 2)
+  /// How it was paid: [{ method, mechanism, amount }].
+  payments             Json?
+  /// Why a credit note was issued.
+  reason               String?
+  saleId               String?
+  sale                 Sale?            @relation(fields: [saleId], references: [id])
+  returnId             String?          @unique
+  return               Return?          @relation(fields: [returnId], references: [id])
+  /// The document a credit note corrects, or the proforma an invoice came from.
+  referencedDocumentId String?
+  referencedDocument   FiscalDocument?  @relation("DocumentReferences", fields: [referencedDocumentId], references: [id])
+  referencingDocuments FiscalDocument[] @relation("DocumentReferences")
+  createdAt            DateTime         @default(now())
+
+  lines FiscalDocumentLine[]
+
+  @@unique([seriesId, number])
+  @@unique([businessId, documentNo])
+  @@index([businessId, invoiceDate])
+  @@index([saleId])
+  @@map("fiscal_documents")
+}
+
+model FiscalDocumentLine {
+  id                  String         @id @default(cuid())
+  documentId          String
+  document            FiscalDocument @relation(fields: [documentId], references: [id])
+  lineNumber          Int
+  productId           String?
+  productCode         String
+  productDescription  String
+  quantity            Decimal        @db.Decimal(14, 3)
+  unit                String
+  /// Per unit, without tax and after discounts (SAF-T UnitPrice).
+  unitPrice           Decimal        @db.Decimal(18, 6)
+  /// Discount on the line, without tax (SettlementAmount).
+  discountAmount      Decimal        @default(0) @db.Decimal(14, 2)
+  /// Without tax, after discounts: the base the tax is on.
+  netAmount           Decimal        @db.Decimal(14, 2)
+  taxAmount           Decimal        @db.Decimal(14, 2)
+  /// netAmount + taxAmount.
+  grossAmount         Decimal        @db.Decimal(14, 2)
+  /// What a credit note line corrects: the document and its line.
+  referenceDocumentNo String?
+  referenceLineNumber Int?
+
+  taxes FiscalDocumentLineTax[]
+
+  @@unique([documentId, lineNumber])
+  @@map("fiscal_document_lines")
+}
+
+/// One tax on a line (IVA now; IS and IEC later, possibly on the same line).
+model FiscalDocumentLineTax {
+  id               String             @id @default(cuid())
+  lineId           String
+  line             FiscalDocumentLine @relation(fields: [lineId], references: [id])
+  /// IVA, IS, IEC, NS
+  taxType          String
+  /// "AO", or "AO-CAB"
+  taxCountryRegion String
+  /// NOR, RED, INT, ISE...
+  taxCode          String
+  percentage       Decimal            @db.Decimal(5, 2)
+  amount           Decimal            @db.Decimal(14, 2)
+  exemptionCode    String?
+  /// The legal wording printed and exported (6-60 characters).
+  exemptionReason  String?
+
+  @@index([lineId])
+  @@map("fiscal_document_line_taxes")
 }

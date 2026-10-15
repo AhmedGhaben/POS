@@ -55,7 +55,32 @@ Prisma backend.
   - **quotes** (slip or A4) printed without checking out
   - numbered **A4 invoices** (`INV-<year>-0001`, gap-free, restarting
     yearly) with a frozen seller snapshot, plus an Invoices page for
-    reprinting
+    reprinting (countries without fiscal documents; in Angola these are
+    the older documents, readable but no longer issued)
+- **Fiscal documents (Angola)**: every completed sale is a
+  **Factura-Recibo** (FR), every return a **Nota de Crédito** (NC) pointing
+  at the FR and the lines it corrects, and cancelling a sale annuls its FR
+  (status A, with the reason). Proformas (PF) can be saved from a quote and
+  sold later from the till.
+  - **Series** per till per document type per year (`FR POS001-2026/57`),
+    gap-free. A registered till numbers its own, so a receipt printed
+    offline already has its real number; the server checks numbers arrive
+    in order (a gap waits in the queue). Browser sales use the store's
+    series (`WEB1-2026`).
+  - **Hash chain**: each document is signed (RSA-SHA1, Base64) over
+    `InvoiceDate;SystemEntryDate;InvoiceNo;GrossTotal;previous hash`; the
+    printout shows hash characters 1, 11, 21, 31 before the certification
+    line. HashControl is 0 until the software is certified.
+  - **Immutable**: no route changes or deletes a document, and a database
+    trigger refuses it too (only annulling, or a proforma becoming
+    invoiced).
+  - Buyer, seller, lines and taxes are frozen on the document; exempt
+    lines carry the AGT reason's legal wording.
+  - **Printouts**: receipts (80 or 58 mm) and A4 with the document type and
+    number, buyer NIF (Consumidor Final 999999999), IVA per rate, exemption
+    reasons, the amount in words, the hash line, the AGT QR code, and
+    "DOCUMENTO SEM VALIDADE FISCAL" until certified. **Invoices** lists every
+    document (filter by type, date, customer/NIF) for reprinting.
 - **Products & stock**: categories, per-store inventory, purchases,
   returns, transfers between stores, low-stock alerts, and **CSV
   import/export** with a validating preview.
@@ -244,6 +269,9 @@ it they're printed to the API console, links included.
 | `APP_URL` | Public URL of the web app, used for links in emails |
 | `RESEND_API_KEY`, `MAIL_FROM` | Optional: send real email |
 | `ANTHROPIC_API_KEY` | Optional: enables AI insights |
+| `SAFT_PRIVATE_KEY` or `SAFT_PRIVATE_KEY_FILE` | RSA private key (PEM, 1024-bit) that signs the fiscal documents' hash chain. Keep it in secrets, never in the repo. Without it a temporary key is used (fine until certified) |
+| `SAFT_KEY_VERSION` | The key's version, printed as HashControl once certified (default 1) |
+| `AGT_SOFTWARE_CERTIFICATE` | The software's AGT validation number (e.g. `77/AGT/2019`). Unset: documents say "DOCUMENTO SEM VALIDADE FISCAL" and HashControl is 0; set: the API won't start without the real key |
 
 ## Windows desktop app
 
