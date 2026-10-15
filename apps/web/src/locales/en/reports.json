@@ -1,6 +1,38 @@
 {
   "title": "Reports",
-  "description": "View and export reports, SAF-T files, and tax documents.",
+  "exports": {
+    "description": "Files for AGT and your accountant. Periods are calendar days in the shop's time.",
+    "saftTitle": "SAF-T (AO) files",
+    "saftDescription": "The invoicing file for AGT (monthly while e-invoicing isn't active) and the year-end inventory file.",
+    "saftType": "File",
+    "facturacao": "Invoicing (Facturação)",
+    "facturacaoHint": "sales documents, proformas",
+    "inventario": "Inventory (Inventários)",
+    "inventarioHint": "stock at a date",
+    "inventarioDraft": "Draft layout until AGT publishes the inventory file format (Circular 05/2026).",
+    "stockDate": "Stock at the end of",
+    "period": "Period",
+    "periodMonth": "A month",
+    "periodRange": "From… to…",
+    "month": "Month",
+    "startDate": "From",
+    "endDate": "To",
+    "store": "Store",
+    "allStores": "All stores (whole company)",
+    "generate": "Generate file",
+    "generateExcel": "Generate Excel file",
+    "generating": "Generating...",
+    "done": "{{file}} downloaded",
+    "failed": "Couldn't generate the file. Try again.",
+    "accountantTitle": "Export for the accountant",
+    "accountantDescription": "Excel workbook: sales documents with base and IVA per rate, purchases, money received and paid."
+  },
+  "deadlines": {
+    "saftInvoicing": "SAF-T invoicing file for {{covers}}: due by {{due}}.",
+    "saftInventory": "SAF-T inventory file (stock at {{covers}}): due by {{due}}.",
+    "overdue": "Overdue.",
+    "makeIt": "Generate it"
+  },
   "noStore": "No store selected.",
   "store": "store",
   "plan": "{{plan}} plan",
@@ -9,21 +41,6 @@
   "tabs": {
     "overview": "Overview",
     "comparison": "Store comparison"
-  },
-  "saft": {
-    "title": "SAF-T Files",
-    "description": "Export fiscal documents in SAF-T format for AGT and your accountant.",
-    "exportInfo": "Download SAF-T (Standard Audit File - Tax) files for audit reporting.",
-    "exportDescription": "Export fiscal documents in the SAF-T format required by AGT and your accountant.",
-    "export": "Export SAF-T",
-    "type": "SAF-T Type",
-    "facturacao": "Facturação (Sales)",
-    "inventarios": "Inventários (Inventory)",
-    "startDate": "Start Date",
-    "endDate": "End Date",
-    "selectDateRange": "Please select a date range",
-    "exportSuccess": "SAF-T file exported successfully",
-    "exportError": "Failed to export SAF-T file"
   },
   "kpi": {
     "revenue": "Revenue",

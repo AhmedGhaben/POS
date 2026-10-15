@@ -78,6 +78,15 @@ export function formatDateTime(value: string | Date, locale: string = currentLan
   return new Date(value).toLocaleString(locale);
 }
 
+/**
+ * A calendar date ("2026-10-31") as written: the same day whatever the
+ * computer's time zone (formatDate would read it as UTC midnight and show
+ * the 30th west of Greenwich).
+ */
+export function formatCalendarDate(date: string, options: Intl.DateTimeFormatOptions = {}, locale: string = currentLanguage()): string {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString(locale, { ...options, timeZone: "UTC" });
+}
+
 /** Date only; `long` gives "11 de outubro de 2026" / "October 11, 2026". */
 export function formatDate(value: string | Date, locale: string = currentLanguage(), long = false): string {
   return new Date(value).toLocaleDateString(

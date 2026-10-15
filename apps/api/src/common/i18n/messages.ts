@@ -95,6 +95,24 @@ const EXACT: Record<string, Translations> = {
   // Stores and business
   "Business not found": { "pt-PT": "Empresa não encontrada", "pt-BR": "Empresa não encontrada" },
   "Store not found": { "pt-PT": "Loja não encontrada", "pt-BR": "Loja não encontrada" },
+  // SAF-T and accountant exports
+  "Dates must be calendar dates in the form YYYY-MM-DD": {
+    "pt-PT": "As datas devem ser datas do calendário no formato AAAA-MM-DD",
+    "pt-BR": "As datas devem ser datas do calendário no formato AAAA-MM-DD",
+  },
+  "The start date is after the end date": { "pt-PT": "A data de início é posterior à data de fim", "pt-BR": "A data inicial é posterior à data final" },
+  "A SAF-T file covers one fiscal year: the start and end dates must be in the same year": {
+    "pt-PT": "Um ficheiro SAF-T abrange um só ano fiscal: as datas de início e de fim têm de ser do mesmo ano",
+    "pt-BR": "Um arquivo SAF-T abrange um só ano fiscal: as datas inicial e final precisam ser do mesmo ano",
+  },
+  "SAF-T (AO) files are in kwanzas: set the business currency to AOA first": {
+    "pt-PT": "Os ficheiros SAF-T (AO) são em kwanzas: defina primeiro a moeda da empresa como AOA",
+    "pt-BR": "Os arquivos SAF-T (AO) são em kwanzas: defina primeiro a moeda da empresa como AOA",
+  },
+  "Add the company's NIF (10 to 15 characters) in Settings before exporting SAF-T files": {
+    "pt-PT": "Indique o NIF da empresa (10 a 15 caracteres) nas Definições antes de exportar ficheiros SAF-T",
+    "pt-BR": "Informe o NIF da empresa (10 a 15 caracteres) nas Configurações antes de exportar arquivos SAF-T",
+  },
   "Store not found in your business": { "pt-PT": "Loja não encontrada na sua empresa", "pt-BR": "Loja não encontrada na sua empresa" },
   "You do not have access to this store": {
     "pt-PT": "Não tem acesso a esta loja",

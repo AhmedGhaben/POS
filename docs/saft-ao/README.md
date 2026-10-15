@@ -4,7 +4,8 @@ Source: https://github.com/assoft-portugal/SAF-T-AO (commit ed86c7d, 2026-04-27)
 The XSD names AGT (Administração Geral Tributária) as author; ASSOFT maintains the repo, and certified Angolan software vendors use it.
 
 - xsd/SAFTAO1.01_01.xsd: SAF-T (AO) schema v1.01_01, namespace urn:OECD:StandardAuditFile-Tax:AO_1.01_01.
-  Use it for the invoicing file (TaxAccountingBasis "F" = Facturação). Validate every generated file against it in tests.
+  Use it for the invoicing file (TaxAccountingBasis "F" = Facturação). Validate every generated file against it in tests:
+  `apps/api/src/fiscal/saft/testing/validate-saft.ts` does (libxml2 via xmllint-wasm, offline).
 - examples/TaxExemptions.json|xml: exemption codes with reasons (cross-check against the AGT e-invoicing spec table).
 - examples/SAF-T AO (PurchaseInvoices).xml: sample file for purchases.
 - legislation/: Decreto Presidencial 312/18, Decreto Executivo 317/20 (SAF-T data structure, with field-by-field rules),

@@ -17,6 +17,7 @@ import { LowStockPanel } from "@/features/reports/components/LowStockPanel";
 import { InsightsPanel } from "@/features/reports/components/InsightsPanel";
 import { StoreComparisonChart } from "@/features/reports/components/StoreComparisonChart";
 import { DateRangeSelect } from "@/features/reports/components/DateRangeSelect";
+import { SaftDeadlines } from "@/features/reports/components/SaftDeadlines";
 import {
   fetchLowStock,
   fetchSalesTrend,
@@ -137,6 +138,8 @@ export function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      <SaftDeadlines />
 
       <Tabs defaultValue="overview">
         {canCompareStores && (

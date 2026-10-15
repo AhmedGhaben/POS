@@ -1,0 +1,470 @@
+import { Prisma } from "@prisma/client";
+import { optionalText, text, UNKNOWN, XmlWriter } from "./xml";
+
+/**
+ * SAF-T (AO) Facturação file (TaxAccountingBasis "F"), as
+ * docs/saft-ao/xsd/SAFTAO1.01_01.xsd lays it out, with the field rules of
+ * Decreto Executivo 317/20. Pure: SaftExportService loads the data; the
+ * tests validate what this writes against the XSD.
+ */
+
+export const SAFT_NAMESPACE = "urn:OECD:StandardAuditFile-Tax:AO_1.01_01";
+
+type Money = Prisma.Decimal;
+
+export interface SaftAddress {
+  detail?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  province?: string | null;
+  /** ISO 3166-1 alpha-2, or "Desconhecido" (consumidor final). */
+  country?: string | null;
+}
+
+export interface SaftCompany {
+  /** NIF, 10-15 characters. */
+  taxId: string;
+  /** Registo comercial, or the NIF when there's none. */
+  companyId: string;
+  legalName: string;
+  /** Trading name, when different from the legal name. */
+  businessName?: string | null;
+  address: SaftAddress;
+  eacCode?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  website?: string | null;
+}
+
+export interface SaftSoftware {
+  /** NIF of the company that makes the software. */
+  producerTaxId: string;
+  /** "Application name/Producer name". */
+  productId: string;
+  version: string;
+  /** "NNN/AGT/AAAA" once certified, "0" until then. */
+  validationNumber: string;
+}
+
+export interface SaftCustomer {
+  id: string;
+  taxId: string;
+  name: string;
+  finalConsumer: boolean;
+  address: SaftAddress;
+  phone?: string | null;
+  email?: string | null;
+}
+
+export interface SaftProduct {
+  /** As on the document lines (the SKU when sold). */
+  code: string;
+  /** P, S, O, E, I */
+  type: string;
+  group?: string | null;
+  description: string;
+  /** Barcode, or the code. */
+  numberCode: string;
+}
+
+export interface SaftTax {
+  /** IVA, IS, NS */
+  type: string;
+  /** AO, AO-CAB */
+  region: string;
+  /** NOR, RED, INT, ISE, OUT, NS, NA */
+  code: string;
+  percentage: Money;
+}
+
+export interface SaftTaxTableEntry extends SaftTax {
+  description: string;
+}
+
+export interface SaftLine {
+  lineNumber: number;
+  productCode: string;
+  description: string;
+  quantity: Money;
+  unit: string;
+  /** Per unit, without tax, after discounts. */
+  unitPrice: Money;
+  /** Without tax, after discounts: the line's DebitAmount or CreditAmount. */
+  netAmount: Money;
+  tax: SaftTax;
+  exemption?: { code: string; reason: string } | null;
+  /** Every discount on the line (its own and its share of the sale's). */
+  settlementAmount: Money;
+  /** What a credit note corrects. */
+  reference?: { documentNo: string; reason?: string | null } | null;
+}
+
+export interface SaftDocument {
+  documentNo: string;
+  /** FT, FR, NC, ND… (sales) or PF, OR… (working documents). */
+  documentType: string;
+  /** N, A (and F for an invoiced proforma). */
+  status: string;
+  /** YYYY-MM-DDThh:mm:ss, the shop's clock. */
+  statusDateTime: string;
+  statusReason?: string | null;
+  /** Who set the current status. */
+  statusSourceId: string;
+  sourceBilling: string;
+  hash: string;
+  hashControl: string;
+  period: number;
+  /** YYYY-MM-DD */
+  date: string;
+  systemEntryDateTime: string;
+  /** Who issued it. */
+  sourceId: string;
+  customerId: string;
+  lines: SaftLine[];
+  taxPayable: Money;
+  netTotal: Money;
+  grossTotal: Money;
+  /** How it was paid (FR), by SAF-T PaymentMechanism. */
+  payments: { mechanism: string; amount: Money; date: string }[];
+}
+
+/** A receipt (RC) for invoices bought on credit. */
+export interface SaftPayment {
+  paymentRefNo: string;
+  /** RC, RG */
+  paymentType: string;
+  period: number;
+  transactionDate: string;
+  status: string;
+  statusDateTime: string;
+  statusReason?: string | null;
+  statusSourceId: string;
+  sourceId: string;
+  systemEntryDateTime: string;
+  customerId: string;
+  methods: { mechanism: string; amount: Money; date: string }[];
+  /** One line per invoice settled. */
+  lines: { lineNumber: number; originatingOn: string; invoiceDate: string; amount: Money }[];
+  netTotal: Money;
+  taxPayable: Money;
+  grossTotal: Money;
+}
+
+export interface FacturacaoInput {
+  company: SaftCompany;
+  software: SaftSoftware;
+  fiscalYear: number;
+  startDate: string;
+  endDate: string;
+  /** YYYY-MM-DD */
+  dateCreated: string;
+  /** "Global", or the store the file is for. */
+  taxEntity: string;
+  customers: SaftCustomer[];
+  products: SaftProduct[];
+  taxTable: SaftTaxTableEntry[];
+  salesInvoices: SaftDocument[];
+  workingDocuments: SaftDocument[];
+  payments: SaftPayment[];
+}
+
+const ZERO = new Prisma.Decimal(0);
+/** Monetary fields with exactly two decimals (totals). */
+const m2 = (v: Money) => v.toFixed(2);
+/** Other monetary and decimal fields: as precise as stored, no trailing zeros. */
+const dec = (v: Money) => v.toString();
+
+/** Credit notes are debits to sales; everything else sold is a credit. */
+export function isDebitDocument(documentType: string): boolean {
+  return documentType === "NC";
+}
+
+function address(w: XmlWriter, tag: string, a: SaftAddress, opts: { angola?: boolean } = {}) {
+  w.open(tag);
+  w.el("AddressDetail", text(a.detail, 250));
+  w.el("City", text(a.city, 50));
+  // The company's (Angolan) postal code is at most 10 characters, too short for "Desconhecido": left out when unknown.
+  w.el("PostalCode", opts.angola ? optionalText(a.postalCode, 10) : text(a.postalCode, 20));
+  w.el("Province", optionalText(a.province, 50));
+  w.el("Country", opts.angola ? "AO" : text(a.country, 12, UNKNOWN));
+  w.close(tag);
+}
+
+function tax(w: XmlWriter, t: SaftTax) {
+  w.open("Tax");
+  w.el("TaxType", t.type);
+  w.el("TaxCountryRegion", t.region);
+  w.el("TaxCode", t.code);
+  w.el("TaxPercentage", dec(t.percentage));
+  w.close("Tax");
+}
+
+function exemption(w: XmlWriter, line: SaftLine) {
+  if (!line.exemption) return;
+  w.el("TaxExemptionReason", text(line.exemption.reason, 60));
+  w.el("TaxExemptionCode", line.exemption.code);
+}
+
+/** Debit and credit sums for a section, leaving out annulled documents. */
+function sectionTotals(docs: { status: string; documentType: string; lines: { netAmount: Money }[] }[]) {
+  let debit = ZERO;
+  let credit = ZERO;
+  for (const d of docs) {
+    if (d.status === "A") continue;
+    const sum = d.lines.reduce((s, l) => s.plus(l.netAmount), ZERO);
+    if (isDebitDocument(d.documentType)) debit = debit.plus(sum);
+    else credit = credit.plus(sum);
+  }
+  return { debit, credit };
+}
+
+export function buildFacturacaoXml(input: FacturacaoInput): string {
+  const w = new XmlWriter();
+  w.open("AuditFile", { xmlns: SAFT_NAMESPACE });
+
+  const c = input.company;
+  w.open("Header");
+  w.el("AuditFileVersion", "1.01_01");
+  w.el("CompanyID", text(c.companyId, 50));
+  w.el("TaxRegistrationNumber", c.taxId);
+  w.el("TaxAccountingBasis", "F");
+  w.el("CompanyName", text(c.legalName, 200));
+  w.el("BusinessName", c.businessName && c.businessName !== c.legalName ? optionalText(c.businessName, 60) : null);
+  address(w, "CompanyAddress", c.address, { angola: true });
+  w.el("FiscalYear", input.fiscalYear);
+  w.el("StartDate", input.startDate);
+  w.el("EndDate", input.endDate);
+  w.el("CurrencyCode", "AOA");
+  w.el("DateCreated", input.dateCreated);
+  w.el("TaxEntity", text(input.taxEntity, 20));
+  w.el("ProductCompanyTaxID", text(input.software.producerTaxId, 20));
+  w.el("SoftwareValidationNumber", input.software.validationNumber);
+  w.el("ProductID", input.software.productId);
+  w.el("ProductVersion", text(input.software.version, 30));
+  w.el("Telephone", optionalText(c.phone, 20));
+  w.el("Email", optionalText(c.email, 255));
+  w.el("Website", optionalText(c.website, 60));
+  w.close("Header");
+
+  w.open("MasterFiles");
+  for (const cu of input.customers) {
+    w.open("Customer");
+    w.el("CustomerID", cu.id);
+    w.el("AccountID", UNKNOWN);
+    w.el("CustomerTaxID", text(cu.taxId, 30));
+    w.el("CompanyName", text(cu.name, 100));
+    address(
+      w,
+      "BillingAddress",
+      cu.finalConsumer ? { detail: UNKNOWN, city: UNKNOWN, postalCode: UNKNOWN, country: UNKNOWN } : { ...cu.address, country: cu.address.country || "AO" },
+    );
+    if (!cu.finalConsumer) {
+      w.el("Telephone", optionalText(cu.phone, 20));
+      w.el("Email", optionalText(cu.email, 255));
+    }
+    w.el("SelfBillingIndicator", 0);
+    w.close("Customer");
+  }
+  for (const p of input.products) {
+    w.open("Product");
+    w.el("ProductType", p.type);
+    w.el("ProductCode", text(p.code, 60));
+    w.el("ProductGroup", optionalText(p.group, 50));
+    w.el("ProductDescription", text(p.description, 200));
+    w.el("ProductNumberCode", text(p.numberCode, 60));
+    w.close("Product");
+  }
+  if (input.taxTable.length) {
+    w.open("TaxTable");
+    for (const t of input.taxTable) {
+      w.open("TaxTableEntry");
+      w.el("TaxType", t.type);
+      w.el("TaxCountryRegion", t.region);
+      w.el("TaxCode", t.code);
+      w.el("Description", text(t.description, 255));
+      w.el("TaxPercentage", dec(t.percentage));
+      w.close("TaxTableEntry");
+    }
+    w.close("TaxTable");
+  }
+  w.close("MasterFiles");
+
+  w.open("SourceDocuments");
+  salesInvoices(w, input.salesInvoices);
+  if (input.workingDocuments.length) workingDocuments(w, input.workingDocuments);
+  if (input.payments.length) payments(w, input.payments);
+  w.close("SourceDocuments");
+
+  w.close("AuditFile");
+  return w.toString();
+}
+
+function salesInvoices(w: XmlWriter, docs: SaftDocument[]) {
+  const totals = sectionTotals(docs);
+  w.open("SalesInvoices");
+  w.el("NumberOfEntries", docs.length);
+  w.el("TotalDebit", m2(totals.debit));
+  w.el("TotalCredit", m2(totals.credit));
+  for (const d of docs) {
+    w.open("Invoice");
+    w.el("InvoiceNo", d.documentNo);
+    w.open("DocumentStatus");
+    w.el("InvoiceStatus", d.status);
+    w.el("InvoiceStatusDate", d.statusDateTime);
+    w.el("Reason", d.status === "A" ? optionalText(d.statusReason, 50) : null);
+    w.el("SourceID", text(d.statusSourceId, 30));
+    w.el("SourceBilling", d.sourceBilling);
+    w.close("DocumentStatus");
+    w.el("Hash", d.hash);
+    w.el("HashControl", d.hashControl);
+    w.el("Period", d.period);
+    w.el("InvoiceDate", d.date);
+    w.el("InvoiceType", d.documentType);
+    w.open("SpecialRegimes");
+    w.el("SelfBillingIndicator", 0);
+    w.el("CashVATSchemeIndicator", 0);
+    w.el("ThirdPartiesBillingIndicator", 0);
+    w.close("SpecialRegimes");
+    w.el("SourceID", text(d.sourceId, 30));
+    w.el("SystemEntryDate", d.systemEntryDateTime);
+    w.el("CustomerID", d.customerId);
+    const debit = isDebitDocument(d.documentType);
+    for (const l of d.lines) {
+      w.open("Line");
+      w.el("LineNumber", l.lineNumber);
+      w.el("ProductCode", text(l.productCode, 60));
+      w.el("ProductDescription", text(l.description, 200));
+      w.el("Quantity", dec(l.quantity));
+      w.el("UnitOfMeasure", text(l.unit, 20));
+      w.el("UnitPrice", dec(l.unitPrice));
+      w.el("TaxPointDate", d.date);
+      if (l.reference) {
+        w.open("References");
+        w.el("Reference", text(l.reference.documentNo, 60));
+        w.el("Reason", optionalText(l.reference.reason, 50));
+        w.close("References");
+      }
+      w.el("Description", text(l.description, 200));
+      w.el(debit ? "DebitAmount" : "CreditAmount", dec(l.netAmount));
+      tax(w, l.tax);
+      exemption(w, l);
+      if (l.settlementAmount.gt(0)) w.el("SettlementAmount", dec(l.settlementAmount));
+      w.close("Line");
+    }
+    w.open("DocumentTotals");
+    w.el("TaxPayable", m2(d.taxPayable));
+    w.el("NetTotal", m2(d.netTotal));
+    w.el("GrossTotal", m2(d.grossTotal));
+    for (const p of d.payments) {
+      w.open("Payment");
+      w.el("PaymentMechanism", p.mechanism);
+      w.el("PaymentAmount", dec(p.amount));
+      w.el("PaymentDate", p.date);
+      w.close("Payment");
+    }
+    w.close("DocumentTotals");
+    w.close("Invoice");
+  }
+  w.close("SalesInvoices");
+}
+
+function workingDocuments(w: XmlWriter, docs: SaftDocument[]) {
+  const totals = sectionTotals(docs);
+  w.open("WorkingDocuments");
+  w.el("NumberOfEntries", docs.length);
+  w.el("TotalDebit", m2(totals.debit));
+  w.el("TotalCredit", m2(totals.credit));
+  for (const d of docs) {
+    w.open("WorkDocument");
+    w.el("DocumentNumber", d.documentNo);
+    w.open("DocumentStatus");
+    w.el("WorkStatus", d.status);
+    w.el("WorkStatusDate", d.statusDateTime);
+    w.el("Reason", d.status === "A" ? optionalText(d.statusReason, 50) : null);
+    w.el("SourceID", text(d.statusSourceId, 30));
+    w.el("SourceBilling", d.sourceBilling);
+    w.close("DocumentStatus");
+    w.el("Hash", d.hash);
+    w.el("HashControl", d.hashControl);
+    w.el("Period", d.period);
+    w.el("WorkDate", d.date);
+    w.el("WorkType", d.documentType);
+    w.el("SourceID", text(d.sourceId, 30));
+    w.el("SystemEntryDate", d.systemEntryDateTime);
+    w.el("CustomerID", d.customerId);
+    for (const l of d.lines) {
+      w.open("Line");
+      w.el("LineNumber", l.lineNumber);
+      w.el("ProductCode", text(l.productCode, 60));
+      w.el("ProductDescription", text(l.description, 200));
+      w.el("Quantity", dec(l.quantity));
+      w.el("UnitOfMeasure", text(l.unit, 20));
+      w.el("UnitPrice", dec(l.unitPrice));
+      w.el("TaxPointDate", d.date);
+      w.el("Description", text(l.description, 200));
+      w.el("CreditAmount", dec(l.netAmount));
+      tax(w, l.tax);
+      exemption(w, l);
+      if (l.settlementAmount.gt(0)) w.el("SettlementAmount", dec(l.settlementAmount));
+      w.close("Line");
+    }
+    w.open("DocumentTotals");
+    w.el("TaxPayable", m2(d.taxPayable));
+    w.el("NetTotal", m2(d.netTotal));
+    w.el("GrossTotal", m2(d.grossTotal));
+    w.close("DocumentTotals");
+    w.close("WorkDocument");
+  }
+  w.close("WorkingDocuments");
+}
+
+function payments(w: XmlWriter, receipts: SaftPayment[]) {
+  // Each line settles an invoice and is a CreditAmount; the total leaves out annulled receipts.
+  let credit = ZERO;
+  for (const r of receipts) if (r.status !== "A") credit = credit.plus(r.lines.reduce((s, l) => s.plus(l.amount), ZERO));
+  w.open("Payments");
+  w.el("NumberOfEntries", receipts.length);
+  w.el("TotalDebit", m2(ZERO));
+  w.el("TotalCredit", m2(credit));
+  for (const r of receipts) {
+    w.open("Payment");
+    w.el("PaymentRefNo", r.paymentRefNo);
+    w.el("Period", r.period);
+    w.el("TransactionDate", r.transactionDate);
+    w.el("PaymentType", r.paymentType);
+    w.open("DocumentStatus");
+    w.el("PaymentStatus", r.status);
+    w.el("PaymentStatusDate", r.statusDateTime);
+    w.el("Reason", r.status === "A" ? optionalText(r.statusReason, 50) : null);
+    w.el("SourceID", text(r.statusSourceId, 30));
+    w.el("SourcePayment", "P");
+    w.close("DocumentStatus");
+    for (const m of r.methods) {
+      w.open("PaymentMethod");
+      w.el("PaymentMechanism", m.mechanism);
+      w.el("PaymentAmount", dec(m.amount));
+      w.el("PaymentDate", m.date);
+      w.close("PaymentMethod");
+    }
+    w.el("SourceID", text(r.sourceId, 30));
+    w.el("SystemEntryDate", r.systemEntryDateTime);
+    w.el("CustomerID", r.customerId);
+    for (const l of r.lines) {
+      w.open("Line");
+      w.el("LineNumber", l.lineNumber);
+      w.open("SourceDocumentID");
+      w.el("OriginatingON", text(l.originatingOn, 60));
+      w.el("InvoiceDate", l.invoiceDate);
+      w.close("SourceDocumentID");
+      w.el("CreditAmount", dec(l.amount));
+      w.close("Line");
+    }
+    w.open("DocumentTotals");
+    w.el("TaxPayable", m2(r.taxPayable));
+    w.el("NetTotal", m2(r.netTotal));
+    w.el("GrossTotal", m2(r.grossTotal));
+    w.close("DocumentTotals");
+    w.close("Payment");
+  }
+  w.close("Payments");
+}

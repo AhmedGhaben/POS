@@ -13,6 +13,7 @@ import {
   MonitorCog,
   Vault,
   Clock,
+  FileSpreadsheet,
   type LucideIcon,
 } from "lucide-react";
 
@@ -34,6 +35,7 @@ export type NavLabel =
   | "invoices"
   | "cashDrawer"
   | "shifts"
+  | "reports"
   | "expenses"
   | "suppliers"
   | "employees"
@@ -50,6 +52,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/invoices", label: "invoices", icon: FileText },
   { to: "/drawer-events", label: "cashDrawer", icon: Vault },
   { to: "/shifts", label: "shifts", icon: Clock },
+  { to: "/reports", label: "reports", icon: FileSpreadsheet },
   { to: "/expenses", label: "expenses", icon: Receipt },
   { to: "/suppliers", label: "suppliers", icon: Truck },
   { to: "/employees", label: "employees", icon: Users },

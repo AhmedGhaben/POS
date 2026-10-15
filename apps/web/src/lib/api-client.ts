@@ -87,6 +87,14 @@ interface RequestOptions {
   timeoutMs?: number;
   /** Extra headers, e.g. X-Override-Token with a manager's approval. */
   headers?: Record<string, string>;
+  /** "file": the body is a download (see apiClient.download). */
+  responseType?: "json" | "file";
+}
+
+/** A file the API sent as a download, named as the server named it. */
+export interface DownloadedFile {
+  blob: Blob;
+  fileName: string;
 }
 
 async function request<T>(path: string, options: RequestOptions = {}, isRetry = false): Promise<T> {
@@ -142,6 +150,10 @@ async function request<T>(path: string, options: RequestOptions = {}, isRetry = 
   if (res.status === 204) {
     return undefined as T;
   }
+  if (options.responseType === "file") {
+    const fileName = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "")?.[1] ?? "download";
+    return { blob: await res.blob(), fileName } as T;
+  }
   return res.json() as Promise<T>;
 }
 
@@ -153,6 +165,20 @@ export const apiClient = {
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: "PATCH", body }),
   put: <T>(path: string, body?: unknown) => request<T>(path, { method: "PUT", body }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  /** A generated file (SAF-T, exports): signed in like any request, errors as ApiError. */
+  download: (path: string) => request<DownloadedFile>(path, { method: "GET", responseType: "file" }),
 };
+
+/** Hands a downloaded file to the browser to save. */
+export function saveFile({ blob, fileName }: DownloadedFile): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
 
 export { ApiError };

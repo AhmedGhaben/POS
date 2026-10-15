@@ -99,6 +99,26 @@ Prisma backend.
     (country setting) in the Portuguese format, e.g. "245 000,00 Kz". A
     new business takes its country's currency, language (pt-AO), time
     zone (Africa/Luanda) and IVA regime.
+  - **Files for AGT and the accountant** (Reports, owner and manager; every
+    file generated is in the audit log):
+    - **SAF-T (AO) Facturação** for a month or any period within one year,
+      for the company or one store: header, customers (Consumidor Final
+      999999999), products, tax table, every sales document (FR, FT, NC,
+      annulled ones with their reason), proformas as working documents. Each
+      file is checked against AGT's XSD (`docs/saft-ao/xsd`) in the tests.
+    - **SAF-T de Inventários** (draft layout until AGT's circular is
+      published): stock held at the end of a date (31 December by default),
+      per product, at the weighted average cost; no stock gives the header
+      only.
+    - **Export for the accountant**: an Excel workbook with sales (base and
+      IVA per rate, exemptions, credit notes subtracting), purchases, and
+      money received and refunded.
+    - Periods are **calendar dates in the shop's time zone** (Luanda): a
+      sale at 00:30 on 1 November belongs to November even though it's
+      still 31 October in UTC.
+    - The Dashboard reminds owners of the monthly file (until the 15th,
+      while e-invoicing is off) and of the yearly inventory (until 15
+      February).
 - **Products & stock**: categories, per-store inventory, purchases,
   returns, transfers between stores, low-stock alerts, and **CSV
   import/export** with a validating preview.
@@ -199,7 +219,8 @@ Prisma backend.
     payment methods: credit card, Multicaixa reference, bank transfer and
     cheque, each mapped to its SAF-T payment mechanism.
 - **Reports**: dashboard with KPIs, trends, top products, store
-  comparison, CSV/PDF export, and optional AI insights (Anthropic API).
+  comparison, CSV/PDF export, and optional AI insights (Anthropic API);
+  the **Reports** page makes the SAF-T and accountant files (above).
 - **Languages**: English, European Portuguese, Brazilian Portuguese and
   **Portuguese (Angola)** (see `docs/plans/I18N.md`).
   - pt-AO is made from pt-PT with the Angolan spelling ("Factura", "actual",
@@ -290,6 +311,7 @@ it they're printed to the API console, links included.
 | `SAFT_PRIVATE_KEY` or `SAFT_PRIVATE_KEY_FILE` | RSA private key (PEM, 1024-bit) that signs the fiscal documents' hash chain. Keep it in secrets, never in the repo. Without it a temporary key is used (fine until certified) |
 | `SAFT_KEY_VERSION` | The key's version, printed as HashControl once certified (default 1) |
 | `AGT_SOFTWARE_CERTIFICATE` | The software's AGT validation number (e.g. `77/AGT/2019`). Unset: documents say "DOCUMENTO SEM VALIDADE FISCAL" and HashControl is 0; set: the API won't start without the real key |
+| `SAFT_PRODUCER_TAX_ID`, `SAFT_PRODUCT_ID`, `SAFT_PRODUCT_VERSION` | The software maker's NIF, "Product name/Company name" and version written in every SAF-T file's header. Placeholders (`999999999`, `POS/POS`, `0.2.3`) until the software is registered with AGT |
 
 ## Windows desktop app
 
@@ -411,6 +433,8 @@ npm run test --workspace apps/api       # API unit tests
 npm run test:e2e --workspace apps/api   # API e2e: needs the migrated + seeded dev database
 npm run test --workspace apps/web       # web unit tests (Vitest)
 npm run test --workspace apps/desktop   # desktop unit tests (ESC/POS, transports, log scrubbing)
+# desktop e2e against another API than :4000 (e.g. this branch's, run from source):
+POS_TEST_API_URL=http://localhost:4100 npx playwright test --config apps/desktop/playwright.config.ts
 npm run lint
 ```
 

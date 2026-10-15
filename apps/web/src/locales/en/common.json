@@ -14,7 +14,8 @@
     "settings": "Settings",
     "thisDevice": "This device",
     "pointOfSale": "Point of Sale",
-    "shifts": "Shifts"
+    "shifts": "Shifts",
+    "reports": "Reports"
   },
   "shell": {
     "openNavigation": "Open navigation",

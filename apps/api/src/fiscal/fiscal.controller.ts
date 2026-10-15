@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, Res, StreamableFile, UseGuards } from "@nestjs/common";
+import type { Response } from "express";
 import { Role } from "@prisma/client";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -10,7 +11,7 @@ import { Public } from "../common/decorators/public.decorator";
 import { CurrentTerminal, TerminalKeyGuard } from "../till/terminal-key.guard";
 import type { TillTerminal } from "../till/till-auth.service";
 import { FiscalService } from "./fiscal.service";
-import { SaftExportService } from "./saft-export.service";
+import { ExportFile, SaftExportService } from "./saft-export.service";
 
 /**
  * Fiscal documents: read and print them. There's no route to change or
@@ -87,72 +88,63 @@ export class FiscalController {
     return this.fiscal.createProforma(user.businessId, user.userId, dto);
   }
 
+  /**
+   * SAF-T (AO) Facturação for a period: startDate and endDate are calendar
+   * dates (YYYY-MM-DD) in the store's time zone; neither = last month.
+   */
+  @Get("saft/facturacao")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  async saftFacturacao(
+    @CurrentUser() user: AuthenticatedUser,
+    @Res({ passthrough: true }) res: Response,
+    @Query("storeId") storeId?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    return sendFile(res, await this.saftExport.facturacao(user.businessId, user.userId, { storeId, startDate, endDate }));
+  }
+
+  /** SAF-T de Inventários (draft format): stock at the end of `date` (default: last 31 December). */
+  @Get("saft/inventario")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  async saftInventario(
+    @CurrentUser() user: AuthenticatedUser,
+    @Res({ passthrough: true }) res: Response,
+    @Query("storeId") storeId?: string,
+    @Query("date") date?: string,
+  ) {
+    return sendFile(res, await this.saftExport.inventario(user.businessId, user.userId, { storeId, date }));
+  }
+
+  /** The accountant's Excel workbook for a period (same dates as the SAF-T file). */
+  @Get("accountant-export")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  async accountantExport(
+    @CurrentUser() user: AuthenticatedUser,
+    @Res({ passthrough: true }) res: Response,
+    @Query("storeId") storeId?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    return sendFile(res, await this.saftExport.accountant(user.businessId, user.userId, { storeId, startDate, endDate }));
+  }
+
   @Get(":id")
   get(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
     return this.fiscal.get(user.businessId, id);
   }
+}
 
-  @Post("saft/export")
-  @UseGuards(RolesGuard)
-  @Roles(Role.OWNER, Role.MANAGER)
-  async exportSaft(
-    @CurrentUser() user: AuthenticatedUser,
-    @Query("storeId") storeId?: string,
-    @Query("startDate") startDate?: string,
-    @Query("endDate") endDate?: string,
-  ) {
-    const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
-    const end = endDate ? new Date(endDate) : new Date();
-
-    const xml = await this.saftExport.exportFacturacao({
-      businessId: user.businessId,
-      storeId,
-      startDate: start,
-      endDate: end,
-      type: "FACTURACAO",
-    });
-
-    return {
-      fileName: `SAFT-AO-${start.toISOString().split("T")[0]}-${end.toISOString().split("T")[0]}.xml`,
-      content: xml,
-      mimeType: "application/xml",
-    };
-  }
-
-  @Post("saft/inventarios")
-  @UseGuards(RolesGuard)
-  @Roles(Role.OWNER, Role.MANAGER)
-  async exportInventarios(
-    @CurrentUser() user: AuthenticatedUser,
-    @Query("storeId") storeId?: string,
-  ) {
-    const csv = await this.saftExport.exportInventarios(user.businessId, storeId);
-
-    return {
-      fileName: `SAFT-Inventarios-${new Date().toISOString().split("T")[0]}.csv`,
-      content: csv,
-      mimeType: "text/csv",
-    };
-  }
-
-  @Post("saft/accountant")
-  @UseGuards(RolesGuard)
-  @Roles(Role.OWNER, Role.MANAGER)
-  async exportAccountantReport(
-    @CurrentUser() user: AuthenticatedUser,
-    @Query("storeId") storeId?: string,
-    @Query("startDate") startDate?: string,
-    @Query("endDate") endDate?: string,
-  ) {
-    const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
-    const end = endDate ? new Date(endDate) : new Date();
-
-    const csv = await this.saftExport.exportAccountantReport(user.businessId, storeId, start, end);
-
-    return {
-      fileName: `Accountant-Export-${start.toISOString().split("T")[0]}-${end.toISOString().split("T")[0]}.csv`,
-      content: csv,
-      mimeType: "text/csv",
-    };
-  }
+/** A generated file as a download; the web app reads the name from Content-Disposition. */
+function sendFile(res: Response, file: ExportFile) {
+  res.set({
+    "Content-Type": file.mimeType,
+    "Content-Disposition": `attachment; filename="${file.fileName}"`,
+    "Access-Control-Expose-Headers": "Content-Disposition",
+    "Cache-Control": "no-store",
+  });
+  return new StreamableFile(typeof file.body === "string" ? Buffer.from(file.body, "utf8") : file.body);
 }

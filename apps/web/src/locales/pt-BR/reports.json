@@ -1,6 +1,38 @@
 {
   "title": "Relatórios",
-  "description": "Veja e exporte relatórios, arquivos SAF-T e documentos fiscais.",
+  "exports": {
+    "description": "Arquivos para a AGT e para o seu contador. Os períodos são dias de calendário no horário da loja.",
+    "saftTitle": "Arquivos SAF-T (AO)",
+    "saftDescription": "O arquivo de faturamento para a AGT (mensal enquanto a faturação eletrônica não estiver ativa) e o arquivo de inventário de fim de ano.",
+    "saftType": "Arquivo",
+    "facturacao": "Faturamento (Facturação)",
+    "facturacaoHint": "documentos de venda, pró-formas",
+    "inventario": "Inventário (Inventários)",
+    "inventarioHint": "estoque em uma data",
+    "inventarioDraft": "Formato provisório até a AGT publicar a estrutura do arquivo de inventário (Circular 05/2026).",
+    "stockDate": "Estoque no fim do dia",
+    "period": "Período",
+    "periodMonth": "Um mês",
+    "periodRange": "De… até…",
+    "month": "Mês",
+    "startDate": "De",
+    "endDate": "Até",
+    "store": "Loja",
+    "allStores": "Todas as lojas (empresa inteira)",
+    "generate": "Gerar arquivo",
+    "generateExcel": "Gerar arquivo Excel",
+    "generating": "Gerando...",
+    "done": "{{file}} baixado",
+    "failed": "Não foi possível gerar o arquivo. Tente novamente.",
+    "accountantTitle": "Exportar para o contador",
+    "accountantDescription": "Planilha Excel: documentos de venda com base e IVA por alíquota, compras, recebimentos e pagamentos."
+  },
+  "deadlines": {
+    "saftInvoicing": "Arquivo SAF-T de faturamento de {{covers}}: entregar até {{due}}.",
+    "saftInventory": "Arquivo SAF-T de inventário (estoque em {{covers}}): entregar até {{due}}.",
+    "overdue": "Atrasado.",
+    "makeIt": "Gerar agora"
+  },
   "noStore": "Nenhuma loja selecionada.",
   "store": "loja",
   "plan": "Plano {{plan}}",
@@ -9,21 +41,6 @@
   "tabs": {
     "overview": "Visão geral",
     "comparison": "Comparar lojas"
-  },
-  "saft": {
-    "title": "Arquivos SAF-T",
-    "description": "Exporte documentos fiscais em formato SAF-T para a AGT e seu contador.",
-    "exportInfo": "Baixe arquivos SAF-T (Standard Audit File - Tax) para fins de auditoria.",
-    "exportDescription": "Exporte documentos fiscais no formato SAF-T exigido pela AGT e seu contador.",
-    "export": "Exportar SAF-T",
-    "type": "Tipo de SAF-T",
-    "facturacao": "Faturamento (Vendas)",
-    "inventarios": "Inventários",
-    "startDate": "Data de Início",
-    "endDate": "Data de Fim",
-    "selectDateRange": "Selecione um intervalo de datas",
-    "exportSuccess": "Arquivo SAF-T exportado com sucesso",
-    "exportError": "Falha ao exportar arquivo SAF-T"
   },
   "kpi": {
     "revenue": "Faturamento",
