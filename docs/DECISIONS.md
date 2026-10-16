@@ -7,8 +7,7 @@ owner, so they can be reviewed and reversed.
 ## Summary (session of 2026-10-15/16)
 
 **Every phase of the plan is built** (order 1→2→3→7→6→8→8b→4→5→9→10→11),
-one commit per phase, each pushed to `main`; CI green through phase 10
-(phase 11's run was started at the end of the session).
+one commit per phase, each pushed to `main`; CI green on every one.
 
 | Phase | Commit | What |
 |---|---|---|
