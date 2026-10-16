@@ -52,6 +52,8 @@ test.describe.serial("Angola phase 2: searchable dropdowns", () => {
 
   test("keyboard: type on the closed dropdown to filter, arrows + Enter to pick, Esc closes", async () => {
     await openPosWithProducts(page);
+    // Since phase 4 the payment picker shows once there's something to pay.
+    await page.locator("div.grid > button.text-left").first().click();
     const method = page.getByRole("combobox", { name: "Payment method" });
     await expect(method).toContainText("Cash");
 

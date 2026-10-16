@@ -67,6 +67,8 @@ test.describe.serial("Angola phase 8b: SAF-T files and the accountant export", (
   test("Reports is in the menu; without the company's NIF the file is refused with why", async () => {
     await page.getByRole("link", { name: "Reports" }).click();
     await expect(page).toHaveURL(/\/reports$/);
+    // Since phase 10 Reports opens on the figures.
+    await page.getByRole("tab", { name: "Files for AGT and the accountant" }).click();
     await page.getByRole("button", { name: "Generate file" }).click();
     await expect(page.getByText(/Add the company's NIF/)).toBeVisible();
     await patchBusiness(page, { taxId: "5417000000" });

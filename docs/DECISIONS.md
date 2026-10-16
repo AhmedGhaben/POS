@@ -37,15 +37,29 @@ the freshly migrated `pos_ci`), web unit 150, desktop unit 28; lint clean
   match SAF-T; the dashboard keeps its own figures and may differ slightly.
 - "PDF" is the print dialog's "Save as PDF" on an A4 layout; no server PDF.
 
+**Desktop e2e and screens (2026-10-16, after you restarted the :4100 API):**
+- Full desktop Playwright suite against this branch's API: **116 passed,
+  3 skipped** (the skips are the existing conditional ones). New
+  `angola-phase9-11.spec.ts`: the AGT page (server not configured) and its
+  Settings switch, Documents by type + CSV, display size kept across
+  sign-out/in on the till.
+- Four older specs failed on purpose-made changes and were updated (no app
+  bug): reprints say "2ª Via", not "COPY" (phase 5); Reports opens on
+  Figures (phase 10); the payment picker shows once the cart has something
+  (phase 4); part C opens its shift before setting up the drawer (opening a
+  shift kicks the drawer; it passed only when an earlier suite left the
+  owner's shift open). Phase 5's spec had two selector mistakes, fixed.
+- Screens checked from screenshots: AGT page, report figures (product
+  margin, IVA summary), display-size menu, back office and till at Extra
+  large. One fix: the Reports page had no page margins (now like the others).
+- **Found, not fixed (your call):** 55 demo products are at 0 % IVA without
+  an exemption reason (from before phase 6), and the API still accepts a
+  bare `taxRate: 0`. Their sales get IVA ISE 0 % with **no M-code**, which
+  the SAF-T file leaves out and AGT will most likely reject. Suggested fix:
+  require a reason for 0 % (product form and API) and have the owner pick
+  one for the existing products (a data change, so not done here).
+
 **Not run / not done** (skipped per your rules or the situation):
-- **Desktop e2e (Playwright) not run** for phases 5, 9, 10 and 11, and no
-  full desktop regression: they need this branch's API from source on
-  :4100, which the system stopped for low memory, and I was told not to
-  restart it on my own. Phase 5's spec is written
-  (`apps/desktop/e2e/angola-phase5.spec.ts`); phases 9-11 have none (their
-  logic is covered by API e2e and web unit tests). Run with the API on :4100: `POS_TEST_API_URL=http://localhost:4100 npx playwright test`.
-- **Phases 9-11 screens not looked at in a browser** (same reason);
-  type-check, lint and unit tests pass.
 - The Docker API on :4000 (serving the installed v0.2.3 tills) was **not
   rebuilt**: that's the 0.2.4 release, your call. Migrations were applied
   only to the local databases (`pos`, `pos_ci` on localhost:15432); none

@@ -29,7 +29,8 @@ test.describe.serial("Angola phase 5: history and printing", () => {
   test("Sales: today's sale is listed; its slip reprints as a 2ª Via, its A4 as the original then 2ª Via", async () => {
     await openPosWithProducts(page);
     await sellFirstProduct(page);
-    await page.getByRole("link", { name: "Sales" }).click();
+    // The till is full screen (no sidebar).
+    await page.goto("app://pos/sales");
     const row = page.getByRole("row").nth(1);
     await expect(row).toContainText(/FR \S+\/\d+/);
     await row.click();
@@ -57,14 +58,14 @@ test.describe.serial("Angola phase 5: history and printing", () => {
     await dialog.getByRole("combobox", { name: "After a sale, print" }).click();
     await page.getByRole("option", { name: "The A4 document" }).click();
     await dialog.getByRole("combobox", { name: "A4 copies" }).click();
-    await page.getByRole("option", { name: "Original + Duplicado" }).click();
+    await page.getByRole("option", { name: "Original + Duplicado", exact: true }).click();
     await dialog.getByRole("button", { name: /Save/ }).click();
     // Put it back for the other suites.
     await page.getByRole("button", { name: "Edit" }).first().click();
     await dialog.getByRole("combobox", { name: "After a sale, print" }).click();
     await page.getByRole("option", { name: "The slip (receipt printer)" }).click();
     await dialog.getByRole("combobox", { name: "A4 copies" }).click();
-    await page.getByRole("option", { name: "Original only" }).click();
+    await page.getByRole("option", { name: "Original only", exact: true }).click();
     await dialog.getByRole("button", { name: /Save/ }).click();
   });
 });

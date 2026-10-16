@@ -128,7 +128,7 @@ test.describe.serial("Till: cancel a sale", () => {
 
   test("reprint marks the receipt as a copy", async () => {
     await page.getByTestId("recent-sale").first().getByRole("button", { name: "Reprint receipt" }).click();
-    await expect(page.getByRole("dialog").last()).toContainText("COPY");
+    await expect(page.getByRole("dialog").last()).toContainText("2ª Via"); // phase 5: a reprint of a fiscal document
     await page.keyboard.press("Escape");
     // Back to the list once the receipt window has gone.
     await expect(page.getByRole("dialog")).toHaveCount(1);

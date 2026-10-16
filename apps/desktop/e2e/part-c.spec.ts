@@ -72,6 +72,9 @@ test.describe.serial("Part C: cash drawer", () => {
     await connect(page, proxy.url);
     await login(page);
     await restock(page);
+    // Opening a shift kicks the drawer: open it now, before the drawer is
+    // set up, so the printer only sees this suite's kicks.
+    await openPosWithProducts(page);
   });
 
   test.afterAll(async () => {

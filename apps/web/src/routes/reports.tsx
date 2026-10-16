@@ -67,7 +67,7 @@ export function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6 p-6">
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
 
       <SaftDeadlines link={false} />
