@@ -16,6 +16,7 @@
     "costPrice": "Preço de custo",
     "sellPrice": "Preço de venda",
     "taxRate": "IVA %",
+    "exemptionCode": "Motivo de isenção",
     "stock": "Stock",
     "tax": "Imposto"
   },
@@ -46,6 +47,7 @@
     "exempt": "Isento",
     "exemptionReason": "Motivo de isenção",
     "chooseReason": "Escolha o motivo",
+    "exemptionReasonRequired": "Um produto isento tem de ter o motivo de isenção (código M): é obrigatório em todos os documentos fiscais.",
     "productType": "Tipo de produto (SAF-T)",
     "inventoryType": "Tipo de inventário",
     "inventoryTypeDraft": "Lista provisória até a AGT publicar a de Angola.",
@@ -101,12 +103,21 @@
       "negative": "{{field}} não pode ser negativo",
       "decimals": "{{field}} tem mais de 2 casas decimais",
       "over100": "{{field}} é superior a 100",
-      "stock": "{{field}} \"{{value}}\" tem de ser um número inteiro, 0 ou mais"
+      "stock": "{{field}} \"{{value}}\" tem de ser um número inteiro, 0 ou mais",
+      "exemptionMissing": "{{field}} é 0%: indique o motivo de isenção (código M, por exemplo M10) na coluna {{column}}",
+      "exemptionUnknown": "Motivo de isenção desconhecido \"{{value}}\""
     }
   },
   "exemptCode": "Isento ({{code}})",
   "exemptNoReason": "Isento, sem motivo indicado",
   "checkTax": "Escolha o imposto deste produto pelo nome: abra-o e escolha uma taxa, ou isento com o motivo.",
+  "review": {
+    "title": "Produtos a rever",
+    "description_one": "{{count}} produto está isento de IVA (0%) sem motivo de isenção. Não pode ser vendido até um gestor escolher o motivo (código M) ou uma taxa.",
+    "description_other": "{{count}} produtos estão isentos de IVA (0%) sem motivo de isenção. Não podem ser vendidos até um gestor escolher o motivo (código M) ou uma taxa.",
+    "show": "Mostrar só estes",
+    "showAll": "Mostrar todos os produtos"
+  },
   "categories": {
     "manage": "Categorias",
     "title": "Categorias",

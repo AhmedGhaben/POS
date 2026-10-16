@@ -1,5 +1,6 @@
-import { PrismaClient, Role } from "@prisma/client";
+import { Prisma, PrismaClient, Role } from "@prisma/client";
 import * as bcrypt from "bcrypt";
+import { countryConfig } from "../src/countries";
 
 const prisma = new PrismaClient();
 
@@ -8,105 +9,109 @@ const SEED_OWNER_PASSWORD = "OwnerPass123!";
 const SEED_CASHIER_EMAIL = "cashier@demo-store.test";
 const SEED_CASHIER_PASSWORD = "CashierPass123!";
 
-/** [name, costPrice, sellPrice, taxRate] */
-type ProductSeed = [string, number, number, number];
+/**
+ * [name, costPrice, sellPrice, tax]: the tax is the IVA rate (14, Taxa
+ * geral) or, for an exempt product, its exemption reason ("M10", bens
+ * alimentares: no fiscal document may have an exempt line without one).
+ */
+type ProductSeed = [string, number, number, 14 | "M10"];
 
 const CATALOG: Record<string, ProductSeed[]> = {
   Beverages: [
-    ["Sparkling Water 500ml", 0.6, 1.5, 8],
-    ["Cold Brew Coffee 12oz", 1.2, 3.25, 8],
-    ["Orange Juice 1L", 1.8, 3.99, 8],
-    ["Green Tea Bottle 16oz", 1.1, 2.79, 8],
-    ["Energy Drink 8oz", 0.95, 2.99, 8],
-    ["Sports Drink 20oz", 0.85, 2.49, 8],
-    ["Sparkling Lemonade 500ml", 0.7, 1.99, 8],
+    ["Sparkling Water 500ml", 0.6, 1.5, 14],
+    ["Cold Brew Coffee 12oz", 1.2, 3.25, 14],
+    ["Orange Juice 1L", 1.8, 3.99, 14],
+    ["Green Tea Bottle 16oz", 1.1, 2.79, 14],
+    ["Energy Drink 8oz", 0.95, 2.99, 14],
+    ["Sports Drink 20oz", 0.85, 2.49, 14],
+    ["Sparkling Lemonade 500ml", 0.7, 1.99, 14],
   ],
   Snacks: [
-    ["Trail Mix 100g", 0.9, 2.75, 8],
-    ["Potato Chips 150g", 0.75, 2.49, 8],
-    ["Pretzels 200g", 0.65, 2.19, 8],
-    ["Chocolate Bar 45g", 0.4, 1.75, 8],
-    ["Granola Bar Box", 1.5, 3.99, 8],
-    ["Popcorn 100g", 0.5, 1.99, 8],
+    ["Trail Mix 100g", 0.9, 2.75, 14],
+    ["Potato Chips 150g", 0.75, 2.49, 14],
+    ["Pretzels 200g", 0.65, 2.19, 14],
+    ["Chocolate Bar 45g", 0.4, 1.75, 14],
+    ["Granola Bar Box", 1.5, 3.99, 14],
+    ["Popcorn 100g", 0.5, 1.99, 14],
   ],
   Dairy: [
-    ["Whole Milk 1L", 0.95, 1.99, 0],
-    ["Greek Yogurt 500g", 1.4, 3.49, 0],
-    ["Cheddar Cheese 200g", 2.1, 4.99, 0],
-    ["Butter 250g", 1.6, 3.79, 0],
-    ["Eggs (Dozen)", 1.9, 3.99, 0],
+    ["Whole Milk 1L", 0.95, 1.99, "M10"],
+    ["Greek Yogurt 500g", 1.4, 3.49, "M10"],
+    ["Cheddar Cheese 200g", 2.1, 4.99, "M10"],
+    ["Butter 250g", 1.6, 3.79, "M10"],
+    ["Eggs (Dozen)", 1.9, 3.99, "M10"],
   ],
   Bakery: [
-    ["Sourdough Loaf", 1.3, 3.49, 0],
-    ["Croissant", 0.6, 1.99, 0],
-    ["Bagel (6-pack)", 1.1, 2.99, 0],
-    ["Blueberry Muffin", 0.7, 2.29, 0],
-    ["Baguette", 0.5, 1.79, 0],
+    ["Sourdough Loaf", 1.3, 3.49, "M10"],
+    ["Croissant", 0.6, 1.99, "M10"],
+    ["Bagel (6-pack)", 1.1, 2.99, "M10"],
+    ["Blueberry Muffin", 0.7, 2.29, "M10"],
+    ["Baguette", 0.5, 1.79, "M10"],
   ],
   Produce: [
-    ["Bananas (lb)", 0.3, 0.69, 0],
-    ["Avocado", 0.5, 1.29, 0],
-    ["Roma Tomatoes (lb)", 0.6, 1.49, 0],
-    ["Baby Spinach 5oz", 1.1, 2.99, 0],
-    ["Red Apples (lb)", 0.55, 1.39, 0],
-    ["Carrots (lb)", 0.35, 0.99, 0],
+    ["Bananas (lb)", 0.3, 0.69, "M10"],
+    ["Avocado", 0.5, 1.29, "M10"],
+    ["Roma Tomatoes (lb)", 0.6, 1.49, "M10"],
+    ["Baby Spinach 5oz", 1.1, 2.99, "M10"],
+    ["Red Apples (lb)", 0.55, 1.39, "M10"],
+    ["Carrots (lb)", 0.35, 0.99, "M10"],
   ],
   "Meat & Seafood": [
-    ["Chicken Breast (lb)", 2.4, 4.99, 0],
-    ["Ground Beef (lb)", 2.9, 5.49, 0],
-    ["Salmon Fillet (lb)", 5.5, 9.99, 0],
-    ["Bacon 12oz", 3.1, 5.99, 0],
-    ["Shrimp 1lb Bag", 6.2, 10.99, 0],
+    ["Chicken Breast (lb)", 2.4, 4.99, "M10"],
+    ["Ground Beef (lb)", 2.9, 5.49, "M10"],
+    ["Salmon Fillet (lb)", 5.5, 9.99, "M10"],
+    ["Bacon 12oz", 3.1, 5.99, "M10"],
+    ["Shrimp 1lb Bag", 6.2, 10.99, "M10"],
   ],
   "Frozen Foods": [
-    ["Frozen Pizza", 2.2, 5.49, 8],
-    ["Ice Cream Pint", 1.8, 4.29, 8],
-    ["Frozen Mixed Veggies", 0.9, 2.29, 8],
-    ["Frozen Waffles", 1.2, 3.29, 8],
-    ["Frozen Burritos (4-pack)", 2.0, 4.99, 8],
+    ["Frozen Pizza", 2.2, 5.49, 14],
+    ["Ice Cream Pint", 1.8, 4.29, 14],
+    ["Frozen Mixed Veggies", 0.9, 2.29, 14],
+    ["Frozen Waffles", 1.2, 3.29, 14],
+    ["Frozen Burritos (4-pack)", 2.0, 4.99, 14],
   ],
   Household: [
-    ["Paper Towels (6-roll)", 3.5, 7.99, 8],
-    ["Dish Soap 500ml", 1.1, 2.99, 8],
-    ["Laundry Detergent 1L", 3.8, 8.49, 8],
-    ["Trash Bags (30-pack)", 2.6, 5.99, 8],
-    ["All-Purpose Cleaner", 1.4, 3.49, 8],
-    ["Aluminum Foil Roll", 1.9, 3.99, 8],
+    ["Paper Towels (6-roll)", 3.5, 7.99, 14],
+    ["Dish Soap 500ml", 1.1, 2.99, 14],
+    ["Laundry Detergent 1L", 3.8, 8.49, 14],
+    ["Trash Bags (30-pack)", 2.6, 5.99, 14],
+    ["All-Purpose Cleaner", 1.4, 3.49, 14],
+    ["Aluminum Foil Roll", 1.9, 3.99, 14],
   ],
   "Personal Care": [
-    ["Toothpaste 100ml", 1.0, 2.79, 8],
-    ["Shampoo 400ml", 2.2, 5.49, 8],
-    ["Bar Soap (3-pack)", 1.3, 3.29, 8],
-    ["Deodorant Stick", 1.6, 3.99, 8],
-    ["Hand Sanitizer 250ml", 0.9, 2.49, 8],
+    ["Toothpaste 100ml", 1.0, 2.79, 14],
+    ["Shampoo 400ml", 2.2, 5.49, 14],
+    ["Bar Soap (3-pack)", 1.3, 3.29, 14],
+    ["Deodorant Stick", 1.6, 3.99, 14],
+    ["Hand Sanitizer 250ml", 0.9, 2.49, 14],
   ],
   Electronics: [
-    ["AA Batteries (4-pack)", 1.8, 4.49, 8],
-    ["USB-C Cable 1m", 1.5, 5.99, 8],
-    ["Earbuds (Basic)", 4.2, 9.99, 8],
-    ["Phone Charger 20W", 3.8, 8.99, 8],
-    ["Portable Power Bank", 6.5, 14.99, 8],
+    ["AA Batteries (4-pack)", 1.8, 4.49, 14],
+    ["USB-C Cable 1m", 1.5, 5.99, 14],
+    ["Earbuds (Basic)", 4.2, 9.99, 14],
+    ["Phone Charger 20W", 3.8, 8.99, 14],
+    ["Portable Power Bank", 6.5, 14.99, 14],
   ],
   Stationery: [
-    ["Ballpoint Pens (5-pack)", 0.8, 2.29, 8],
-    ["Spiral Notebook", 0.9, 2.49, 8],
-    ["Sticky Notes", 0.6, 1.79, 8],
-    ["Printer Paper Ream", 3.4, 6.99, 8],
-    ["Highlighters (4-pack)", 1.1, 2.99, 8],
+    ["Ballpoint Pens (5-pack)", 0.8, 2.29, 14],
+    ["Spiral Notebook", 0.9, 2.49, 14],
+    ["Sticky Notes", 0.6, 1.79, 14],
+    ["Printer Paper Ream", 3.4, 6.99, 14],
+    ["Highlighters (4-pack)", 1.1, 2.99, 14],
   ],
   "Toys & Games": [
-    ["Deck of Playing Cards", 0.7, 2.49, 8],
-    ["Puzzle 500pc", 3.2, 7.99, 8],
-    ["Bouncy Ball", 0.3, 1.49, 8],
-    ["Coloring Book", 0.9, 2.99, 8],
-    ["Mini Puzzle Cube", 1.4, 3.99, 8],
+    ["Deck of Playing Cards", 0.7, 2.49, 14],
+    ["Puzzle 500pc", 3.2, 7.99, 14],
+    ["Bouncy Ball", 0.3, 1.49, 14],
+    ["Coloring Book", 0.9, 2.99, 14],
+    ["Mini Puzzle Cube", 1.4, 3.99, 14],
   ],
   "Pet Supplies": [
-    ["Dog Food 2lb Bag", 3.5, 7.49, 8],
-    ["Cat Litter 10lb", 3.8, 7.99, 8],
-    ["Dog Treats", 1.6, 3.99, 8],
-    ["Cat Food Can", 0.6, 1.49, 8],
-    ["Pet Waste Bags", 1.1, 2.79, 8],
+    ["Dog Food 2lb Bag", 3.5, 7.49, 14],
+    ["Cat Litter 10lb", 3.8, 7.99, 14],
+    ["Dog Treats", 1.6, 3.99, 14],
+    ["Cat Food Can", 0.6, 1.49, 14],
+    ["Pet Waste Bags", 1.1, 2.79, 14],
   ],
 };
 
@@ -176,6 +181,32 @@ async function main() {
     update: {},
   });
 
+  // The country's IVA rates (Taxa geral 14% the default), as the app creates them.
+  const config = countryConfig(business.country);
+  for (const r of config?.taxRates ?? []) {
+    await prisma.taxRate.upsert({
+      where: { businessId_key: { businessId: business.id, key: r.key } },
+      create: {
+        businessId: business.id,
+        key: r.key,
+        name: r.name,
+        taxType: r.taxType,
+        taxCode: r.taxCode,
+        percentage: new Prisma.Decimal(r.percentage),
+        region: r.region,
+        isDefault: r.isDefault,
+        verifyValidity: !!r.verifyValidity,
+        note: r.note ?? null,
+      },
+      update: {},
+    });
+  }
+  const generalRate = await prisma.taxRate.findFirst({ where: { businessId: business.id, isDefault: true } });
+  const taxFields = (tax: ProductSeed[3]) =>
+    tax === "M10"
+      ? { taxRate: "0.00", taxCode: "ISE", exemptionCode: "M10", taxRateId: null }
+      : { taxRate: tax.toFixed(2), taxCode: "NOR", exemptionCode: null, taxRateId: generalRate?.id ?? null };
+
   let productIndex = 0;
   let totalProducts = 0;
   const createdProducts: { id: string; name: string }[] = [];
@@ -192,7 +223,7 @@ async function main() {
       .slice(0, 3)
       .toUpperCase();
 
-    for (const [name, costPrice, sellPrice, taxRate] of productSeeds) {
+    for (const [name, costPrice, sellPrice, tax] of productSeeds) {
       productIndex += 1;
       const sku = `${prefix}-${String(productIndex).padStart(3, "0")}`;
       const stock = 20 + ((productIndex * 7) % 100);
@@ -207,7 +238,7 @@ async function main() {
           name,
           costPrice: costPrice.toFixed(2),
           sellPrice: sellPrice.toFixed(2),
-          taxRate: taxRate.toFixed(2),
+          ...taxFields(tax),
         },
         update: {},
       });

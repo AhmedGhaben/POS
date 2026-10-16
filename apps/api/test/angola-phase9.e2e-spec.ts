@@ -192,5 +192,19 @@ describe("Angola phase 9: AGT e-invoicing queue (e2e)", () => {
       const sub = (await submissions()).find((s) => s.document.documentNo === bad.documentNo)!;
       expect(sub).toMatchObject({ status: "REJECTED", errors: [{ code: "E02", description: "Formato inválido" }] });
     });
+
+    it("a document with an exempt line lacking its M-code (only from before that rule) is held back, never sent", async () => {
+      const old = await sell();
+      // Documents can't be changed, but a tax row can be added: enough to stand in for an older document.
+      const line = await prisma.fiscalDocumentLine.findFirstOrThrow({ where: { documentId: old.id } });
+      await prisma.fiscalDocumentLineTax.create({ data: { lineId: line.id, taxType: "IVA", taxCountryRegion: "AO", taxCode: "ISE", percentage: 0, amount: 0 } });
+      const before = calls.length;
+      await queue.runOnce(at(23));
+      // Nothing sent carries it (the queue may still ask about others).
+      expect(JSON.stringify(calls.slice(before).map((c) => c.body))).not.toContain(old.documentNo);
+      const sub = (await submissions()).find((s) => s.document.documentNo === old.documentNo)!;
+      expect(sub).toMatchObject({ status: "QUEUED", lastError: "Not sent: an exempt line has no exemption reason (M-code)" });
+      expect(sub.nextAttemptAt.getTime()).toBeGreaterThan(at(23).getTime() + 23 * 3600_000);
+    });
   });
 });

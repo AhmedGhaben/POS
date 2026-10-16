@@ -68,4 +68,30 @@ describe("buildPreview", () => {
     const [row] = buildPreview([["A", "X", "1.999", "", "", "", ""]], columns, new Set());
     expect(row.errors).toEqual(["Sell price has more than 2 decimals"]);
   });
+
+  it("in Angola, a 0% row needs a known exemption reason; a reason alone means 0%", () => {
+    const withReason = mapColumns(["Name", "SKU", "Sell price", "Tax %", "Exemption"]).columns;
+    const codes = new Set(["M10", "M11", "M13"]);
+    const rows = buildPreview(
+      [
+        ["Rice", "RICE-1", "900", "0", ""],
+        ["Rice", "RICE-2", "900", "0", "m10"],
+        ["Pill", "MED-1", "500", "", "M11"],
+        ["Oil", "OIL-1", "1200", "0", "M99"],
+        ["Soap", "SOAP-1", "300", "14", "M10"],
+      ],
+      withReason,
+      new Set(),
+      codes,
+    );
+    expect(rows[0].errors).toEqual(["Tax % is 0%: put the exemption reason (M-code, e.g. M10) in the Exemption column"]);
+    expect(rows[1].payload).toMatchObject({ taxRate: 0, exemptionCode: "M10" });
+    expect(rows[2].payload).toMatchObject({ exemptionCode: "M11" });
+    expect(rows[2].payload).not.toHaveProperty("taxRate");
+    expect(rows[3].errors).toEqual(['Unknown exemption reason "M99"']);
+    // A rate above 0 ignores the reason.
+    expect(rows[4].payload).not.toHaveProperty("exemptionCode");
+    // Without an exemption table (no country rules), 0% stays allowed.
+    expect(buildPreview([["Rice", "RICE-1", "900", "0", ""]], withReason, new Set())[0].status).toBe("new");
+  });
 });

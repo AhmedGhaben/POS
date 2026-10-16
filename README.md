@@ -154,6 +154,12 @@ Prisma backend.
     moves its products from the next sale. In Regime Simplificado or
     Exclusão every line is exempt with M00 / M04 whatever the product says.
     Products whose tax wasn't picked by name are flagged in the list.
+  - **No exempt product without its reason** (Angola): a 0% product must
+    have its M-code (form, API and CSV import, which has an Exemption
+    column); new products start on Taxa geral 14%. Older products exempt
+    without a reason are listed under **Produtos a rever** on the Products
+    page, the till won't sell them, and no document, SAF-T file or AGT
+    submission is ever made with an exempt line lacking its M-code.
   - **Prices with IVA** (the store setting): the tax is worked out of the
     shelf price and rounded up to the cent, so base + tax is always the
     shelf price; without the setting the tax is added (also rounded up).

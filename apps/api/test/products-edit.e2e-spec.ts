@@ -70,7 +70,7 @@ describe("Product editing (e2e)", () => {
       http()
         .post("/products")
         .set(auth(ownerToken))
-        .send({ sku, name, costPrice: 1, sellPrice: 2, taxRate: 0 })
+        .send({ sku, name, costPrice: 1, sellPrice: 2, exemptionCode: "M10" })
         .expect(201);
     teaId = (await create("TEA-1", "Tea")).body.id;
     coffeeId = (await create("COF-1", "Coffee")).body.id;
@@ -145,8 +145,24 @@ describe("Product editing (e2e)", () => {
     expect(Number(stored!.costPrice)).toBe(1);
   });
 
+  it("IVA 0% needs an exemption reason (M-code): refused without one, in Portuguese too; a new product defaults to Taxa geral 14%", async () => {
+    const post = (body: object, lang = "en") => http().post("/products").set(auth(ownerToken)).set("X-Language", lang).send({ costPrice: 1, sellPrice: 2, ...body });
+    const refused = await post({ sku: "ZERO-1", name: "Zero", taxRate: 0 }).expect(400);
+    expect(refused.body.message).toBe("A product exempt from IVA (0%) needs an exemption reason (M-code)");
+    const pt = await post({ sku: "ZERO-1", name: "Zero", taxRateId: null, exemptionCode: null }, "pt-PT").expect(400);
+    expect(pt.body.message).toBe("Um produto isento de IVA (0%) tem de ter o motivo de isenção (código M, por exemplo M10)");
+    await post({ sku: "ZERO-1", name: "Zero", exemptionCode: "M99" }).expect(400, { statusCode: 400, message: "Unknown exemption reason", error: "Bad Request" });
+    await patch(ownerToken, teaId, { taxRate: 0 }).expect(400);
+    await patch(ownerToken, teaId, { taxRateId: null, exemptionCode: null }).expect(400);
+
+    const plain = await post({ sku: "PLAIN-1", name: "Plain" }).expect(201);
+    expect(plain.body).toMatchObject({ taxRate: "14", taxCode: "NOR", exemptionCode: null });
+    const exempt = await post({ sku: "BOOK-1", name: "Livro", exemptionCode: "M13" }).expect(201);
+    expect(exempt.body).toMatchObject({ taxRate: "0", taxCode: "ISE", exemptionCode: "M13" });
+  });
+
   it("past sales keep the price they were sold at", async () => {
-    await patch(ownerToken, teaId, { sellPrice: 2, taxRate: 0 }).expect(200);
+    await patch(ownerToken, teaId, { sellPrice: 2, exemptionCode: "M10" }).expect(200);
     const sale = await http()
       .post("/sales")
       .set(auth(ownerToken))

@@ -8,7 +8,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { fiscalTimeZone, localDateTime } from "./fiscal-format";
 import { FiscalService } from "./fiscal.service";
 import { AccountantMoneyMovement, AccountantPurchase, AccountantSale, AccountantTax, accountantSheets } from "./saft/accountant";
-import { buildFacturacaoXml, SaftCustomer, SaftDocument, SaftLine, SaftPayment, SaftProduct, SaftTax, SaftTaxTableEntry } from "./saft/facturacao";
+import { buildFacturacaoXml, documentsMissingExemption, SaftCustomer, SaftDocument, SaftLine, SaftPayment, SaftProduct, SaftTax, SaftTaxTableEntry } from "./saft/facturacao";
 import { DRAFT_CSV, inventoryRows, InventoryFormat } from "./saft/inventario";
 import { addDays, dateColumnValue, exportPeriod, ExportPeriod, lastYearEnd, localDate, parseCalendarDate, previousMonth, startOfLocalDay } from "./saft/period";
 
@@ -145,6 +145,12 @@ export class SaftExportService {
       orderBy: [{ supplierDocDate: "asc" }, { createdAt: "asc" }],
     });
     const suppliers = [...new Map(purchases.map((p) => [p.supplier.id, p.supplier])).values()];
+    // Never a file with an exempt line lacking its M-code (only documents from before that rule).
+    const missing = documentsMissingExemption([...sales, ...working].map(toDoc));
+    if (missing.length) {
+      const shown = missing.slice(0, 10).join(", ") + (missing.length > 10 ? ` (+${missing.length - 10})` : "");
+      throw new BadRequestException(`Documents with an exempt line without an exemption reason: ${shown}`);
+    }
     const xml = buildFacturacaoXml({
       company: {
         taxId: nif,

@@ -68,7 +68,8 @@
     "openDrawer": "Open drawer",
     "recentSales": "Recent sales",
     "saleDiscount": "Discount on the whole sale",
-    "changeSaleDiscount": "Change the sale discount"
+    "changeSaleDiscount": "Change the sale discount",
+    "exemptionMissing": "\"{{name}}\" is exempt from IVA without a reason, so it can't be sold. A manager must fix the product first (Products → Products to review)."
   },
   "complete": {
     "title": "Sale complete",

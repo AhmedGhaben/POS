@@ -173,7 +173,7 @@ describe("Offline sales and terminals (e2e)", () => {
           storeId,
           clientId: randomUUID(),
           offline: { createdAt: new Date().toISOString() },
-          lineItems: [{ productId, quantity: before + 3, unitPrice: 10, taxRate: 0 }],
+          lineItems: [{ productId, quantity: before + 3, unitPrice: 10, taxRate: 0, exemptionCode: "M10" }],
           payments: [{ method: "CASH", amount: (before + 3) * 10 }],
         })
         .expect(201);
@@ -200,7 +200,7 @@ describe("Offline sales and terminals (e2e)", () => {
         .send({
           storeId,
           shiftClientId: cashierShift,
-          lineItems: [{ productId, quantity: 1, unitPrice: 1, taxRate: 0 }],
+          lineItems: [{ productId, quantity: 1, unitPrice: 1, taxRate: 0, exemptionCode: "M10" }],
           payments: [{ method: "CARD", amount: 1.19 }],
         })
         .expect(403);

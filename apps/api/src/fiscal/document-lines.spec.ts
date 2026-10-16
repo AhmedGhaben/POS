@@ -43,6 +43,15 @@ describe("fiscal document lines", () => {
     expect(documentLine(line({ discountAmount: D(2) }), 1, AO, false).discountAmount.toString()).toBe("2");
   });
 
+  it("no document line exempt without a reason, or with an unknown one (AO); none needed without country rules", () => {
+    const exempt = { taxRate: D(0), taxCode: "ISE", taxAmount: D(0) };
+    expect(() => documentLine(line({ ...exempt, exemptionCode: null }), 1, AO, true)).toThrow(
+      '"Arroz 1kg" is exempt from IVA without a reason: a manager must fix the product first',
+    );
+    expect(() => documentLine(line({ ...exempt, exemptionCode: "M99" }), 1, AO, true)).toThrow(/without a reason/);
+    expect(documentLine(line({ ...exempt, exemptionCode: null }), 1, null, true).taxes[0].exemptionCode).toBeNull();
+  });
+
   it("an exempt line carries the AGT reason's legal wording", () => {
     const l = documentLine(line({ taxRate: D(0), taxCode: "ISE", exemptionCode: "M10", taxAmount: D(0) }), 1, AO, true);
     expect(l.taxes[0]).toMatchObject({ taxCode: "ISE", exemptionCode: "M10" });

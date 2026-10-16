@@ -467,6 +467,8 @@ export interface SaleLineItemInputDto {
    */
   unitPrice?: number;
   taxRate?: number;
+  /** Offline: the exemption reason (M-code) the till printed for a 0% line. */
+  exemptionCode?: string;
   /** Off this line. */
   discount?: DiscountInput | null;
 }

@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { activeExemptions, AO, countryConfig, findExemption, lineTax, ratesForStore } from "./index";
+import { activeExemptions, AO, countryConfig, findExemption, lacksExemptionReason, lineTax, productNeedsExemptionReason, ratesForStore } from "./index";
 
 const API_DIR = __dirname;
 const SHARED_DIR = path.resolve(__dirname, "../../../../packages/shared/src/countries");
@@ -90,6 +90,18 @@ describe("country config", () => {
       expect(lineTax(AO, "GERAL", { taxRate: 0, exemptionCode: "M10" })).toEqual({ taxType: "IVA", taxCode: "ISE", rate: 0, exemptionCode: "M10" });
       expect(lineTax(AO, "GERAL", { taxRate: "14" })).toMatchObject({ taxCode: "NOR", rate: 14 });
       expect(lineTax(null, null, { taxRate: 19 })).toMatchObject({ taxCode: "NOR", rate: 19 });
+    });
+
+    it("an exempt line needs a known M-code; a product exempt without one can't be sold (a regime store still gives M00/M04)", () => {
+      const noReason = { taxRate: 0, exemptionCode: null };
+      expect(productNeedsExemptionReason(AO, noReason)).toBe(true);
+      expect(productNeedsExemptionReason(AO, { taxRate: 0, exemptionCode: "M10" })).toBe(false);
+      expect(productNeedsExemptionReason(AO, { taxRate: "14" })).toBe(false);
+      expect(productNeedsExemptionReason(null, noReason)).toBe(false);
+      expect(lacksExemptionReason(AO, lineTax(AO, "GERAL", noReason))).toBe(true);
+      expect(lacksExemptionReason(AO, lineTax(AO, "SIMPLIFICADO", noReason))).toBe(false);
+      expect(lacksExemptionReason(AO, lineTax(AO, "EXCLUSAO", noReason))).toBe(false);
+      expect(lacksExemptionReason(AO, { rate: 0, exemptionCode: "M99" })).toBe(true);
     });
 
     it("has the SAF-T product types and draft inventory types", () => {

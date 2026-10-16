@@ -75,13 +75,13 @@ describe("Angola phase 3: checkout (e2e)", () => {
     storeId = reg.body.stores[0].id;
 
     soapId = (
-      await http().post("/products").set(auth(ownerToken)).send({ sku: "SOAP", name: "Soap", costPrice: 4, sellPrice: 10, taxRate: 0 }).expect(201)
+      await http().post("/products").set(auth(ownerToken)).send({ sku: "SOAP", name: "Soap", costPrice: 4, sellPrice: 10, exemptionCode: "M10" }).expect(201)
     ).body.id;
     serviceId = (
       await http()
         .post("/products")
         .set(auth(ownerToken))
-        .send({ sku: "FIX", name: "Repair service", costPrice: 0, sellPrice: 50, taxRate: 0, trackStock: false })
+        .send({ sku: "FIX", name: "Repair service", costPrice: 0, sellPrice: 50, exemptionCode: "M10", trackStock: false })
         .expect(201)
     ).body.id;
     await http().put(`/stores/${storeId}/inventory/${soapId}`).set(auth(ownerToken)).send({ quantity: 20, reorderLevel: 5 }).expect(200);

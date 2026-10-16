@@ -110,9 +110,11 @@ describe("Product CSV import (e2e)", () => {
     expect(Number(bySku["TEA-1"].costPrice)).toBe(1);
     expect(Number(bySku["TEA-1"].taxRate)).toBe(5);
     expect(bySku["TEA-1"].category?.name).toBe("Drinks");
-    // New products default cost to 0 and tax to the business default.
+    // New products default cost to 0 and tax to the business's default rate
+    // (Taxa geral 14% in Angola; the old business-wide "default tax %" no longer applies there), never 0%.
     expect(Number(bySku["CHIP-1"].costPrice)).toBe(0);
-    expect(Number(bySku["CHIP-1"].taxRate)).toBe(7);
+    expect(bySku["CHIP-1"]).toMatchObject({ taxCode: "NOR", exemptionCode: null });
+    expect(Number(bySku["CHIP-1"].taxRate)).toBe(14);
     expect(bySku["CHIP-1"].category?.name).toBe("Snacks");
     expect(await prisma.category.count({ where: { businessId } })).toBe(2);
 
@@ -121,6 +123,28 @@ describe("Product CSV import (e2e)", () => {
       [existingId]: 12,
       [bySku["COF-1"].id]: 5,
     });
+  });
+
+  it("a 0% row needs a known exemption reason; a reason alone means 0%", async () => {
+    const res = await importRows(ownerToken, {
+      updateExisting: true,
+      createCategories: false,
+      rows: [
+        { line: 2, sku: "RICE-1", name: "Arroz", sellPrice: 900, taxRate: 0 },
+        { line: 3, sku: "RICE-2", name: "Arroz", sellPrice: 900, taxRate: 0, exemptionCode: "m10" },
+        { line: 4, sku: "MED-1", name: "Paracetamol", sellPrice: 500, exemptionCode: "M11" },
+        { line: 5, sku: "OIL-1", name: "Óleo", sellPrice: 1200, taxRate: 0, exemptionCode: "M99" },
+      ],
+    }).expect(201);
+    expect(res.body.skipped).toEqual([
+      { line: 2, sku: "RICE-1", reason: "A product exempt from IVA (0%) needs an exemption reason (M-code)" },
+      { line: 5, sku: "OIL-1", reason: "Unknown exemption reason" },
+    ]);
+    const made = await prisma.product.findMany({ where: { businessId, sku: { in: ["RICE-2", "MED-1"] } }, orderBy: { sku: "asc" } });
+    expect(made.map((p) => [p.sku, p.taxRate.toNumber(), p.taxCode, p.exemptionCode])).toEqual([
+      ["MED-1", 0, "ISE", "M11"],
+      ["RICE-2", 0, "ISE", "M10"],
+    ]);
   });
 
   it("skips existing SKUs and unknown categories when those options are off", async () => {

@@ -61,6 +61,12 @@ export class SaleLineItemInputDto {
   @Max(100)
   taxRate?: number;
 
+  /** Offline sales only: the exemption reason (M-code) the till printed for a 0% line. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(8)
+  exemptionCode?: string;
+
   /** Off this line. */
   @IsOptional()
   @ValidateNested()

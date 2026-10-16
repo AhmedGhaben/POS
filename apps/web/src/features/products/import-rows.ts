@@ -1,10 +1,10 @@
 import i18n from "@/i18n";
 import { parseLooseNumber } from "@/lib/csv-parse";
 
-export type ImportField = "name" | "sku" | "barcode" | "category" | "costPrice" | "sellPrice" | "taxRate" | "stock";
+export type ImportField = "name" | "sku" | "barcode" | "category" | "costPrice" | "sellPrice" | "taxRate" | "exemptionCode" | "stock";
 
 /** Column order of the template (and of the export, minus Stock). */
-export const IMPORT_FIELDS: ImportField[] = ["name", "sku", "barcode", "category", "costPrice", "sellPrice", "taxRate", "stock"];
+export const IMPORT_FIELDS: ImportField[] = ["name", "sku", "barcode", "category", "costPrice", "sellPrice", "taxRate", "exemptionCode", "stock"];
 
 /** A column's header in the language on screen ("Sell price", "Preço de venda"). */
 export function fieldHeader(field: ImportField): string {
@@ -23,6 +23,7 @@ const HEADER_ALIASES: Record<ImportField, string[]> = {
   costPrice: ["costprice", "cost", "purchaseprice", "buyprice", "precodecusto", "custo", "precocusto", "precodecompra"],
   sellPrice: ["sellprice", "price", "sellingprice", "saleprice", "retailprice", "unitprice", "precodevenda", "preco", "pvp", "precovenda"],
   taxRate: ["tax", "taxrate", "vat", "vatrate", "iva", "taxa", "imposto", "taxadeiva"],
+  exemptionCode: ["exemption", "exemptioncode", "exemptionreason", "isencao", "motivodeisencao", "codigodeisencao", "isento"],
   stock: ["stock", "quantity", "qty", "onhand", "stockquantity", "estoque", "quantidade", "qtd", "existencias"],
 };
 
@@ -63,6 +64,7 @@ export interface ImportRowPayload {
   costPrice?: number;
   sellPrice: number;
   taxRate?: number;
+  exemptionCode?: string;
   stock?: number;
 }
 
@@ -85,7 +87,12 @@ const hasTwoDecimalsAtMost = (n: number) => Math.abs(Math.round(n * 100) - n * 1
  * line 1) and marks each new / update / error. `existingSkus` drives new vs
  * update.
  */
-export function buildPreview(dataRows: string[][], columns: ColumnMap, existingSkus: Set<string>): PreviewRow[] {
+/**
+ * `exemptionCodes`: where the business's country has an exemption table, its
+ * codes; a 0% row then needs one of them (no fiscal document is issued for
+ * an exempt product without its reason).
+ */
+export function buildPreview(dataRows: string[][], columns: ColumnMap, existingSkus: Set<string>, exemptionCodes?: Set<string>): PreviewRow[] {
   const cell = (row: string[], field: ImportField) => {
     const index = columns[field];
     return index === undefined ? "" : (row[index] ?? "").trim();
@@ -126,6 +133,14 @@ export function buildPreview(dataRows: string[][], columns: ColumnMap, existingS
     const costPrice = amount("costPrice", false);
     const taxRate = amount("taxRate", false);
     if (taxRate !== undefined && taxRate > 100) e("over100", { field: fieldHeader("taxRate") });
+    // A reason alone means 0%; with a rate above 0 it's ignored.
+    const exemptionRaw = cell(row, "exemptionCode").toUpperCase();
+    const exempt = taxRate === 0 || (taxRate === undefined && !!exemptionRaw);
+    const exemptionCode = exempt && exemptionRaw ? exemptionRaw : undefined;
+    if (exempt && exemptionCodes) {
+      if (!exemptionCode) e("exemptionMissing", { field: fieldHeader("taxRate"), column: fieldHeader("exemptionCode") });
+      else if (!exemptionCodes.has(exemptionCode)) e("exemptionUnknown", { value: exemptionCode });
+    }
 
     let stock: number | undefined;
     const stockRaw = cell(row, "stock");
@@ -158,6 +173,7 @@ export function buildPreview(dataRows: string[][], columns: ColumnMap, existingS
         ...(category ? { category } : {}),
         ...(costPrice !== undefined ? { costPrice } : {}),
         ...(taxRate !== undefined ? { taxRate } : {}),
+        ...(exemptionCode ? { exemptionCode } : {}),
         ...(stock !== undefined ? { stock } : {}),
       },
     };

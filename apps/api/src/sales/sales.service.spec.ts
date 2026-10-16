@@ -14,7 +14,8 @@ function buildProduct(sellPrice: number, taxRate = 0, trackStock = true, extra: 
     costPrice: new Prisma.Decimal(6),
     taxRate: new Prisma.Decimal(taxRate),
     taxCode: taxRate > 0 ? "NOR" : "ISE",
-    exemptionCode: null as string | null,
+    // Exempt products have a reason (M10, bens alimentares); tests that need one without pass it.
+    exemptionCode: (taxRate > 0 ? null : "M10") as string | null,
     unit: "un",
     trackStock,
     ...extra,
@@ -302,6 +303,37 @@ describe("SalesService#create", () => {
       const { service } = buildService(prisma);
       const sale = (await service.create("biz-1", "cashier-1", saleDto())) as any;
       expect(sale.lineItems[0]).toMatchObject({ taxCode: "ISE", exemptionCode: "M10" });
+    });
+
+    it("Regime de Exclusão: every line is exempt with M04, even a product exempt without a reason", async () => {
+      for (const product of [buildProduct(10, 14), buildProduct(10, 0, true, { exemptionCode: null })]) {
+        const prisma = buildPrismaMock(product, { store: { country: "AO", ivaRegime: "EXCLUSAO", pricesIncludeTax: true } });
+        const sale = (await buildService(prisma).service.create("biz-1", "cashier-1", saleDto())) as any;
+        expect(sale.lineItems[0]).toMatchObject({ taxCode: "ISE", exemptionCode: "M04" });
+      }
+    });
+
+    it("refuses to sell a product exempt from IVA without a reason (Regime Geral), before anything is saved", async () => {
+      const prisma = buildPrismaMock(buildProduct(10, 0, true, { exemptionCode: null }));
+      const { service } = buildService(prisma);
+      await expect(service.create("biz-1", "cashier-1", saleDto())).rejects.toThrow(
+        new BadRequestException('"Widget" is exempt from IVA without a reason: a manager must fix the product first'),
+      );
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it("an offline sale keeps the exemption reason the till printed", async () => {
+      const prisma = buildPrismaMock(buildProduct(10, 0, true, { exemptionCode: "M10" }));
+      const sale = (await buildService(prisma).service.create(
+        "biz-1",
+        "cashier-1",
+        saleDto({
+          clientId: "1f0e2d3c-4b5a-4968-8776-655443322120",
+          offline: { createdAt: new Date().toISOString() },
+          lineItems: [{ productId: "prod-1", quantity: 1, unitPrice: 10, taxRate: 0, exemptionCode: "M11" }],
+        }),
+      )) as any;
+      expect(sale.lineItems[0]).toMatchObject({ taxCode: "ISE", exemptionCode: "M11" });
     });
 
     it("decimal quantities for products sold by weight, whole numbers for 'un'", async () => {

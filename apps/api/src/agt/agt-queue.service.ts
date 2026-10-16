@@ -15,6 +15,10 @@ const DOCUMENT_FOR_AGT = {
   customerPayment: { select: { allocations: { select: { amount: true, document: { select: { documentNo: true, invoiceDate: true, netTotal: true, grossTotal: true } } } } } },
 } satisfies Prisma.FiscalDocumentInclude;
 
+const MISSING_EXEMPTION = "Not sent: an exempt line has no exemption reason (M-code)";
+/** A held document is looked at again once a day (it can't change; it stays visible on the AGT page). */
+const HELD_DELAY = 24 * 60 * 60 * 1000;
+
 type Submission = Prisma.AgtSubmissionGetPayload<{ include: { document: { include: typeof DOCUMENT_FOR_AGT } } }>;
 /** status 0 = no answer (network, timeout): error says why. */
 type Reply = { status: number; body: Record<string, unknown>; error?: string };
@@ -107,7 +111,18 @@ export class AgtQueueService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async sendBatch(subs: Submission[], now: Date) {
+  private async sendBatch(batch: Submission[], now: Date) {
+    // AGT needs the M-code on every exempt line; a document without one
+    // (only from before that rule) is held back, with the reason, not sent.
+    const held = batch.filter((s) => s.document.lines.some((l) => l.taxes.some((t) => t.percentage.isZero() && !t.exemptionCode)));
+    if (held.length) {
+      await this.prisma.agtSubmission.updateMany({
+        where: { id: { in: held.map((s) => s.id) } },
+        data: { lastError: MISSING_EXEMPTION, nextAttemptAt: new Date(now.getTime() + HELD_DELAY) },
+      });
+    }
+    const subs = batch.filter((s) => !held.includes(s));
+    if (!subs.length) return;
     const nif = this.issuerTaxId(subs[0]);
     const productTypes = await this.productTypes(subs);
     const documents = subs.map((s) => buildAgtDocument(this.documentInput(s, nif, productTypes), (p) => this.config.documentSigner!.sign(p)));

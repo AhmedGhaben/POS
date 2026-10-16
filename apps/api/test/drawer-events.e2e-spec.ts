@@ -71,7 +71,7 @@ describe("Drawer events (e2e)", () => {
       await http()
         .post("/products")
         .set(auth(ownerToken))
-        .send({ sku: `DRW-${RUN}`, name: "Drawer Widget", costPrice: 1, sellPrice: 10, taxRate: 0 })
+        .send({ sku: `DRW-${RUN}`, name: "Drawer Widget", costPrice: 1, sellPrice: 10, exemptionCode: "M10" })
         .expect(201)
     ).body.id;
     await http().put(`/stores/${storeId}/inventory/${productId}`).set(auth(ownerToken)).send({ quantity: 10 }).expect(200);

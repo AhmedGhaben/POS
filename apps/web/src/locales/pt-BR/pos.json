@@ -68,7 +68,8 @@
     "openDrawer": "Abrir gaveta",
     "recentSales": "Vendas recentes",
     "saleDiscount": "Desconto na venda toda",
-    "changeSaleDiscount": "Alterar o desconto da venda"
+    "changeSaleDiscount": "Alterar o desconto da venda",
+    "exemptionMissing": "\"{{name}}\" está isento de IVA sem motivo de isenção e não pode ser vendido. Um gerente precisa corrigir o produto antes (Produtos → Produtos a revisar)."
   },
   "complete": {
     "title": "Venda concluída",

@@ -14,7 +14,7 @@ import { isWorkingOffline, useOfflineStore } from "@/features/pos/offline-store"
 import { CreditOption } from "@/features/pos/components/CreditOption";
 import { creditSplit, NO_CREDIT, type CreditChoice } from "@/features/pos/credit";
 import { useTranslation } from "react-i18next";
-import { countryConfig, DrawerOpenReason, fromCents, lineGrossCents, PaymentMethod, Permission } from "@pos/shared";
+import { countryConfig, DrawerOpenReason, fromCents, lacksExemptionReason, lineGrossCents, PaymentMethod, Permission } from "@pos/shared";
 import type { CustomerCardDto, CustomerDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +40,7 @@ import { PriceDialog } from "@/features/pos/components/PriceDialog";
 import type { Approval } from "@/features/overrides/approval";
 import { discountLabel } from "@/features/pos/discount-label";
 import { CustomerSearchCombobox } from "@/features/pos/components/CustomerSearchCombobox";
-import { linePrice, useCart, type CartLine } from "@/features/pos/hooks/useCart";
+import { linePrice, productTax, taxContextFor, useCart, type CartLine } from "@/features/pos/hooks/useCart";
 import { createSale } from "@/features/pos/api";
 import { useAuthStore } from "@/features/auth/store";
 import { ApiError, apiClient } from "@/lib/api-client";
@@ -256,6 +256,10 @@ export function PosPage() {
     return () => cancelAnimationFrame(frame);
   }, [completedSale, autoPrint, a4Document]);
   const checkoutAreaRef = React.useRef<HTMLDivElement>(null);
+  // A product exempt from IVA without a reason: no fiscal document may carry
+  // it, so it can't be sold until a manager fixes it (the server refuses too).
+  const taxCtx = taxContextFor(currentStore);
+  const unreasoned = lines.find((l) => lacksExemptionReason(countryConfig(taxCtx.country), productTax(l.product, taxCtx)));
 
   const saleMutation = useMutation({
     mutationFn: () =>
@@ -373,6 +377,12 @@ export function PosPage() {
           />
         )}
 
+        {unreasoned && (
+          <p role="alert" className="text-sm text-destructive">
+            {t("checkout.exemptionMissing", { name: unreasoned.product.name })}
+          </p>
+        )}
+
         {saleMutation.isError && (
           <p className="text-sm text-destructive">
             {saleMutation.error instanceof ApiError
@@ -384,7 +394,7 @@ export function PosPage() {
         <Button
           size="lg"
           className="w-full"
-          disabled={lines.length === 0 || (split.paidNow > 0 && !paymentsValid) || !creditValid || saleMutation.isPending}
+          disabled={lines.length === 0 || !!unreasoned || (split.paidNow > 0 && !paymentsValid) || !creditValid || saleMutation.isPending}
           onClick={() => saleMutation.mutate()}
         >
           {saleMutation.isPending ? t("checkout.processing") : t("checkout.charge", { amount: money(totals.total) })}

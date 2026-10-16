@@ -12,6 +12,9 @@ const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 type TaxFields = Pick<Prisma.ProductUncheckedCreateInput, "taxRate" | "taxRateId" | "taxCode" | "exemptionCode">;
 
+/** SAF-T and AGT need the M-code on every exempt line, so an exempt product needs one. */
+export const EXEMPTION_REQUIRED = "A product exempt from IVA (0%) needs an exemption reason (M-code)";
+
 @Injectable()
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -60,7 +63,7 @@ export class ProductsService {
     await this.assertBarcodeFree(businessId, barcode);
     const config = await this.country(businessId);
     this.assertInventoryType(config, dto.inventoryType);
-    const tax = await this.resolveTax(businessId, config, dto);
+    const tax = (await this.resolveTax(businessId, config, dto)) ?? (await this.defaultTax(businessId, config));
     const trackStock = dto.trackStock ?? true;
     return this.prisma.product.create({
       data: {
@@ -72,7 +75,7 @@ export class ProductsService {
         description: dto.description,
         costPrice: dto.costPrice,
         sellPrice: dto.sellPrice,
-        ...(tax ?? { taxRate: 0, taxCode: "ISE" }),
+        ...tax,
         unit: dto.unit ?? "un",
         productType: dto.productType ?? (trackStock ? "P" : "S"),
         inventoryType: dto.inventoryType !== undefined ? dto.inventoryType || null : trackStock ? "M" : null,
@@ -195,8 +198,12 @@ export class ProductsService {
       }
       return { taxRateId: null, taxRate: 0, taxCode: "ISE", exemptionCode: dto.exemptionCode };
     }
+    // Exempt without a reason: a 0% rate, or no rate and no reason.
+    if (dto.taxRate === 0 || (dto.taxRateId === null && dto.exemptionCode === null && dto.taxRate === undefined)) {
+      if (config) throw new BadRequestException(EXEMPTION_REQUIRED);
+      return { taxRateId: null, taxRate: 0, taxCode: "ISE", exemptionCode: null };
+    }
     if (dto.taxRate !== undefined) {
-      if (dto.taxRate === 0) return { taxRateId: null, taxRate: 0, taxCode: "ISE", exemptionCode: null };
       const match = await this.prisma.taxRate.findFirst({
         where: { businessId, active: true, taxType: "IVA", percentage: new Prisma.Decimal(dto.taxRate) },
         orderBy: { isDefault: "desc" },
@@ -204,6 +211,22 @@ export class ProductsService {
       return { taxRateId: match?.id ?? null, taxRate: dto.taxRate, taxCode: match?.taxCode ?? "NOR", exemptionCode: null };
     }
     return null;
+  }
+
+  /**
+   * A new product's tax when none was chosen: the business's default rate
+   * (Taxa geral 14% in Angola), never exempt. Its rates may not exist yet
+   * (they're created when first listed): then the country's default.
+   */
+  private async defaultTax(businessId: string, config: ReturnType<typeof countryConfig>): Promise<TaxFields> {
+    const rate = await this.prisma.taxRate.findFirst({ where: { businessId, active: true, isDefault: true, taxType: "IVA" } });
+    if (rate) return { taxRateId: rate.id, taxRate: rate.percentage, taxCode: rate.taxCode, exemptionCode: null };
+    const fallback = config?.taxRates.find((r) => r.isDefault && r.taxType === "IVA");
+    if (fallback) return { taxRateId: null, taxRate: fallback.percentage, taxCode: fallback.taxCode, exemptionCode: null };
+    // No country rules: the business's own default, as before.
+    const business = await this.prisma.business.findUnique({ where: { id: businessId }, select: { defaultTaxRate: true } });
+    const percentage = business?.defaultTaxRate ?? new Prisma.Decimal(0);
+    return { taxRateId: null, taxRate: percentage, taxCode: percentage.gt(0) ? "NOR" : "ISE", exemptionCode: null };
   }
 
   /** A barcode belongs to one active product, so a scan finds one thing. */

@@ -9,7 +9,8 @@ import { emailLanguage } from "../common/i18n/languages";
 import { CreateSaleDto } from "./dto/create-sale.dto";
 import { VoidSaleDto } from "./dto/void-sale.dto";
 import { priceSaleCents, unitDecimals, type DiscountInput, type PricedSale } from "./pricing";
-import { countryConfig, lineTax, type IvaRegime, type LineTax } from "../countries";
+import { countryConfig, lacksExemptionReason, lineTax, type IvaRegime, type LineTax } from "../countries";
+import { missingExemptionMessage } from "../fiscal/document-lines";
 import { recordMovement } from "../stock/stock";
 import { storeDateRange } from "../common/store-period";
 import { annulmentCode, buyerOf, DOCUMENT_SUMMARY, FiscalService } from "../fiscal/fiscal.service";
@@ -175,11 +176,17 @@ export class SalesService {
     const config = countryConfig(store.country);
     const taxes: LineTax[] = dto.lineItems.map((li) => {
       const tax = lineTax(config, store.ivaRegime as IvaRegime, productById.get(li.productId)!);
-      if (!offline || li.taxRate === undefined || li.taxRate === tax.rate) return tax;
+      if (!offline || li.taxRate === undefined) return tax;
+      // An exemption the till charged keeps the reason it printed.
+      const exemptionCode = li.exemptionCode ?? (tax.rate === 0 ? tax.exemptionCode : null);
+      if (li.taxRate === tax.rate) return tax.rate === 0 ? { ...tax, exemptionCode } : tax;
       return li.taxRate > 0
         ? { ...tax, taxCode: tax.rate > 0 ? tax.taxCode : "NOR", rate: li.taxRate, exemptionCode: null }
-        : { ...tax, taxCode: "ISE", rate: 0 };
+        : { ...tax, taxCode: "ISE", rate: 0, exemptionCode };
     });
+    // No document with an exempt line that has no M-code (SAF-T, AGT).
+    const unreasoned = dto.lineItems.findIndex((_, i) => lacksExemptionReason(config, taxes[i]));
+    if (unreasoned >= 0) throw new BadRequestException(missingExemptionMessage(productById.get(dto.lineItems[unreasoned].productId)!.name));
     const taxIncluded = offline?.pricesIncludeTax ?? store.pricesIncludeTax;
 
     // An offline sale records what already happened at the till, so it

@@ -190,7 +190,7 @@ describe("Angola phase 7: country config and company data (e2e)", () => {
   });
 
   it("takes the new payment methods (bank transfer, Multicaixa reference…)", async () => {
-    const product = await http().post("/products").set(auth(ownerToken)).send({ sku: "P7", name: "Arroz", costPrice: 1, sellPrice: 100, taxRate: 0 }).expect(201);
+    const product = await http().post("/products").set(auth(ownerToken)).send({ sku: "P7", name: "Arroz", costPrice: 1, sellPrice: 100, exemptionCode: "M10" }).expect(201);
     await http().put(`/stores/${storeId}/inventory/${product.body.id}`).set(auth(ownerToken)).send({ quantity: 10 }).expect(200);
     const shift = await ensureShift(app, ownerToken, storeId);
     const sale = await http()

@@ -52,12 +52,8 @@ the freshly migrated `pos_ci`), web unit 150, desktop unit 28; lint clean
 - Screens checked from screenshots: AGT page, report figures (product
   margin, IVA summary), display-size menu, back office and till at Extra
   large. One fix: the Reports page had no page margins (now like the others).
-- **Found, not fixed (your call):** 55 demo products are at 0 % IVA without
-  an exemption reason (from before phase 6), and the API still accepts a
-  bare `taxRate: 0`. Their sales get IVA ISE 0 % with **no M-code**, which
-  the SAF-T file leaves out and AGT will most likely reject. Suggested fix:
-  require a reason for 0 % (product form and API) and have the owner pick
-  one for the existing products (a data change, so not done here).
+- Found: 55 products at 0 % IVA without an exemption reason. **Fixed as
+  you asked**: see "0 % products without an exemption reason" below.
 
 **Not run / not done** (skipped per your rules or the situation):
 - The Docker API on :4000 (serving the installed v0.2.3 tills) was **not
@@ -70,6 +66,56 @@ the freshly migrated `pos_ci`), web unit 150, desktop unit 28; lint clean
   running (one on :3000). They lock Prisma's engine DLL, so `prisma
   generate` reports EPERM (types still regenerate). Left alone; stop them
   and run `npx prisma generate` in `apps/api` once.
+
+---
+
+## 0 % products without an exemption reason (2026-10-16)
+
+Your instructions: a 0 % / Isento product must have an M-code; never
+default to 0 %; regime stores get M00/M04; fix the demo data by rule; a
+review list and a till block for real stores; issued documents untouched.
+
+| # | Decision | Why |
+|---|----------|-----|
+| 1 | **One rule, shared by API and app** (`lacksExemptionReason` in the country helpers): a line at 0 % needs a code from the country's exemption table. Only where the country has one (AO); a business without country rules is unchanged. | The till (offline too) and the server must agree. |
+| 2 | **API refuses** a product with `taxRate: 0`, or exempt with no reason (`taxRateId: null, exemptionCode: null`): "A product exempt from IVA (0%) needs an exemption reason (M-code)", in Portuguese with `X-Language` (pt-PT: "Um produto isento de IVA (0%) tem de ter o motivo de isenção (código M, por exemplo M10)"). The product form says the same under the reason field. | Your rule 1. |
+| 3 | **New products start on the default rate** (the business's default tax rate, Taxa geral 14 %; the country's default if its rates aren't created yet), in the API, the form (it already did) and the CSV import. The old business-wide "Default tax %" (0 by default, and what the CSV import used: the likely source of the 0 % products) is hidden in Settings for countries with tax rates. | Your rule 1: never 0 % by default. |
+| 4 | **CSV import**: a new optional **Exemption** column ("Motivo de isenção"); a 0 % row needs a known code (preview error, and the server skips it otherwise); a code alone means 0 %; a code with a rate above 0 is ignored. Template and product export include the column. | Imports were the other way in for 0 % products. |
+| 5 | **Regime stores**: every line gets 0 % with M00 (Simplificado) or M04 (Exclusão) from the store's regime, whatever the product says, so they need no per-product reason. This was already how `lineTax` worked (phase 6); now tested for both, including a product exempt without a reason. | Your rule 2. |
+| 6 | **No fiscal document with an exempt line lacking its M-code**: refused where every document line is built (`documentLine`), so sales, proformas, invoices and credit notes alike; the sale path checks first, before anything is saved. Message: `"X" is exempt from IVA without a reason: a manager must fix the product first` (pt-PT: "… um gestor tem de corrigir o produto (Produtos → Produtos a rever) antes de o vender"). | Your rule 4. A credit note for one of the old demo documents without a code is refused too (the note would repeat the missing code). |
+| 7 | **The till blocks Charge** while the cart has such a product, with the same message, offline too (it uses the saved catalog). Offline sales now send the exemption code the till printed, so the server records that reason even if the product changed since. | Your rule 4. |
+| 7b | An offline sale from a till **without** this update (v0.2.3) that charged 0 % with no reason is refused when it syncs and stays in that till's outbox. | Those tills already can't sell online against this API (phase 3); 0.2.4 sends the reason. |
+| 8 | **"Produtos a rever"**: a banner on the Products page with the count and "Show only these" (also `/products?review=1`); each product already showed "Exempt, no reason given". Not a separate page: fixing is opening the product. | Your rule 4, where the fixing happens. |
+| 9 | **SAF-T**: the writer refuses to write an exempt line without `TaxExemptionCode`, and the export answers 400 naming the documents ("Documentos com linhas isentas sem motivo de isenção: …"). | Your rule 6; a file without the code would be refused by AGT anyway. |
+| 10 | **AGT**: a queued document with such a line is held back (stays "Waiting to send" with "Not sent: an exempt line has no exemption reason (M-code)", looked at again daily), never sent. | "Don't send a document without an M-code." Only old documents can be like that. |
+| 11 | Real customer stores' products are **never changed automatically**. | Your rule 4. |
+
+**Demo data, fixed by rule** (local databases `pos` and `pos_ci` only; the
+script is a one-off, not a migration):
+
+| Products | Was | Now |
+|---|---|---|
+| Demo store, Bakery / Dairy / Meat & Seafood / Produce (22) | 0 %, no reason | **Isento M10** (bens alimentares) |
+| Old test leftovers that are food: "Queijo da Serra" (1), "Arroz" (2), "Coffee", "Green tea", "Tea" | 0 %, no reason | **Isento M10** |
+| Everything else at 0 % without a reason: "Lavender soap" ×22 (archived test leftovers), "szdf", and test leftovers "CAP", "Drawer Widget", "Soap", "Gum" (27) | 0 %, no reason | **14 % Taxa geral** |
+| Medicines (M11), books (M13) | none in the data | — |
+| Demo store's other products (50) | 8 % (not an Angolan rate) | **14 % Taxa geral** (beyond the 55, so the demo matches the seed) |
+
+Coffee and tea counted as food. Beverages, Snacks and Frozen Foods were
+already taxed (8 %) and stay taxed (now 14 %): they aren't basic foods of
+Anexo I, so I didn't make them exempt. "Coloring Book" (Toys & Games) stays
+14 %: it's sold as a toy, not a book.
+
+**Seed** (`apps/api/prisma/seed.ts`): new demo stores get the AO tax rates,
+the four food categories as Isento M10, everything else 14 % Taxa geral
+linked to that rate.
+
+**Issued documents stay as they are** (immutable). The local demo has
+**203 exempt lines without a code**, in documents issued on 15–16 October
+2026 (pre-certification test data). Consequence: a SAF-T invoicing file for
+October 2026 of the demo store is refused (it lists them), and credit notes
+for those documents are refused. Neither matters for real stores, which
+can't create such documents any more.
 
 ---
 

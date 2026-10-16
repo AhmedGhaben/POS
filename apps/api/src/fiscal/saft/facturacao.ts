@@ -251,7 +251,18 @@ function sectionTotals(docs: { status: string; documentType: string; lines: { ne
   return { debit, credit };
 }
 
+/**
+ * Documents with an exempt line (0%) that has no TaxExemptionCode. AGT
+ * requires the code on every exempt line, so the file is never written with
+ * one: the export refuses and names them.
+ */
+export function documentsMissingExemption(docs: Pick<SaftDocument, "documentNo" | "lines">[]): string[] {
+  return docs.filter((d) => d.lines.some((l) => new Prisma.Decimal(l.tax.percentage).isZero() && !l.exemption?.code)).map((d) => d.documentNo);
+}
+
 export function buildFacturacaoXml(input: FacturacaoInput): string {
+  const missing = documentsMissingExemption([...input.salesInvoices, ...input.workingDocuments]);
+  if (missing.length) throw new Error(`Exempt lines without TaxExemptionCode in ${missing.join(", ")}`);
   const w = new XmlWriter();
   w.open("AuditFile", { xmlns: SAFT_NAMESPACE });
 

@@ -60,7 +60,7 @@ describe("Discounts (e2e)", () => {
     await prisma.store.updateMany({ where: { businessId }, data: { pricesIncludeTax: false } });
 
     const product = (sku: string, sellPrice: number, taxRate: number) =>
-      http().post("/products").set(auth(ownerToken)).send({ sku, name: sku, costPrice: 1, sellPrice, taxRate }).expect(201);
+      http().post("/products").set(auth(ownerToken)).send({ sku, name: sku, costPrice: 1, sellPrice, ...(taxRate ? { taxRate } : { exemptionCode: "M10" }) }).expect(201);
     shirtId = (await product("SHIRT", 20, 10)).body.id;
     capId = (await product("CAP", 5, 0)).body.id;
     for (const id of [shirtId, capId]) {

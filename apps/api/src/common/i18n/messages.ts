@@ -395,6 +395,10 @@ const EXACT: Record<string, Translations> = {
   },
   "That tax rate is turned off": { "pt-PT": "Essa taxa está desativada", "pt-BR": "Essa alíquota está desativada" },
   "Unknown exemption reason": { "pt-PT": "Motivo de isenção desconhecido", "pt-BR": "Motivo de isenção desconhecido" },
+  "A product exempt from IVA (0%) needs an exemption reason (M-code)": {
+    "pt-PT": "Um produto isento de IVA (0%) tem de ter o motivo de isenção (código M, por exemplo M10)",
+    "pt-BR": "Um produto isento de IVA (0%) precisa ter o motivo de isenção (código M, por exemplo M10)",
+  },
   "Unknown inventory type": { "pt-PT": "Tipo de inventário desconhecido", "pt-BR": "Tipo de inventário desconhecido" },
   "Send the photo as a JPEG, PNG or WebP image": {
     "pt-PT": "Envie a fotografia em JPEG, PNG ou WebP",
@@ -481,6 +485,20 @@ const PATTERNS: { re: RegExp; t: Translations }[] = [
     t: {
       "pt-PT": "Isso ultrapassa o crédito deste cliente (restam $1)",
       "pt-BR": "Isso passa do crédito deste cliente (restam $1)",
+    },
+  },
+  {
+    re: /^"(.+)" is exempt from IVA without a reason: a manager must fix the product first$/,
+    t: {
+      "pt-PT": '"$1" está isento de IVA sem motivo de isenção: um gestor tem de corrigir o produto (Produtos → Produtos a rever) antes de o vender',
+      "pt-BR": '"$1" está isento de IVA sem motivo de isenção: um gerente precisa corrigir o produto (Produtos → Produtos a rever) antes de vendê-lo',
+    },
+  },
+  {
+    re: /^Documents with an exempt line without an exemption reason: (.+)$/,
+    t: {
+      "pt-PT": "Documentos com linhas isentas sem motivo de isenção: $1. O ficheiro SAF-T não pode ser gerado com elas.",
+      "pt-BR": "Documentos com linhas isentas sem motivo de isenção: $1. O arquivo SAF-T não pode ser gerado com elas.",
     },
   },
   {

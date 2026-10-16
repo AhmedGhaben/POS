@@ -48,6 +48,10 @@ export class ImportProductRowDto {
   @IsOptional() @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) @Max(100)
   taxRate?: number;
 
+  /** Why a 0% product is exempt (M10…); needed with a 0% rate, and on its own means 0%. */
+  @IsOptional() @IsString() @MaxLength(8)
+  exemptionCode?: string;
+
   /** Sets (not adds to) the quantity at `storeId`. */
   @IsOptional() @IsInt() @Min(0)
   stock?: number;

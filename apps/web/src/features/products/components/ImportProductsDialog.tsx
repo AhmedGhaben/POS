@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Combobox } from "@/components/ui/combobox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { activeExemptions, countryConfig } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
 import { fetchProducts, IMPORT_CHUNK_SIZE, importProducts } from "@/features/products/api";
 import { buildPreview, fieldHeader, IMPORT_FIELDS, mapColumns, type ImportField, type PreviewRow } from "@/features/products/import-rows";
@@ -40,7 +41,9 @@ function downloadTemplate() {
     category: i18n.t("products:import.exampleCategory"),
     costPrice: "2.10",
     sellPrice: "4.50",
-    taxRate: "10",
+    taxRate: "14",
+    // For a 0% product: its exemption reason (M10, bens alimentares…).
+    exemptionCode: "",
     stock: "24",
   };
   downloadCsv(
@@ -80,7 +83,10 @@ export function ImportProductsDialog({ open, onOpenChange }: { open: boolean; on
       });
     }
     const existing = await queryClient.fetchQuery({ queryKey: ["products", ""], queryFn: () => fetchProducts() });
-    const preview = buildPreview(rows.slice(1), columns, new Set(existing.map((p) => p.sku)));
+    // In a country with an exemption table, a 0% row needs one of its reasons.
+    const config = countryConfig(useAuthStore.getState().business?.country);
+    const exemptionCodes = config ? new Set(activeExemptions(config).map((e) => e.code)) : undefined;
+    const preview = buildPreview(rows.slice(1), columns, new Set(existing.map((p) => p.sku)), exemptionCodes);
     setStep({ kind: "preview", fileName: file.name, rows: preview, hasStock: columns.stock !== undefined });
   }
 

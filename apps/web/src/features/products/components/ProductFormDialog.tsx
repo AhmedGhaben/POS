@@ -46,7 +46,7 @@ const productSchema = z
     trackStock: z.boolean(),
   })
   // Exempt needs the reason that goes on the documents.
-  .refine((v) => v.tax !== EXEMPT || !!v.exemptionCode, { message: "validation.required", path: ["exemptionCode"] });
+  .refine((v) => v.tax !== EXEMPT || !!v.exemptionCode, { message: "products:form.exemptionReasonRequired", path: ["exemptionCode"] });
 type FormInput = z.input<typeof productSchema>;
 type FormOutput = z.output<typeof productSchema>;
 

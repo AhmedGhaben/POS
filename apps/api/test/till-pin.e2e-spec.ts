@@ -76,7 +76,7 @@ describe("Till key and PIN sign-in (e2e)", () => {
       await http()
         .post("/products")
         .set(auth(ownerToken))
-        .send({ sku: "TILL-1", name: "Gum", costPrice: 0.5, sellPrice: 1, taxRate: 0 })
+        .send({ sku: "TILL-1", name: "Gum", costPrice: 0.5, sellPrice: 1, exemptionCode: "M10" })
         .expect(201)
     ).body.id;
     await http().put(`/stores/${storeId}/inventory/${productId}`).set(auth(ownerToken)).send({ quantity: 50 }).expect(200);

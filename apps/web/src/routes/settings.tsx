@@ -261,20 +261,23 @@ export function SettingsPage() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="defaultTaxRate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("money.defaultTax")}</FormLabel>
-                        <FormControl>
-                          <Input type="number" step="0.01" min="0" max="100" {...field} />
-                        </FormControl>
-                        <FormDescription>{t("money.defaultTaxHint")}</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {/* With country rules, new products start on the default tax rate (Taxa geral) instead. */}
+                  {!country?.taxRates.length && (
+                    <FormField
+                      control={form.control}
+                      name="defaultTaxRate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("money.defaultTax")}</FormLabel>
+                          <FormControl>
+                            <Input type="number" step="0.01" min="0" max="100" {...field} />
+                          </FormControl>
+                          <FormDescription>{t("money.defaultTaxHint")}</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                   <FormField
                     control={form.control}
                     name="maxDiscountPercent"

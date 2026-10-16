@@ -18,6 +18,7 @@ import { ProductFormDialog } from "@/features/products/components/ProductFormDia
 import { fetchCategories } from "@/features/categories/api";
 import { useMoney } from "@/features/business/use-money";
 import { useAuthStore } from "@/features/auth/store";
+import { needsTaxReview } from "@/features/products/product-tax";
 
 export function ProductsPage() {
   const { t } = useTranslation(["products", "common"]);
@@ -30,6 +31,8 @@ export function ProductsPage() {
   const [editing, setEditing] = React.useState<ProductDto | null>(null);
   const [importOpen, setImportOpen] = React.useState(false);
   const [categoriesOpen, setCategoriesOpen] = React.useState(false);
+  // "Produtos a rever" (?review=1 opens straight on them).
+  const [reviewOnly, setReviewOnly] = React.useState(() => searchParams.get("review") === "1");
   React.useEffect(() => {
     if (searchParams.has("new")) setSearchParams({}, { replace: true });
   }, [searchParams, setSearchParams]);
@@ -44,6 +47,10 @@ export function ProductsPage() {
   });
   const categoriesQuery = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
   const ratesQuery = useQuery({ queryKey: TAX_RATES_QUERY_KEY, queryFn: fetchTaxRates });
+  const country = useAuthStore((s) => s.business?.country ?? null);
+  // Exempt without a reason: no fiscal document may carry them, so the till won't sell them.
+  const toReview = showArchived ? [] : (productsQuery.data ?? []).filter((p) => needsTaxReview(p, country));
+  const shown = reviewOnly && toReview.length > 0 ? toReview : productsQuery.data;
   /** The tax by name ("Taxa geral 14%"), "Isento (M10)", or a warning when it hasn't been chosen properly. */
   const taxLabel = (p: ProductDto): { text: string; check: boolean } => {
     const rate = ratesQuery.data?.find((r) => r.id === p.taxRateId);
@@ -93,6 +100,7 @@ export function ProductsPage() {
                   { header: fieldHeader("costPrice"), value: (p: ProductDto) => ("costPrice" in p ? p.costPrice : "") },
                   { header: fieldHeader("sellPrice"), value: (p: ProductDto) => p.sellPrice },
                   { header: fieldHeader("taxRate"), value: (p: ProductDto) => p.taxRate },
+                  { header: fieldHeader("exemptionCode"), value: (p: ProductDto) => p.exemptionCode ?? "" },
                 ],
                 productsQuery.data ?? [],
               )
@@ -137,6 +145,24 @@ export function ProductsPage() {
         )}
       </div>
 
+      {toReview.length > 0 && (
+        <div
+          role="status"
+          className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+        >
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            <div>
+              <p className="font-medium">{t("review.title")}</p>
+              <p>{t("review.description", { count: toReview.length })}</p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setReviewOnly((v) => !v)}>
+            {reviewOnly ? t("review.showAll") : t("review.show")}
+          </Button>
+        </div>
+      )}
+
       <Card>
         <CardContent className="overflow-x-auto p-0">
           <Table>
@@ -152,7 +178,7 @@ export function ProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {productsQuery.data?.map((product) => (
+              {shown?.map((product) => (
                 <TableRow
                   key={product.id}
                   className={canEdit ? "cursor-pointer" : undefined}

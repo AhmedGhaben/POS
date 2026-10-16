@@ -154,13 +154,17 @@ async function queueSaleOffline(sale: CreateSaleDto, lines: CartLine[], approval
     overrides: undefined,
     offlineOverrides: approvals.map((a) => ({ approverId: a.approverId, permission: a.permission })),
     // The server records these prices, not whatever they are by sync time.
-    lineItems: lines.map((l) => ({
-      productId: l.product.id,
-      quantity: l.quantity,
-      unitPrice: linePrice(l),
-      taxRate: productTax(l.product, ctx).rate,
-      discount: l.discount ?? undefined,
-    })),
+    lineItems: lines.map((l) => {
+      const tax = productTax(l.product, ctx);
+      return {
+        productId: l.product.id,
+        quantity: l.quantity,
+        unitPrice: linePrice(l),
+        taxRate: tax.rate,
+        exemptionCode: tax.rate === 0 ? (tax.exemptionCode ?? undefined) : undefined,
+        discount: l.discount ?? undefined,
+      };
+    }),
   };
   const receipt = { ...buildOfflineSale(sale.clientId!, payload, lines), ...currentCashier() };
   await addToOutbox({ clientId: sale.clientId!, kind: "sale", payload, createdAt, receipt });

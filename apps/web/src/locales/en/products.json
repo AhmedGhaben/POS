@@ -16,6 +16,7 @@
     "costPrice": "Cost price",
     "sellPrice": "Sell price",
     "taxRate": "Tax %",
+    "exemptionCode": "Exemption",
     "stock": "Stock",
     "tax": "Tax"
   },
@@ -46,6 +47,7 @@
     "exempt": "Exempt (Isento)",
     "exemptionReason": "Exemption reason",
     "chooseReason": "Choose the reason",
+    "exemptionReasonRequired": "An exempt product needs its exemption reason (M-code): every fiscal document must show it.",
     "productType": "Product type (SAF-T)",
     "inventoryType": "Inventory type",
     "inventoryTypeDraft": "Provisional list until AGT publishes Angola's.",
@@ -101,12 +103,21 @@
       "negative": "{{field}} can't be negative",
       "decimals": "{{field}} has more than 2 decimals",
       "over100": "{{field}} is over 100",
-      "stock": "{{field}} \"{{value}}\" must be a whole number, 0 or more"
+      "stock": "{{field}} \"{{value}}\" must be a whole number, 0 or more",
+      "exemptionMissing": "{{field}} is 0%: put the exemption reason (M-code, e.g. M10) in the {{column}} column",
+      "exemptionUnknown": "Unknown exemption reason \"{{value}}\""
     }
   },
   "exemptCode": "Exempt ({{code}})",
   "exemptNoReason": "Exempt, no reason given",
   "checkTax": "Choose this product's tax by name: open it and pick a tax rate, or exempt with a reason.",
+  "review": {
+    "title": "Products to review",
+    "description_one": "{{count}} product is exempt from IVA (0%) without an exemption reason. It can't be sold until a manager picks its reason (M-code) or a tax rate.",
+    "description_other": "{{count}} products are exempt from IVA (0%) without an exemption reason. They can't be sold until a manager picks their reason (M-code) or a tax rate.",
+    "show": "Show only these",
+    "showAll": "Show all products"
+  },
   "categories": {
     "manage": "Categories",
     "title": "Categories",

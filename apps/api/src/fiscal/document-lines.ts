@@ -1,5 +1,6 @@
+import { BadRequestException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { findExemption, type CountryConfig } from "../countries";
+import { findExemption, lacksExemptionReason, type CountryConfig } from "../countries";
 
 const D = (n: Prisma.Decimal.Value) => new Prisma.Decimal(n);
 const ZERO = new Prisma.Decimal(0);
@@ -49,10 +50,17 @@ export interface DocumentLineData {
   }[];
 }
 
+/** The refusal when a line is exempt without a reason (see `lacksExemptionReason`). */
+export function missingExemptionMessage(productDescription: string): string {
+  return `"${productDescription}" is exempt from IVA without a reason: a manager must fix the product first`;
+}
+
 /**
  * A document line from a sale line. Documents show amounts without tax:
  * net = what was paid - tax, the unit price is net / quantity, and a
  * discount given on prices with IVA is shown without it, in proportion.
+ * No document is issued with an exempt line that has no M-code: SAF-T and
+ * AGT need it (a store under Simplificado or Exclusão gets M00 / M04).
  */
 export function documentLine(
   src: SourceLine,
@@ -72,6 +80,9 @@ export function documentLine(
     : src.discountAmount.toDecimalPlaces(2);
   const taxCode = src.taxCode ?? (rate.gt(0) ? "NOR" : "ISE");
   const exemptionCode = rate.gt(0) ? null : src.exemptionCode;
+  if (lacksExemptionReason(config, { rate: rate.toNumber(), exemptionCode })) {
+    throw new BadRequestException(missingExemptionMessage(src.productDescription));
+  }
   const exemption = exemptionCode && config ? findExemption(config, exemptionCode) : null;
   return {
     lineNumber,

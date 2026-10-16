@@ -1,4 +1,4 @@
-import type { ProductDto, TaxRateDto } from "@pos/shared";
+import { countryConfig, productNeedsExemptionReason, type ProductDto, type TaxRateDto } from "@pos/shared";
 
 /** What the product form's tax field holds: a rate by id, exempt, or an older product's bare percentage. */
 export type TaxChoice = { kind: "rate"; id: string } | { kind: "exempt" } | { kind: "legacy"; rate: number };
@@ -39,4 +39,12 @@ export function taxPayload(
   if (!choice || choice.kind === "legacy") return {};
   if (choice.kind === "rate") return { taxRateId: choice.id, exemptionCode: null };
   return { taxRateId: null, exemptionCode };
+}
+
+/**
+ * Exempt (0%) with no reason: "Produtos a rever". No fiscal document may
+ * carry it, so the till won't sell it until someone picks the reason.
+ */
+export function needsTaxReview(product: Pick<ProductDto, "taxRate" | "exemptionCode">, country: string | null | undefined): boolean {
+  return productNeedsExemptionReason(countryConfig(country), product);
 }

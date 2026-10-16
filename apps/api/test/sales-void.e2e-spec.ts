@@ -72,7 +72,7 @@ describe("Cancelling a sale (e2e)", () => {
       await http()
         .post("/products")
         .set(auth(ownerToken))
-        .send({ sku: "TEA-V", name: "Tea", costPrice: 1, sellPrice: 2, taxRate: 0 })
+        .send({ sku: "TEA-V", name: "Tea", costPrice: 1, sellPrice: 2, exemptionCode: "M10" })
         .expect(201)
     ).body.id;
     await http().put(`/stores/${storeId}/inventory/${teaId}`).set(auth(ownerToken)).send({ quantity: 20 }).expect(200);

@@ -76,7 +76,7 @@ describe("Shifts (e2e)", () => {
       await http()
         .post("/products")
         .set(auth(ownerToken))
-        .send({ sku: "SHIFT-1", name: "Soap", costPrice: 4, sellPrice: 10, taxRate: 0 })
+        .send({ sku: "SHIFT-1", name: "Soap", costPrice: 4, sellPrice: 10, exemptionCode: "M10" })
         .expect(201)
     ).body.id;
     await http().put(`/stores/${storeId}/inventory/${productId}`).set(auth(ownerToken)).send({ quantity: 100 }).expect(200);

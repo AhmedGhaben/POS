@@ -3,7 +3,9 @@ import { Prisma, Role } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { ImportProductsDto } from "./dto/import-products.dto";
+import { EXEMPTION_REQUIRED } from "./products.service";
 import { recordMovement } from "../stock/stock";
+import { activeExemptions, countryConfig } from "../countries";
 
 export interface ImportResult {
   created: number;
@@ -43,13 +45,25 @@ export class ProductsImportService {
     const categoryIds = new Map(categories.map((c) => [c.name.trim().toLowerCase(), c.id]));
     // Who has each barcode: other products, then earlier rows of this file.
     const barcodeOwner = new Map(barcodeOwners.map((p) => [p.barcode!, { sku: p.sku, name: p.name }]));
-    // A percentage picks the business's rate with that percentage (by name on screen).
-    const taxFields = (rate: number | Prisma.Decimal) => {
+    const config = countryConfig(business.country);
+    const exemptions = new Set(config ? activeExemptions(config).map((e) => e.code) : []);
+    // A percentage picks the business's rate with that percentage (by name on
+    // screen); 0% needs a known exemption reason where the country has them.
+    const taxFields = (rate: number | Prisma.Decimal, exemptionCode?: string) => {
       const percentage = new Prisma.Decimal(rate);
-      if (percentage.isZero()) return { taxRate: percentage, taxRateId: null, taxCode: "ISE" };
+      if (percentage.isZero()) {
+        const code = exemptionCode?.trim().toUpperCase() || null;
+        if (config && (!code || !exemptions.has(code))) return null;
+        return { taxRate: percentage, taxRateId: null, taxCode: "ISE", exemptionCode: code };
+      }
       const match = taxRates.find((r) => r.percentage.equals(percentage));
-      return { taxRate: percentage, taxRateId: match?.id ?? null, taxCode: match?.taxCode ?? "NOR" };
+      return { taxRate: percentage, taxRateId: match?.id ?? null, taxCode: match?.taxCode ?? "NOR", exemptionCode: null };
     };
+    // A new product without a rate in the file: the business's default rate, never exempt.
+    const defaultRate = taxRates.find((r) => r.isDefault);
+    const defaultTax = defaultRate
+      ? { taxRate: defaultRate.percentage, taxRateId: defaultRate.id, taxCode: defaultRate.taxCode, exemptionCode: null }
+      : taxFields(config?.taxRates.find((r) => r.isDefault)?.percentage ?? business.defaultTaxRate);
 
     const result: ImportResult = { created: 0, updated: 0, skipped: [] };
     const seen = new Set<string>();
@@ -97,13 +111,25 @@ export class ProductsImportService {
           }
           if (barcode) barcodeOwner.set(barcode, { sku, name: row.name.trim() });
 
+          // An exemption reason alone means 0%.
+          const rowRate = row.taxRate ?? (row.exemptionCode ? 0 : undefined);
+          const tax = rowRate !== undefined ? taxFields(rowRate, row.exemptionCode) : undefined;
+          if (tax === null) {
+            skip(row.exemptionCode ? "Unknown exemption reason" : EXEMPTION_REQUIRED);
+            continue;
+          }
+          if (!existing && !tax && !defaultTax) {
+            skip(EXEMPTION_REQUIRED);
+            continue;
+          }
+
           const fields = {
             name: row.name.trim(),
             sellPrice: row.sellPrice,
             ...(barcode ? { barcode } : {}),
             ...(categoryId ? { categoryId } : {}),
             ...(row.costPrice !== undefined ? { costPrice: row.costPrice } : {}),
-            ...(row.taxRate !== undefined ? taxFields(row.taxRate) : {}),
+            ...(tax ?? {}),
           };
           const product = existing
             ? // Re-importing a deactivated product brings it back.
@@ -113,7 +139,7 @@ export class ProductsImportService {
                   businessId: user.businessId,
                   sku,
                   costPrice: 0,
-                  ...taxFields(business.defaultTaxRate),
+                  ...defaultTax,
                   inventoryType: "M",
                   ...fields,
                 },

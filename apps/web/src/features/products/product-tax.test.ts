@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { currentTaxChoice, taxPayload } from "./product-tax";
+import { currentTaxChoice, needsTaxReview, taxPayload } from "./product-tax";
 
 const rates = [
   { id: "nor", percentage: "14.00", isDefault: true, active: true },
@@ -25,5 +25,14 @@ describe("product tax choice", () => {
     expect(taxPayload({ kind: "rate", id: "red" }, "M10")).toEqual({ taxRateId: "red", exemptionCode: null });
     expect(taxPayload({ kind: "exempt" }, "M10")).toEqual({ taxRateId: null, exemptionCode: "M10" });
     expect(taxPayload({ kind: "legacy", rate: 19 }, null)).toEqual({});
+  });
+});
+
+describe("needsTaxReview (Produtos a rever)", () => {
+  it("lists products exempt from IVA without a reason, only where the country needs one", () => {
+    expect(needsTaxReview({ taxRate: "0.00", exemptionCode: null }, "AO")).toBe(true);
+    expect(needsTaxReview({ taxRate: "0.00", exemptionCode: "M10" }, "AO")).toBe(false);
+    expect(needsTaxReview({ taxRate: "14.00", exemptionCode: null }, "AO")).toBe(false);
+    expect(needsTaxReview({ taxRate: "0.00", exemptionCode: null }, null)).toBe(false);
   });
 });

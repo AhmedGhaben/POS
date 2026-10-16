@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { buildFacturacaoXml, FacturacaoInput, SaftDocument, SaftLine } from "./facturacao";
+import { buildFacturacaoXml, documentsMissingExemption, FacturacaoInput, SaftDocument, SaftLine } from "./facturacao";
 import { saftSchemaErrors } from "./testing/validate-saft";
 
 const D = (v: Prisma.Decimal.Value) => new Prisma.Decimal(v);
@@ -194,6 +194,19 @@ describe("SAF-T (AO) Facturação file", () => {
     expect(cf).toContain("<CustomerTaxID>999999999</CustomerTaxID>");
     expect(cf).toContain("<AddressDetail>Desconhecido</AddressDetail>");
     expect(cf).toContain("<Country>Desconhecido</Country>");
+  });
+
+  it("never writes an exempt line without TaxExemptionCode: every exempt line in the file has one, and a document without one stops the file", () => {
+    const exempt = line({ tax: { type: "IVA", region: "AO", code: "ISE", percentage: D(0) }, exemption: { code: "M10", reason: "Isento nos termos da alínea a) do nº1 do artigo 12.º do CIVA" } });
+    const xml = buildFacturacaoXml(input({ salesInvoices: [doc({ lines: [line(), { ...exempt, lineNumber: 2 }], taxPayable: D("2.46"), netTotal: D("35.08"), grossTotal: D("37.54") })] }));
+    const exemptLines = xml.split("<Line>").slice(1).map((l) => l.slice(0, l.indexOf("</Line>"))).filter((l) => l.includes("<TaxPercentage>0</TaxPercentage>"));
+    expect(exemptLines).toHaveLength(1);
+    for (const l of exemptLines) expect(l).toMatch(/<TaxExemptionCode>M\d\d<\/TaxExemptionCode>/);
+
+    const bad = doc({ documentNo: "FR WEB1-2026/7", lines: [{ ...exempt, exemption: null }] });
+    expect(documentsMissingExemption([doc(), bad])).toEqual(["FR WEB1-2026/7"]);
+    expect(() => buildFacturacaoXml(input({ salesInvoices: [bad] }))).toThrow(/without TaxExemptionCode in FR WEB1-2026\/7/);
+    expect(() => buildFacturacaoXml(input({ workingDocuments: [{ ...bad, documentType: "PF" }] }))).toThrow(/without TaxExemptionCode/);
   });
 
   it("a file the schema refuses is caught by the check (the check itself works)", async () => {

@@ -68,6 +68,21 @@ export function lineTax(config: CountryConfig | null, regime: IvaRegime | null |
   return { taxType: "IVA", taxCode: code === "ISE" ? "NOR" : code, rate, exemptionCode: null };
 }
 
+/**
+ * An exempt line (0%) without a known reason: no fiscal document may carry
+ * one, since SAF-T and AGT need the M-code. Only in a country with an
+ * exemption table.
+ */
+export function lacksExemptionReason(config: CountryConfig | null, tax: Pick<LineTax, "rate" | "exemptionCode">): boolean {
+  if (!config || Number(tax.rate) > 0) return false;
+  return !tax.exemptionCode || !findExemption(config, tax.exemptionCode);
+}
+
+/** A product that can't be sold as it is: exempt (0%) with no reason. In a regime store it'd still sell (M00/M04). */
+export function productNeedsExemptionReason(config: CountryConfig | null, product: ProductTaxFields): boolean {
+  return lacksExemptionReason(config, lineTax(config, null, product));
+}
+
 /** The country whose currency this is, for labelling amounts ("Kz" for AOA). */
 export function countryForCurrency(currency: string | null | undefined): CountryConfig | null {
   return Object.values(COUNTRIES).find((c) => c.currency === currency) ?? null;
