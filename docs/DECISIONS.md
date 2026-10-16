@@ -4,19 +4,59 @@ The plan is `docs/plans/ANGOLA.md` (its **Progress** section has the
 details of each phase). This file records the choices made without the
 owner, so they can be reviewed and reversed.
 
-## Summary
+## Summary (session of 2026-10-15/16)
 
-_In progress — updated at the end of the session._
+**Every phase of the plan is built** (order 1→2→3→7→6→8→8b→4→5→9→10→11),
+one commit per phase, each pushed to `main`; CI green through phase 10
+(phase 11's run was started at the end of the session).
 
-- Phase 8b (SAF-T + accountant exports) redone and built; date fix done
-  (calendar dates in Luanda's time; month-end and year-end tests).
-- Phase 4 (credit sales, receipts, customer/supplier accounts, purchase
-  IVA) built.
-- CI fixed (red since 13 Oct).
-- Phase 5 (sales history, purchase filters/print, 2ª Via, print options) built.
-- Phase 9 (AGT e-invoicing behind a flag; send + status + correct) built.
-- Phase 10 (reports: sales, margin, IVA incl. Simplificado, stock, balances, purchases, AGT; CSV + PDF) built.
-- Phase 11 (wider sidebar, per-person display size) built.
+| Phase | Commit | What |
+|---|---|---|
+| 8b | `0e0514c` | SAF-T (AO) Facturação (checked against AGT's XSD), Inventário (draft CSV), accountant's Excel workbook. **Date fix**: periods are plain calendar dates in the store's time zone (Luanda); 2026-10-01..31 has EndDate 2026-10-31 and exactly October's documents; month-end and year-end tests (unit + e2e). |
+| CI | `e06caef` | CI had been red since 13 Oct (tests priced sales as if IVA were added; one used the UTC date). Fixed; green again. |
+| 4 | `a1f3d38` | Sales on credit (FT), receipts (RC), customers' and suppliers' accounts, purchase IVA and cativo. |
+| 5 | `2914c3a` | Sales history, purchase filters/CSV/A4, "2ª Via" from a print log, copies and print options. |
+| 9 | `994204c` | AGT e-invoicing **behind a flag (off by default)**: queue, RS256 signatures, send/status/backoff, AGT page, rejected → correct, top-bar indicator. |
+| 10 | `8a46006` | Reports: sales by day/month/product/category/cashier/payment/document type with margin, IVA summary (Simplificado 7%), AGT status, stock valuation, low stock, balances, purchases; CSV, PDF, print. |
+| 11 | `285595a` | Wider sidebar, larger icons; display size per person (saved on the server; printouts unaffected). |
+
+Tests at the end: API unit 225, API e2e 221 (27 suites; on `pos` and on
+the freshly migrated `pos_ci`), web unit 150, desktop unit 28; lint clean
+(web: the 4 old fast-refresh warnings).
+
+**For you to review or decide** (details in each phase's table below):
+- Phase 9 was built from AGT's published docs and tested against a fake
+  AGT only; never against AGT's servers (no homologation credentials). Two
+  spec ambiguities were guessed and need confirming in homologation:
+  `operationType` (TB/SE) and `companyName` (taken as the buyer).
+- **Not built, on purpose**: AGT's `solicitarSerie`/`listarSeries`. With
+  e-invoicing, series must be requested from AGT, which changes how
+  documents are numbered (tills number offline today). Needs your call and
+  its own phase. Lookups (`consultarFactura`, `listarFacturas`,
+  `validarDocumento`) aren't built either.
+- Reports read the fiscal documents, not the old `sales` table, so they
+  match SAF-T; the dashboard keeps its own figures and may differ slightly.
+- "PDF" is the print dialog's "Save as PDF" on an A4 layout; no server PDF.
+
+**Not run / not done** (skipped per your rules or the situation):
+- **Desktop e2e (Playwright) not run** for phases 5, 9, 10 and 11, and no
+  full desktop regression: they need this branch's API from source on
+  :4100, which the system stopped for low memory, and I was told not to
+  restart it on my own. Phase 5's spec is written
+  (`apps/desktop/e2e/angola-phase5.spec.ts`); phases 9-11 have none (their
+  logic is covered by API e2e and web unit tests). Run with the API on :4100: `POS_TEST_API_URL=http://localhost:4100 npx playwright test`.
+- **Phases 9-11 screens not looked at in a browser** (same reason);
+  type-check, lint and unit tests pass.
+- The Docker API on :4000 (serving the installed v0.2.3 tills) was **not
+  rebuilt**: that's the 0.2.4 release, your call. Migrations were applied
+  only to the local databases (`pos`, `pos_ci` on localhost:15432); none
+  to any other database. Nothing was deployed.
+- The local throwaway database `pos_ci` is still there (drop with
+  `DROP DATABASE pos_ci;` if unwanted).
+- Old `nest start --watch` dev servers from an earlier session are still
+  running (one on :3000). They lock Prisma's engine DLL, so `prisma
+  generate` reports EPERM (types still regenerate). Left alone; stop them
+  and run `npx prisma generate` in `apps/api` once.
 
 ---
 
