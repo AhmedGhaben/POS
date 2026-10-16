@@ -35,7 +35,7 @@ export function SaftDeadlines({ link = true }: { link?: boolean }) {
             {d.overdue && <strong> {t("deadlines.overdue")}</strong>}
           </span>
           {link && (
-            <Link to="/reports" className="font-medium underline underline-offset-4">
+            <Link to="/reports?tab=files" className="font-medium underline underline-offset-4">
               {t("deadlines.makeIt")}
             </Link>
           )}

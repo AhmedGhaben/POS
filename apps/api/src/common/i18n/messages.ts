@@ -96,6 +96,8 @@ const EXACT: Record<string, Translations> = {
   "Business not found": { "pt-PT": "Empresa não encontrada", "pt-BR": "Empresa não encontrada" },
   "Store not found": { "pt-PT": "Loja não encontrada", "pt-BR": "Loja não encontrada" },
   "Choose a store": { "pt-PT": "Escolha uma loja", "pt-BR": "Escolha uma loja" },
+  "Unknown report": { "pt-PT": "Relatório desconhecido", "pt-BR": "Relatório desconhecido" },
+  "A start and an end date are needed": { "pt-PT": "Indique a data de início e a de fim", "pt-BR": "Informe a data inicial e a final" },
   "Purchase not found": { "pt-PT": "Compra não encontrada", "pt-BR": "Compra não encontrada" },
   // AGT e-invoicing
   "Submission not found": { "pt-PT": "Envio não encontrado", "pt-BR": "Envio não encontrado" },

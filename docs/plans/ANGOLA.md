@@ -173,6 +173,26 @@ commit and push.
   - Still open: real phone scans of 58/80 mm QR prints (by hand); the
     inventory circular; the producer NIF / product name for the header.
 
+- **Phase 10 (reports) is built** (2026-10-16). No migration.
+  - `GET /reports/tables/:report?storeId&startDate&endDate` (owner/manager;
+    no store = whole business, owner only): every report is one or more
+    tables (`reports/report-tables.ts`: columns with a kind, rows, totals).
+    Sales by day, month, product, category (with cost, margin, margin %),
+    cashier, payment method (plus what was sold on account), document type;
+    IVA summary by tax/rate/exemption, and for Simplificado stores 7% of the
+    money received; AGT status (and rejected documents); stock valuation,
+    low stock, customers' and suppliers' balances (as they are now);
+    purchases by supplier (with IVA cativo, paid, to pay).
+  - Sales figures come from the fiscal documents (FT, FR, ND less NC, not
+    annulled; by invoice date), so they agree with the SAF-T file and the
+    accountant's workbook. Cost: the sale's unit cost for that product,
+    else the product's cost price.
+  - Web: Reports has two tabs, "Figures" (`ReportViewer`: report, period,
+    store, table with totals, CSV, PDF through the print dialog, Print on
+    A4) and the files for AGT and the accountant (unchanged).
+  - Tests: API unit `report-tables.spec.ts` (3), API e2e
+    `angola-phase10.e2e-spec.ts` (6), web unit `report-cells.test.ts` (3).
+
 - **Phase 9 (AGT e-invoicing, behind a flag) is built** (2026-10-16).
   Migration `20261016120000_angola_phase9_agt` (`AgtSubmission`, `AgtStatus`).
   Built against AGT's published spec (quiosqueagt.minfin.gov.ao, faturação

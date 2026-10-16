@@ -8,16 +8,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Combobox } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/features/auth/store";
 import { lastYearEnd, periodDates, previousMonth, todayIn, type PeriodValue } from "@/features/reports/export-periods";
 import { PeriodFields } from "@/features/reports/components/PeriodFields";
+import { ReportViewer } from "@/features/reports/components/ReportViewer";
 import { SaftDeadlines } from "@/features/reports/components/SaftDeadlines";
 import { ApiError, apiClient, saveFile } from "@/lib/api-client";
 
 type SaftType = "FACTURACAO" | "INVENTARIO";
 
 /**
- * Reports → files for AGT and the accountant (docs/plans/ANGOLA.md, phase
+ * Reports: the business's figures (phase 10, ReportViewer) and the files
+ * for AGT and the accountant (docs/plans/ANGOLA.md, phase
  * 8b): the SAF-T (AO) invoicing file for a month (or any period), the
  * year-end inventory file, and the accountant's Excel workbook. Dates are
  * calendar dates in the shop's time zone, sent as typed.
@@ -65,12 +68,20 @@ export function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <p className="text-muted-foreground">{t("exports.description")}</p>
-      </div>
+      <h1 className="text-2xl font-semibold">{t("title")}</h1>
 
       <SaftDeadlines link={false} />
+
+      <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab") === "files" ? "files" : "figures"}>
+        <TabsList>
+          <TabsTrigger value="figures">{t("tables.tab")}</TabsTrigger>
+          <TabsTrigger value="files">{t("exports.tab")}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="figures" className="mt-4">
+          <ReportViewer />
+        </TabsContent>
+        <TabsContent value="files" className="mt-4 space-y-4">
+      <p className="text-muted-foreground">{t("exports.description")}</p>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
@@ -132,6 +143,8 @@ export function ReportsPage() {
           </CardContent>
         </Card>
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

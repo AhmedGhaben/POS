@@ -15,6 +15,7 @@ _In progress — updated at the end of the session._
 - CI fixed (red since 13 Oct).
 - Phase 5 (sales history, purchase filters/print, 2ª Via, print options) built.
 - Phase 9 (AGT e-invoicing behind a flag; send + status + correct) built.
+- Phase 10 (reports: sales, margin, IVA incl. Simplificado, stock, balances, purchases, AGT; CSV + PDF) built.
 
 ---
 
@@ -131,6 +132,25 @@ own. Run it with the API on :4100:
 tested against a fake AGT built from the published docs. The installed
 v0.2.3 tills and the Docker API on :4000 are untouched (the flag is off by
 default there anyway).
+
+## Phase 10: reports
+
+| # | Decision | Why |
+|---|----------|-----|
+| 1 | **Sales reports read the fiscal documents** (FT, FR, ND; NC subtract; annulled left out; dated by invoice date), not the `sales` table. The old dashboard keeps its own figures. | They then agree with the SAF-T file and the accountant's workbook, which is what the owner hands AGT. |
+| 2 | **Cost for margin** = the sale's own unit cost for that product (what stock cost when sold; the original sale's for a return), else the product's cost price today. | The best figure available per line; fiscal lines don't carry a cost. |
+| 3 | **Cashier** = who made the sale, or who processed the return for a credit note. Documents from neither are "—". | Fiscal documents don't record a user. |
+| 4 | **Payment methods** from the documents' payments: FR and RC received, NC refunds paid out; invoices on credit (FT) are a separate "sold on account" table. | Same sources as the accountant's money sheet; credit isn't money received. |
+| 5 | **Simplificado**: a second IVA table per Simplificado store: money received less refunds × the regime's rate (7%). | The regime's IVA is due on turnover actually received. |
+| 6 | Stock valuation, low stock and balances are **as of now** (no period). Stock at a past date is the SAF-T inventory file. Balances are business-wide (an account isn't a store's). | Those are the questions those reports answer. |
+| 7 | **No store = the whole business, owner only**; a manager must choose one of their stores. | Same rule as the history lists (phase 5). |
+| 8 | **PDF** = the browser's/Windows' print dialog ("Save as PDF") on an A4 layout; **Print** = the till's A4 printer (Print options). No server-side PDF. | No PDF library in the stack; the A4 print path already exists and is tested. |
+| 9 | CSV: one file per table; numbers plain (1234.50), dates ISO, codes translated, a Total row last. | Opens cleanly in Excel/LibreOffice in any locale. |
+| 10 | The API returns generic tables (column key + kind); the web translates column names and formats cells. Adding a report is API-only plus its labels. | One viewer, one CSV and one A4 layout for all reports. |
+
+**Not checked in a browser**: the API that has phase 10 runs only from
+source, and the API on :4100 isn't running (see the summary). Type-check, lint and
+unit tests pass; the screen should get a look when the API is up.
 
 ## CI
 

@@ -99,6 +99,13 @@ Prisma backend.
     (country setting) in the Portuguese format, e.g. "245 000,00 Kz". A
     new business takes its country's currency, language (pt-AO), time
     zone (Africa/Luanda) and IVA regime.
+  - **Reports** (owner and manager): sales by day, month, product,
+    category, cashier, payment method and document type, with cost and
+    margin; IVA summary by rate and exemption (and 7% of money received in
+    the Simplificado regime); stock valuation and low stock; customers' and
+    suppliers' balances; purchases by supplier; what was sent to AGT. For a
+    store or the whole company, any period of calendar days; CSV, PDF and
+    print.
   - **Electronic invoicing with AGT** (behind a server flag, off by
     default): invoices, invoice-receipts, credit/debit notes and receipts are
     queued and sent to AGT signed (RS256), with retries and AGT's limits
