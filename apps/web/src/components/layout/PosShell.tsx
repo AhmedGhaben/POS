@@ -9,6 +9,7 @@ import { useTheme } from "@/theme/ThemeProvider";
 import { useAuthStore } from "@/features/auth/store";
 import { logOutOrCloseShift } from "@/features/shifts/close-request";
 import { OfflineIndicator } from "@/features/pos/components/OfflineIndicator";
+import { DisplaySizeMenu } from "@/features/display/DisplaySizeMenu";
 
 /**
  * Minimal terminal-mode shell for the POS sale screen — no sidebar, no
@@ -72,6 +73,7 @@ export function PosShell() {
               <MonitorCog className="h-4 w-4" />
             </NavLink>
           </Button>
+          <DisplaySizeMenu />
           <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={t("shell.toggleTheme")}>
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>

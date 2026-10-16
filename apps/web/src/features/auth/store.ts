@@ -33,6 +33,7 @@ interface AuthState {
   updateStore: (store: StoreDto) => void;
   markEmailVerified: () => void;
   setUserLanguage: (language: string) => void;
+  setUserDisplaySize: (displaySize: number | null) => void;
   clearSession: () => void;
 }
 
@@ -73,6 +74,10 @@ export const useAuthStore = create<AuthState>()(
       setUserLanguage: (language) => {
         const user = get().user;
         if (user) set({ user: { ...user, language } });
+      },
+      setUserDisplaySize: (displaySize) => {
+        const user = get().user;
+        if (user) set({ user: { ...user, displaySize } });
       },
       // tillCache stays: the next person on this till may sign in offline.
       clearSession: () =>

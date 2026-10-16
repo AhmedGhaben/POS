@@ -178,6 +178,8 @@ export interface UserDto {
   emailVerified?: boolean;
   /** The person's chosen language ("en", "pt-PT", "pt-BR"); null until chosen. Absent on older sessions. */
   language?: string | null;
+  /** Screen text size in percent (90, 115, 130); null/absent = normal. */
+  displaySize?: number | null;
   accessibleStoreIds: string[];
 }
 

@@ -119,5 +119,13 @@
     "printer": "Impressora",
     "tillPrinter": "Impressora deste caixa",
     "windowsDefault": "Padrão do Windows"
+  },
+  "displaySize": {
+    "label": "Tamanho da tela",
+    "small": "Pequeno",
+    "normal": "Normal",
+    "large": "Grande",
+    "extraLarge": "Muito grande",
+    "hint": "Só para você, em todos os caixas em que entrar. As impressões não mudam."
   }
 }

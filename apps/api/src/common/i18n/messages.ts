@@ -61,6 +61,7 @@ const EXACT: Record<string, Translations> = {
   },
   "User not found": { "pt-PT": "Utilizador não encontrado", "pt-BR": "Usuário não encontrado" },
   "Unsupported language": { "pt-PT": "Idioma não suportado", "pt-BR": "Idioma não suportado" },
+  "Unsupported display size": { "pt-PT": "Tamanho de ecrã não suportado", "pt-BR": "Tamanho de tela não suportado" },
   // Staff
   "Employee not found": { "pt-PT": "Funcionário não encontrado", "pt-BR": "Funcionário não encontrado" },
   "This employee already has a login": {

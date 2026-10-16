@@ -99,6 +99,9 @@ Prisma backend.
     (country setting) in the Portuguese format, e.g. "245 000,00 Kz". A
     new business takes its country's currency, language (pt-AO), time
     zone (Africa/Luanda) and IVA regime.
+  - **Display size per person**: Small, Normal, Large or Extra large from
+    the top bar (back office and till); it follows the person to every till
+    and never changes printouts.
   - **Reports** (owner and manager): sales by day, month, product,
     category, cashier, payment method and document type, with cost and
     margin; IVA summary by rate and exemption (and 7% of money received in

@@ -119,5 +119,13 @@
     "printer": "Printer",
     "tillPrinter": "This till's printer",
     "windowsDefault": "Windows default"
+  },
+  "displaySize": {
+    "label": "Display size",
+    "small": "Small",
+    "normal": "Normal",
+    "large": "Large",
+    "extraLarge": "Extra large",
+    "hint": "Just for you, on every till you sign in to. Printouts stay the same."
   }
 }

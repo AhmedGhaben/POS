@@ -16,6 +16,7 @@ _In progress — updated at the end of the session._
 - Phase 5 (sales history, purchase filters/print, 2ª Via, print options) built.
 - Phase 9 (AGT e-invoicing behind a flag; send + status + correct) built.
 - Phase 10 (reports: sales, margin, IVA incl. Simplificado, stock, balances, purchases, AGT; CSV + PDF) built.
+- Phase 11 (wider sidebar, per-person display size) built.
 
 ---
 
@@ -151,6 +152,19 @@ default there anyway).
 **Not checked in a browser**: the API that has phase 10 runs only from
 source, and the API on :4100 isn't running (see the summary). Type-check, lint and
 unit tests pass; the screen should get a look when the API is up.
+
+## Phase 11: UI
+
+| # | Decision | Why |
+|---|----------|-----|
+| 1 | Display size is **saved on the server per person** (like their language), not per device. | Tills are shared: each person gets their own size on any till they sign in to. |
+| 2 | **Four sizes**: 90, 100, 115, 130 % of the root font size (the app is sized in rem, so text, spacing and buttons all scale). | Enough range for older eyes and small screens without breaking layouts. |
+| 3 | The control is a **button in both top bars** (back office and till), not only in Settings. | Cashiers have no Settings; it's a personal choice anyone may make. |
+| 4 | **Print rules force the root size back to 100 %**; the Windows app's print window never had it. | The plan: printed documents (mm/pt) must not change. |
+| 5 | Sidebar **16 rem** (from 14) with 20 px icons and 15 px labels. | The plan asks for wider with larger icons; 16 rem fits the longest Portuguese labels. |
+| 6 | The installed v0.2.3 Windows app drops the new staff field (its schema strips unknown keys) until updated: offline PIN sign-ins there show normal size. | Harmless; updates bring it. |
+
+**Not checked in a browser** (same reason as phase 10).
 
 ## CI
 

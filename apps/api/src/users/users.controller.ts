@@ -7,6 +7,7 @@ import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserPermissionDto } from "./dto/update-user-permission.dto";
 import { UpdateStaffAccessDto } from "./dto/update-staff-access.dto";
+import { UpdateMyDisplaySizeDto } from "./dto/update-my-display-size.dto";
 import { UpdateMyLanguageDto } from "./dto/update-my-language.dto";
 import { SetMyPinDto, SetPinDto } from "./dto/set-pin.dto";
 import { UsersService } from "./users.service";
@@ -50,6 +51,12 @@ export class UsersController {
   @Patch("me/language")
   setMyLanguage(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateMyLanguageDto) {
     return this.usersService.setLanguage(user.userId, dto.language);
+  }
+
+  /** The signed-in user's own display size, any role. */
+  @Patch("me/display-size")
+  setMyDisplaySize(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateMyDisplaySizeDto) {
+    return this.usersService.setDisplaySize(user.userId, dto.displaySize);
   }
 
   /** Your own till PIN, any role (needs your password). */

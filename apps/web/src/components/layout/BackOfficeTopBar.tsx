@@ -16,6 +16,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { StoreSwitcher } from "./StoreSwitcher";
 import { AgtIndicator } from "@/features/agt/components/AgtIndicator";
+import { DisplaySizeMenu } from "@/features/display/DisplaySizeMenu";
 import { SidebarNav } from "./Sidebar";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuthStore } from "@/features/auth/store";
@@ -48,7 +49,7 @@ export function BackOfficeTopBar() {
               <Menu className="h-4 w-4" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="flex w-64 flex-col p-3">
+          <SheetContent side="left" className="flex w-72 flex-col p-3">
             <SidebarNav onNavigate={() => setMobileNavOpen(false)} />
           </SheetContent>
         </Sheet>
@@ -60,6 +61,7 @@ export function BackOfficeTopBar() {
         </kbd>
         <AgtIndicator />
         <StoreSwitcher />
+        <DisplaySizeMenu />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" aria-label={t("shell.accountMenu")}>

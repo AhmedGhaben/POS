@@ -173,6 +173,19 @@ commit and push.
   - Still open: real phone scans of 58/80 mm QR prints (by hand); the
     inventory circular; the producer NIF / product name for the header.
 
+- **Phase 11 (UI) is built** (2026-10-16). Migration
+  `20261016150000_angola_phase11_display_size` (`User.displaySize`).
+  - Sidebar 16 rem wide (was 14), 20 px icons, slightly larger text and
+    rows; the mobile drawer likewise.
+  - Display size per person: Small 90 %, Normal, Large 115 %, Extra large
+    130 % of the root font size, from a button in both top bars (back office
+    and till). Saved with `PATCH /users/me/display-size` (normal stored as
+    null), returned with the session and in the till's staff list (so PIN
+    sign-ins offline get it too); signed out it's normal. Print rules reset
+    the root size, so printouts never change.
+  - Tests: web unit `display-size.test.ts` (2), API e2e in
+    `languages.e2e-spec.ts` (1), desktop unit (28, unchanged).
+
 - **Phase 10 (reports) is built** (2026-10-16). No migration.
   - `GET /reports/tables/:report?storeId&startDate&endDate` (owner/manager;
     no store = whole business, owner only): every report is one or more

@@ -93,6 +93,10 @@
 }
 
 @media print {
+  /* A person's display size (root font size) never changes what prints. */
+  html {
+    font-size: 100% !important;
+  }
   body > *:not(#print-root) {
     display: none !important;
   }

@@ -126,7 +126,7 @@ export type PinSignInResult =
   | {
       ok: true;
       mode: "offline";
-      user: TillStaffMember & { language?: string | null; permissions: Record<string, boolean> };
+      user: TillStaffMember & { language?: string | null; displaySize?: number | null; permissions: Record<string, boolean> };
     }
   | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user" | "not-registered"; error: string };
 

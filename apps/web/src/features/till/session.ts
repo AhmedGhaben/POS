@@ -48,6 +48,7 @@ export async function signInWithPin(userId: string, pin: string): Promise<{ ok: 
     role: m.role as UserDto["role"],
     isActive: true,
     language: m.language ?? null,
+    displaySize: m.displaySize ?? null,
     accessibleStoreIds: stores.map((s) => s.id),
   };
   useAuthStore.getState().setOfflineSession(user, stores, cache.business, m.permissions as PermissionMap, terminalStoreId);

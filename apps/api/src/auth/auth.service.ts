@@ -42,6 +42,7 @@ interface LoginResult {
     role: Role;
     emailVerified: boolean;
     language: string | null;
+    displaySize: number | null;
     accessibleStoreIds: string[];
   };
   stores: { id: string; businessId: string; name: string; address: string | null; timezone: string; isActive: boolean }[];
@@ -228,6 +229,7 @@ export class AuthService {
         role: user.role,
         emailVerified: user.emailVerifiedAt !== null,
         language: user.language,
+        displaySize: user.displaySize,
         accessibleStoreIds,
       },
       stores: accessibleStores,

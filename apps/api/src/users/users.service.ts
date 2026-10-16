@@ -82,6 +82,12 @@ export class UsersService {
     return { language };
   }
 
+  async setDisplaySize(userId: string, displaySize: number) {
+    // Normal is stored as "not chosen", like a new user.
+    await this.prisma.user.update({ where: { id: userId }, data: { displaySize: displaySize === 100 ? null : displaySize } });
+    return { displaySize };
+  }
+
   async getEffectivePermissions(businessId: string, userId: string) {
     const user = await this.findInBusiness(businessId, userId);
     return this.permissionsService.getEffectivePermissions(user.id, user.role);

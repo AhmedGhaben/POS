@@ -78,6 +78,16 @@ describe("Languages (e2e)", () => {
     expect(login.body.business.language).toBe("pt-BR");
   });
 
+  it("a person's display size (phase 11) is saved for them and comes back at sign-in; normal is stored as none", async () => {
+    await http().patch("/users/me/display-size").set(auth()).send({ displaySize: 130 }).expect(200, { displaySize: 130 });
+    await http().patch("/users/me/display-size").set(auth()).send({ displaySize: 200 }).expect(400);
+    let login = await http().post("/auth/login").send({ email: EMAIL, password: PASSWORD }).expect(200);
+    expect(login.body.user.displaySize).toBe(130);
+    await http().patch("/users/me/display-size").set(auth()).send({ displaySize: 100 }).expect(200);
+    login = await http().post("/auth/login").send({ email: EMAIL, password: PASSWORD }).expect(200);
+    expect(login.body.user.displaySize).toBeNull();
+  });
+
   it("error messages come back in the language the app sends", async () => {
     const wrong = { email: EMAIL, password: "not-the-password" };
     const pt = await http().post("/auth/login").set("X-Language", "pt-PT").send(wrong).expect(401);

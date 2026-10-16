@@ -23,6 +23,7 @@ const staffMemberSchema = z.object({
   lastName: z.string(),
   role: z.enum(["OWNER", "MANAGER", "CASHIER"]),
   language: z.string().nullable().optional(),
+  displaySize: z.number().int().nullable().optional(),
   pin: z.string(),
   permissions: z.record(z.string(), z.boolean()),
 });

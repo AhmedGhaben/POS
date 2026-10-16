@@ -344,6 +344,9 @@ model User {
   isActive        Boolean   @default(true)
   /// The language this person's screens are in; null until they choose (en, pt-PT, pt-BR).
   language        String?
+  /// How large this person's screens are, in percent of normal (90, 100,
+  /// 115, 130); null = normal. Printed documents aren't affected.
+  displaySize     Int?
   /// 4-6 digit PIN for signing in on a registered till, as
   /// "pbkdf2-sha256$<rounds>$<salt>$<hash>"; null = no PIN. Tills keep a copy
   /// to check it offline. Too many wrong tries lock it for a few minutes.

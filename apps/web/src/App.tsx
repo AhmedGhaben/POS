@@ -7,6 +7,7 @@ import { PosShell } from "@/components/layout/PosShell";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { useAuthStore } from "@/features/auth/store";
 import { useLanguageSync } from "@/i18n/use-language";
+import { useDisplaySizeSync } from "@/features/display/display-size";
 import { LoginPage } from "@/routes/login";
 import { SignupPage } from "@/routes/signup";
 import { ForgotPasswordPage } from "@/routes/forgot-password";
@@ -43,6 +44,7 @@ function DefaultLanding() {
 
 export function App() {
   useLanguageSync();
+  useDisplaySizeSync();
   return (
     <>
       <Toaster position="top-right" />

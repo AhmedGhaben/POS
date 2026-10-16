@@ -159,7 +159,7 @@ export class TerminalsService {
         pinHash: { not: null },
         OR: [{ role: Role.OWNER }, { storeUsers: { some: { storeId: terminal.storeId } } }],
       },
-      select: { id: true, firstName: true, lastName: true, role: true, language: true, pinHash: true },
+      select: { id: true, firstName: true, lastName: true, role: true, language: true, displaySize: true, pinHash: true },
       orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
     });
     await this.prisma.terminal.update({ where: { id: terminal.id }, data: { lastSeenAt: new Date() } });
