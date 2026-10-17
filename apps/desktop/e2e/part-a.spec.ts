@@ -89,9 +89,12 @@ test.describe.serial("Part A: terminal, outbox and sync", () => {
   test("a response lost after the server saved the sale still syncs exactly once", async () => {
     proxy.setMode("pass");
     await openPosWithProducts(page);
+    // Wait until the till sees the server again, so the sale is really sent
+    // (and saved) before its answer is lost; otherwise it queues at once and
+    // never reaches the server, which the next test can't tell apart.
+    await expect(status()).toBeHidden({ timeout: 70_000 });
     proxy.setMode("lose-responses");
-    // The till may already know the server is down (and queue at once), or
-    // try, lose the answer, and queue: either way the sale is kept.
+    // The till tries, loses the answer, and queues: the sale is kept.
     const receipt = await sellFirstProduct(page);
     expect(receipt).toContain("Saved offline");
 

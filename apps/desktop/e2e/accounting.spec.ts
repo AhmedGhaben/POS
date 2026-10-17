@@ -87,4 +87,16 @@ test.describe.serial("Accounting (Contabilidade)", () => {
     await page.getByRole("button", { name: "Check the books" }).click();
     await expect(page.getByRole("status").filter({ hasText: /Ready|Periods still open|NIF|records of the year/ })).toBeVisible({ timeout: 120_000 });
   });
+
+  test("Phase B screens: banks, fixed assets (depreciation for a month), the archive, and the owner's accountants", async () => {
+    await page.goto("app://pos/accounting?tab=bank");
+    await expect(page.getByText("Import a bank statement")).toBeVisible();
+    await page.getByRole("tab", { name: "Fixed assets" }).click();
+    await page.getByRole("button", { name: "Post the month's depreciation" }).click();
+    await expect(page.getByText(/assets depreciated|Nothing to depreciate/)).toBeVisible();
+    await page.getByRole("tab", { name: "SAF-T" }).click();
+    await expect(page.getByRole("button", { name: "Download the archive (ZIP)" })).toBeVisible();
+    await page.getByRole("tab", { name: "Settings" }).click();
+    await expect(page.getByText("Give your accountant access to the books", { exact: false })).toBeVisible();
+  });
 });

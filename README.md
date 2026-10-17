@@ -301,6 +301,30 @@ Prisma backend.
   (`components/ui/combobox.tsx`). Start typing to filter (accents and
   case don't matter, codes are searchable too), pick with the mouse or
   arrows + Enter, Esc closes.
+- **Contabilidade** (accounting, `apps/api/src/accounting`, branch
+  `feature/accounting`; plan and decisions in `docs/ACCOUNTING-DECISIONS.md`):
+  - Chart of accounts from the PGC (Decreto 82/01) with GR/GA/GM accounts and
+    an account per customer, supplier, till and bank account; years with
+    periods 0–15 that close and reopen (with a reason, audit-logged).
+  - Journals and entries that must balance, can't change once posted (an
+    estorno corrects them) and can't go into a closed period: all enforced by
+    the database. Templates, opening balances (CSV).
+  - Sales, receipts, credit notes, purchases, supplier payments, expenses,
+    cash differences and stock counts are posted automatically (account
+    mapping per company, daily summary per till as an option, integration
+    monitor; nothing is posted twice).
+  - Reports (Balancete, Razão, Diário, statements and ageing, Balanço,
+    Demonstração de Resultados, IVA) as PDF and Excel; year-end (apuramento,
+    close, carry forward).
+  - SAF-T (AO) accounting file (TaxAccountingBasis I) and purchases file
+    (A), validated against AGT's XSD; TransactionID and AccountID in the
+    invoicing file; 10 April reminder.
+  - Outside accountants (role ACCOUNTANT): one login for several companies,
+    full rights in the books, read-only elsewhere. Document archive (ZIP),
+    attachments, bank reconciliation (CSV/Excel), fixed assets with monthly
+    depreciation.
+  - Local demo accountant: `node apps/api/scripts/demo-accountant.js`
+    (accountant@demo-store.test / AccountantPass123!).
 - Audit log, rate-limited auth, `/health` endpoint.
 
 ## Structure
