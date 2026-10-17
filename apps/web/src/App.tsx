@@ -14,6 +14,7 @@ import { SignupPage } from "@/routes/signup";
 import { ForgotPasswordPage } from "@/routes/forgot-password";
 import { ResetPasswordPage } from "@/routes/reset-password";
 import { VerifyEmailPage } from "@/routes/verify-email";
+import { AccountantInvitationPage } from "@/routes/accountant-invitation";
 import { WelcomePage } from "@/routes/welcome";
 import { PosPage } from "@/routes/pos";
 import { ProductsPage } from "@/routes/products";
@@ -57,6 +58,7 @@ export function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/accountant-invitation" element={<AccountantInvitationPage />} />
         {/* The customer-facing screen: no sign-in of its own, it only shows
             what the POS on this computer broadcasts. */}
         <Route path="/customer-display" element={<CustomerDisplayPage />} />

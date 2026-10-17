@@ -2,6 +2,7 @@ import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -46,13 +47,18 @@ export function AccountantsSettings() {
                 <p className="font-medium">
                   {a.firstName} {a.lastName}
                   {a.ocpcaNumber && <span className="ml-2 text-xs text-muted-foreground">OCPCA {a.ocpcaNumber}</span>}
+                  {a.pending && (
+                    <Badge variant="outline" className="ml-2">
+                      {t("accountants.pending")}
+                    </Badge>
+                  )}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {a.email} · {t("accountants.since", { date: formatDate(a.since) })}
+                  {a.email} · {t(a.pending ? "accountants.invitedOn" : "accountants.since", { date: formatDate(a.since) })}
                 </p>
               </div>
               <Button size="sm" variant="outline" className="text-destructive" onClick={() => revoke.mutate(a.userId)} disabled={revoke.isPending}>
-                {t("accountants.revoke")}
+                {t(a.pending ? "accountants.cancelInvitation" : "accountants.revoke")}
               </Button>
             </li>
           ))}

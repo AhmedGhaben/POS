@@ -48,4 +48,13 @@ describe("JwtStrategy", () => {
     await expect(buildStrategy(accountant, { id: "a1" }).strategy.validate({ ...PAYLOAD, businessId: "client-2" })).resolves.toEqual({ userId: "user-1", businessId: "client-2", role: Role.ACCOUNTANT });
     await expect(buildStrategy(accountant, null).strategy.validate({ ...PAYLOAD, businessId: "client-2" })).rejects.toThrow("Your access to this company was removed");
   });
+
+  it("an invitation the accountant hasn't accepted gives no access", async () => {
+    const accountant = { id: "user-1", businessId: "home", role: Role.ACCOUNTANT, isActive: true };
+    const { strategy, prisma } = buildStrategy(accountant, { id: "a1" });
+    await strategy.validate({ ...PAYLOAD, businessId: "client-2" });
+    expect(prisma.accountantAccess.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: "user-1", businessId: "client-2", revokedAt: null, acceptedAt: { not: null } } }),
+    );
+  });
 });

@@ -17,6 +17,14 @@ export interface MailTexts {
     expires: string;
     signInWith: (email: string) => string;
   };
+  accountantAccess: {
+    subject: (business: string) => string;
+    hi: (name: string) => string;
+    given: (business: string, inviter: string) => string;
+    link: string;
+    expires: string;
+    orInApp: string;
+  };
   receipt: {
     subject: (store: string, number: string) => string;
     number: (number: string) => string;
@@ -65,6 +73,14 @@ const TEXTS: Record<Exclude<Language, "pt-AO">, MailTexts> = {
       expires: "(link expires in 72 hours)",
       signInWith: (email) => `Then sign in with this email address: ${email}`,
     },
+    accountantAccess: {
+      subject: (business) => `${business} invites you to keep its books`,
+      hi: (name) => `Hi ${name},`,
+      given: (business, inviter) => `${inviter ? `${inviter} of ` : ""}<b>${business}</b> has given you access to its books as their accountant.`,
+      link: "Accept the invitation",
+      expires: "(link valid for 30 days)",
+      orInApp: "You can also accept or decline it under Accounting → Your clients once signed in, with your usual email and password.",
+    },
     receipt: {
       subject: (store, number) => `Receipt from ${store} — #${number}`,
       number: (number) => `Receipt #${number}`,
@@ -111,6 +127,14 @@ const TEXTS: Record<Exclude<Language, "pt-AO">, MailTexts> = {
       expires: "(o link é válido durante 72 horas)",
       signInWith: (email) => `Depois inicie sessão com este endereço de email: ${email}`,
     },
+    accountantAccess: {
+      subject: (business) => `${business} convida-o para a sua contabilidade`,
+      hi: (name) => `Olá ${name},`,
+      given: (business, inviter) => `${inviter ? `${inviter}, de ` : ""}<b>${business}</b>, deu-lhe acesso à contabilidade da empresa como contabilista.`,
+      link: "Aceitar o convite",
+      expires: "(o link é válido durante 30 dias)",
+      orInApp: "Também pode aceitá-lo ou recusá-lo em Contabilidade → Os seus clientes, depois de iniciar sessão com o seu email e palavra-passe de sempre.",
+    },
     receipt: {
       subject: (store, number) => `Talão de ${store} — n.º ${number}`,
       number: (number) => `Talão n.º ${number}`,
@@ -156,6 +180,14 @@ const TEXTS: Record<Exclude<Language, "pt-AO">, MailTexts> = {
       link: "Definir sua senha",
       expires: "(o link expira em 72 horas)",
       signInWith: (email) => `Depois, entre com este endereço de e-mail: ${email}`,
+    },
+    accountantAccess: {
+      subject: (business) => `${business} convida você para a contabilidade`,
+      hi: (name) => `Olá, ${name}!`,
+      given: (business, inviter) => `${inviter ? `${inviter}, da ` : ""}<b>${business}</b>, deu a você acesso à contabilidade da empresa como contador.`,
+      link: "Aceitar o convite",
+      expires: "(o link vale por 30 dias)",
+      orInApp: "Você também pode aceitar ou recusar em Contabilidade → Seus clientes depois de entrar com seu e-mail e senha de sempre.",
     },
     receipt: {
       subject: (store, number) => `Recibo de ${store} — nº ${number}`,

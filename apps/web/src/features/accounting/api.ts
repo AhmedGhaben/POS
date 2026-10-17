@@ -256,18 +256,30 @@ export interface SaftCheckDto {
 
 export const checkSaft = (year: number, draft: boolean) => apiClient.get<SaftCheckDto>(`/accounting/saft/check?year=${year}${draft ? "&draft=true" : ""}`);
 
-export interface AccountantClientDto {
-  businessId: string;
-  name: string;
-  taxId: string | null;
-  country: string;
-  current: boolean;
-  accountingEnabled: boolean;
-  pending: number;
-  errors: number;
-  openMonths: number;
-  lastYearSaftMade: boolean;
-}
+/** A company the accountant works for, or one that invited them and waits for an answer. */
+export type AccountantClientDto =
+  | {
+      invitation: "ACCEPTED";
+      businessId: string;
+      name: string;
+      taxId: string | null;
+      country: string;
+      current: boolean;
+      accountingEnabled: boolean;
+      pending: number;
+      errors: number;
+      openMonths: number;
+      lastYearSaftMade: boolean;
+    }
+  | {
+      invitation: "PENDING";
+      businessId: string;
+      name: string;
+      taxId: string | null;
+      country: string;
+      invitedAt: string;
+      invitedBy: string | null;
+    };
 
 export interface AccountantDto {
   userId: string;
@@ -276,15 +288,22 @@ export interface AccountantDto {
   lastName: string;
   ocpcaNumber: string | null;
   since: string;
+  /** Invited, not accepted yet (an accountant who already had a login). */
+  pending: boolean;
 }
 
 export const fetchClients = () => apiClient.get<AccountantClientDto[]>("/accountant/clients");
 export const switchBusiness = (businessId: string) =>
   apiClient.post<{ accessToken: string; user: UserDto; stores: StoreDto[]; business: BusinessDto }>("/auth/switch-business", { businessId });
+export const acceptInvitation = (businessId: string) => apiClient.post<{ accepted: true }>(`/accountant/invitations/${businessId}/accept`);
+export const declineInvitation = (businessId: string) => apiClient.post<{ declined: true }>(`/accountant/invitations/${businessId}/decline`);
+/** The invitation email's link: works signed out. */
+export const acceptInvitationLink = (token: string) =>
+  apiClient.post<{ accepted: true; email: string; businessName: string }>("/accountant/invitations/accept-link", { token }, { skipAuth: true });
 export const saveProfile = (ocpcaNumber: string | null) => apiClient.patch<{ ocpcaNumber: string | null }>("/accountant/profile", { ocpcaNumber });
 export const fetchAccountants = () => apiClient.get<AccountantDto[]>("/accounting/accountants");
 export const inviteAccountant = (body: { email: string; firstName: string; lastName: string; ocpcaNumber?: string }) =>
-  apiClient.post<{ userId: string; email: string; newLogin: boolean }>("/accounting/accountants", body);
+  apiClient.post<{ userId: string; email: string; newLogin: boolean; pending: boolean }>("/accounting/accountants", body);
 export const revokeAccountant = (userId: string) => apiClient.delete(`/accounting/accountants/${userId}`);
 
 export type AttachmentOwner = "PURCHASE" | "EXPENSE" | "ENTRY";

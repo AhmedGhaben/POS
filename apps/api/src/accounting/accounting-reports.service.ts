@@ -100,7 +100,7 @@ export class AccountingReportsService {
    */
   private async accountantFor(businessId: string, userId?: string): Promise<{ name: string; ocpcaNumber: string | null } | null> {
     const access = await this.prisma.accountantAccess.findMany({
-      where: { businessId, revokedAt: null },
+      where: { businessId, revokedAt: null, acceptedAt: { not: null } },
       include: { user: { select: { id: true, firstName: true, lastName: true, ocpcaNumber: true } } },
       orderBy: { createdAt: "asc" },
     });

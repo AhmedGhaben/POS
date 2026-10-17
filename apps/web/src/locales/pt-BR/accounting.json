@@ -281,7 +281,25 @@
     "open": "Abrir",
     "switched": "Agora em {{name}}",
     "ocpca": "Seu número OCPCA",
-    "ocpcaPlaceholder": "Impresso nas demonstrações"
+    "ocpcaPlaceholder": "Impresso nas demonstrações",
+    "invitation": "Convite",
+    "invitedBy": "{{name}} deu acesso a você em {{date}}",
+    "invitedOn": "Convidado em {{date}}",
+    "accept": "Aceitar",
+    "decline": "Recusar",
+    "accepted": "{{name}} agora é um dos seus clientes",
+    "declined": "Convite de {{name}} recusado"
+  },
+  "invitation": {
+    "acceptingTitle": "Aceitando o convite",
+    "oneMoment": "Um momento...",
+    "doneTitle": "Convite aceito",
+    "done": "Agora você tem acesso à contabilidade de {{name}}. Entre como {{email}} e abra-a em Seus clientes.",
+    "toClients": "Ir para seus clientes",
+    "signIn": "Entrar",
+    "failedTitle": "Não foi possível aceitar o convite",
+    "missing": "Este link está sem o código.",
+    "failedHint": "Os links funcionam uma vez, por 30 dias. Entre: o convite também aguarda em Contabilidade → Seus clientes."
   },
   "accountants": {
     "title": "Contadores",
@@ -292,7 +310,10 @@
     "revoked": "Acesso removido",
     "invite": "Dar acesso",
     "invited": "Convite enviado: ele escolhe a senha a partir do e-mail",
-    "added": "Acesso dado: ele já tinha um login",
+    "added": "Convite enviado: ele já tem login e aceita pelo e-mail ou pela lista de clientes",
+    "pending": "Convite pendente",
+    "invitedOn": "convidado em {{date}}",
+    "cancelInvitation": "Cancelar o convite",
     "fields": {
       "email": "E-mail",
       "firstName": "Nome",

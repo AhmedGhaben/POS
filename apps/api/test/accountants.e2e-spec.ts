@@ -24,6 +24,8 @@ describe("Accountants (e2e)", () => {
   const owners: string[] = [];
   const stores: string[] = [];
   let inviteToken: string | undefined;
+  /** The last "another company gives you access" email: who it went to, and its accept link's token. */
+  let accessEmail: { to: string; businessName: string; inviterName: string; token: string } | undefined;
   let accountantToken: string;
   let accountantCookie: string;
 
@@ -37,6 +39,9 @@ describe("Accountants (e2e)", () => {
         sendStaffInviteEmail: async (_to: string, p: { token: string }) => {
           inviteToken = p.token;
         },
+        sendAccountantAccessEmail: async (to: string, p: { businessName: string; inviterName: string; token: string }) => {
+          accessEmail = { to, ...p };
+        },
         sendEmailVerificationEmail: async () => undefined,
         sendPasswordResetEmail: async () => undefined,
       })
@@ -47,7 +52,7 @@ describe("Accountants (e2e)", () => {
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
     prisma = app.get(PrismaService);
-    for (const name of ["Cliente Um", "Cliente Dois"]) {
+    for (const name of ["Cliente Um", "Cliente Dois", "Cliente Tres"]) {
       const reg = await http()
         .post("/auth/register")
         .send({ businessName: `${name} Lda`, storeName: `Loja ${name}`, firstName: "Dono", lastName: name, email: `acc-owner-${name.replace(" ", "")}-${RUN}@e2e.test`, password: PASSWORD })
@@ -77,23 +82,52 @@ describe("Accountants (e2e)", () => {
     accountantToken = login.body.accessToken;
     accountantCookie = (login.headers["set-cookie"] as unknown as string[]).find((c) => c.startsWith("refresh_token="))!.split(";")[0];
     const list = (await http().get("/accounting/accountants").set(auth(owners[0])).expect(200)).body;
-    expect(list).toEqual([expect.objectContaining({ email: accountantEmail, ocpcaNumber: "OCPCA-1234" })]);
+    // Choosing the password accepted it: not pending.
+    expect(list).toEqual([expect.objectContaining({ email: accountantEmail, ocpcaNumber: "OCPCA-1234", pending: false })]);
     // Not one of the staff.
     const staff = (await http().get("/users").set(auth(owners[0])).expect(200)).body as { email: string }[];
     expect(staff.some((u) => u.email === accountantEmail)).toBe(false);
   });
 
-  it("a second company gives the same login access; the accountant sees both and switches", async () => {
+  it("a second company invites the same login: an email, and a pending invitation in their client list until accepted", async () => {
     inviteToken = undefined;
+    accessEmail = undefined;
     const second = (await http().post("/accounting/accountants").set(auth(owners[1])).send({ email: accountantEmail, firstName: "Carla", lastName: "Contabilista" }).expect(201)).body;
-    expect(second.newLogin).toBe(false);
+    expect(second).toMatchObject({ newLogin: false, pending: true });
+    // No password to choose; an email saying who gave access, with an accept link.
     expect(inviteToken).toBeUndefined();
-    await http().post("/accounting/accountants").set(auth(owners[1])).send({ email: accountantEmail, firstName: "Carla", lastName: "Contabilista" }).expect(409);
-    const clients = (await http().get("/accountant/clients").set(auth(accountantToken)).expect(200)).body as { businessId: string; current: boolean; accountingEnabled: boolean }[];
-    expect(clients.map((c) => [c.businessId, c.current, c.accountingEnabled])).toEqual([
-      [businesses[0], true, true],
-      [businesses[1], false, true],
+    expect(accessEmail).toMatchObject({ to: accountantEmail, businessName: "Cliente Dois Lda", inviterName: "Dono Cliente Dois" });
+    expect(accessEmail!.token.length).toBeGreaterThan(20);
+    const again = await http().post("/accounting/accountants").set(auth(owners[1])).send({ email: accountantEmail, firstName: "Carla", lastName: "Contabilista" }).expect(409);
+    expect(again.body.message).toBe("This accountant has already been invited");
+    expect((await http().get("/accounting/accountants").set(auth(owners[1])).expect(200)).body).toEqual([expect.objectContaining({ email: accountantEmail, pending: true })]);
+
+    type Client = { businessId: string; invitation: string; current?: boolean; accountingEnabled?: boolean; invitedBy?: string };
+    const before = (await http().get("/accountant/clients").set(auth(accountantToken)).expect(200)).body as Client[];
+    expect(before.map((c) => [c.businessId, c.invitation])).toEqual([
+      [businesses[1], "PENDING"],
+      [businesses[0], "ACCEPTED"],
     ]);
+    expect(before[0]).toMatchObject({ name: "Cliente Dois Lda", invitedBy: "Dono Cliente Dois" });
+    // Pending: nothing of that company is open to them.
+    const refused = await http().post("/auth/switch-business").set(auth(accountantToken)).send({ businessId: businesses[1] }).expect(401);
+    expect(refused.body.message).toBe("Accept this company's invitation first");
+    await http().post(`/accountant/invitations/${businesses[0]}/accept`).set(auth(accountantToken)).expect(404);
+    await http().post(`/accountant/invitations/${businesses[1]}/accept`).set(auth(owners[1])).expect(403);
+
+    await http().post(`/accountant/invitations/${businesses[1]}/accept`).set(auth(accountantToken)).expect(200);
+    // The email's link is spent once accepted in the app.
+    await http().post("/accountant/invitations/accept-link").send({ token: accessEmail!.token }).expect(400);
+    expect((await http().get("/accounting/accountants").set(auth(owners[1])).expect(200)).body).toEqual([expect.objectContaining({ email: accountantEmail, pending: false })]);
+    const clients = (await http().get("/accountant/clients").set(auth(accountantToken)).expect(200)).body as Client[];
+    expect(clients.map((c) => [c.businessId, c.invitation, c.current, c.accountingEnabled])).toEqual([
+      [businesses[0], "ACCEPTED", true, true],
+      [businesses[1], "ACCEPTED", false, true],
+    ]);
+    expect(await prisma.auditLog.count({ where: { businessId: businesses[1], action: "ACCOUNTANT_ACCEPTED" } })).toBe(1);
+  });
+
+  it("once accepted, the accountant switches between the two", async () => {
     const switched = await http().post("/auth/switch-business").set(auth(accountantToken)).send({ businessId: businesses[1] }).expect(200);
     expect(switched.body.user.businessId).toBe(businesses[1]);
     expect(switched.body.business.name).toBe("Cliente Dois Lda");
@@ -133,6 +167,45 @@ describe("Accountants (e2e)", () => {
     // Their own professional number.
     expect((await http().patch("/accountant/profile").set(auth(accountantToken)).send({ ocpcaNumber: "OCPCA-9999" }).expect(200)).body).toEqual({ ocpcaNumber: "OCPCA-9999" });
     await http().patch("/accountant/profile").set(auth(owners[1])).send({ ocpcaNumber: "x" }).expect(403);
+  });
+
+  it("an invitation can be declined: it goes from both lists; invited again, the email's link accepts it signed out, once", async () => {
+    accessEmail = undefined;
+    await http().post("/accounting/accountants").set(auth(owners[2])).send({ email: accountantEmail, firstName: "Carla", lastName: "Contabilista" }).expect(201);
+    const firstLink = accessEmail!.token;
+    await http().post(`/accountant/invitations/${businesses[2]}/decline`).set(auth(accountantToken)).expect(200);
+    expect((await http().get("/accounting/accountants").set(auth(owners[2])).expect(200)).body).toEqual([]);
+    const clients = (await http().get("/accountant/clients").set(auth(accountantToken)).expect(200)).body as { businessId: string }[];
+    expect(clients.some((c) => c.businessId === businesses[2])).toBe(false);
+    expect(await prisma.auditLog.count({ where: { businessId: businesses[2], action: "ACCOUNTANT_DECLINED" } })).toBe(1);
+    // A declined invitation's link no longer works.
+    await http().post("/accountant/invitations/accept-link").send({ token: firstLink }).expect(400);
+
+    accessEmail = undefined;
+    await http().post("/accounting/accountants").set(auth(owners[2])).send({ email: accountantEmail, firstName: "Carla", lastName: "Contabilista" }).expect(201);
+    expect(accessEmail!.token).not.toBe(firstLink);
+    const accepted = (await http().post("/accountant/invitations/accept-link").send({ token: accessEmail!.token }).expect(200)).body;
+    expect(accepted).toEqual({ accepted: true, email: accountantEmail, businessName: "Cliente Tres Lda" });
+    await http().post("/accountant/invitations/accept-link").send({ token: accessEmail!.token }).expect(400);
+    await http().post("/accountant/invitations/accept-link").send({ token: "not-a-real-token-at-all" }).expect(400);
+    const switched = await http().post("/auth/switch-business").set(auth(accountantToken)).send({ businessId: businesses[2] }).expect(200);
+    expect(switched.body.business.name).toBe("Cliente Tres Lda");
+  });
+
+  it("an accountant whose only company is a pending invitation is told to accept it before signing in", async () => {
+    const email = `acc-only-invited-${RUN}@e2e.test`;
+    inviteToken = undefined;
+    await http().post("/accounting/accountants").set(auth(owners[2])).send({ email, firstName: "Rui", lastName: "Revisor" }).expect(201);
+    await http().post("/auth/reset-password").send({ token: inviteToken, newPassword: PASSWORD }).expect(200);
+    const userId = (await prisma.user.findUniqueOrThrow({ where: { email } })).id;
+    await http().delete(`/accounting/accountants/${userId}`).set(auth(owners[2])).expect(200);
+    accessEmail = undefined;
+    await http().post("/accounting/accountants").set(auth(owners[0])).send({ email, firstName: "Rui", lastName: "Revisor" }).expect(201);
+    const login = await http().post("/auth/login").send({ email, password: PASSWORD }).expect(401);
+    expect(login.body.message).toBe("Accept the invitation from your email first");
+    await http().post("/accountant/invitations/accept-link").send({ token: accessEmail!.token }).expect(200);
+    const after = await http().post("/auth/login").send({ email, password: PASSWORD }).expect(200);
+    expect(after.body.user.businessId).toBe(businesses[0]);
   });
 
   it("the owner takes the access away: that company's session stops at once, the other company still works", async () => {

@@ -281,7 +281,25 @@
     "open": "Open",
     "switched": "Now in {{name}}",
     "ocpca": "Your OCPCA number",
-    "ocpcaPlaceholder": "Printed on the statements"
+    "ocpcaPlaceholder": "Printed on the statements",
+    "invitation": "Invitation",
+    "invitedBy": "{{name}} gave you access on {{date}}",
+    "invitedOn": "Invited on {{date}}",
+    "accept": "Accept",
+    "decline": "Decline",
+    "accepted": "{{name}} is now one of your clients",
+    "declined": "Invitation from {{name}} declined"
+  },
+  "invitation": {
+    "acceptingTitle": "Accepting the invitation",
+    "oneMoment": "One moment...",
+    "doneTitle": "Invitation accepted",
+    "done": "You now have access to the books of {{name}}. Sign in as {{email}} and open it from Your clients.",
+    "toClients": "Go to your clients",
+    "signIn": "Sign in",
+    "failedTitle": "Couldn't accept the invitation",
+    "missing": "This link is missing its code.",
+    "failedHint": "Links work once, for 30 days. Sign in: the invitation also waits under Accounting → Your clients."
   },
   "accountants": {
     "title": "Accountants",
@@ -292,7 +310,10 @@
     "revoked": "Access removed",
     "invite": "Give access",
     "invited": "Invitation sent: they choose their password from the email",
-    "added": "Access given: they already had a login",
+    "added": "Invitation sent: they already have a login and accept it from the email or their client list",
+    "pending": "Invitation pending",
+    "invitedOn": "invited on {{date}}",
+    "cancelInvitation": "Cancel the invitation",
     "fields": {
       "email": "Email",
       "firstName": "First name",

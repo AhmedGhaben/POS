@@ -103,11 +103,14 @@ export class AuthService {
 
   /**
    * The client an accountant works in: the one asked for, if it still gives
-   * them access; else their first client.
+   * them access; else their first client. Invitations not accepted yet don't count.
    */
   private async accountantBusiness(userId: string, preferred: string | null): Promise<string> {
-    const access = await this.prisma.accountantAccess.findMany({ where: { userId, revokedAt: null }, orderBy: { createdAt: "asc" }, select: { businessId: true } });
-    if (!access.length) throw new UnauthorizedException("No company has given you access");
+    const access = await this.prisma.accountantAccess.findMany({ where: { userId, revokedAt: null, acceptedAt: { not: null } }, orderBy: { createdAt: "asc" }, select: { businessId: true } });
+    if (!access.length) {
+      const invited = await this.prisma.accountantAccess.count({ where: { userId, revokedAt: null, acceptedAt: null } });
+      throw new UnauthorizedException(invited ? "Accept the invitation from your email first" : "No company has given you access");
+    }
     return access.find((a) => a.businessId === preferred)?.businessId ?? access[0].businessId;
   }
 
@@ -117,6 +120,7 @@ export class AuthService {
     if (!user || !user.isActive || user.role !== Role.ACCOUNTANT) throw new UnauthorizedException("Only accountants switch between companies");
     const access = await this.prisma.accountantAccess.findFirst({ where: { userId, businessId, revokedAt: null } });
     if (!access) throw new UnauthorizedException("No company has given you access");
+    if (!access.acceptedAt) throw new UnauthorizedException("Accept this company's invitation first");
     return this.buildSession(user, businessId);
   }
 

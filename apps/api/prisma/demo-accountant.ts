@@ -28,8 +28,8 @@ async function main() {
   });
   await prisma.accountantAccess.upsert({
     where: { userId_businessId: { userId: user.id, businessId: business.id } },
-    update: { revokedAt: null },
-    create: { userId: user.id, businessId: business.id, invitedById: owner.id },
+    update: { revokedAt: null, acceptedAt: new Date() },
+    create: { userId: user.id, businessId: business.id, invitedById: owner.id, acceptedAt: new Date() },
   });
   console.log(`${email} / AccountantPass123! has access to ${business.name}`);
   await prisma.$disconnect();

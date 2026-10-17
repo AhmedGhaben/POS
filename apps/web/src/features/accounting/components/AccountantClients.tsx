@@ -11,12 +11,14 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuthStore } from "@/features/auth/store";
 import { ApiError } from "@/lib/api-client";
-import { fetchClients, saveProfile, switchBusiness } from "../api";
+import { formatDate } from "@/lib/format";
+import { acceptInvitation, declineInvitation, fetchClients, saveProfile, switchBusiness } from "../api";
 
 /**
  * An accountant's clients: what needs doing in each (records not posted,
  * errors, months gone by still open, last year's SAF-T file), and moving
- * from one to another. Their OCPCA number, printed on the statements.
+ * from one to another. Invitations from other companies wait at the top
+ * until accepted or declined. Their OCPCA number, printed on the statements.
  */
 export function AccountantClients() {
   const { t } = useTranslation("accounting");
@@ -33,6 +35,17 @@ export function AccountantClients() {
       queryClient.clear();
       navigate("/accounting", { replace: true });
       toast.success(t("accountant.switched", { name: session.business.name }));
+    },
+    onError: fail,
+  });
+  const answer = useMutation({
+    mutationFn: async ({ businessId, accept }: { businessId: string; accept: boolean; name: string }) => {
+      if (accept) await acceptInvitation(businessId);
+      else await declineInvitation(businessId);
+    },
+    onSuccess: (_r, v) => {
+      void queryClient.invalidateQueries({ queryKey: ["accountant", "clients"] });
+      toast.success(t(v.accept ? "accountant.accepted" : "accountant.declined", { name: v.name }));
     },
     onError: fail,
   });
@@ -57,7 +70,29 @@ export function AccountantClients() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {clients.data?.map((c) => (
+            {clients.data?.map((c) =>
+              c.invitation === "PENDING" ? (
+                <TableRow key={c.businessId} data-testid="accountant-invitation">
+                  <TableCell colSpan={5}>
+                    <span className="font-medium">{c.name}</span>
+                    {c.taxId && <span className="block text-xs text-muted-foreground">NIF {c.taxId}</span>}
+                    <Badge variant="outline" className="mt-1">
+                      {t("accountant.invitation")}
+                    </Badge>
+                    <span className="block text-xs text-muted-foreground">
+                      {c.invitedBy ? t("accountant.invitedBy", { name: c.invitedBy, date: formatDate(c.invitedAt) }) : t("accountant.invitedOn", { date: formatDate(c.invitedAt) })}
+                    </span>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-right">
+                    <Button size="sm" className="mr-2" disabled={answer.isPending} onClick={() => answer.mutate({ businessId: c.businessId, accept: true, name: c.name })}>
+                      {t("accountant.accept")}
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={answer.isPending} onClick={() => answer.mutate({ businessId: c.businessId, accept: false, name: c.name })}>
+                      {t("accountant.decline")}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ) : (
               <TableRow key={c.businessId} className={c.current ? "bg-muted/40" : ""}>
                 <TableCell>
                   <span className="font-medium">{c.name}</span>
@@ -78,7 +113,8 @@ export function AccountantClients() {
                   )}
                 </TableCell>
               </TableRow>
-            ))}
+              ),
+            )}
           </TableBody>
         </Table>
         <div className="flex flex-wrap items-end gap-2">

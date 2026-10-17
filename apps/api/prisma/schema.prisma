@@ -1562,26 +1562,26 @@ enum LedgerAccountCategory {
 
 /// The business keeps its books here: on/off and how POS documents are posted.
 model AccountingSettings {
-  businessId    String    @id
-  business      Business  @relation(fields: [businessId], references: [id])
-  enabled       Boolean   @default(false)
+  businessId          String    @id
+  business            Business  @relation(fields: [businessId], references: [id])
+  enabled             Boolean   @default(false)
   /// POS documents from this day on are posted automatically; earlier ones
   /// are in the opening balances.
-  startDate     DateTime  @db.Date
+  startDate           DateTime  @db.Date
   /// One cash account per till (else everything in Caixa principal).
-  cashPerTill   Boolean   @default(true)
+  cashPerTill         Boolean   @default(true)
   /// PER_DOCUMENT, or DAILY_SUMMARY (FR, NC and RC summed per till per day).
-  grouping      String    @default("PER_DOCUMENT")
+  grouping            String    @default("PER_DOCUMENT")
   /// The integration runs by itself every few minutes.
-  autoPost      Boolean   @default(true)
+  autoPost            Boolean   @default(true)
   /// The monthly SAF-T purchases file: AUTO (while e-invoicing is off), ALWAYS, NEVER.
-  purchasesFile String    @default("AUTO")
+  purchasesFile       String    @default("AUTO")
   /// Its due day each month; null = the country's (Angola: the last day, Decreto 312/18 art. 3).
   purchasesFileDueDay Int?
-  enabledAt     DateTime?
-  enabledById   String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  enabledAt           DateTime?
+  enabledById         String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   @@map("accounting_settings")
 }
@@ -1862,15 +1862,21 @@ model EntryTemplate {
 
 /// An accountant's access to a client company. Revoked, not deleted.
 model AccountantAccess {
-  id          String    @id @default(cuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  businessId  String
-  business    Business  @relation(fields: [businessId], references: [id])
-  invitedById String
-  createdAt   DateTime  @default(now())
-  revokedAt   DateTime?
-  revokedById String?
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  businessId      String
+  business        Business  @relation(fields: [businessId], references: [id])
+  invitedById     String
+  createdAt       DateTime  @default(now())
+  /// Null while the invitation is pending: an accountant who already had a
+  /// login accepts another company's access (in the app or from the email).
+  acceptedAt      DateTime?
+  /// The email's accept link (hashed), until it's used or expires.
+  inviteTokenHash String?   @unique
+  inviteExpiresAt DateTime?
+  revokedAt       DateTime?
+  revokedById     String?
 
   @@unique([userId, businessId])
   @@index([businessId])

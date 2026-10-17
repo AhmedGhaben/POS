@@ -40,7 +40,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
     }
     // An accountant works in the client the token names, while that client still gives them access.
     if (user.role === Role.ACCOUNTANT) {
-      const access = await this.prisma.accountantAccess.findFirst({ where: { userId: user.id, businessId: payload.businessId, revokedAt: null }, select: { id: true } });
+      const access = await this.prisma.accountantAccess.findFirst({ where: { userId: user.id, businessId: payload.businessId, revokedAt: null, acceptedAt: { not: null } }, select: { id: true } });
       if (!access) throw new UnauthorizedException("Your access to this company was removed");
       return { userId: user.id, businessId: payload.businessId, role: user.role };
     }

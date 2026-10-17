@@ -1,7 +1,9 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
 import { Role } from "@prisma/client";
 import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
+import { Public } from "../common/decorators/public.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
@@ -26,6 +28,13 @@ class InviteAccountantDto {
   @IsString()
   @MaxLength(30)
   ocpcaNumber?: string;
+}
+
+class AcceptInvitationLinkDto {
+  @IsString()
+  @MinLength(10)
+  @MaxLength(200)
+  token!: string;
 }
 
 class AccountantProfileDto {
@@ -64,6 +73,30 @@ export class AccountantsController {
   @Roles(Role.ACCOUNTANT)
   clients(@CurrentUser() user: AuthenticatedUser) {
     return this.accountants.clients(user.userId, user.businessId);
+  }
+
+  /** Accepts a company's invitation from the client list. */
+  @Post("accountant/invitations/:businessId/accept")
+  @HttpCode(200)
+  @Roles(Role.ACCOUNTANT)
+  accept(@CurrentUser() user: AuthenticatedUser, @Param("businessId") businessId: string) {
+    return this.accountants.accept(user.userId, businessId);
+  }
+
+  @Post("accountant/invitations/:businessId/decline")
+  @HttpCode(200)
+  @Roles(Role.ACCOUNTANT)
+  decline(@CurrentUser() user: AuthenticatedUser, @Param("businessId") businessId: string) {
+    return this.accountants.decline(user.userId, businessId);
+  }
+
+  /** The invitation email's link: public, so it works signed out. */
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post("accountant/invitations/accept-link")
+  @HttpCode(200)
+  acceptLink(@Body() dto: AcceptInvitationLinkDto) {
+    return this.accountants.acceptWithToken(dto.token);
   }
 
   @Patch("accountant/profile")
