@@ -298,6 +298,24 @@
       "ocpcaNumber": "N.º OCPCA (opcional)"
     }
   },
+  "attachments": {
+    "title": "Anexos",
+    "supplierPapers": "Fatura e recibos do fornecedor (digitalizados)",
+    "none": "Sem anexos.",
+    "add": "Anexar arquivo (PDF ou imagem)",
+    "added": "Arquivo anexado",
+    "tooBig": "Os arquivos têm no máximo 5 MB",
+    "download": "Baixar {{name}}",
+    "remove": "Remover {{name}}"
+  },
+  "archive": {
+    "title": "Arquivo de documentos",
+    "description": "Um ZIP do período: todas as faturas, recibos e notas de crédito em cópia PDF, os arquivos SAF-T de faturação e de aquisições, os anexos e um índice.",
+    "from": "De",
+    "to": "Até",
+    "download": "Baixar o arquivo (ZIP)",
+    "done": "Arquivo salvo"
+  },
   "saft": {
     "title": "Arquivo SAF-T (AO) de contabilidade",
     "description": "A contabilidade do exercício para a AGT, integrada com a faturação (TaxAccountingBasis I): plano com saldos, lançamentos e os documentos com o lançamento em que foram contabilizados. Entrega até 10 de abril, relativa ao ano anterior.",

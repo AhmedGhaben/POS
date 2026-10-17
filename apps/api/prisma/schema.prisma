@@ -1874,3 +1874,23 @@ model AccountantAccess {
   @@index([businessId])
   @@map("accountant_access")
 }
+
+/// A scanned supplier invoice or receipt (or any supporting paper) kept
+/// with a purchase, an expense or a journal entry (B2). Small files only:
+/// they live in the row until object storage exists.
+model Attachment {
+  id           String   @id @default(cuid())
+  businessId   String
+  /// PURCHASE, EXPENSE, ENTRY
+  ownerType    String
+  ownerId      String
+  fileName     String
+  mimeType     String
+  size         Int
+  data         Bytes
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  @@index([businessId, ownerType, ownerId])
+  @@map("attachments")
+}

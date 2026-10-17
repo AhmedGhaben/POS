@@ -78,6 +78,7 @@ async function deleteBooks(prisma: PrismaService, businessId: string): Promise<v
     await tx.accountingIntegrationError.deleteMany({ where: { businessId } });
     await tx.accountMapping.deleteMany({ where: { businessId } });
     await tx.entryTemplate.deleteMany({ where: { businessId } });
+    await tx.attachment.deleteMany({ where: { businessId } });
     await tx.journalEntryLine.deleteMany({ where: { entry: { businessId } } });
     for (let i = 0; i < 50 && (await tx.journalEntry.count({ where: { businessId } })); i++) {
       await tx.journalEntry.deleteMany({ where: { businessId, reversedBy: { is: null } } });

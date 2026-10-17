@@ -285,6 +285,22 @@ export const inviteAccountant = (body: { email: string; firstName: string; lastN
   apiClient.post<{ userId: string; email: string; newLogin: boolean }>("/accounting/accountants", body);
 export const revokeAccountant = (userId: string) => apiClient.delete(`/accounting/accountants/${userId}`);
 
+export type AttachmentOwner = "PURCHASE" | "EXPENSE" | "ENTRY";
+
+export interface AttachmentDto {
+  id: string;
+  ownerType: AttachmentOwner;
+  ownerId: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+}
+
+export const fetchAttachments = (ownerType: AttachmentOwner, ownerId: string) => apiClient.get<AttachmentDto[]>(`/attachments?ownerType=${ownerType}&ownerId=${encodeURIComponent(ownerId)}`);
+export const uploadAttachment = (body: { ownerType: AttachmentOwner; ownerId: string; fileName: string; dataUrl: string }) => apiClient.post<AttachmentDto>("/attachments", body);
+export const removeAttachment = (id: string) => apiClient.delete(`/attachments/${id}`);
+
 /** PGC classes, for headings. */
 export const PGC_CLASSES: Record<number, string> = {
   1: "Meios fixos e investimentos",

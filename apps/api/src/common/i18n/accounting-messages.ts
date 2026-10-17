@@ -40,6 +40,10 @@ export const ACCOUNTING_EXACT: Record<string, Translations> = {
   "Your access to this company was removed": { "pt-PT": "O seu acesso a esta empresa foi retirado", "pt-BR": "O seu acesso a esta empresa foi removido" },
   "No company has given you access": { "pt-PT": "Nenhuma empresa lhe deu acesso", "pt-BR": "Nenhuma empresa lhe deu acesso" },
   "Only accountants switch between companies": { "pt-PT": "Só os contabilistas mudam de empresa", "pt-BR": "Só os contadores mudam de empresa" },
+  "Attach a PDF or an image (JPEG, PNG, WebP)": { "pt-PT": "Anexe um PDF ou uma imagem (JPEG, PNG, WebP)", "pt-BR": "Anexe um PDF ou uma imagem (JPEG, PNG, WebP)" },
+  "Files are 5 MB at most": { "pt-PT": "Os ficheiros têm no máximo 5 MB", "pt-BR": "Os arquivos têm no máximo 5 MB" },
+  "Attachment not found": { "pt-PT": "Anexo não encontrado", "pt-BR": "Anexo não encontrado" },
+  "Not found": { "pt-PT": "Não encontrado", "pt-BR": "Não encontrado" },
   "Unknown mapping key": { "pt-PT": "Chave de mapeamento desconhecida", "pt-BR": "Chave de mapeamento desconhecida" },
   "An entry needs at least one debit and one credit line": { "pt-PT": "Um lançamento precisa de pelo menos uma linha a débito e uma a crédito", "pt-BR": "Um lançamento precisa de pelo menos uma linha a débito e uma a crédito" },
 };

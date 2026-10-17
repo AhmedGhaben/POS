@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError, apiClient, saveFile } from "@/lib/api-client";
 import { checkSaft, type SaftCheckDto } from "../api";
+import { DateInput } from "@/components/ui/date-input";
 
 /**
  * The SAF-T (AO) accounting file for a year (due by 10 April): check the
@@ -28,8 +29,16 @@ export function SaftTab({ today, canWrite }: { today: string; canWrite: boolean 
     onError: fail,
   });
   React.useEffect(() => setCheck(null), [year, draft]);
+  const [from, setFrom] = React.useState(`${today.slice(0, 7)}-01`);
+  const [to, setTo] = React.useState(today);
+  const archive = useMutation({
+    mutationFn: async () => saveFile(await apiClient.download(`/accounting/archive?startDate=${from}&endDate=${to}`)),
+    onSuccess: () => toast.success(t("archive.done")),
+    onError: fail,
+  });
 
   return (
+    <div className="space-y-4">
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -80,5 +89,26 @@ export function SaftTab({ today, canWrite }: { today: string; canWrite: boolean 
         )}
       </CardContent>
     </Card>
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("archive.title")}</CardTitle>
+        <CardDescription>{t("archive.description")}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap items-end gap-3">
+        <div className="space-y-1">
+          <Label htmlFor="archive-from">{t("archive.from")}</Label>
+          <DateInput id="archive-from" value={from} onChange={setFrom} />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="archive-to">{t("archive.to")}</Label>
+          <DateInput id="archive-to" value={to} onChange={setTo} />
+        </div>
+        <Button variant="outline" onClick={() => archive.mutate()} disabled={archive.isPending || !from || !to}>
+          <Download className="mr-2 h-4 w-4" aria-hidden />
+          {archive.isPending ? t("saft.making") : t("archive.download")}
+        </Button>
+      </CardContent>
+    </Card>
+    </div>
   );
 }

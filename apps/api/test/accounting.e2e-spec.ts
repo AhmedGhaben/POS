@@ -824,4 +824,50 @@ describe("Accounting (e2e)", () => {
       await http().get("/fiscal-documents/saft/aquisicao").set(auth(cashierToken)).expect(403);
     });
   });
+  describe("B2: attachments and the document archive", () => {
+    const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const binary = (res: request.Response, done: (err: Error | null, body: Buffer) => void) => {
+      const r = res as unknown as NodeJS.ReadableStream;
+      const chunks: Buffer[] = [];
+      r.on("data", (c: Buffer) => chunks.push(c));
+      r.on("end", () => done(null, Buffer.concat(chunks)));
+    };
+    let purchaseId: string;
+    let attachmentId: string;
+
+    it("a scanned supplier invoice is attached to its purchase, listed and downloaded; anything but PDF or images is refused", async () => {
+      purchaseId = (await prisma.purchase.findFirstOrThrow({ where: { store: { businessId }, supplierDocNo: "FT GK2026/12" } })).id;
+      const a = (await http().post("/attachments").set(auth(ownerToken)).send({ ownerType: "PURCHASE", ownerId: purchaseId, fileName: "factura-fornecedor.png", dataUrl: PNG }).expect(201)).body;
+      attachmentId = a.id;
+      expect(a).toMatchObject({ mimeType: "image/png", size: Buffer.from(PNG.split(",")[1], "base64").length });
+      await http().post("/attachments").set(auth(ownerToken)).send({ ownerType: "PURCHASE", ownerId: purchaseId, fileName: "x.exe", dataUrl: "data:application/x-msdownload;base64,AAAA" }).expect(400);
+      await http().post("/attachments").set(auth(ownerToken)).send({ ownerType: "PURCHASE", ownerId: "nope", fileName: "x.png", dataUrl: PNG }).expect(404);
+      await http().post("/attachments").set(auth(cashierToken)).send({ ownerType: "PURCHASE", ownerId: purchaseId, fileName: "x.png", dataUrl: PNG }).expect(403);
+      const list = (await http().get(`/attachments?ownerType=PURCHASE&ownerId=${purchaseId}`).set(auth(managerToken)).expect(200)).body;
+      expect(list).toEqual([expect.objectContaining({ id: attachmentId, fileName: "factura-fornecedor.png" })]);
+      const file = await http().get(`/attachments/${attachmentId}/file`).set(auth(managerToken)).buffer(true).parse(binary).expect(200);
+      expect((file.body as Buffer).toString("base64")).toBe(PNG.split(",")[1]);
+    });
+
+    it("the month's archive: every document as a PDF, the SAF-T files, the attachments and an index", async () => {
+      const purchase = await prisma.purchase.findUniqueOrThrow({ where: { id: purchaseId } });
+      const month = purchase.createdAt.toISOString().slice(0, 7);
+      const last = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).toISOString().slice(0, 10);
+      const res = await http().get(`/accounting/archive?startDate=${month}-01&endDate=${last}`).set(auth(managerToken)).buffer(true).parse(binary).expect(200);
+      expect(res.headers["content-type"]).toBe("application/zip");
+      const files = unzip(res.body as Buffer);
+      const names = [...files.keys()];
+      const fr = names.filter((n) => /^documentos\/FR\/FR_.+\.pdf$/.test(n));
+      expect(fr.length).toBeGreaterThan(0);
+      expect(files.get(fr[0])!.toString("latin1").startsWith("%PDF-1.4")).toBe(true);
+      expect(names.some((n) => /^documentos\/(FT|NC|RC)\//.test(n))).toBe(true);
+      expect(names.some((n) => /^saft\/SAFT-AO_.*\.xml$/.test(n))).toBe(true);
+      expect(names.some((n) => /^saft\/SAFT-AO-Aquisicao_.*\.xml$/.test(n))).toBe(true);
+      expect(names).toContain(`anexos/compras/FT_GK2026_12/${attachmentId.slice(-6)}_factura-fornecedor.png`);
+      const index = files.get("indice.csv")!.toString("utf8");
+      expect(index.split("\r\n")[0]).toBe("\ufeffFicheiro;Tipo;Número;Data;Cliente/Fornecedor;Total");
+      expect(await prisma.auditLog.count({ where: { businessId, action: "ACCOUNTING_ARCHIVE" } })).toBe(1);
+      await http().delete(`/attachments/${attachmentId}`).set(auth(ownerToken)).expect(200);
+    });
+  });
 });

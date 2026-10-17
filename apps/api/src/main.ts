@@ -8,8 +8,9 @@ import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  // Default is 100 KB; a logo upload (base64, <= 300 KB decoded) needs more.
-  app.useBodyParser("json", { limit: "1mb" });
+  // Default is 100 KB; a logo upload (base64, <= 300 KB decoded) needs more,
+  // an attachment (a scanned invoice, <= 5 MB decoded) more still.
+  app.useBodyParser("json", { limit: "8mb" });
 
   app.use(cookieParser());
   app.useGlobalPipes(

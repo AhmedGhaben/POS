@@ -19,6 +19,7 @@ import { ACCOUNTING_KEY, ENTRIES_KEY, fetchEntries, fetchJournals, JOURNALS_KEY,
 import { usePeriodName } from "../use-period-name";
 import { draftFromTemplate, emptyDraft, type EntryDraft } from "../entry-draft";
 import { OpeningBalancesDialog } from "./OpeningBalancesDialog";
+import { AttachmentsButton } from "./AttachmentsPanel";
 import { TemplatesDialog } from "./TemplatesDialog";
 import { EntryForm } from "./EntryForm";
 
@@ -174,6 +175,9 @@ export function EntriesTab({ canWrite, today, newDraft }: { canWrite: boolean; t
                           {e.reverses && ` · ${t("entries.reversesInfo", { id: e.reverses.transactionId })}`}
                           {e.reversedBy && ` · ${t("entries.reversedByInfo", { id: e.reversedBy.transactionId })}`}
                         </p>
+                        <div className="float-right ml-2">
+                          <AttachmentsButton ownerType="ENTRY" ownerId={e.id} title={`${e.journal.code} ${e.docArchivalNumber} · ${e.description}`} />
+                        </div>
                         <table className="w-full text-sm">
                           <tbody>
                             {e.lines.map((l) => (

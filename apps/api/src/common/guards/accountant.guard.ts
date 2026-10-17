@@ -4,7 +4,7 @@ import { AuthenticatedUser } from "../types/authenticated-user";
 
 const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 /** What an accountant may change: the books, their own sign-in and profile. */
-const ACCOUNTANT_WRITES = [/^\/accounting(\/|$)/, /^\/auth\//, /^\/users\/me(\/|$)/, /^\/accountant(\/|$)/];
+const ACCOUNTANT_WRITES = [/^\/accounting(\/|$)/, /^\/auth\//, /^\/users\/me(\/|$)/, /^\/accountant(\/|$)/, /^\/attachments(\/|$)/];
 
 /**
  * An accountant has full rights in Contabilidade and reads the rest; they

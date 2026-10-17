@@ -298,6 +298,24 @@
       "ocpcaNumber": "OCPCA number (optional)"
     }
   },
+  "attachments": {
+    "title": "Attachments",
+    "supplierPapers": "Supplier's invoice and receipts (scans)",
+    "none": "Nothing attached.",
+    "add": "Attach a file (PDF or image)",
+    "added": "File attached",
+    "tooBig": "Files are 5 MB at most",
+    "download": "Download {{name}}",
+    "remove": "Remove {{name}}"
+  },
+  "archive": {
+    "title": "Document archive",
+    "description": "One ZIP for the period: every invoice, receipt and credit note as a PDF copy, the SAF-T invoicing and purchases files, the attached papers, and an index.",
+    "from": "From",
+    "to": "To",
+    "download": "Download the archive (ZIP)",
+    "done": "Archive saved"
+  },
   "saft": {
     "title": "SAF-T (AO) accounting file",
     "description": "The year's books for AGT, integrated with invoicing (TaxAccountingBasis I): chart with balances, entries, and the documents with the entry they were posted in. Due by 10 April for the previous year.",
