@@ -29,8 +29,12 @@ describe("SAF-T deadline reminders (Angola)", () => {
   const off = { eInvoicingActive: false, regimes: ["GERAL" as const] };
 
   it("the monthly file for last month, from the 1st until the 15th", () => {
-    expect(upcomingDeadlines("2026-10-03", AO, off)).toEqual([{ key: "saftInvoicing", due: "2026-10-15", covers: "2026-09", overdue: false }]);
-    expect(upcomingDeadlines("2026-10-15", AO, off)).toHaveLength(1);
+    // The purchases file (Aquisição) is reminded like the invoicing file unless the accounting setting says otherwise.
+    expect(upcomingDeadlines("2026-10-03", AO, off)).toEqual([
+      { key: "saftInvoicing", due: "2026-10-15", covers: "2026-09", overdue: false },
+      { key: "saftPurchases", due: "2026-10-15", covers: "2026-09", overdue: false },
+    ]);
+    expect(upcomingDeadlines("2026-10-15", AO, off)).toHaveLength(2);
     expect(upcomingDeadlines("2026-10-16", AO, off)).toEqual([]);
     expect(upcomingDeadlines("2026-10-17", AO, off, 3)[0]).toMatchObject({ overdue: true });
   });
@@ -43,8 +47,24 @@ describe("SAF-T deadline reminders (Angola)", () => {
     expect(upcomingDeadlines("2027-01-10", AO, off)).toEqual([
       { key: "saftInvoicing", due: "2027-01-15", covers: "2026-12", overdue: false },
       { key: "saftInventory", due: "2027-02-15", covers: "2026-12-31", overdue: false },
+      { key: "saftPurchases", due: "2027-01-15", covers: "2026-12", overdue: false },
     ]);
     expect(upcomingDeadlines("2027-02-20", AO, off)).toEqual([]);
-    expect(upcomingDeadlines("2027-01-10", AO, { ...off, regimes: ["EXCLUSAO"] }).map((d) => d.key)).toEqual(["saftInvoicing"]);
+    expect(upcomingDeadlines("2027-01-10", AO, { ...off, regimes: ["EXCLUSAO"] }).map((d) => d.key)).toEqual(["saftInvoicing", "saftPurchases"]);
+  });
+
+  it("the accounting file for last year by 10 April, when the books are kept in the app", () => {
+    expect(upcomingDeadlines("2027-03-20", AO, { ...off, eInvoicingActive: true })).toEqual([]);
+    expect(upcomingDeadlines("2027-03-20", AO, { ...off, eInvoicingActive: true, accountingEnabled: true })).toEqual([
+      { key: "saftAccounting", due: "2027-04-10", covers: "2026-12-31", overdue: false },
+    ]);
+    expect(upcomingDeadlines("2027-04-11", AO, { ...off, eInvoicingActive: true, accountingEnabled: true })).toEqual([]);
+  });
+
+  it("the purchases file follows its setting: always, never, or while e-invoicing is off", () => {
+    const keys = (o: Partial<Parameters<typeof upcomingDeadlines>[2]>) => upcomingDeadlines("2026-10-03", AO, { ...off, ...o }).map((d) => d.key);
+    expect(keys({ purchasesFile: "NEVER" })).toEqual(["saftInvoicing"]);
+    expect(keys({ eInvoicingActive: true, purchasesFile: "ALWAYS" })).toEqual(["saftPurchases"]);
+    expect(keys({ eInvoicingActive: true, purchasesFile: "AUTO" })).toEqual([]);
   });
 });

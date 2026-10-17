@@ -67,13 +67,18 @@ export interface Deadline {
 export function upcomingDeadlines(
   today: string,
   config: Pick<CountryConfig, "deadlines"> | null,
-  options: { eInvoicingActive: boolean; regimes: IvaRegime[] },
+  options: { eInvoicingActive: boolean; regimes: IvaRegime[]; accountingEnabled?: boolean; purchasesFile?: "AUTO" | "ALWAYS" | "NEVER" },
   daysAfter = 0,
 ): Deadline[] {
   if (!config) return [];
   const out: Deadline[] = [];
   for (const d of config.deadlines) {
     if (d.when === "eInvoicingOff" && options.eInvoicingActive) continue;
+    if (d.when === "accountingOn" && !options.accountingEnabled) continue;
+    if (d.when === "purchasesFile") {
+      const rule = options.purchasesFile ?? "AUTO";
+      if (rule === "NEVER" || (rule === "AUTO" && options.eInvoicingActive)) continue;
+    }
     if (d.regimes && !options.regimes.some((r) => d.regimes!.includes(r))) continue;
     if (d.kind === "monthly") {
       const due = `${today.slice(0, 7)}-${String(d.day).padStart(2, "0")}`;

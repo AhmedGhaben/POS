@@ -176,6 +176,10 @@ export const AO: CountryConfig = {
     { key: "saftInvoicing", kind: "monthly", day: 15, when: "eInvoicingOff" },
     // SAF-T de Inventários: stock at 31 Dec, by 15 February.
     { key: "saftInventory", kind: "yearly", month: 2, day: 15, when: "always", regimes: ["GERAL", "SIMPLIFICADO"] },
+    // SAF-T (AO) Contabilidade for last year: by 10 April (Decreto Presidencial 71/25).
+    { key: "saftAccounting", kind: "yearly", month: 4, day: 10, when: "accountingOn" },
+    // SAF-T Aquisição de Bens e Serviços (Decreto 312/18, art. 3), monthly. Day to confirm, as the invoicing file's.
+    { key: "saftPurchases", kind: "monthly", day: 15, when: "purchasesFile" },
   ],
   // SAF-T (AO) 1.01 ProductType.
   productTypes: [

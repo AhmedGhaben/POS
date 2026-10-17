@@ -12,11 +12,12 @@ import { TemplatesService } from "./templates.service";
 import { AccountingReportsController } from "./reports.controller";
 import { AccountingReportsService } from "./accounting-reports.service";
 import { YearEndService } from "./year-end.service";
+import { AccountingSaftService } from "./accounting-saft.service";
 
 /** Contabilidade: the books, posted from the POS (docs/ACCOUNTING-DECISIONS.md). */
 @Module({
   controllers: [AccountingController, EntriesController, IntegrationController, AccountingReportsController],
-  providers: [AccountingService, ChartService, PeriodsService, EntriesService, IntegrationService, MappingService, TemplatesService, AccountingReportsService, YearEndService],
+  providers: [AccountingService, ChartService, PeriodsService, EntriesService, IntegrationService, MappingService, TemplatesService, AccountingReportsService, YearEndService, AccountingSaftService],
   exports: [AccountingService, ChartService, PeriodsService, EntriesService, IntegrationService],
 })
 export class AccountingModule {}

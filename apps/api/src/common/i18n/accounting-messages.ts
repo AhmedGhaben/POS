@@ -38,6 +38,10 @@ export const ACCOUNTING_EXACT: Record<string, Translations> = {
 
 /** Messages with values; $1, $2… are the captured values. */
 export const ACCOUNTING_PATTERNS: { re: RegExp; t: Translations }[] = [
+  {
+    re: /^The SAF-T accounting file can't be made yet: (.+)$/,
+    t: { "pt-PT": "O ficheiro SAF-T de contabilidade ainda não pode ser gerado: $1 (veja a verificação)", "pt-BR": "O arquivo SAF-T de contabilidade ainda não pode ser gerado: $1 (veja a verificação)" },
+  },
   { re: /^Account (\S+) is missing from the chart: open it to work out the results$/, t: { "pt-PT": "Falta a conta $1 no plano: abra-a para apurar os resultados", "pt-BR": "Falta a conta $1 no plano: abra-a para apurar os resultados" } },
   { re: /^The results of (\d+) were already worked out: reverse those entries to do it again$/, t: { "pt-PT": "Os resultados de $1 já foram apurados: estorne esses lançamentos para repetir", "pt-BR": "Os resultados de $1 já foram apurados: estorne esses lançamentos para repetir" } },
   { re: /^There's nothing in classes 6 and 7 for (\d+)$/, t: { "pt-PT": "Não há movimentos nas classes 6 e 7 em $1", "pt-BR": "Não há movimentos nas classes 6 e 7 em $1" } },

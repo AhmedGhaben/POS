@@ -5,6 +5,7 @@ import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
 import { unzip } from "../src/common/xlsx";
+import { saftSchemaErrors } from "../src/fiscal/saft/testing/validate-saft";
 import { PrismaService } from "../src/prisma/prisma.service";
 import { deleteBusiness } from "./cleanup";
 import { ensureShift } from "./shift-helper";
@@ -731,6 +732,69 @@ describe("Accounting (e2e)", () => {
       expect(await prisma.auditLog.count({ where: { businessId, action: "ACCOUNTING_YEAR_REOPENED" } })).toBe(1);
       await http().post("/accounting/years/2026/close").set(auth(ownerToken)).expect(200);
       expect(await prisma.journalEntry.count({ where: { businessId, year: 2027, origin: "CARRY_FORWARD", reversesEntryId: null } })).toBe(2);
+    });
+  });
+  describe("A8: SAF-T (AO) accounting file", () => {
+    const download = (path: string) =>
+      http()
+        .get(path)
+        .set(auth(ownerToken))
+        .buffer(true)
+        .parse((r, done) => {
+          const chunks: Buffer[] = [];
+          r.on("data", (c: Buffer) => chunks.push(c));
+          r.on("end", () => done(null, Buffer.concat(chunks)));
+        });
+
+    it("the check names what's missing: the company's NIF; a year with open periods only as a draft", async () => {
+      const before = (await http().get("/accounting/saft/check?year=2026").set(auth(ownerToken)).expect(200)).body;
+      expect(before.ready).toBe(false);
+      expect(before.issues).toContainEqual(expect.objectContaining({ code: "noTaxId", blocking: true }));
+      await http().patch("/businesses/me").set(auth(ownerToken)).send({ legalName: "Contas E2E, Lda", taxId: "5417000888", address: "Rua Rainha Ginga 10", city: "Luanda", currency: "AOA" }).expect(200);
+      const ready = (await http().get("/accounting/saft/check?year=2026").set(auth(ownerToken)).expect(200)).body;
+      expect(ready).toMatchObject({ year: 2026, ready: true });
+      // 2027 is open: blocked, unless as a draft.
+      const open = (await http().get("/accounting/saft/check?year=2027").set(auth(ownerToken)).expect(200)).body;
+      expect(open.issues).toContainEqual(expect.objectContaining({ code: "openPeriods", blocking: true }));
+      expect((await http().get("/accounting/saft/check?year=2027&draft=true").set(auth(ownerToken)).expect(200)).body.ready).toBe(true);
+      const refused = await download("/accounting/saft?year=2027").expect(400);
+      expect(JSON.parse((refused.body as Buffer).toString()).message).toMatch(/openPeriods/);
+      await http().get("/accounting/saft/check?year=2026").set(auth(managerToken)).expect(403);
+    });
+
+    it("2026: the chart with balances, the entries, the invoices with their TransactionID; valid against the XSD", async () => {
+      const res = await download("/accounting/saft?year=2026").expect(200);
+      expect(res.headers["content-disposition"]).toBe('attachment; filename="SAFT-AO-Contabilidade_5417000888_2026.xml"');
+      const xml = (res.body as Buffer).toString("utf8");
+      expect(await saftSchemaErrors(xml)).toEqual([]);
+      expect(xml).toContain("<TaxAccountingBasis>I</TaxAccountingBasis>");
+      expect(xml).toContain("<TaxEntity>Sede</TaxEntity>");
+      // Every account, from the first degree down; classes aren't accounts.
+      expect(xml).toMatch(/<Account>\s*<AccountID>11<\/AccountID>/);
+      expect(xml).not.toMatch(/<AccountID>[1-8]<\/AccountID>/);
+      expect(xml).toMatch(/<AccountID>31\.1\.2\.1\.0001<\/AccountID>\s*<AccountDescription>Kianda Comércio, SA<\/AccountDescription>/);
+      // Debits equal credits; the opening isn't an entry of the file.
+      const total = /<GeneralLedgerEntries>\s*<NumberOfEntries>(\d+)<\/NumberOfEntries>\s*<TotalDebit>([\d.]+)<\/TotalDebit>\s*<TotalCredit>([\d.]+)<\/TotalCredit>/.exec(xml)!;
+      expect(total[2]).toBe(total[3]);
+      expect(Number(total[1])).toBe(await prisma.journalEntry.count({ where: { businessId, year: 2026, period: { gte: 1 } } }));
+      expect(xml).toContain("<TransactionType>A</TransactionType>");
+      // An invoice points at the entry it was posted in, and that entry is in the file.
+      const fr = /<InvoiceNo>(FR [^<]+)<\/InvoiceNo>[\s\S]*?<TransactionID>([^<]+)<\/TransactionID>/.exec(xml)!;
+      expect(xml).toMatch(new RegExp(`<Transaction>\\s*<TransactionID>${fr[2].replace(/\//g, "\\/")}</TransactionID>`));
+      // The customer's AccountID is their account in the chart.
+      expect(xml).toMatch(/<CustomerID>[^<]+<\/CustomerID>\s*<AccountID>31\.1\.2\.1\.0001<\/AccountID>/);
+      expect(await prisma.auditLog.count({ where: { businessId, action: "SAFT_CONTABILIDADE" } })).toBe(1);
+    });
+
+    it("the monthly invoicing file carries the TransactionID and AccountID too, and stays valid", async () => {
+      const doc = await prisma.fiscalDocument.findFirstOrThrow({ where: { businessId, documentType: "FT" } });
+      const day = doc.invoiceDate.toISOString().slice(0, 10);
+      const res = await download(`/fiscal-documents/saft/facturacao?startDate=${day.slice(0, 8)}01&endDate=${day}`).expect(200);
+      const xml = (res.body as Buffer).toString("utf8");
+      expect(await saftSchemaErrors(xml)).toEqual([]);
+      expect(xml).toContain("<TaxAccountingBasis>F</TaxAccountingBasis>");
+      expect(xml).toMatch(new RegExp(`<InvoiceNo>${doc.documentNo.replace(/[/]/g, "\\/")}</InvoiceNo>[\\s\\S]*?<TransactionID>\\d{4}-\\d{2}-\\d{2} VEN \\d{4}/\\d+</TransactionID>`));
+      expect(xml).toMatch(/<SupplierID>[^<]+<\/SupplierID>\s*<AccountID>32\.1\.2\.1\.0001<\/AccountID>/);
     });
   });
 });

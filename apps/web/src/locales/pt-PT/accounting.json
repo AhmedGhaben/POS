@@ -14,7 +14,8 @@
     "periods": "Exercícios e períodos",
     "entries": "Lançamentos",
     "integration": "Integração",
-    "reports": "Relatórios"
+    "reports": "Relatórios",
+    "saft": "SAF-T"
   },
   "integration": {
     "title": "Monitor de integração",
@@ -260,6 +261,26 @@
       "extraordinaryResult": "Resultados extraordinários",
       "resultBeforeTax": "Resultados antes de impostos",
       "incomeTax": "Imposto sobre o rendimento"
+    }
+  },
+  "saft": {
+    "title": "Ficheiro SAF-T (AO) de contabilidade",
+    "description": "A contabilidade do exercício para a AGT, integrada com a facturação (TaxAccountingBasis I): plano com saldos, lançamentos e os documentos com o lançamento em que foram contabilizados. Entrega até 10 de Abril, relativa ao ano anterior.",
+    "draft": "Rascunho (períodos ainda abertos)",
+    "check": "Verificar",
+    "make": "Gerar o ficheiro",
+    "making": "A gerar…",
+    "done": "Ficheiro guardado",
+    "ready": "Pronto: nada impede o ficheiro.",
+    "issues": {
+      "noTaxId": "Indique o NIF da empresa nas Definições.",
+      "notKwanza": "Os ficheiros SAF-T (AO) são em kwanzas: defina a moeda AOA.",
+      "noYear": "Esse exercício não existe na contabilidade.",
+      "unposted": "{{detail}} registos do exercício ainda não foram lançados (veja Integração).",
+      "unbalanced": "Débitos e créditos não coincidem: {{detail}}.",
+      "openPeriods": "Períodos ainda abertos: {{detail}}. Feche-os, ou gere um rascunho.",
+      "resultsNotWorkedOut": "Os resultados ainda não foram apurados ({{detail}} contas das classes 6 e 7 com saldo).",
+      "movementAccountWithSubAccounts": "Contas de movimento com subcontas: {{detail}}."
     }
   },
   "templates": {

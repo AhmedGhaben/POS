@@ -241,6 +241,16 @@ export interface ReportResultDto {
 
 export const fetchReport = ({ report, ...p }: ReportParams) => apiClient.get<ReportResultDto>(`/accounting/reports/${report}?${query({ ...p })}`);
 
+export type SaftIssueCode = "noTaxId" | "notKwanza" | "noYear" | "unposted" | "unbalanced" | "openPeriods" | "resultsNotWorkedOut" | "movementAccountWithSubAccounts";
+
+export interface SaftCheckDto {
+  year: number;
+  ready: boolean;
+  issues: { code: SaftIssueCode; blocking: boolean; detail?: string }[];
+}
+
+export const checkSaft = (year: number, draft: boolean) => apiClient.get<SaftCheckDto>(`/accounting/saft/check?year=${year}${draft ? "&draft=true" : ""}`);
+
 /** PGC classes, for headings. */
 export const PGC_CLASSES: Record<number, string> = {
   1: "Meios fixos e investimentos",

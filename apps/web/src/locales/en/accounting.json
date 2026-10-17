@@ -14,7 +14,8 @@
     "periods": "Years and periods",
     "entries": "Entries",
     "integration": "Integration",
-    "reports": "Reports"
+    "reports": "Reports",
+    "saft": "SAF-T"
   },
   "integration": {
     "title": "Integration monitor",
@@ -260,6 +261,26 @@
       "extraordinaryResult": "Extraordinary result",
       "resultBeforeTax": "Result before tax",
       "incomeTax": "Income tax"
+    }
+  },
+  "saft": {
+    "title": "SAF-T (AO) accounting file",
+    "description": "The year's books for AGT, integrated with invoicing (TaxAccountingBasis I): chart with balances, entries, and the documents with the entry they were posted in. Due by 10 April for the previous year.",
+    "draft": "Draft (periods still open)",
+    "check": "Check the books",
+    "make": "Make the file",
+    "making": "Making…",
+    "done": "File saved",
+    "ready": "Ready: nothing stops the file.",
+    "issues": {
+      "noTaxId": "Add the company's NIF in Settings.",
+      "notKwanza": "SAF-T (AO) files are in kwanzas: set the business currency to AOA.",
+      "noYear": "There's no such year in the books.",
+      "unposted": "{{detail}} records of the year aren't posted yet (see Integration).",
+      "unbalanced": "Debits and credits don't match: {{detail}}.",
+      "openPeriods": "Periods still open: {{detail}}. Close them, or make a draft.",
+      "resultsNotWorkedOut": "The results aren't worked out yet ({{detail}} accounts of classes 6 and 7 with balances).",
+      "movementAccountWithSubAccounts": "Movement accounts with sub-accounts: {{detail}}."
     }
   },
   "templates": {

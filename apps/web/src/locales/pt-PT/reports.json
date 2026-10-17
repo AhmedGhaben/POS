@@ -31,6 +31,8 @@
   "deadlines": {
     "saftInvoicing": "Ficheiro SAF-T de faturação de {{covers}}: entregar até {{due}}.",
     "saftInventory": "Ficheiro SAF-T de inventário (stock a {{covers}}): entregar até {{due}}.",
+    "saftAccounting": "Ficheiro SAF-T de contabilidade de {{covers}}: entregar até {{due}}.",
+    "saftPurchases": "Ficheiro SAF-T de aquisição de bens e serviços de {{covers}}: entregar até {{due}}.",
     "overdue": "Em atraso.",
     "makeIt": "Gerar agora"
   },
