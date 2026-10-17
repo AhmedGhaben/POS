@@ -7,8 +7,9 @@ import { fetchAccountingStatus, STATUS_KEY } from "@/features/accounting/api";
 import { AccountingSetup } from "@/features/accounting/components/AccountingSetup";
 import { ChartOfAccounts } from "@/features/accounting/components/ChartOfAccounts";
 import { FiscalYears } from "@/features/accounting/components/FiscalYears";
+import { EntriesTab } from "@/features/accounting/components/EntriesTab";
 
-const TABS = ["chart", "periods", "setup"] as const;
+const TABS = ["entries", "chart", "periods", "setup"] as const;
 type Tab = (typeof TABS)[number];
 
 /**
@@ -23,7 +24,7 @@ export function AccountingPage() {
   const status = useQuery({ queryKey: STATUS_KEY, queryFn: fetchAccountingStatus });
   const [params, setParams] = useSearchParams();
   const requested = params.get("tab");
-  const tab: Tab = TABS.includes(requested as Tab) ? (requested as Tab) : "chart";
+  const tab: Tab = TABS.includes(requested as Tab) ? (requested as Tab) : "entries";
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 p-6">
@@ -45,6 +46,9 @@ export function AccountingPage() {
               </TabsTrigger>
             ))}
           </TabsList>
+          <TabsContent value="entries" className="mt-4">
+            <EntriesTab canWrite={canWrite} today={status.data.today} />
+          </TabsContent>
           <TabsContent value="chart" className="mt-4">
             <ChartOfAccounts canWrite={canWrite} />
           </TabsContent>

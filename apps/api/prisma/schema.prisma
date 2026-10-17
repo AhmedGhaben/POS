@@ -233,6 +233,8 @@ model Business {
   accountingSettings AccountingSettings?
   ledgerAccounts     LedgerAccount[]
   fiscalYears        FiscalYear[]
+  journals           Journal[]
+  journalEntries     JournalEntry[]
 
   @@map("businesses")
 }
@@ -1596,6 +1598,7 @@ model LedgerAccount {
   fromTemplate Boolean               @default(false)
   createdAt    DateTime              @default(now())
   updatedAt    DateTime              @updatedAt
+  lines        JournalEntryLine[]
 
   @@unique([businessId, code])
   @@unique([businessId, linkType, linkId])
@@ -1647,4 +1650,126 @@ model AccountingPeriod {
 
   @@unique([businessId, year, number])
   @@map("accounting_periods")
+}
+
+/// SALES, PURCHASES, CASH, BANK, GENERAL, OPENING, CLOSING, PAYROLL.
+enum JournalKind {
+  SALES
+  PURCHASES
+  CASH
+  BANK
+  GENERAL
+  OPENING
+  CLOSING
+  PAYROLL
+}
+
+/// SAF-T TransactionType: N normal, R regularização do período, A
+/// apuramento de resultados, J ajustamento.
+enum TransactionType {
+  N
+  R
+  A
+  J
+}
+
+/// A diário. Its code is the SAF-T JournalID; entries are numbered in it per year.
+model Journal {
+  id         String      @id @default(cuid())
+  businessId String
+  business   Business    @relation(fields: [businessId], references: [id])
+  /// SAF-T JournalID (no spaces, up to 30).
+  code       String
+  name       String
+  kind       JournalKind
+  /// Made by the app (the integration and the year-end post here).
+  system     Boolean     @default(false)
+  isActive   Boolean     @default(true)
+  createdAt  DateTime    @default(now())
+
+  entries  JournalEntry[]
+  counters JournalCounter[]
+
+  @@unique([businessId, code])
+  @@map("journals")
+}
+
+/// The next entry number of a journal in a year (gap-free: taken with a
+/// row lock in the entry's transaction, given back if it rolls back).
+model JournalCounter {
+  journalId String
+  journal   Journal @relation(fields: [journalId], references: [id])
+  year      Int
+  next      Int     @default(1)
+
+  @@id([journalId, year])
+  @@map("journal_counters")
+}
+
+/// A lançamento: posted, immutable, balanced (all database rules).
+/// Corrections are made with a reversing entry (estorno) that points here.
+model JournalEntry {
+  id                String          @id @default(cuid())
+  businessId        String
+  business          Business        @relation(fields: [businessId], references: [id])
+  journalId         String
+  journal           Journal         @relation(fields: [journalId], references: [id])
+  year              Int
+  /// Accounting period 0-15.
+  period            Int
+  /// Its number in the journal and year.
+  number            Int
+  /// SAF-T DocArchivalNumber: "2026/57".
+  docArchivalNumber String
+  /// SAF-T TransactionID: "<TransactionDate> <JournalID> <DocArchivalNumber>".
+  transactionId     String
+  /// The date on the document behind it (SAF-T TransactionDate).
+  transactionDate   DateTime        @db.Date
+  /// The date it counts in the books (SAF-T GLPostingDate).
+  postingDate       DateTime        @db.Date
+  description       String
+  transactionType   TransactionType @default(N)
+  /// Who posted it (SAF-T SourceID): the user, or whoever issued the POS document.
+  sourceUserId      String
+  /// For SAF-T CustomerID / SupplierID.
+  customerId        String?
+  supplierId        String?
+  /// MANUAL, AUTO (from the POS), OPENING, CARRY_FORWARD, YEAR_END, REVERSAL, DEPRECIATION, BANK.
+  origin            String
+  /// An estorno: the entry it reverses (once).
+  reversesEntryId   String?         @unique
+  reverses          JournalEntry?   @relation("Reversal", fields: [reversesEntryId], references: [id])
+  reversedBy        JournalEntry?   @relation("Reversal")
+  totalDebit        Decimal         @db.Decimal(16, 2)
+  totalCredit       Decimal         @db.Decimal(16, 2)
+  /// When it was recorded (SAF-T SystemEntryDate, to the second).
+  systemEntryDate   DateTime        @default(now())
+  createdAt         DateTime        @default(now())
+
+  lines JournalEntryLine[]
+
+  @@unique([journalId, year, number])
+  @@unique([businessId, transactionId])
+  @@index([businessId, year, period])
+  @@index([businessId, postingDate])
+  @@map("journal_entries")
+}
+
+/// A debit or a credit on a movement account (never both, never negative).
+model JournalEntryLine {
+  id               String        @id @default(cuid())
+  entryId          String
+  entry            JournalEntry  @relation(fields: [entryId], references: [id])
+  lineNumber       Int
+  accountId        String
+  account          LedgerAccount @relation(fields: [accountId], references: [id])
+  debit            Decimal       @default(0) @db.Decimal(16, 2)
+  credit           Decimal       @default(0) @db.Decimal(16, 2)
+  description      String
+  /// SAF-T SourceDocumentID: the POS document behind the line ("FR POS001-2026/57").
+  sourceDocumentId String?
+
+  @@unique([entryId, lineNumber])
+  @@index([accountId])
+  @@map("journal_entry_lines")
 }

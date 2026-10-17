@@ -4,6 +4,7 @@ import { parseCalendarDate } from "../fiscal/saft/period";
 import { businessToday, dateValue, isoDate } from "./accounting-dates";
 import { ChartService } from "./chart.service";
 import { PeriodsService } from "./periods.service";
+import { EntriesService } from "./entries.service";
 import { AccountingSettingsDto } from "./dto/accounting.dto";
 
 /** Contabilidade on or off, and its settings (docs/ACCOUNTING-DECISIONS.md). */
@@ -13,6 +14,7 @@ export class AccountingService {
     private readonly prisma: PrismaService,
     private readonly chart: ChartService,
     private readonly periods: PeriodsService,
+    private readonly entries: EntriesService,
   ) {}
 
   async status(businessId: string) {
@@ -68,7 +70,10 @@ export class AccountingService {
           ...(turningOn ? { enabledAt: new Date(), enabledById: userId } : {}),
         },
       });
-      if (turningOn) await this.chart.installTemplate(tx, businessId);
+      if (turningOn) {
+        await this.chart.installTemplate(tx, businessId);
+        await this.entries.installJournals(tx, businessId);
+      }
       // The years the integration posts into from the start.
       for (let year = Number(startDate.slice(0, 4)); year <= Number(businessToday(business).slice(0, 4)); year++) await this.periods.ensureYear(tx, businessId, year);
     });

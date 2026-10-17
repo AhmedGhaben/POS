@@ -10,10 +10,50 @@ export const ACCOUNTING_EXACT: Record<string, Translations> = {
   "That year is out of range": { "pt-PT": "Esse ano não é válido", "pt-BR": "Esse ano não é válido" },
   "Accounting period not found": { "pt-PT": "Período contabilístico não encontrado", "pt-BR": "Período contábil não encontrado" },
   "The year is closed: reopen the year first": { "pt-PT": "O exercício está encerrado: reabra primeiro o exercício", "pt-BR": "O exercício está encerrado: reabra primeiro o exercício" },
+  "Entry not found": { "pt-PT": "Lançamento não encontrado", "pt-BR": "Lançamento não encontrado" },
+  "Journal not found": { "pt-PT": "Diário não encontrado", "pt-BR": "Diário não encontrado" },
+  "Journal codes have no spaces (up to 30 characters)": { "pt-PT": "O código do diário não tem espaços (até 30 caracteres)", "pt-BR": "O código do diário não tem espaços (até 30 caracteres)" },
+  "Period 0 holds the opening balances only": { "pt-PT": "O período 0 é só para os saldos de abertura", "pt-BR": "O período 0 é só para os saldos de abertura" },
+  "An entry needs at least two lines": { "pt-PT": "Um lançamento precisa de pelo menos duas linhas", "pt-BR": "Um lançamento precisa de pelo menos duas linhas" },
+  "An entry needs at least one debit and one credit line": { "pt-PT": "Um lançamento precisa de pelo menos uma linha a débito e uma a crédito", "pt-BR": "Um lançamento precisa de pelo menos uma linha a débito e uma a crédito" },
 };
 
 /** Messages with values; $1, $2… are the captured values. */
 export const ACCOUNTING_PATTERNS: { re: RegExp; t: Translations }[] = [
+  { re: /^Account (\S+) is inactive$/, t: { "pt-PT": "A conta $1 está inactiva", "pt-BR": "A conta $1 está inativa" } },
+  {
+    re: /^Account (\S+) is not a movement account: only movement \(GM\) accounts take postings$/,
+    t: { "pt-PT": "A conta $1 não é de movimento: só as contas de movimento (GM) aceitam lançamentos", "pt-BR": "A conta $1 não é de movimento: só as contas de movimento (GM) aceitam lançamentos" },
+  },
+  {
+    re: /^Entry (.+) was already reversed by (.+)$/,
+    t: { "pt-PT": "O lançamento $1 já foi estornado por $2", "pt-BR": "O lançamento $1 já foi estornado por $2" },
+  },
+  { re: /^Journal (\S+) is inactive$/, t: { "pt-PT": "O diário $1 está inactivo", "pt-BR": "O diário $1 está inativo" } },
+  {
+    re: /^Period (\d+)\/(\d+) is closed: nothing can be posted in it$/,
+    t: { "pt-PT": "O período $1/$2 está fechado: não se pode lançar nele", "pt-BR": "O período $1/$2 está fechado: não é possível lançar nele" },
+  },
+  {
+    re: /^The posting date (\S+) isn't in period (\d+) of (\d+)$/,
+    t: { "pt-PT": "A data do movimento $1 não pertence ao período $2 de $3", "pt-BR": "A data do movimento $1 não pertence ao período $2 de $3" },
+  },
+  {
+    re: /^The year (\d+) is closed: nothing can be posted in it$/,
+    t: { "pt-PT": "O exercício $1 está encerrado: não se pode lançar nele", "pt-BR": "O exercício $1 está encerrado: não é possível lançar nele" },
+  },
+  { re: /^There's already a journal (\S+)$/, t: { "pt-PT": "Já existe o diário $1", "pt-BR": "Já existe o diário $1" } },
+  {
+    re: /^There's no active journal for (\w+) entries$/,
+    t: { "pt-PT": "Não há nenhum diário activo para lançamentos do tipo $1", "pt-BR": "Não há nenhum diário ativo para lançamentos do tipo $1" },
+  },
+  {
+    re: /^The entry doesn't balance: debits (\S+), credits (\S+)$/,
+    t: { "pt-PT": "O lançamento não está equilibrado: débitos $1, créditos $2", "pt-BR": "O lançamento não está equilibrado: débitos $1, créditos $2" },
+  },
+  { re: /^Line (\d+): amounts can't be negative$/, t: { "pt-PT": "Linha $1: os valores não podem ser negativos", "pt-BR": "Linha $1: os valores não podem ser negativos" } },
+  { re: /^Line (\d+): amounts have at most two decimals$/, t: { "pt-PT": "Linha $1: os valores têm no máximo duas casas decimais", "pt-BR": "Linha $1: os valores têm no máximo duas casas decimais" } },
+  { re: /^Line (\d+): a line is either a debit or a credit$/, t: { "pt-PT": "Linha $1: uma linha é a débito ou a crédito", "pt-BR": "Linha $1: uma linha é a débito ou a crédito" } },
   { re: /^There's already an account (\S+)$/, t: { "pt-PT": "Já existe a conta $1", "pt-BR": "Já existe a conta $1" } },
   {
     re: /^Open account (\S+) first: (\S+) goes under it$/,

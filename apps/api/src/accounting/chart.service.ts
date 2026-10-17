@@ -202,7 +202,7 @@ export class ChartService {
   /** The accounts among `ids` that have any posting. */
   async withMovements(db: Db, ids: string[]): Promise<Set<string>> {
     if (!ids.length) return new Set();
-    void db;
-    return new Set();
+    const rows = await db.journalEntryLine.groupBy({ by: ["accountId"], where: { accountId: { in: ids } } });
+    return new Set(rows.map((r) => r.accountId));
   }
 }

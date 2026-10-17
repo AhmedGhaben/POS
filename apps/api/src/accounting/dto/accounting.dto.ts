@@ -1,4 +1,6 @@
-import { IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from "class-validator";
+import { Type } from "class-transformer";
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsEnum, IsIn, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength, ValidateNested } from "class-validator";
+import { JournalKind, TransactionType } from "@prisma/client";
 
 export const GROUPINGS = ["PER_DOCUMENT", "DAILY_SUMMARY"] as const;
 export const PURCHASES_FILE_RULES = ["AUTO", "ALWAYS", "NEVER"] as const;
@@ -68,4 +70,109 @@ export class ReopenDto {
   @MinLength(3)
   @MaxLength(300)
   reason!: string;
+}
+
+export class EntryLineDto {
+  @IsString()
+  accountId!: string;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  debit?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  credit?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  description?: string;
+}
+
+/** A manual entry (lançamento): it must balance before it's saved. */
+export class CreateEntryDto {
+  @IsString()
+  journalId!: string;
+
+  /** The date on the document behind it (YYYY-MM-DD). */
+  @IsDateString({ strict: true })
+  transactionDate!: string;
+
+  /** The date it counts in the books; defaults to the transaction date. */
+  @IsOptional()
+  @IsDateString({ strict: true })
+  postingDate?: string;
+
+  /** 1-15 (13-15 only on 31 December); defaults to the posting date's month. */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(15)
+  period?: number;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  description!: string;
+
+  @IsOptional()
+  @IsEnum(TransactionType)
+  transactionType?: TransactionType;
+
+  @IsOptional()
+  @IsString()
+  customerId?: string;
+
+  @IsOptional()
+  @IsString()
+  supplierId?: string;
+
+  @IsArray()
+  @ArrayMinSize(2)
+  @ArrayMaxSize(500)
+  @ValidateNested({ each: true })
+  @Type(() => EntryLineDto)
+  lines!: EntryLineDto[];
+}
+
+export class ReverseEntryDto {
+  /** The estorno's date (default today). */
+  @IsOptional()
+  @IsDateString({ strict: true })
+  date?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  description?: string;
+}
+
+export class CreateJournalDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(30)
+  code!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(60)
+  name!: string;
+
+  @IsEnum(JournalKind)
+  kind!: JournalKind;
+}
+
+export class UpdateJournalDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(60)
+  name?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }

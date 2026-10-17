@@ -27,7 +27,7 @@ describe("Accounting (e2e)", () => {
 
   const http = () => request(app.getHttpServer());
   const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
-  type Account = { id: string; code: string; name: string; category: string; parentId: string | null; linkType: string | null; linkId: string | null; isActive: boolean };
+  type Account = { id: string; code: string; name: string; category: string; parentId: string | null; linkType: string | null; linkId: string | null; isActive: boolean; hasMovements: boolean };
   const accounts = async () => (await http().get("/accounting/accounts").set(auth(ownerToken)).expect(200)).body as Account[];
   const byCode = async (code: string) => (await accounts()).find((a) => a.code === code)!;
 
@@ -173,6 +173,117 @@ describe("Accounting (e2e)", () => {
       const log = await prisma.auditLog.findFirstOrThrow({ where: { businessId, action: "ACCOUNTING_PERIOD_REOPENED" } });
       expect(log.metadata).toMatchObject({ year: 2026, period: 3, reason: "Factura de fornecedor esquecida" });
       await http().post("/accounting/periods/2026/16/close").set(auth(ownerToken)).expect(404);
+    });
+  });
+  describe("A3: journals and entries", () => {
+    type Line = { account: { code: string }; debit: string; credit: string; description: string; sourceDocumentId: string | null };
+    type Entry = { id: string; transactionId: string; docArchivalNumber: string; number: number; period: number; lines: Line[]; reverses: { id: string } | null; totalDebit: string };
+    let journalId: string;
+    let first: Entry;
+    const accountIdOf: Record<string, string> = {};
+    const entry = (over: Record<string, unknown> = {}, token = ownerToken) =>
+      http()
+        .post("/accounting/entries")
+        .set(auth(token))
+        .send({
+          journalId,
+          transactionDate: "2026-04-10",
+          description: "Renda de Abril",
+          lines: [
+            { accountId: accountIdOf["75.2.1"], debit: 150000 },
+            { accountId: accountIdOf["45.1.1"], credit: 150000 },
+          ],
+          ...over,
+        });
+
+    beforeAll(async () => {
+      for (const a of await accounts()) accountIdOf[a.code] = a.id;
+      const journals = (await http().get("/accounting/journals").set(auth(managerToken)).expect(200)).body as { id: string; code: string; kind: string }[];
+      expect(journals.map((j) => j.code).sort()).toEqual(["ABE", "APU", "BCO", "COM", "CXA", "OPD", "SAL", "VEN"]);
+      journalId = journals.find((j) => j.code === "OPD")!.id;
+    });
+
+    it("a balanced entry is numbered in its journal and year, with its SAF-T TransactionID", async () => {
+      first = (await entry().expect(201)).body;
+      expect(first).toMatchObject({ number: 1, docArchivalNumber: "2026/1", transactionId: "2026-04-10 OPD 2026/1", period: 4, totalDebit: "150000.00" });
+      expect(first.lines.map((l) => [l.account.code, l.debit, l.credit])).toEqual([["75.2.1", "150000.00", "0.00"], ["45.1.1", "0.00", "150000.00"]]);
+      const second = (await entry({ transactionDate: "2026-04-20" }).expect(201)).body;
+      expect(second.transactionId).toBe("2026-04-20 OPD 2026/2");
+    });
+
+    it("refuses what doesn't balance, one-sided entries, aggregating or inactive accounts, and managers", async () => {
+      await entry({ lines: [{ accountId: accountIdOf["75.2.1"], debit: 100 }, { accountId: accountIdOf["45.1.1"], credit: 99.99 }] }).expect(400);
+      await entry({ lines: [{ accountId: accountIdOf["75.2.1"], debit: 100 }, { accountId: accountIdOf["45.1.1"], debit: 100 }] }).expect(400);
+      const ga = (await entry({ lines: [{ accountId: accountIdOf["75.2"], debit: 100 }, { accountId: accountIdOf["45.1.1"], credit: 100 }] }).expect(400)).body;
+      expect(ga.message).toContain("75.2 is not a movement account");
+      await http().patch(`/accounting/accounts/${accountIdOf["75.2.7"]}`).set(auth(ownerToken)).send({ isActive: false }).expect(200);
+      await entry({ lines: [{ accountId: accountIdOf["75.2.7"], debit: 100 }, { accountId: accountIdOf["45.1.1"], credit: 100 }] }).expect(400);
+      await entry({}, managerToken).expect(403);
+      await entry({ period: 14 }).expect(400); // 13-15 only on 31 December
+      await entry({ transactionDate: "2026-12-31", postingDate: "2026-12-31", period: 13 }).expect(201);
+    });
+
+    it("nothing goes into a closed period, through the API or straight into the database", async () => {
+      await http().post("/accounting/periods/2026/5/close").set(auth(ownerToken)).expect(200);
+      const res = (await entry({ transactionDate: "2026-05-02" }).expect(400)).body;
+      expect(res.message).toContain("Period 5/2026 is closed");
+      await expect(
+        prisma.journalEntry.create({
+          data: { businessId: businessId!, journalId, year: 2026, period: 5, number: 999, docArchivalNumber: "2026/999", transactionId: "2026-05-02 OPD 2026/999", transactionDate: new Date("2026-05-02"), postingDate: new Date("2026-05-02"), description: "x", sourceUserId: "x", origin: "MANUAL", totalDebit: 1, totalCredit: 1 },
+        }),
+      ).rejects.toThrow("Period 5/2026 is closed");
+      await http().post("/accounting/periods/2026/5/reopen").set(auth(ownerToken)).send({ reason: "Teste" }).expect(200);
+    });
+
+    it("the database refuses an unbalanced entry at commit, and changing or deleting a posted one", async () => {
+      const unbalanced = (check: boolean) =>
+        prisma.$transaction(async (tx) => {
+          const e = await tx.journalEntry.create({
+            data: { businessId: businessId!, journalId, year: 2026, period: 6, number: 998, docArchivalNumber: "2026/998", transactionId: "2026-06-02 OPD 2026/998", transactionDate: new Date("2026-06-02"), postingDate: new Date("2026-06-02"), description: "x", sourceUserId: "x", origin: "MANUAL", totalDebit: 10, totalCredit: 10 },
+          });
+          await tx.journalEntryLine.createMany({
+            data: [
+              { entryId: e.id, lineNumber: 1, accountId: accountIdOf["75.2.1"], debit: 10, description: "x" },
+              { entryId: e.id, lineNumber: 2, accountId: accountIdOf["45.1.1"], credit: 9, description: "x" },
+            ],
+          });
+          if (check) await tx.$executeRaw`SET CONSTRAINTS ALL IMMEDIATE`;
+        });
+      await expect(unbalanced(true)).rejects.toThrow("does not balance");
+      // Left to the commit, it's rolled back (Prisma doesn't report a failed COMMIT, hence the check in EntriesService.post).
+      await unbalanced(false).catch(() => undefined);
+      expect(await prisma.journalEntry.count({ where: { businessId, number: 998 } })).toBe(0);
+      await expect(prisma.journalEntry.update({ where: { id: first.id }, data: { description: "mudado" } })).rejects.toThrow("cannot be changed");
+      await expect(prisma.journalEntryLine.deleteMany({ where: { entryId: first.id } })).rejects.toThrow("cannot be changed");
+      await expect(
+        prisma.journalEntryLine.create({ data: { entryId: first.id, lineNumber: 9, accountId: accountIdOf["75.2"], debit: 1, description: "x" } }),
+      ).rejects.toThrow("not a movement account");
+    });
+
+    it("an estorno swaps the lines and points at what it reverses; an entry is reversed once", async () => {
+      const reversal = (await http().post(`/accounting/entries/${first.id}/reverse`).set(auth(ownerToken)).send({ date: "2026-04-30" }).expect(201)).body as Entry;
+      expect(reversal.reverses!.id).toBe(first.id);
+      expect(reversal.transactionId).toBe("2026-04-30 OPD 2026/4");
+      expect(reversal.lines.map((l) => [l.account.code, l.debit, l.credit])).toEqual([["75.2.1", "0.00", "150000.00"], ["45.1.1", "150000.00", "0.00"]]);
+      await http().post(`/accounting/entries/${first.id}/reverse`).set(auth(ownerToken)).send({}).expect(409);
+      const got = (await http().get(`/accounting/entries/${first.id}`).set(auth(managerToken)).expect(200)).body;
+      expect(got.reversedBy.id).toBe(reversal.id);
+    });
+
+    it("lists by period, journal, account and text", async () => {
+      const april = (await http().get("/accounting/entries?year=2026&period=4").set(auth(managerToken)).expect(200)).body;
+      expect(april.total).toBe(3);
+      const byAccount = (await http().get(`/accounting/entries?accountId=${accountIdOf["75.2.1"]}`).set(auth(managerToken)).expect(200)).body;
+      expect(byAccount.total).toBe(4);
+      const found = (await http().get("/accounting/entries?search=Estorno").set(auth(managerToken)).expect(200)).body;
+      expect(found.total).toBe(1);
+    });
+
+    it("an account with movements can't be removed, can't get sub-accounts and stays a movement account", async () => {
+      await http().delete(`/accounting/accounts/${accountIdOf["75.2.1"]}`).set(auth(ownerToken)).expect(400);
+      await http().post("/accounting/accounts").set(auth(ownerToken)).send({ code: "75.2.1.1", name: "Loja" }).expect(400);
+      await expect(prisma.ledgerAccount.update({ where: { id: accountIdOf["75.2.1"] }, data: { category: "GA" } })).rejects.toThrow("stays a movement account");
+      expect((await accounts()).find((a) => a.code === "75.2.1")).toMatchObject({ hasMovements: true });
     });
   });
 });

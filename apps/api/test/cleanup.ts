@@ -10,6 +10,7 @@ export async function deleteBusiness(prisma: PrismaService, businessId: string):
   const inStores = { storeId: { in: stores } };
   const byUsers = { userId: { in: users } };
 
+  await deleteBooks(prisma, businessId);
   await prisma.$transaction([
     // Fiscal documents are immutable; only a clean-up session may delete them.
     prisma.$executeRaw`SELECT set_config('pos.allow_fiscal_delete', 'on', true)`,
@@ -52,11 +53,6 @@ export async function deleteBusiness(prisma: PrismaService, businessId: string):
     prisma.refreshToken.deleteMany({ where: byUsers }),
     prisma.passwordResetToken.deleteMany({ where: byUsers }),
     prisma.emailVerificationToken.deleteMany({ where: byUsers }),
-    prisma.accountingPeriod.deleteMany({ where: { businessId } }),
-    prisma.fiscalYear.deleteMany({ where: { businessId } }),
-    prisma.ledgerAccount.updateMany({ where: { businessId }, data: { parentId: null } }),
-    prisma.ledgerAccount.deleteMany({ where: { businessId } }),
-    prisma.accountingSettings.deleteMany({ where: { businessId } }),
     prisma.bankAccount.deleteMany({ where: { businessId } }),
     prisma.taxRate.deleteMany({ where: { businessId } }),
     prisma.customer.deleteMany({ where: { businessId } }),
@@ -68,4 +64,25 @@ export async function deleteBusiness(prisma: PrismaService, businessId: string):
     prisma.store.deleteMany({ where: { businessId } }),
     prisma.business.delete({ where: { id: businessId } }),
   ]);
+}
+
+/**
+ * The accounting tables: entries are immutable too (the same clean-up
+ * setting lets them go), and an estorno must go before what it reverses.
+ */
+async function deleteBooks(prisma: PrismaService, businessId: string): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT set_config('pos.allow_fiscal_delete', 'on', true)`;
+    await tx.journalEntryLine.deleteMany({ where: { entry: { businessId } } });
+    for (let i = 0; i < 50 && (await tx.journalEntry.count({ where: { businessId } })); i++) {
+      await tx.journalEntry.deleteMany({ where: { businessId, reversedBy: { is: null } } });
+    }
+    await tx.journalCounter.deleteMany({ where: { journal: { businessId } } });
+    await tx.journal.deleteMany({ where: { businessId } });
+    await tx.accountingPeriod.deleteMany({ where: { businessId } });
+    await tx.fiscalYear.deleteMany({ where: { businessId } });
+    await tx.ledgerAccount.updateMany({ where: { businessId }, data: { parentId: null } });
+    await tx.ledgerAccount.deleteMany({ where: { businessId } });
+    await tx.accountingSettings.deleteMany({ where: { businessId } });
+  }, { timeout: 60_000 });
 }
