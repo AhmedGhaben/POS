@@ -15,7 +15,8 @@
     "entries": "Entries",
     "integration": "Integration",
     "reports": "Reports",
-    "saft": "SAF-T"
+    "saft": "SAF-T",
+    "bank": "Banks"
   },
   "integration": {
     "title": "Integration monitor",
@@ -315,6 +316,44 @@
     "to": "To",
     "download": "Download the archive (ZIP)",
     "done": "Archive saved"
+  },
+  "bank": {
+    "importTitle": "Import a bank statement",
+    "importHint": "CSV or Excel as the bank gives it: say which column is the date, the description and the amount (or debit and credit). Movements are matched with the account's postings: same amount, within three days.",
+    "account": "Bank account (class 4)",
+    "file": "Statement (CSV or Excel)",
+    "column": "Column",
+    "none": "None",
+    "skipRows": "Heading rows to skip",
+    "fields": {
+      "date": "Date",
+      "description": "Description",
+      "amount": "Amount (+ in, − out)",
+      "debit": "Debit (money out)",
+      "credit": "Credit (money in)",
+      "reference": "Reference"
+    },
+    "import": "Import and match",
+    "imported": "{{lines}} movements imported, {{matched}} matched",
+    "statement": "Statement",
+    "chooseStatement": "Choose a statement",
+    "lines": "{{count}} movements",
+    "autoMatch": "Match again",
+    "autoMatched": "{{count}} matched",
+    "totals": "Statement {{statement}} · matched {{matched}} · open {{open}}",
+    "state": "State",
+    "open": "Open",
+    "kinds": {
+      "AUTO": "Matched",
+      "MANUAL": "Matched by hand",
+      "POSTED": "Posted from here"
+    },
+    "unmatch": "Undo",
+    "matchWith": "Match {{id}}",
+    "counterAccount": "Post against (fees, interest…)",
+    "post": "Post",
+    "unexplained": "In the books, not on the statement",
+    "nothingUnexplained": "Nothing."
   },
   "saft": {
     "title": "SAF-T (AO) accounting file",

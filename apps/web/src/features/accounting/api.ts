@@ -301,6 +301,46 @@ export const fetchAttachments = (ownerType: AttachmentOwner, ownerId: string) =>
 export const uploadAttachment = (body: { ownerType: AttachmentOwner; ownerId: string; fileName: string; dataUrl: string }) => apiClient.post<AttachmentDto>("/attachments", body);
 export const removeAttachment = (id: string) => apiClient.delete(`/attachments/${id}`);
 
+export interface BankMapping {
+  date: number;
+  description: number;
+  amount?: number;
+  debit?: number;
+  credit?: number;
+  reference?: number;
+  skipRows?: number;
+}
+
+export interface BankStatementSummaryDto {
+  id: string;
+  fileName: string;
+  periodFrom: string;
+  periodTo: string;
+  createdAt: string;
+  _count: { lines: number };
+}
+
+export interface BankStatementDto {
+  id: string;
+  account: { id: string; code: string; name: string };
+  fileName: string;
+  periodFrom: string;
+  periodTo: string;
+  totals: { statement: string; matched: string; open: string };
+  lines: { id: string; date: string; description: string; reference: string | null; amount: string; matchKind: "AUTO" | "MANUAL" | "POSTED" | null; matched: { lineId: string; transactionId: string; date: string } | null }[];
+  unexplained: { lineId: string; date: string; transactionId: string; description: string; amount: string }[];
+}
+
+export const parseStatement = (fileName: string, dataUrl: string) => apiClient.post<{ rows: string[][] }>("/accounting/bank/parse", { fileName, dataUrl });
+export const importStatement = (body: { accountId: string; fileName: string; rows: string[][]; mapping: BankMapping }) =>
+  apiClient.post<{ id: string; lines: number; matched: number; skippedRows: number[] }>("/accounting/bank/statements", body);
+export const fetchStatements = () => apiClient.get<BankStatementSummaryDto[]>("/accounting/bank/statements");
+export const fetchStatement = (id: string) => apiClient.get<BankStatementDto>(`/accounting/bank/statements/${id}`);
+export const autoMatchStatement = (id: string) => apiClient.post<{ matched: number }>(`/accounting/bank/statements/${id}/auto-match`);
+export const matchBankLine = (lineId: string, ledgerLineId: string) => apiClient.post(`/accounting/bank/lines/${lineId}/match`, { ledgerLineId });
+export const unmatchBankLine = (lineId: string) => apiClient.post(`/accounting/bank/lines/${lineId}/unmatch`);
+export const postBankLine = (lineId: string, accountId: string) => apiClient.post<{ entryId: string; transactionId: string }>(`/accounting/bank/lines/${lineId}/post`, { accountId });
+
 /** PGC classes, for headings. */
 export const PGC_CLASSES: Record<number, string> = {
   1: "Meios fixos e investimentos",

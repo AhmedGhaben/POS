@@ -1894,3 +1894,42 @@ model Attachment {
   @@index([businessId, ownerType, ownerId])
   @@map("attachments")
 }
+
+/// A bank statement imported for reconciliation (B3), for one bank account
+/// of the chart (a movement account of class 4).
+model BankStatement {
+  id           String              @id @default(cuid())
+  businessId   String
+  accountId    String
+  fileName     String
+  /// The first and last movement's dates.
+  periodFrom   DateTime            @db.Date
+  periodTo     DateTime            @db.Date
+  importedById String
+  createdAt    DateTime            @default(now())
+  lines        BankStatementLine[]
+
+  @@index([businessId, accountId])
+  @@map("bank_statements")
+}
+
+/// A movement on the bank statement: matched to the ledger line that
+/// records it (once), or posted as a new entry (fees, interest).
+model BankStatementLine {
+  id            String        @id @default(cuid())
+  statementId   String
+  statement     BankStatement @relation(fields: [statementId], references: [id])
+  businessId    String
+  date          DateTime      @db.Date
+  description   String
+  reference     String?
+  /// Money in positive, out negative.
+  amount        Decimal       @db.Decimal(16, 2)
+  /// The journal entry line it was matched with (a ledger line matches one statement line).
+  matchedLineId String?       @unique
+  /// MANUAL, AUTO, POSTED (an entry made for it here).
+  matchKind     String?
+
+  @@index([statementId])
+  @@map("bank_statement_lines")
+}

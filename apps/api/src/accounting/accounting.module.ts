@@ -18,12 +18,14 @@ import { AccountantsController } from "./accountants.controller";
 import { AccountantsService } from "./accountants.service";
 import { ArchiveController } from "./archive.controller";
 import { ArchiveService } from "./archive.service";
+import { BankController } from "./bank.controller";
+import { BankService } from "./bank.service";
 
 /** Contabilidade: the books, posted from the POS (docs/ACCOUNTING-DECISIONS.md). */
 @Module({
   imports: [MailModule],
-  controllers: [AccountingController, EntriesController, IntegrationController, AccountingReportsController, AccountantsController, ArchiveController],
-  providers: [AccountingService, ChartService, PeriodsService, EntriesService, IntegrationService, MappingService, TemplatesService, AccountingReportsService, YearEndService, AccountingSaftService, AccountantsService, ArchiveService],
+  controllers: [AccountingController, EntriesController, IntegrationController, AccountingReportsController, AccountantsController, ArchiveController, BankController],
+  providers: [AccountingService, ChartService, PeriodsService, EntriesService, IntegrationService, MappingService, TemplatesService, AccountingReportsService, YearEndService, AccountingSaftService, AccountantsService, ArchiveService, BankService],
   exports: [AccountingService, ChartService, PeriodsService, EntriesService, IntegrationService],
 })
 export class AccountingModule {}

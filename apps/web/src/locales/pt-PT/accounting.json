@@ -15,7 +15,8 @@
     "entries": "Lançamentos",
     "integration": "Integração",
     "reports": "Relatórios",
-    "saft": "SAF-T"
+    "saft": "SAF-T",
+    "bank": "Bancos"
   },
   "integration": {
     "title": "Monitor de integração",
@@ -315,6 +316,44 @@
     "to": "Até",
     "download": "Descarregar o arquivo (ZIP)",
     "done": "Arquivo guardado"
+  },
+  "bank": {
+    "importTitle": "Importar extracto bancário",
+    "importHint": "CSV ou Excel como o banco o fornece: indique a coluna da data, da descrição e do valor (ou débito e crédito). Os movimentos são conciliados com os lançamentos da conta: mesmo valor, até três dias de diferença.",
+    "account": "Conta bancária (classe 4)",
+    "file": "Extracto (CSV ou Excel)",
+    "column": "Coluna",
+    "none": "Nenhuma",
+    "skipRows": "Linhas de cabeçalho a ignorar",
+    "fields": {
+      "date": "Data",
+      "description": "Descrição",
+      "amount": "Valor (+ entrada, − saída)",
+      "debit": "Débito (saída)",
+      "credit": "Crédito (entrada)",
+      "reference": "Referência"
+    },
+    "import": "Importar e conciliar",
+    "imported": "{{lines}} movimentos importados, {{matched}} conciliados",
+    "statement": "Extracto",
+    "chooseStatement": "Escolha um extracto",
+    "lines": "{{count}} movimentos",
+    "autoMatch": "Conciliar novamente",
+    "autoMatched": "{{count}} conciliados",
+    "totals": "Extracto {{statement}} · conciliado {{matched}} · por conciliar {{open}}",
+    "state": "Estado",
+    "open": "Por conciliar",
+    "kinds": {
+      "AUTO": "Conciliado",
+      "MANUAL": "Conciliado manualmente",
+      "POSTED": "Lançado daqui"
+    },
+    "unmatch": "Desfazer",
+    "matchWith": "Conciliar {{id}}",
+    "counterAccount": "Lançar contra (comissões, juros…)",
+    "post": "Lançar",
+    "unexplained": "Nos livros, não no extracto",
+    "nothingUnexplained": "Nada."
   },
   "saft": {
     "title": "Ficheiro SAF-T (AO) de contabilidade",

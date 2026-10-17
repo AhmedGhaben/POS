@@ -870,4 +870,67 @@ describe("Accounting (e2e)", () => {
       await http().delete(`/attachments/${attachmentId}`).set(auth(ownerToken)).expect(200);
     });
   });
+  describe("B3: bank reconciliation", () => {
+    type Statement = {
+      totals: { statement: string; matched: string; open: string };
+      lines: { id: string; description: string; amount: string; matchKind: string | null; matched: { transactionId: string } | null }[];
+      unexplained: { lineId: string; amount: string }[];
+    };
+    let statementId: string;
+    let bankId: string;
+
+    it("a statement (CSV, any column order) is read, mapped and matched with the bank account's postings", async () => {
+      const all = await accounts();
+      bankId = all.find((a) => a.code === "43.1.1")!.id;
+      const opd = ((await http().get("/accounting/journals").set(auth(ownerToken)).expect(200)).body as { id: string; code: string }[]).find((j) => j.code === "OPD")!.id;
+      // In the books: a deposit on 10/02 and a cheque issued on 18/02 (not cleared yet).
+      await http()
+        .post("/accounting/entries")
+        .set(auth(ownerToken))
+        .send({ journalId: opd, transactionDate: "2027-02-10", description: "Entrada de capital", lines: [{ accountId: bankId, debit: 50000 }, { accountId: all.find((a) => a.code === "51.1")!.id, credit: 50000 }] })
+        .expect(201);
+      await http()
+        .post("/accounting/entries")
+        .set(auth(ownerToken))
+        .send({ journalId: opd, transactionDate: "2027-02-18", description: "Cheque 001", lines: [{ accountId: all.find((a) => a.code === "75.2.1")!.id, debit: 8000 }, { accountId: bankId, credit: 8000 }] })
+        .expect(201);
+      const csv = "Ref;Descritivo;Data Valor;Montante\nT1;TRF RECEBIDA;11/02/2027;50.000,00\nC9;COMISSAO MANUTENCAO;15/02/2027;-2.500,00\nX;DEP NAO IDENTIFICADO;20/02/2027;10,00\n";
+      const parsed = (await http().post("/accounting/bank/parse").set(auth(ownerToken)).send({ fileName: "extracto.csv", dataUrl: `data:text/csv;base64,${Buffer.from(csv).toString("base64")}` }).expect(200)).body;
+      expect(parsed.rows[1]).toEqual(["T1", "TRF RECEBIDA", "11/02/2027", "50.000,00"]);
+      const imported = (await http()
+        .post("/accounting/bank/statements")
+        .set(auth(ownerToken))
+        .send({ accountId: bankId, fileName: "extracto.csv", rows: parsed.rows, mapping: { date: 2, description: 1, amount: 3, reference: 0, skipRows: 1 } })
+        .expect(201)).body;
+      expect(imported).toMatchObject({ lines: 3, matched: 1, skippedRows: [] });
+      statementId = imported.id;
+      const s = (await http().get(`/accounting/bank/statements/${statementId}`).set(auth(managerToken)).expect(200)).body as Statement;
+      expect(s.lines.find((l) => l.description === "TRF RECEBIDA")).toMatchObject({ matchKind: "AUTO", matched: { transactionId: "2027-02-10 OPD 2027/1" } });
+      // In the books, not yet at the bank: the cheque.
+      expect(s.unexplained).toEqual([expect.objectContaining({ amount: "-8000.00" })]);
+      expect(s.totals).toEqual({ statement: "47510.00", matched: "50000.00", open: "-2490.00" });
+      await http().post("/accounting/bank/statements").set(auth(ownerToken)).send({ accountId: all.find((a) => a.code === "61.3.1")!.id, fileName: "x", rows: parsed.rows, mapping: { date: 2, description: 1, amount: 3 } }).expect(400);
+    });
+
+    it("the bank fee is posted from the statement (Bancos journal) and matched; a movement is matched and unmatched by hand", async () => {
+      let s = (await http().get(`/accounting/bank/statements/${statementId}`).set(auth(ownerToken)).expect(200)).body as Statement;
+      const fee = s.lines.find((l) => l.description === "COMISSAO MANUTENCAO")!;
+      const fees = (await accounts()).find((a) => a.code === "76.8")!.id;
+      const posted = (await http().post(`/accounting/bank/lines/${fee.id}/post`).set(auth(ownerToken)).send({ accountId: fees }).expect(201)).body;
+      expect(posted.transactionId).toMatch(/^2027-02-15 BCO 2027\/\d+$/);
+      await http().post(`/accounting/bank/lines/${fee.id}/post`).set(auth(ownerToken)).send({ accountId: fees }).expect(409);
+      await http().post(`/accounting/bank/lines/${fee.id}/unmatch`).set(auth(ownerToken)).expect(400);
+      const deposit = s.lines.find((l) => l.description === "TRF RECEBIDA")!;
+      await http().post(`/accounting/bank/lines/${deposit.id}/unmatch`).set(auth(ownerToken)).expect(200);
+      s = (await http().get(`/accounting/bank/statements/${statementId}`).set(auth(ownerToken)).expect(200)).body as Statement;
+      const ledgerLine = s.unexplained.find((u) => u.amount === "50000.00")!;
+      const unknown = s.lines.find((l) => l.description === "DEP NAO IDENTIFICADO")!;
+      await http().post(`/accounting/bank/lines/${unknown.id}/match`).set(auth(ownerToken)).send({ ledgerLineId: ledgerLine.lineId }).expect(400); // amounts differ
+      await http().post(`/accounting/bank/lines/${deposit.id}/match`).set(auth(ownerToken)).send({ ledgerLineId: ledgerLine.lineId }).expect(200);
+      s = (await http().get(`/accounting/bank/statements/${statementId}`).set(auth(ownerToken)).expect(200)).body as Statement;
+      expect(s.lines.map((l) => l.matchKind)).toEqual(["MANUAL", "POSTED", null]);
+      expect(s.totals.open).toBe("10.00");
+      await http().post(`/accounting/bank/lines/${unknown.id}/match`).set(auth(managerToken)).send({ ledgerLineId: ledgerLine.lineId }).expect(403);
+    });
+  });
 });
