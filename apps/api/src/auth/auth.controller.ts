@@ -11,6 +11,7 @@ import { VerifyEmailDto } from "./dto/verify-email.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { PinLoginDto, PinResumeDto } from "./dto/pin-login.dto";
+import { SwitchBusinessDto } from "./dto/switch-business.dto";
 import { CurrentTerminal, TerminalKeyGuard } from "../till/terminal-key.guard";
 import type { TillTerminal } from "../till/till-auth.service";
 
@@ -82,6 +83,15 @@ export class AuthController {
 
     this.setRefreshCookie(res, refreshToken);
 
+    return session;
+  }
+
+  /** An accountant moves to another client company: a new session (and refresh cookie) there. */
+  @Post("switch-business")
+  @HttpCode(HttpStatus.OK)
+  async switchBusiness(@CurrentUser() user: AuthenticatedUser, @Body() dto: SwitchBusinessDto, @Res({ passthrough: true }) res: Response) {
+    const { refreshToken, ...session } = await this.authService.switchBusiness(user.userId, dto.businessId);
+    this.setRefreshCookie(res, refreshToken);
     return session;
   }
 

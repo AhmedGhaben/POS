@@ -30,6 +30,7 @@ import { ShiftsModule } from "./shifts/shifts.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
+import { AccountantGuard } from "./common/guards/accountant.guard";
 import { AuditLogInterceptor } from "./common/interceptors/audit-log.interceptor";
 import { PermissionsModule } from "./common/permissions/permissions.module";
 import { TillAuthModule } from "./till/till-auth.module";
@@ -38,6 +39,7 @@ import { CompanyModule } from "./company/company.module";
 import { FiscalModule } from "./fiscal/fiscal.module";
 import { AccountsModule } from "./accounts/accounts.module";
 import { AgtModule } from "./agt/agt.module";
+import { AccountingModule } from "./accounting/accounting.module";
 
 @Module({
   imports: [
@@ -57,6 +59,7 @@ import { AgtModule } from "./agt/agt.module";
     FiscalModule,
     AccountsModule,
     AgtModule,
+    AccountingModule,
     CompanyModule,
     TillAuthModule,
     AuthModule,
@@ -91,6 +94,7 @@ import { AgtModule } from "./agt/agt.module";
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
+    { provide: APP_GUARD, useClass: AccountantGuard },
     { provide: APP_INTERCEPTOR, useClass: AuditLogInterceptor },
   ],
 })

@@ -25,7 +25,7 @@ import {
 } from "./customer-display";
 import { openDrawer } from "./hardware/drawer";
 import { listComPorts, stopRawPrintHelper, warmRawPrintHelper } from "./hardware/transports";
-import { closePrintWindow, listPrinters, printJob, printJobSchema } from "./printing";
+import { closePrintWindow, documentPdf, listPrinters, pdfJobSchema, printJob, printJobSchema } from "./printing";
 import { checkForUpdates, getUpdateStatus, initUpdater, installUpdateNow } from "./updater";
 import { APP_ORIGIN, handleAppScheme, registerAppScheme } from "./protocol";
 import {
@@ -239,6 +239,8 @@ function registerIpc() {
   handle("printers:list", z.tuple([]), listPrinters);
 
   handle("printers:print", z.tuple([printJobSchema]), printJob);
+
+  handle("printers:pdf", z.tuple([pdfJobSchema]), documentPdf);
 
   handle("printing:get", z.tuple([]), getPrinting);
 

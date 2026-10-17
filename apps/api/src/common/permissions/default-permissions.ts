@@ -23,4 +23,6 @@ export const DEFAULT_PERMISSIONS: Record<Role, Permission[]> = {
   [Role.OWNER]: MANAGER_DEFAULTS,
   [Role.MANAGER]: MANAGER_DEFAULTS,
   [Role.CASHIER]: [],
+  // Reads stock values (cost prices); never works a till.
+  [Role.ACCOUNTANT]: [Permission.VIEW_COST_PRICE],
 };

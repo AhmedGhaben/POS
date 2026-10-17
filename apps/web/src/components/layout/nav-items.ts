@@ -16,6 +16,7 @@ import {
   FileSpreadsheet,
   Contact,
   ListOrdered,
+  BookOpenCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,6 +39,7 @@ export type NavLabel =
   | "cashDrawer"
   | "shifts"
   | "reports"
+  | "accounting"
   | "customers"
   | "sales"
   | "expenses"
@@ -58,6 +60,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/drawer-events", label: "cashDrawer", icon: Vault },
   { to: "/shifts", label: "shifts", icon: Clock },
   { to: "/reports", label: "reports", icon: FileSpreadsheet },
+  { to: "/accounting", label: "accounting", icon: BookOpenCheck },
   { to: "/expenses", label: "expenses", icon: Receipt },
   { to: "/customers", label: "customers", icon: Contact },
   { to: "/suppliers", label: "suppliers", icon: Truck },
@@ -66,8 +69,19 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/device", label: "thisDevice", icon: MonitorCog },
 ];
 
-/** Back-office nav for a role: cashiers get none, managers skip owner-only items. */
+/** What an outside accountant opens: the books, and what they're made of (read-only). */
+const ACCOUNTANT_ITEMS: NavLabel[] = ["accounting", "sales", "invoices", "purchases", "inventory", "expenses", "customers", "suppliers", "reports"];
+
+/** Where someone lands after signing in. */
+export function homePathFor(role: string | undefined): string {
+  if (role === "CASHIER") return "/pos";
+  if (role === "ACCOUNTANT") return "/accounting";
+  return "/dashboard";
+}
+
+/** Back-office nav for a role: cashiers get none, managers skip owner-only items, accountants the books and what they read. */
 export function navItemsFor(role: string | undefined): NavItem[] {
   if (role === "CASHIER") return [];
+  if (role === "ACCOUNTANT") return NAV_ITEMS.filter((item) => ACCOUNTANT_ITEMS.includes(item.label));
   return NAV_ITEMS.filter((item) => !item.ownerOnly || role === "OWNER");
 }

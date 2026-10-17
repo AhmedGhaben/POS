@@ -106,7 +106,8 @@ export class UsersService {
 
   findAll(businessId: string) {
     return this.prisma.user.findMany({
-      where: { businessId },
+      // Outside accountants are managed in Contabilidade, not with the staff.
+      where: { businessId, role: { not: Role.ACCOUNTANT } },
       select: {
         id: true,
         email: true,

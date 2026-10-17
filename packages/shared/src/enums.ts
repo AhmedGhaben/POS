@@ -7,6 +7,8 @@ export enum Role {
   OWNER = "OWNER",
   MANAGER = "MANAGER",
   CASHIER = "CASHIER",
+  /** An outside accountant: the books in the companies that invited them. */
+  ACCOUNTANT = "ACCOUNTANT",
 }
 
 export enum SaleStatus {

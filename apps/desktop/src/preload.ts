@@ -150,6 +150,8 @@ const posDesktop = {
       ipcRenderer.invoke("printers:list"),
     print: (job: PrintJob): Promise<{ ok: true; deviceName: string } | { ok: false; error: string }> =>
       ipcRenderer.invoke("printers:print", job),
+    /** An A4 document as a PDF, exactly as it would print (no printer needed). */
+    pdf: (job: Pick<PrintJob, "html" | "stylesheets">): Promise<Uint8Array> => ipcRenderer.invoke("printers:pdf", job),
   },
   printing: {
     get: (): Promise<Printing> => ipcRenderer.invoke("printing:get"),

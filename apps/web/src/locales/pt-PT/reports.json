@@ -7,6 +7,8 @@
     "saftType": "Ficheiro",
     "facturacao": "Faturação",
     "facturacaoHint": "documentos de venda, pró-formas",
+    "aquisicao": "Aquisição de Bens e Serviços",
+    "aquisicaoHint": "Mensal: compras com o documento do fornecedor, IVA dedutível e IVA cativo",
     "inventario": "Inventários",
     "inventarioHint": "stock numa data",
     "inventarioDraft": "Formato provisório até a AGT publicar a estrutura do ficheiro de inventário (Circular 05/2026).",
@@ -31,6 +33,8 @@
   "deadlines": {
     "saftInvoicing": "Ficheiro SAF-T de faturação de {{covers}}: entregar até {{due}}.",
     "saftInventory": "Ficheiro SAF-T de inventário (stock a {{covers}}): entregar até {{due}}.",
+    "saftAccounting": "Ficheiro SAF-T de contabilidade de {{covers}}: entregar até {{due}}.",
+    "saftPurchases": "Ficheiro SAF-T de aquisição de bens e serviços de {{covers}}: entregar até {{due}}.",
     "overdue": "Em atraso.",
     "makeIt": "Gerar agora"
   },

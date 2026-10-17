@@ -16,6 +16,7 @@
     "pointOfSale": "Point of Sale",
     "shifts": "Shifts",
     "reports": "Reports",
+    "accounting": "Accounting",
     "customers": "Customers",
     "sales": "Sales"
   },
@@ -97,7 +98,8 @@
   "roles": {
     "OWNER": "Owner",
     "MANAGER": "Manager",
-    "CASHIER": "Cashier"
+    "CASHIER": "Cashier",
+    "ACCOUNTANT": "Accountant"
   },
   "voidReasons": {
     "WRONG_ITEMS": "Wrong items or price",

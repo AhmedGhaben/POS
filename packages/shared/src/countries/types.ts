@@ -83,11 +83,17 @@ export interface DeadlineConfig {
   key: string;
   /** "monthly" (day of the next month) or "yearly" (month/day of the next year). */
   kind: "monthly" | "yearly";
-  day: number;
+  /** Day of the month it's due; "last" = the month's last day. */
+  day: number | "last";
   /** 1-12, for yearly. */
   month?: number;
   /** When it applies. */
-  when: "always" | "eInvoicingOff";
+  /**
+   * always; eInvoicingOff (while AGT e-invoicing isn't live); accountingOn
+   * (the books are kept in the app); purchasesFile (the monthly purchases
+   * file: by the accounting setting, AUTO = while e-invoicing is off).
+   */
+  when: "always" | "eInvoicingOff" | "accountingOn" | "purchasesFile";
   regimes?: IvaRegime[];
 }
 

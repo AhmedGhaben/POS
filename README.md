@@ -138,9 +138,11 @@ Prisma backend.
     - Periods are **calendar dates in the shop's time zone** (Luanda): a
       sale at 00:30 on 1 November belongs to November even though it's
       still 31 October in UTC.
-    - The Dashboard reminds owners of the monthly file (until the 15th,
-      while e-invoicing is off) and of the yearly inventory (until 15
-      February).
+    - The Dashboard reminds owners of the monthly files (last month's
+      invoicing and purchases files, due by the last day of the month,
+      Decreto Presidencial 312/18 art. 3; while e-invoicing is off) and of
+      the yearly inventory (until 15 February). The purchases file's due
+      day can be changed in Accounting → Settings.
 - **Products & stock**: categories, per-store inventory, purchases,
   returns, transfers between stores, low-stock alerts, and **CSV
   import/export** with a validating preview.
@@ -301,6 +303,35 @@ Prisma backend.
   (`components/ui/combobox.tsx`). Start typing to filter (accents and
   case don't matter, codes are searchable too), pick with the mouse or
   arrows + Enter, Esc closes.
+- **Contabilidade** (accounting, `apps/api/src/accounting`, branch
+  `feature/accounting`; plan and decisions in `docs/ACCOUNTING-DECISIONS.md`):
+  - Chart of accounts from the PGC (Decreto 82/01) with GR/GA/GM accounts and
+    an account per customer, supplier, till and bank account; years with
+    periods 0–15 that close and reopen (with a reason, audit-logged).
+  - Journals and entries that must balance, can't change once posted (an
+    estorno corrects them) and can't go into a closed period: all enforced by
+    the database. Templates, opening balances (CSV).
+  - Sales, receipts, credit notes, purchases, supplier payments, expenses,
+    cash differences and stock counts are posted automatically (account
+    mapping per company, daily summary per till as an option, integration
+    monitor; nothing is posted twice).
+  - Reports (Balancete, Razão, Diário, statements and ageing, Balanço,
+    Demonstração de Resultados, IVA) as PDF and Excel; year-end (apuramento,
+    close, carry forward).
+  - SAF-T (AO) accounting file (TaxAccountingBasis I) and purchases file
+    (A), validated against AGT's XSD; TransactionID and AccountID in the
+    invoicing file; 10 April reminder.
+  - Outside accountants (role ACCOUNTANT): one login for several companies,
+    full rights in the books, read-only elsewhere. An accountant who already
+    has a login gets an email when another company invites them; the
+    invitation waits under Your clients until they accept it.
+  - Document archive (ZIP) for a period: every document as a PDF in its
+    printed A4 layout ("2ª Via"; exact PDFs in the Windows app, page images
+    in a browser), the SAF-T files, the attachments and an index.
+  - Attachments, bank reconciliation (CSV/Excel), fixed assets with monthly
+    depreciation.
+  - Local demo accountant: `npx ts-node prisma/demo-accountant.ts` in `apps/api`
+    (accountant@demo-store.test / AccountantPass123!).
 - Audit log, rate-limited auth, `/health` endpoint.
 
 ## Structure

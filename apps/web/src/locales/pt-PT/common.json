@@ -16,6 +16,7 @@
     "pointOfSale": "Ponto de Venda",
     "shifts": "Turnos",
     "reports": "Relatórios",
+    "accounting": "Contabilidade",
     "customers": "Clientes",
     "sales": "Vendas"
   },
@@ -97,7 +98,8 @@
   "roles": {
     "OWNER": "Proprietário",
     "MANAGER": "Gerente",
-    "CASHIER": "Operador de caixa"
+    "CASHIER": "Operador de caixa",
+    "ACCOUNTANT": "Contabilista"
   },
   "voidReasons": {
     "WRONG_ITEMS": "Artigos ou preço errados",
