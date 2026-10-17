@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import type { BusinessDto, StoreDto, UserDto } from "@pos/shared";
+import type { BusinessDto, FiscalDocumentDto, StoreDto, UserDto } from "@pos/shared";
 
 /** Contabilidade (docs/ACCOUNTING-DECISIONS.md). */
 
@@ -305,6 +305,16 @@ export const fetchAccountants = () => apiClient.get<AccountantDto[]>("/accountin
 export const inviteAccountant = (body: { email: string; firstName: string; lastName: string; ocpcaNumber?: string }) =>
   apiClient.post<{ userId: string; email: string; newLogin: boolean; pending: boolean }>("/accounting/accountants", body);
 export const revokeAccountant = (userId: string) => apiClient.delete(`/accounting/accountants/${userId}`);
+
+/** A page of the period's documents for the archive, each with its path in the ZIP. */
+export interface ArchiveDocumentsPage {
+  total: number;
+  documents: { path: string; document: FiscalDocumentDto }[];
+  next: number | null;
+}
+
+export const fetchArchiveDocuments = (startDate: string, endDate: string, offset: number) =>
+  apiClient.get<ArchiveDocumentsPage>(`/accounting/archive/documents?startDate=${startDate}&endDate=${endDate}&offset=${offset}`);
 
 export type AttachmentOwner = "PURCHASE" | "EXPENSE" | "ENTRY";
 

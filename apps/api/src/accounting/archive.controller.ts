@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, Res, StreamableFile, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Query, Res, StreamableFile, UseGuards } from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { IsIn, IsString, MaxLength } from "class-validator";
 import type { Response } from "express";
@@ -57,12 +57,21 @@ export class ArchiveController {
     return this.archive.remove(user.businessId, id);
   }
 
-  /** A period's documents (PDF), SAF-T files and attachments as one ZIP. */
+  /** A period's SAF-T files, attachments and index as one ZIP (the app adds the documents' PDFs). */
   @Get("accounting/archive")
   @Roles(...ACCOUNTING_READ)
   async download(@CurrentUser() user: AuthenticatedUser, @Query("startDate") startDate: string, @Query("endDate") endDate: string, @Res({ passthrough: true }) res: Response) {
     const file = await this.archive.archive(user.businessId, user.userId, startDate, endDate);
     res.set({ "Content-Type": file.mimeType, "Content-Disposition": `attachment; filename="${file.fileName}"`, "Access-Control-Expose-Headers": "Content-Disposition", "Cache-Control": "no-store" });
     return new StreamableFile(file.body);
+  }
+
+  /** The period's documents for the archive, a page at a time (`offset` from the previous page's `next`). */
+  @Get("accounting/archive/documents")
+  @Roles(...ACCOUNTING_READ)
+  documents(@CurrentUser() user: AuthenticatedUser, @Query("startDate") startDate: string, @Query("endDate") endDate: string, @Query("offset") offset?: string) {
+    const from = Number(offset ?? 0);
+    if (!Number.isInteger(from) || from < 0) throw new BadRequestException("offset must be a whole number");
+    return this.archive.documents(user.businessId, startDate, endDate, from);
   }
 }

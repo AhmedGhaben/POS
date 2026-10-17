@@ -860,7 +860,7 @@ describe("Accounting (e2e)", () => {
       expect((file.body as Buffer).toString("base64")).toBe(PNG.split(",")[1]);
     });
 
-    it("the month's archive: every document as a PDF, the SAF-T files, the attachments and an index", async () => {
+    it("the month's archive: the SAF-T files, the attachments and an index of every document (the app adds their PDFs)", async () => {
       const purchase = await prisma.purchase.findUniqueOrThrow({ where: { id: purchaseId } });
       const month = purchase.createdAt.toISOString().slice(0, 7);
       const last = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).toISOString().slice(0, 10);
@@ -868,16 +868,38 @@ describe("Accounting (e2e)", () => {
       expect(res.headers["content-type"]).toBe("application/zip");
       const files = unzip(res.body as Buffer);
       const names = [...files.keys()];
-      const fr = names.filter((n) => /^documentos\/FR\/FR_.+\.pdf$/.test(n));
-      expect(fr.length).toBeGreaterThan(0);
-      expect(files.get(fr[0])!.toString("latin1").startsWith("%PDF-1.4")).toBe(true);
-      expect(names.some((n) => /^documentos\/(FT|NC|RC)\//.test(n))).toBe(true);
+      // No PDFs from the server: the app draws them with the print template.
+      expect(names.some((n) => n.startsWith("documentos/"))).toBe(false);
       expect(names.some((n) => /^saft\/SAFT-AO_.*\.xml$/.test(n))).toBe(true);
       expect(names.some((n) => /^saft\/SAFT-AO-Aquisicao_.*\.xml$/.test(n))).toBe(true);
       expect(names).toContain(`anexos/compras/FT_GK2026_12/${attachmentId.slice(-6)}_factura-fornecedor.png`);
       const index = files.get("indice.csv")!.toString("utf8");
-      expect(index.split("\r\n")[0]).toBe("\ufeffFicheiro;Tipo;Número;Data;Cliente/Fornecedor;Total");
+      const rows = index.split("\r\n");
+      expect(rows[0]).toBe("\ufeffFicheiro;Tipo;Número;Data;Cliente/Fornecedor;Total");
+      const listed = rows.filter((r) => r.startsWith("documentos/")).map((r) => r.split(";")[0]);
+      expect(listed.some((n) => /^documentos\/FR\/FR_.+\.pdf$/.test(n))).toBe(true);
+      expect(listed.some((n) => /^documentos\/(FT|NC|RC)\//.test(n))).toBe(true);
       expect(await prisma.auditLog.count({ where: { businessId, action: "ACCOUNTING_ARCHIVE" } })).toBe(1);
+
+      // The documents, a page at a time, each with its path from the index and what the print template needs.
+      type Page = { total: number; next: number | null; documents: { path: string; document: { id: string; documentNo: string; seller: unknown; lines: unknown[]; printCount: number } }[] };
+      const pages: Page[] = [];
+      let offset: number | null = 0;
+      while (offset !== null) {
+        const page = (await http().get(`/accounting/archive/documents?startDate=${month}-01&endDate=${last}&offset=${offset}`).set(auth(managerToken)).expect(200)).body as Page;
+        pages.push(page);
+        offset = page.next;
+      }
+      const docs = pages.flatMap((p) => p.documents);
+      expect(docs.length).toBe(pages[0].total);
+      expect(docs.map((d) => d.path)).toEqual(listed);
+      expect(new Set(docs.map((d) => d.document.id)).size).toBe(docs.length);
+      // The same order every time: starting one later gives the same list one along (pages never overlap).
+      const shifted = (await http().get(`/accounting/archive/documents?startDate=${month}-01&endDate=${last}&offset=1`).set(auth(managerToken)).expect(200)).body as Page;
+      expect(shifted.documents.map((d) => d.document.id)).toEqual(docs.slice(1, 1 + shifted.documents.length).map((d) => d.document.id));
+      expect(docs[0].document).toEqual(expect.objectContaining({ seller: expect.any(Object), lines: expect.any(Array), printCount: expect.any(Number) }));
+      await http().get(`/accounting/archive/documents?startDate=${month}-01&endDate=${last}&offset=-1`).set(auth(managerToken)).expect(400);
+      await http().get(`/accounting/archive/documents?startDate=${month}-01&endDate=${last}`).set(auth(cashierToken)).expect(403);
       await http().delete(`/attachments/${attachmentId}`).set(auth(ownerToken)).expect(200);
     });
   });

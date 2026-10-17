@@ -1,5 +1,10 @@
+import fs from "fs";
+import os from "os";
+import path from "path";
 import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
+import { strFromU8, unzipSync } from "fflate";
 import { API_URL, connect, launch, login, openPosWithProducts, sellFirstProduct, SwitchableProxy, tempUserData } from "./helpers";
+import { pdfText } from "./pdf-text";
 
 /**
  * Contabilidade in the Windows app (docs/ACCOUNTING-DECISIONS.md): switch
@@ -9,6 +14,7 @@ import { API_URL, connect, launch, login, openPosWithProducts, sellFirstProduct,
 test.describe.serial("Accounting (Contabilidade)", () => {
   const proxy = new SwitchableProxy(new URL(API_URL));
   const userData = tempUserData();
+  const downloads = fs.mkdtempSync(path.join(os.tmpdir(), "pos-archive-"));
   let app: ElectronApplication;
   let page: Page;
 
@@ -24,6 +30,10 @@ test.describe.serial("Accounting (Contabilidade)", () => {
     ({ app, page } = await launch(userData));
     await connect(page, proxy.url);
     await login(page);
+    // Save downloads straight into a folder instead of asking where.
+    await app.evaluate(({ session }, dir) => {
+      session.defaultSession.on("will-download", (_event, item) => item.setSavePath(`${dir}\\${item.getFilename()}`));
+    }, downloads);
   });
 
   test.afterAll(async () => {
@@ -98,5 +108,36 @@ test.describe.serial("Accounting (Contabilidade)", () => {
     await expect(page.getByRole("button", { name: "Download the archive (ZIP)" })).toBeVisible();
     await page.getByRole("tab", { name: "Settings" }).click();
     await expect(page.getByText("Give your accountant access to the books", { exact: false })).toBeVisible();
+  });
+
+  test("the document archive: every document as a PDF in its printed layout (2ª Via), with the SAF-T files and the index", async () => {
+    test.setTimeout(300_000);
+    await page.goto("app://pos/accounting?tab=saft");
+    // Today only (the sale above is in it), to keep the run short.
+    await page.getByLabel("From", { exact: true }).fill(await page.getByLabel("To", { exact: true }).inputValue());
+    const started = Date.now();
+    await page.getByRole("button", { name: "Download the archive (ZIP)" }).click();
+    await expect(page.getByText(/^Making the PDFs: \d+ of \d+$/)).toBeVisible();
+    await expect(page.getByText(/^Archive saved: \d+ documents$/)).toBeVisible({ timeout: 280_000 });
+    await expect.poll(() => fs.readdirSync(downloads).some((f) => /^Arquivo_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}\.zip$/.test(f))).toBe(true);
+    const name = fs.readdirSync(downloads).find((f) => f.startsWith("Arquivo_"))!;
+    await expect.poll(() => fs.statSync(path.join(downloads, name)).size).toBeGreaterThan(0);
+    const files = unzipSync(fs.readFileSync(path.join(downloads, name)));
+
+    // Every document the index lists is in the ZIP, as a PDF.
+    const rows = strFromU8(files["indice.csv"]).split("\r\n").filter((r) => r.startsWith("documentos/"));
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) expect(strFromU8(files[row.split(";")[0]].subarray(0, 5))).toBe("%PDF-");
+    test.info().annotations.push({ type: "archive", description: `${rows.length} documents in ${Math.round((Date.now() - started) / 1000)} s` });
+
+    // A Factura-Recibo reads as the printed one, marked 2ª Via: real text, not a picture of it.
+    const fr = rows.find((r) => r.startsWith("documentos/FR/"))!;
+    const [file, , documentNo] = fr.split(";");
+    const pdf = pdfText(Buffer.from(files[file]));
+    expect(pdf.pages).toBe(1);
+    expect(pdf.fonts).toBeGreaterThan(0);
+    const text = pdf.text.replace(/\s+/g, "");
+    for (const expected of ["2ªVia", documentNo.replace(/\s+/g, ""), "Factura-Recibo", "NIF", "Total"]) expect(text).toContain(expected);
+    expect(Object.keys(files).some((n) => /^saft\/SAFT-AO_.*\.xml$/.test(n))).toBe(true);
   });
 });

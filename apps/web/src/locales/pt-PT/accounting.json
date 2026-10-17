@@ -333,11 +333,13 @@
   },
   "archive": {
     "title": "Arquivo de documentos",
-    "description": "Um ZIP do período: todas as facturas, recibos e notas de crédito em cópia PDF, os ficheiros SAF-T de facturação e de aquisições, os anexos e um índice.",
+    "description": "Um ZIP do período: todas as facturas, recibos e notas de crédito em PDF, tal como são impressos (2ª Via), os ficheiros SAF-T de facturação e de aquisições, os anexos e um índice.",
     "from": "De",
     "to": "Até",
     "download": "Descarregar o arquivo (ZIP)",
-    "done": "Arquivo guardado"
+    "done": "Arquivo guardado: {{count}} documentos",
+    "progress": "A gerar os PDF: {{done}} de {{total}}",
+    "browserNote": "No navegador, os PDF são imagens da página impressa; a aplicação Windows gera-os exactamente como impressos, com texto seleccionável."
   },
   "bank": {
     "importTitle": "Importar extracto bancário",

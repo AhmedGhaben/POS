@@ -181,6 +181,8 @@ export interface PosDesktopApi {
   printers: {
     list(): Promise<DesktopPrinter[]>;
     print(job: DesktopPrintJob): Promise<DesktopPrintResult>;
+    /** An A4 document as a PDF, exactly as it prints. Missing in Windows apps released before it (0.2.3 and older). */
+    pdf?(job: Pick<DesktopPrintJob, "html" | "stylesheets">): Promise<Uint8Array>;
   };
   printing: {
     get(): Promise<PrintingSettings>;

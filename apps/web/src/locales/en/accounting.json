@@ -333,11 +333,13 @@
   },
   "archive": {
     "title": "Document archive",
-    "description": "One ZIP for the period: every invoice, receipt and credit note as a PDF copy, the SAF-T invoicing and purchases files, the attached papers, and an index.",
+    "description": "One ZIP for the period: every invoice, receipt and credit note as a PDF in its printed layout (2ª Via), the SAF-T invoicing and purchases files, the attached papers, and an index.",
     "from": "From",
     "to": "To",
     "download": "Download the archive (ZIP)",
-    "done": "Archive saved"
+    "done": "Archive saved: {{count}} documents",
+    "progress": "Making the PDFs: {{done}} of {{total}}",
+    "browserNote": "In a browser the PDFs are pictures of the printed page; the Windows app makes them exactly as printed, with selectable text."
   },
   "bank": {
     "importTitle": "Import a bank statement",

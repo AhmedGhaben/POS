@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { countryConfig } from "../countries";
+import { Prisma } from "@prisma/client";
 import { zip } from "../common/xlsx";
-import { documentPdf } from "../fiscal/document-pdf";
+import { FiscalService } from "../fiscal/fiscal.service";
 import { exportPeriod } from "../fiscal/saft/period";
 import { SaftExportService } from "../fiscal/saft-export.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -11,6 +11,11 @@ export const OWNER_TYPES = ["PURCHASE", "EXPENSE", "ENTRY"] as const;
 export type OwnerType = (typeof OWNER_TYPES)[number];
 const MIME_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 5 * 1024 * 1024;
+
+/** Documents handed to the app per request, to be drawn as PDFs. */
+const DOCUMENTS_PAGE = 25;
+/** By type, date and number; every till numbers from 1, so the document number and id settle ties and pages never overlap. */
+const ARCHIVE_ORDER: Prisma.FiscalDocumentOrderByWithRelationInput[] = [{ documentType: "asc" }, { invoiceDate: "asc" }, { number: "asc" }, { documentNo: "asc" }, { id: "asc" }];
 
 const safeName = (name: string) => name.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9._-]+/g, "_").slice(0, 80) || "ficheiro";
 
@@ -24,7 +29,17 @@ export class ArchiveService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly saft: SaftExportService,
+    private readonly fiscal: FiscalService,
   ) {}
+
+  /** Where a document's PDF goes in the archive. */
+  private documentPath(d: { documentType: string; documentNo: string }) {
+    return `documentos/${d.documentType}/${safeName(d.documentNo)}.pdf`;
+  }
+
+  private documentsWhere(businessId: string, period: { startDate: string; endDate: string }) {
+    return { businessId, invoiceDate: { gte: dateValue(period.startDate), lte: dateValue(period.endDate) } };
+  }
 
   /** Attaches a file (data: URL, PDF or image, up to 5 MB) to a purchase, expense or entry of the business. */
   async attach(businessId: string, userId: string, input: { ownerType: OwnerType; ownerId: string; fileName: string; dataUrl: string }) {
@@ -71,27 +86,25 @@ export class ArchiveService {
   }
 
   /**
-   * The period's archive as one ZIP: every fiscal document as a PDF copy
-   * (by type), the SAF-T invoicing and purchases files for the period
-   * (when it's within one year), the attachments of its purchases,
-   * expenses and entries, and an index.
+   * The period's archive as one ZIP: the SAF-T invoicing and purchases files
+   * for the period (when it's within one year), the attachments of its
+   * purchases, expenses and entries, and an index that lists every fiscal
+   * document too. The documents' PDFs are added by the app, drawn with the
+   * same template it prints them with ("2ª Via"), from `documents` below.
    */
   async archive(businessId: string, userId: string, startDate: string, endDate: string) {
     const business = await this.prisma.business.findUniqueOrThrow({ where: { id: businessId } });
     const period = exportPeriod(startDate, endDate, businessTimeZone(business));
-    const config = countryConfig(business.country);
     const files: { name: string; data: Buffer }[] = [];
     const index: string[] = ["Ficheiro;Tipo;Número;Data;Cliente/Fornecedor;Total"];
 
     const documents = await this.prisma.fiscalDocument.findMany({
-      where: { businessId, invoiceDate: { gte: dateValue(period.startDate), lte: dateValue(period.endDate) } },
-      include: { lines: { include: { taxes: true }, orderBy: { lineNumber: "asc" } } },
-      orderBy: [{ documentType: "asc" }, { invoiceDate: "asc" }, { number: "asc" }],
+      where: this.documentsWhere(businessId, period),
+      select: { documentType: true, documentNo: true, invoiceDate: true, buyerName: true, grossTotal: true },
+      orderBy: ARCHIVE_ORDER,
     });
     for (const d of documents) {
-      const name = `documentos/${d.documentType}/${safeName(d.documentNo)}.pdf`;
-      files.push({ name, data: documentPdf({ ...d, typeName: config?.documentTypes[d.documentType] ?? d.documentType }) });
-      index.push([name, d.documentType, d.documentNo, d.invoiceDate.toISOString().slice(0, 10), d.buyerName.replace(/;/g, ","), d.grossTotal.toFixed(2)].join(";"));
+      index.push([this.documentPath(d), d.documentType, d.documentNo, d.invoiceDate.toISOString().slice(0, 10), d.buyerName.replace(/;/g, ","), d.grossTotal.toFixed(2)].join(";"));
     }
 
     // The SAF-T files need a NIF and kwanzas; a period across two years has none.
@@ -124,5 +137,28 @@ export class ArchiveService {
     files.push({ name: "indice.csv", data: Buffer.from(`\ufeff${index.join("\r\n")}\r\n`, "utf8") });
     await this.prisma.auditLog.create({ data: { businessId, userId, action: "ACCOUNTING_ARCHIVE", entityType: "Export", metadata: { startDate: period.startDate, endDate: period.endDate, documents: documents.length, attachments: attachments.length } } });
     return { fileName: `Arquivo_${period.startDate}_${period.endDate}.zip`, mimeType: "application/zip", body: zip(files) };
+  }
+
+  /**
+   * The period's fiscal documents, a page at a time, as the document screen
+   * gets them (what the print template needs), each with its path in the
+   * archive. In the archive's order: by type, date and number.
+   */
+  async documents(businessId: string, startDate: string, endDate: string, offset = 0) {
+    const business = await this.prisma.business.findUniqueOrThrow({ where: { id: businessId } });
+    const period = exportPeriod(startDate, endDate, businessTimeZone(business));
+    const where = this.documentsWhere(businessId, period);
+    const [total, page] = await Promise.all([
+      this.prisma.fiscalDocument.count({ where }),
+      this.prisma.fiscalDocument.findMany({
+        where,
+        select: { id: true, documentType: true, documentNo: true },
+        orderBy: ARCHIVE_ORDER,
+        skip: offset,
+        take: DOCUMENTS_PAGE,
+      }),
+    ]);
+    const documents = await Promise.all(page.map(async (d) => ({ path: this.documentPath(d), document: await this.fiscal.get(businessId, d.id) })));
+    return { total, documents, next: offset + page.length < total ? offset + page.length : null };
   }
 }

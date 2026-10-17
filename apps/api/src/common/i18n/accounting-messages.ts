@@ -42,6 +42,7 @@ export const ACCOUNTING_EXACT: Record<string, Translations> = {
   "This accountant has already been invited": { "pt-PT": "Este contabilista já foi convidado", "pt-BR": "Este contador já foi convidado" },
   "Accept the invitation from your email first": { "pt-PT": "Aceite primeiro o convite que recebeu por email", "pt-BR": "Aceite primeiro o convite que você recebeu por e-mail" },
   "Accept this company's invitation first": { "pt-PT": "Aceite primeiro o convite desta empresa", "pt-BR": "Aceite primeiro o convite desta empresa" },
+  "offset must be a whole number": { "pt-PT": "offset tem de ser um número inteiro", "pt-BR": "offset precisa ser um número inteiro" },
   "Invitation not found": { "pt-PT": "Convite não encontrado", "pt-BR": "Convite não encontrado" },
   "This invitation link is no longer valid": { "pt-PT": "Este link de convite já não é válido", "pt-BR": "Este link de convite não é mais válido" },
   "Only accountants switch between companies": { "pt-PT": "Só os contabilistas mudam de empresa", "pt-BR": "Só os contadores mudam de empresa" },
