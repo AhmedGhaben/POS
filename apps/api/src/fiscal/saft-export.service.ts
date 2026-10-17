@@ -93,6 +93,39 @@ export class SaftExportService {
   }
 
   /**
+   * SAF-T (AO) Aquisição de Bens e Serviços (TaxAccountingBasis "A", Decreto
+   * Presidencial 312/18, art. 3): the period's purchases with the supplier's
+   * document, the suppliers and the tax table; due monthly for the month
+   * before (docs/ACCOUNTING-DECISIONS.md, Q1).
+   */
+  async aquisicao(businessId: string, userId: string, query: ExportQuery, now = new Date()): Promise<ExportFile> {
+    const ctx = await this.context(businessId, query.storeId);
+    const nif = this.requireNif(ctx.business.taxId);
+    if (ctx.business.currency !== "AOA") {
+      throw new BadRequestException("SAF-T (AO) files are in kwanzas: set the business currency to AOA first");
+    }
+    const period = this.period(query, ctx.timeZone, now, true);
+    const parts = await this.invoicing(ctx, period, { customerIds: [], supplierIds: [] }, { purchasesOnly: true });
+    const xml = buildSaftXml({
+      ...this.header(ctx, nif, period, now),
+      taxAccountingBasis: "A",
+      taxEntity: ctx.store ? ctx.store.name : "Global",
+      ...parts.input,
+      customers: [],
+      products: [],
+      salesInvoices: [],
+      workingDocuments: [],
+      payments: [],
+    });
+    await this.logExport(businessId, userId, "SAFT_AQUISICAO", { startDate: period.startDate, endDate: period.endDate, storeId: ctx.store?.id ?? null, purchases: parts.purchases });
+    return {
+      fileName: `SAFT-AO-Aquisicao_${nif}_${period.startDate}_${period.endDate}${ctx.store ? `_${this.fileSafe(ctx.store.name)}` : ""}.xml`,
+      mimeType: "application/xml; charset=utf-8",
+      body: xml,
+    };
+  }
+
+  /**
    * SAF-T (AO) Contabilidade, integrated with invoicing (TaxAccountingBasis
    * "I", TaxEntity "Sede"): the chart with opening and closing balances, the
    * year's entries (periods 1-15; the opening only as opening balances) and
@@ -151,9 +184,14 @@ export class SaftExportService {
    * here, customers and suppliers carry their account (AccountID) and
    * documents the entry they were posted in (TransactionID).
    */
-  private async invoicing(ctx: Awaited<ReturnType<SaftExportService["context"]>>, period: ExportPeriod, extra: { customerIds: string[]; supplierIds: string[] }) {
+  private async invoicing(
+    ctx: Awaited<ReturnType<SaftExportService["context"]>>,
+    period: ExportPeriod,
+    extra: { customerIds: string[]; supplierIds: string[] },
+    opts: { purchasesOnly?: boolean } = {},
+  ) {
     const businessId = ctx.business.id;
-    const documents = await this.prisma.fiscalDocument.findMany({
+    const documents = opts.purchasesOnly ? [] : await this.prisma.fiscalDocument.findMany({
       where: {
         businessId,
         ...(ctx.store ? { storeId: ctx.store.id } : {}),

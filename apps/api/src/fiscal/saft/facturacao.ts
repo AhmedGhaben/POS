@@ -236,8 +236,8 @@ export interface GeneralLedgerInput {
 }
 
 export interface FacturacaoInput {
-  /** F (invoicing, default), I (accounting integrated with invoicing). */
-  taxAccountingBasis?: "F" | "I";
+  /** F (invoicing, default), I (accounting integrated with invoicing), A (purchases: Aquisição de Bens e Serviços). */
+  taxAccountingBasis?: "F" | "I" | "A";
   /** The chart and the entries, for an "I" file. */
   generalLedger?: GeneralLedgerInput | null;
   company: SaftCompany;
@@ -430,7 +430,8 @@ export function buildFacturacaoXml(input: FacturacaoInput): string {
   if (input.generalLedger) generalLedgerEntries(w, input.generalLedger);
 
   w.open("SourceDocuments");
-  salesInvoices(w, input.salesInvoices);
+  // The purchases file has its purchases only.
+  if (input.taxAccountingBasis !== "A") salesInvoices(w, input.salesInvoices);
   if (input.workingDocuments.length) workingDocuments(w, input.workingDocuments);
   if (input.payments.length) payments(w, input.payments);
   if (input.purchaseInvoices.length) purchaseInvoices(w, input.purchaseInvoices);

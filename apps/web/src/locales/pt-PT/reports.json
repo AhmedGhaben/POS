@@ -7,6 +7,8 @@
     "saftType": "Ficheiro",
     "facturacao": "Faturação",
     "facturacaoHint": "documentos de venda, pró-formas",
+    "aquisicao": "Aquisição de Bens e Serviços",
+    "aquisicaoHint": "Mensal: compras com o documento do fornecedor, IVA dedutível e IVA cativo",
     "inventario": "Inventários",
     "inventarioHint": "stock numa data",
     "inventarioDraft": "Formato provisório até a AGT publicar a estrutura do ficheiro de inventário (Circular 05/2026).",

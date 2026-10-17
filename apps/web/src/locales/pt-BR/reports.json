@@ -7,6 +7,8 @@
     "saftType": "Arquivo",
     "facturacao": "Faturamento (Facturação)",
     "facturacaoHint": "documentos de venda, pró-formas",
+    "aquisicao": "Aquisição de Bens e Serviços",
+    "aquisicaoHint": "Mensal: compras com o documento do fornecedor, IVA dedutível e IVA cativo",
     "inventario": "Inventário (Inventários)",
     "inventarioHint": "estoque em uma data",
     "inventarioDraft": "Formato provisório até a AGT publicar a estrutura do arquivo de inventário (Circular 05/2026).",

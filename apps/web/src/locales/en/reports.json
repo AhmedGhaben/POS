@@ -7,6 +7,8 @@
     "saftType": "File",
     "facturacao": "Invoicing (Facturação)",
     "facturacaoHint": "sales documents, proformas",
+    "aquisicao": "Purchases (Aquisição de Bens e Serviços)",
+    "aquisicaoHint": "Monthly: purchases with the supplier's document, deductible IVA and IVA cativo",
     "inventario": "Inventory (Inventários)",
     "inventarioHint": "stock at a date",
     "inventarioDraft": "Draft layout until AGT publishes the inventory file format (Circular 05/2026).",

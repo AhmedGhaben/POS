@@ -16,7 +16,7 @@ import { ReportViewer } from "@/features/reports/components/ReportViewer";
 import { SaftDeadlines } from "@/features/reports/components/SaftDeadlines";
 import { ApiError, apiClient, saveFile } from "@/lib/api-client";
 
-type SaftType = "FACTURACAO" | "INVENTARIO";
+type SaftType = "FACTURACAO" | "AQUISICAO" | "INVENTARIO";
 
 /**
  * Reports: the business's figures (phase 10, ReportViewer) and the files
@@ -63,6 +63,9 @@ export function ReportsPage() {
     if (saftType === "INVENTARIO") {
       return download("saft", "/fiscal-documents/saft/inventario", { date: inventoryDate, storeId: saftStore });
     }
+    if (saftType === "AQUISICAO") {
+      return download("saft", "/fiscal-documents/saft/aquisicao", { ...periodDates(saftPeriod), storeId: saftStore });
+    }
     return download("saft", "/fiscal-documents/saft/facturacao", { ...periodDates(saftPeriod), storeId: saftStore });
   }
 
@@ -101,11 +104,12 @@ export function ReportsPage() {
                 onChange={(v) => v && setSaftType(v as SaftType)}
                 options={[
                   { value: "FACTURACAO", label: t("exports.facturacao"), description: t("exports.facturacaoHint") },
+                  { value: "AQUISICAO", label: t("exports.aquisicao"), description: t("exports.aquisicaoHint") },
                   { value: "INVENTARIO", label: t("exports.inventario"), description: t("exports.inventarioHint") },
                 ]}
               />
             </div>
-            {saftType === "FACTURACAO" ? (
+            {saftType !== "INVENTARIO" ? (
               <PeriodFields id="saft" value={saftPeriod} onChange={setSaftPeriod} />
             ) : (
               <div className="space-y-2">

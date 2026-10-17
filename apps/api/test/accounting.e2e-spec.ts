@@ -797,4 +797,31 @@ describe("Accounting (e2e)", () => {
       expect(xml).toMatch(/<SupplierID>[^<]+<\/SupplierID>\s*<AccountID>32\.1\.2\.1\.0001<\/AccountID>/);
     });
   });
+  describe("A9: SAF-T purchases file (Aquisição de Bens e Serviços)", () => {
+    it("the month's purchases with the supplier's document: valid against the XSD, no sales", async () => {
+      const purchase = await prisma.purchase.findFirstOrThrow({ where: { store: { businessId }, supplierDocNo: "FT GK2026/12" } });
+      const day = purchase.supplierDocDate!.toISOString().slice(0, 10);
+      const res = await http()
+        .get(`/fiscal-documents/saft/aquisicao?startDate=${day.slice(0, 8)}01&endDate=${day}`)
+        .set(auth(managerToken))
+        .buffer(true)
+        .parse((r, done) => {
+          const chunks: Buffer[] = [];
+          r.on("data", (c: Buffer) => chunks.push(c));
+          r.on("end", () => done(null, Buffer.concat(chunks)));
+        })
+        .expect(200);
+      expect(res.headers["content-disposition"]).toMatch(/^attachment; filename="SAFT-AO-Aquisicao_5417000888_/);
+      const xml = (res.body as Buffer).toString("utf8");
+      expect(await saftSchemaErrors(xml)).toEqual([]);
+      expect(xml).toContain("<TaxAccountingBasis>A</TaxAccountingBasis>");
+      expect(xml).not.toContain("<SalesInvoices>");
+      expect(xml).not.toContain("<Customer>");
+      expect(xml).toContain("<InvoiceNo>FT GK2026/12</InvoiceNo>");
+      expect(xml).toMatch(/<SupplierTaxID>5401234567<\/SupplierTaxID>/);
+      expect(xml).toContain("<WithholdingTaxAmount>70</WithholdingTaxAmount>");
+      expect(await prisma.auditLog.count({ where: { businessId, action: "SAFT_AQUISICAO" } })).toBe(1);
+      await http().get("/fiscal-documents/saft/aquisicao").set(auth(cashierToken)).expect(403);
+    });
+  });
 });
