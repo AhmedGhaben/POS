@@ -69,6 +69,38 @@ the freshly migrated `pos_ci`), web unit 150, desktop unit 28; lint clean
 
 ---
 
+## Shifts follow selling, not signing in (2026-10-18)
+
+**The bug:** the owner signed in, only looked at the dashboard, and Log out
+asked for a cash count. Signing in never opened a shift. But the POS screen
+picked up any shift the server still had open for that person (or that
+till) and kept it on the device. On a PC used for back office, one visit to
+the POS screen was enough: from then on Log out meant "close your shift".
+Shifts left open by earlier sessions (or another device) made it look
+random.
+
+| # | Decision | Why |
+|---|----------|-----|
+| 1 | **Each device has a role**, in This device → "What this device is for": **Till** (sells, has the drawer, opens shifts) or **Back office** (dashboard, reports, products, settings, accounting; never a shift). Default per platform: the Windows app is a till, a browser is back office. Kept on the device (`features/desktop/device-role.ts`). Owners and managers change it; not to back office while a shift is open there. | Your point 4. A browser at home or an office PC shouldn't hold a cash drawer's shift. |
+| 2 | **A shift opens only on a till, when someone goes to sell**: the POS screen asks for the opening float, as before. Signing in never opens one. A back-office device shows "This device is for back office" instead of the float, picks up no shift from the server, and `openShift` refuses to run there. | Your points 1 and 3. |
+| 3 | **Log out with no shift of your own open on this device is a plain sign-out.** Before asking for a count, the device checks with the server: a shift already closed elsewhere (by a manager, or on another device) is forgotten, and Log out is plain. Offline, or not uploaded yet, it's treated as open. | Your point 2; no count for a shift that no longer exists. |
+| 4 | **An empty shift closes in one click.** No sale (even a cancelled one), no cash in or out, no receipt: the dialog asks "Contagem = fundo de caixa (…)?" with **Sim, fechar com …**, and **Indicar outro valor** opens the normal count. For a shift taken over from another device, the server's figures decide. Once something happened in the shift, the count stays blind, as before. | Your point 5. Showing the float isn't a leak when nothing else happened: the person typed it. |
+| 5 | **A manager at a cashier's till leaves the cashier's shift alone.** Taking over with a PIN to approve or check something: their Log out is plain and the cashier's shift stays open, on the device and the server. The cashier signs back in to the same shift. Selling on someone else's open shift is still blocked. Closing it stays a separate, explicit "Close …'s shift" (forced close, for a shift someone abandoned). | Your point 6. |
+| 6 | **Not enforced by the server**: the role lives on the device, and the API doesn't know which device is a till (a browser has no registered terminal). Sales still need an open shift on the server, as before. | A server-side role would need every browser registered like a till. |
+| 7 | **For shops that sell in a browser**: after this update their browsers default to back office. An owner or manager switches each selling browser to Till in This device, once. | The default you asked for. |
+
+**Tests:** `apps/desktop/e2e/shifts-follow-selling.spec.ts` covers:
+- the owner signs in, looks at the dashboard and signs out: no count
+- a back-office device never opens or picks up a shift, even on the POS screen
+- on a till, the shift opens with the float when someone goes to sell
+- an empty shift closes in one click, or with another amount
+- a shift closed elsewhere is forgotten here
+- a manager taking over a cashier's till leaves the cashier's shift open
+
+Unit tests: `device-role.test.ts`, and the empty-shift cases in `ledger.test.ts`. The shared test helper `logOut` handles the one-click close.
+
+---
+
 ## Four fixes from testing: dates, the POS cart, Back to POS, document language (2026-10-17)
 
 ### Dates: DD/MM/YYYY

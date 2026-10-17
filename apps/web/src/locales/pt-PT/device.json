@@ -205,5 +205,23 @@
     "doneDescription": "Os funcionários já podem iniciar sessão. Tudo isto pode ser alterado depois em Este dispositivo.",
     "finish": "Ir para o início de sessão",
     "runAgain": "Configurar novamente"
+  },
+  "role": {
+    "title": "Para que serve este dispositivo",
+    "description": "Um terminal de caixa vende e abre um turno (com fundo de caixa) quando alguém começa a vender. O back office nunca abre turnos. Até escolher: {{default}}.",
+    "names": {
+      "TILL": "Terminal de caixa",
+      "BACK_OFFICE": "Back office"
+    },
+    "hints": {
+      "TILL": "Vende, tem a gaveta, abre turnos.",
+      "BACK_OFFICE": "Painel, relatórios, produtos, configurações, contabilidade. Sem vendas nem turnos."
+    },
+    "saved": {
+      "TILL": "Este dispositivo passou a ser um terminal de caixa",
+      "BACK_OFFICE": "Este dispositivo passou a ser de back office"
+    },
+    "closeShiftFirst": "Há um turno aberto neste dispositivo: feche-o primeiro.",
+    "managersOnly": "Só o proprietário ou um gerente pode alterar isto."
   }
 }

@@ -1,6 +1,7 @@
 import type { CashMovementReason, PagedDto, ShiftDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
 import { useDeviceStore } from "@/features/desktop/bridge";
+import { deviceRole } from "@/features/desktop/device-role";
 import { isWorkingOffline, useOfflineStore } from "@/features/pos/offline-store";
 import { syncOutbox } from "@/features/pos/sync";
 import { apiClient } from "@/lib/api-client";
@@ -25,6 +26,8 @@ function me() {
 }
 
 export async function openShift(storeId: string, openingFloat: number): Promise<LocalShift> {
+  // Only a till opens shifts; a back-office device never does.
+  if (deviceRole() !== "TILL") throw new Error("This device is set up for back office: it doesn't open shifts");
   const clientId = crypto.randomUUID();
   const openedAt = new Date().toISOString();
   const terminalId = useDeviceStore.getState().terminal?.id ?? null;

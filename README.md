@@ -194,21 +194,31 @@ Prisma backend.
   - **Archiving**: hides a product from the till and the list without
     touching past sales or reports. "Show archived products" lets you
     restore it.
-- **Shifts and cash counts** (always on):
-  - The cashier opens a shift with the opening float before the first
-    sale; the server refuses sales without an open shift on that till (an
-    offline upload is never dropped). One open shift per till, owned by
+- **Shifts and cash counts** (always on; shifts follow selling, not signing in):
+  - Each device is a **till** or **back office** (This device; the
+    Windows app is a till and a browser back office until someone
+    chooses). Signing in never opens a shift, and back-office work
+    (dashboard, reports, products, settings, accounting) never needs one.
+    On a till, the shift opens with the opening float when someone goes to
+    sell; a back-office device never opens one. The server refuses sales
+    without an open shift on that till (an offline upload is never
+    dropped). One open shift per till, owned by
     whoever opened it: someone else signing in can't sell until it's
     closed, and a manager can close an abandoned one for them (logged as
     forced). A shift survives the app closing or crashing.
   - **Cash in / out** with a reason; cash out needs CASH_OUT or a
     manager's approval.
-  - **Close the till** (or Log out, which goes into closing) asks for a
-    blind count, as a total or note by note, then shows the expected
+  - **Log out** with no shift of your own open is a plain sign-out (a
+    manager who takes over a cashier's till to check something leaves the
+    cashier's shift open).
+  - **Close the till** (or Log out with your shift open, which goes into
+    closing) asks for a blind count, as a total or note by note, then shows the expected
     cash, the count and the difference, prints the end-of-shift report
     (optionally listing every sale) and signs the cashier out. The report
     covers sales by payment method, discounts, cancels, returns, cash
-    in/out and each cashier.
+    in/out and each cashier. A shift with no sales and no cash in or out
+    closes in one click ("Contagem = fundo de caixa?"), or with another
+    amount typed.
   - Expected cash = float + cash taken − cash refunds + cash in − cash
     out. The server keeps its own figure and the till's, and works offline
     through the outbox.
@@ -399,6 +409,7 @@ it they're printed to the API console, links included.
   Offline sales keep the price and time they were rung up with. Products
   are saved on the till, so the POS starts and sells offline.
 - **This device** (`/device`):
+  - what the device is for: till or back office
   - till registration (`POS-001 "Front Till"`)
   - server and sync status
   - failed sales with Retry

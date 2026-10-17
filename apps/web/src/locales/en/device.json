@@ -205,5 +205,23 @@
     "doneDescription": "Staff can now sign in. Everything here can be changed later on This device.",
     "finish": "Go to sign-in",
     "runAgain": "Run setup again"
+  },
+  "role": {
+    "title": "What this device is for",
+    "description": "A till sells and opens a shift (with an opening float) when someone starts selling. Back office never opens a shift. Until chosen: {{default}}.",
+    "names": {
+      "TILL": "Till",
+      "BACK_OFFICE": "Back office"
+    },
+    "hints": {
+      "TILL": "Sells, has the cash drawer, opens shifts.",
+      "BACK_OFFICE": "Dashboard, reports, products, settings, accounting. No selling, no shifts."
+    },
+    "saved": {
+      "TILL": "This device is now a till",
+      "BACK_OFFICE": "This device is now back office"
+    },
+    "closeShiftFirst": "A shift is open on this device: close it first.",
+    "managersOnly": "Only an owner or manager can change this."
   }
 }

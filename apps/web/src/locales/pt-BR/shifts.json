@@ -51,7 +51,12 @@
     "countTotal": "Contado: {{amount}}",
     "countInvalid": "Use números inteiros.",
     "withSales": "Incluir todas as vendas no relatório",
-    "finishSignOut": "Concluir (sair)"
+    "finishSignOut": "Concluir (sair)",
+    "quickQuestion": "Sem vendas nem movimentos de caixa: contagem = fundo de caixa ({{amount}})?",
+    "quickHint": "Se sim, feche com um clique. Se não, informe o que está na gaveta.",
+    "quickConfirm": "Sim, fechar com {{amount}}",
+    "quickOther": "Informar outro valor",
+    "checking": "Um momento…"
   },
   "report": {
     "title": "FECHAMENTO DE CAIXA",
@@ -113,5 +118,11 @@
     "description": "{{name}} abriu este caixa às {{time}} e não o fechou. As vendas aguardam até ele ser fechado.",
     "forceClose": "Fechar o turno de {{name}} (contar o dinheiro)",
     "askManager": "Peça a {{name}} ou a um gerente para fechá-lo."
+  },
+  "backOffice": {
+    "title": "Este dispositivo é de retaguarda",
+    "description": "Não vende nem abre turnos. As vendas são feitas em um caixa.",
+    "change": "Tornar este dispositivo um caixa (Este dispositivo)",
+    "askManager": "Peça a um gerente para torná-lo um caixa."
   }
 }

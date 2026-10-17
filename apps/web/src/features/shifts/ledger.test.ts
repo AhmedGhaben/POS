@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PaymentMethod } from "@pos/shared";
-import { localSummary, type LocalShift } from "./ledger";
+import { isEmptyShift, isEmptySummary, localSummary, type LocalShift } from "./ledger";
 
 const shift = (extra: Partial<LocalShift> = {}): LocalShift => ({
   clientId: "s1",
@@ -81,5 +81,37 @@ describe("localSummary", () => {
 
   it("an empty shift expects just the float", () => {
     expect(localSummary(shift({ openingFloat: 75.5 })).expectedCash).toBe("75.50");
+  });
+});
+
+describe("an empty shift (closes in one click with the float as the count)", () => {
+  const sale = { key: "a", total: 10, discount: 0, cashierId: "u1", cashier: "Ana", payments: [{ method: PaymentMethod.CASH, amount: 10 }], voided: false };
+  it("no sale, no cash in or out, no receipt", () => {
+    expect(isEmptyShift(shift())).toBe(true);
+    expect(isEmptyShift(shift({ sales: [sale] }))).toBe(false);
+    // A cancelled sale still happened.
+    expect(isEmptyShift(shift({ sales: [{ ...sale, voided: true }] }))).toBe(false);
+    expect(isEmptyShift(shift({ movements: [{ clientId: "m1", type: "OUT", amount: 5, reason: "CASH_PICKUP", note: null, occurredAt: "", user: "Ana" }] }))).toBe(false);
+    expect(isEmptyShift(shift({ receipts: [{ id: "r1", method: PaymentMethod.CASH, amount: 3 }] }))).toBe(false);
+  });
+
+  it("the server's figures for a shift taken over from another device", () => {
+    const summary = {
+      salesCount: 0,
+      salesTotal: "0",
+      byMethod: {},
+      discounts: "0",
+      voided: { count: 0, total: "0" },
+      returns: { count: 0, total: "0", cash: "0" },
+      cashIn: "0",
+      cashOut: "0",
+      movements: [],
+      byCashier: [],
+      expectedCash: "100",
+    };
+    expect(isEmptySummary(summary)).toBe(true);
+    expect(isEmptySummary({ ...summary, salesCount: 1 })).toBe(false);
+    expect(isEmptySummary({ ...summary, returns: { count: 1, total: "5", cash: "5" } })).toBe(false);
+    expect(isEmptySummary({ ...summary, receipts: { count: 1, total: "3", byMethod: {} } })).toBe(false);
   });
 });

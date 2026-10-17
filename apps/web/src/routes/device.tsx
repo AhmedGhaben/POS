@@ -16,6 +16,7 @@ import { createTerminal, updateTerminal } from "@/features/desktop/api";
 import { PrintersSection } from "@/features/desktop/components/PrintersSection";
 import { DrawerSection } from "@/features/desktop/components/DrawerSection";
 import { DisplaySection } from "@/features/desktop/components/DisplaySection";
+import { DeviceRoleSection } from "@/features/desktop/components/DeviceRoleSection";
 import { desktop, isDesktop, useDeviceStore, type UpdateStatus } from "@/features/desktop/bridge";
 import { catalogSavedAt } from "@/features/pos/catalog";
 import { isWorkingOffline, useOfflineStore } from "@/features/pos/offline-store";
@@ -337,6 +338,7 @@ export function DevicePage() {
           <LanguagePicker />
         </CardContent>
       </Card>
+      <DeviceRoleSection />
       {isDesktop && <TerminalSection />}
       {isDesktop && <TillSignInSection />}
       <SyncSection />
