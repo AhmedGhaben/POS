@@ -73,6 +73,9 @@ export async function deleteBusiness(prisma: PrismaService, businessId: string):
 async function deleteBooks(prisma: PrismaService, businessId: string): Promise<void> {
   await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT set_config('pos.allow_fiscal_delete', 'on', true)`;
+    await tx.accountingSourceLink.deleteMany({ where: { businessId } });
+    await tx.accountingIntegrationError.deleteMany({ where: { businessId } });
+    await tx.accountMapping.deleteMany({ where: { businessId } });
     await tx.journalEntryLine.deleteMany({ where: { entry: { businessId } } });
     for (let i = 0; i < 50 && (await tx.journalEntry.count({ where: { businessId } })); i++) {
       await tx.journalEntry.deleteMany({ where: { businessId, reversedBy: { is: null } } });

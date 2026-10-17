@@ -5,11 +5,14 @@ import { ChartService } from "./chart.service";
 import { PeriodsService } from "./periods.service";
 import { EntriesController } from "./entries.controller";
 import { EntriesService } from "./entries.service";
+import { IntegrationController } from "./integration.controller";
+import { IntegrationService } from "./integration.service";
+import { MappingService } from "./mapping.service";
 
 /** Contabilidade: the books, posted from the POS (docs/ACCOUNTING-DECISIONS.md). */
 @Module({
-  controllers: [AccountingController, EntriesController],
-  providers: [AccountingService, ChartService, PeriodsService, EntriesService],
-  exports: [AccountingService, ChartService, PeriodsService, EntriesService],
+  controllers: [AccountingController, EntriesController, IntegrationController],
+  providers: [AccountingService, ChartService, PeriodsService, EntriesService, IntegrationService, MappingService],
+  exports: [AccountingService, ChartService, PeriodsService, EntriesService, IntegrationService],
 })
 export class AccountingModule {}

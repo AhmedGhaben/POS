@@ -44,6 +44,8 @@ export const ACCOUNTS_KEY = [...ACCOUNTING_KEY, "accounts"] as const;
 export const YEARS_KEY = [...ACCOUNTING_KEY, "years"] as const;
 export const JOURNALS_KEY = [...ACCOUNTING_KEY, "journals"] as const;
 export const ENTRIES_KEY = [...ACCOUNTING_KEY, "entries"] as const;
+export const INTEGRATION_KEY = [...ACCOUNTING_KEY, "integration"] as const;
+export const MAPPING_KEY = [...ACCOUNTING_KEY, "mapping"] as const;
 
 export const fetchAccountingStatus = () => apiClient.get<AccountingStatusDto>("/accounting/status");
 export const updateAccountingSettings = (body: Partial<AccountingSettingsDto> & { enabled?: boolean }) =>
@@ -150,6 +152,41 @@ export const fetchJournals = () => apiClient.get<JournalDto[]>("/accounting/jour
 export const fetchEntries = (f: EntryFilters) => apiClient.get<{ items: EntryDto[]; total: number }>(`/accounting/entries?${query({ ...f })}`);
 export const createEntry = (body: NewEntry) => apiClient.post<EntryDto>("/accounting/entries", body);
 export const reverseEntry = (id: string, body: { date?: string; description?: string }) => apiClient.post<EntryDto>(`/accounting/entries/${id}/reverse`, body);
+
+export type SourceType =
+  | "FISCAL_DOCUMENT"
+  | "FISCAL_DOCUMENT_ANNULMENT"
+  | "PURCHASE"
+  | "SUPPLIER_PAYMENT"
+  | "SUPPLIER_PAYMENT_CANCEL"
+  | "EXPENSE"
+  | "SHIFT_DIFFERENCE"
+  | "CASH_MOVEMENT"
+  | "STOCK_ADJUSTMENT";
+
+export interface IntegrationDto {
+  pending: Record<SourceType, number>;
+  pendingTotal: number;
+  postedTotal: number;
+  lastPostedAt: string | null;
+  running: boolean;
+  errors: { sourceType: SourceType; sourceId: string; documentNo: string | null; documentDate: string; message: string; attempts: number; lastTriedAt: string }[];
+}
+
+export type MappingGroup = "sales" | "iva" | "payments" | "stock" | "cash" | "expenses";
+
+export interface MappingDto {
+  key: string;
+  group: MappingGroup;
+  defaultCode: string | null;
+  account: { id: string; code: string; name: string } | null;
+  custom: boolean;
+}
+
+export const fetchIntegration = () => apiClient.get<IntegrationDto>("/accounting/integration");
+export const runIntegration = () => apiClient.post<{ posted: number; skipped: number; failed: number }>("/accounting/integration/run");
+export const fetchMapping = () => apiClient.get<MappingDto[]>("/accounting/mapping");
+export const setMapping = (key: string, accountId: string | null) => apiClient.put(`/accounting/mapping/${encodeURIComponent(key)}`, { accountId });
 
 /** PGC classes, for headings. */
 export const PGC_CLASSES: Record<number, string> = {

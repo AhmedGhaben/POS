@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, UseGuards } from "@nestjs/common";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { RolesGuard } from "../common/guards/roles.guard";
@@ -8,6 +8,8 @@ import { AccountingService } from "./accounting.service";
 import { ChartService } from "./chart.service";
 import { AccountingSettingsDto, CreateAccountDto, CreateFiscalYearDto, ReopenDto, UpdateAccountDto } from "./dto/accounting.dto";
 import { PeriodsService } from "./periods.service";
+import { IntegrationService } from "./integration.service";
+import { periodDates } from "./periods";
 
 /** Contabilidade: settings and the chart of accounts (docs/ACCOUNTING-DECISIONS.md). */
 @Controller("accounting")
@@ -17,6 +19,7 @@ export class AccountingController {
     private readonly accounting: AccountingService,
     private readonly chart: ChartService,
     private readonly periods: PeriodsService,
+    private readonly integration: IntegrationService,
   ) {}
 
   @Get("status")
@@ -80,7 +83,14 @@ export class AccountingController {
   @Post("periods/:year/:number/close")
   @HttpCode(200)
   @Roles(...ACCOUNTING_WRITE)
-  closePeriod(@CurrentUser() user: AuthenticatedUser, @Param("year", ParseIntPipe) year: number, @Param("number", ParseIntPipe) number: number) {
+  async closePeriod(@CurrentUser() user: AuthenticatedUser, @Param("year", ParseIntPipe) year: number, @Param("number", ParseIntPipe) number: number) {
+    // A month is closed with everything in it posted: post what's waiting first.
+    if (number >= 1 && number <= 12) {
+      await this.integration.run(user.businessId, user.userId);
+      const { startDate, endDate } = periodDates(year, number);
+      const { total } = await this.integration.pending(user.businessId, { from: startDate, to: endDate });
+      if (total > 0) throw new BadRequestException(`${total} records of this period aren't posted yet: see the integration monitor`);
+    }
     return this.periods.close(user.businessId, user.userId, year, number);
   }
 

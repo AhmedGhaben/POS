@@ -84,7 +84,7 @@ Database rules (triggers in the migration, not only the API):
 | 9 | Integration starts at a date chosen when accounting is switched on (default: 1 January of this year). Earlier documents are covered by the opening balances. | A new client doesn't want years of history re-posted. |
 | 10 | The period is the month of the document's date (invoiceDate / supplier document date / payment date). A closed period → the document waits in the monitor with the error "period closed". | Period lock. |
 | 11 | Sales are credited **before discounts** to the sales account by product type (goods 61.3.x / services 62.1.x) and IVA rate (or exemption), and the discount is debited to 61.8 Descontos e abatimentos; IVA by rate to 34.5.3.x. | The brief lists discounts as a mapping. **REVIEW**: some accountants prefer net sales. |
-| 12 | FR (cash sale): payment accounts by method / sales / IVA; no customer account. FT: customer account. RC: payment accounts / customer. NC: 61.7 Devoluções + IVA regularização / the refund's payment account or the customer's account. ND like FT. Proformas and quotes are never posted. | Standard retail postings. |
+| 12 | FR (cash sale): payment accounts by method / sales / IVA; no customer account. FT: customer account. RC: payment accounts / customer. NC: 61.7 Devoluções + IVA at the same rate (mapping `iva.nc.*`, by default the IVA liquidado account; point it at 34.5.4.1 to keep credit notes apart) / the refund's payment account, or the customer's account for what lowered their debt. ND like FT. Proformas and quotes are never posted. | Standard retail postings. |
 | 13 | **Cost of goods sold** is posted with each sale (71.2 / 26.1) at the weighted average cost recorded on the stock movements (SALE, RETURN); stock purchases go straight to 26.1 (perpetual inventory, no 21 Compras). | The app keeps a perpetual weighted average already. **REVIEW** if you want 21 Compras. |
 | 14 | An annulled document never posted is skipped; one already posted gets an exact reversal entry (lines swapped). Same for cancelled supplier payments. | Entries are immutable; corrections by reversal. |
 | 15 | Purchases: stock (tracked products) or 75.2.9 (services, untracked); deductible IVA by type (MFI/INV/OBC/SERV/IMPT/SCE) to 34.5.2.x; non-deductible IVA to 75.3.1; supplier account for the total less IVA cativo, IVA cativo to 34.5.6.2. | |
@@ -114,4 +114,16 @@ Database rules (triggers in the migration, not only the API):
 
 ## 3. Progress
 
-(filled in as each step is committed)
+| Step | Commit | What | Tests |
+|---|---|---|---|
+| A1 | `see git log` | Chart of accounts: PGC template, GR/GA/GM from the tree, automatic customer/supplier/till/bank accounts, add/rename/deactivate/remove rules, screen. | unit (chart), e2e 6 |
+| A2 | | Years and periods 0-15, close/reopen with reason (audit log), screen. | unit (periods), e2e 3 |
+| A3 | | Journals (VEN, COM, CXA, BCO, OPD, ABE, APU, SAL), entries numbered per journal and year, TransactionID; database rules (balance, both sides, immutable, closed period, GM only); estorno; entries screen with the entry form. | unit (entry rules), e2e 7 |
+| A4 | | Automatic posting of FR/FT/ND/NC/RC, annulments, purchases, supplier payments (and cancellations), expenses, shift differences, cash in/out, stock counts; mapping with defaults; daily summary option; monitor; month close refused while records of it aren't posted. | unit (posting rules 9), e2e 12 |
+
+**Found while testing (A3)**: Prisma doesn't report a failed COMMIT of an
+interactive transaction: when the database's deferred balance check
+refused an entry at commit, Prisma resolved as if it had been saved (the
+data was rolled back). `EntriesService.post` and the integration now run
+`SET CONSTRAINTS … IMMEDIATE` before leaving the transaction, so a breach
+is an error at once. The database rule still guards any other writer.

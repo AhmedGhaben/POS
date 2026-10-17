@@ -1578,27 +1578,28 @@ model AccountingSettings {
 /// SAF-T AccountID; the parent is its GroupingCode. Only GM accounts take
 /// postings (a database rule). Never deleted once it has movements.
 model LedgerAccount {
-  id           String                @id @default(cuid())
-  businessId   String
-  business     Business              @relation(fields: [businessId], references: [id])
+  id             String                @id @default(cuid())
+  businessId     String
+  business       Business              @relation(fields: [businessId], references: [id])
   /// "31.1.2.1.0001"
-  code         String
-  name         String
-  category     LedgerAccountCategory
-  parentId     String?
-  parent       LedgerAccount?        @relation("AccountTree", fields: [parentId], references: [id])
-  children     LedgerAccount[]       @relation("AccountTree")
+  code           String
+  name           String
+  category       LedgerAccountCategory
+  parentId       String?
+  parent         LedgerAccount?        @relation("AccountTree", fields: [parentId], references: [id])
+  children       LedgerAccount[]       @relation("AccountTree")
   /// PGC class 1-8 (the code's first digit).
-  classNo      Int
-  isActive     Boolean               @default(true)
+  classNo        Int
+  isActive       Boolean               @default(true)
   /// An account the app keeps for a CUSTOMER, SUPPLIER, TILL or BANK (its id).
-  linkType     String?
-  linkId       String?
+  linkType       String?
+  linkId         String?
   /// From the default PGC template.
-  fromTemplate Boolean               @default(false)
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
-  lines        JournalEntryLine[]
+  fromTemplate   Boolean               @default(false)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  lines          JournalEntryLine[]
+  AccountMapping AccountMapping[]
 
   @@unique([businessId, code])
   @@unique([businessId, linkType, linkId])
@@ -1746,7 +1747,8 @@ model JournalEntry {
   systemEntryDate   DateTime        @default(now())
   createdAt         DateTime        @default(now())
 
-  lines JournalEntryLine[]
+  lines   JournalEntryLine[]
+  sources AccountingSourceLink[]
 
   @@unique([journalId, year, number])
   @@unique([businessId, transactionId])
@@ -1772,4 +1774,59 @@ model JournalEntryLine {
   @@unique([entryId, lineNumber])
   @@index([accountId])
   @@map("journal_entry_lines")
+}
+
+/// Which account the integration uses for something (a key such as
+/// "sales.goods.14", "payment.CARD", "expense.RENT"). Without a row, the
+/// key's default account from the PGC template is used.
+model AccountMapping {
+  id         String        @id @default(cuid())
+  businessId String
+  key        String
+  accountId  String
+  account    LedgerAccount @relation(fields: [accountId], references: [id])
+  updatedAt  DateTime      @updatedAt
+
+  @@unique([businessId, key])
+  @@map("account_mappings")
+}
+
+/// A POS record the integration has dealt with: posted (entryId) or
+/// skipped (annulled before it was posted). Unique per source, so nothing
+/// is ever posted twice.
+model AccountingSourceLink {
+  id           String        @id @default(cuid())
+  businessId   String
+  /// FISCAL_DOCUMENT, FISCAL_DOCUMENT_ANNULMENT, PURCHASE, SUPPLIER_PAYMENT,
+  /// SUPPLIER_PAYMENT_CANCEL, EXPENSE, SHIFT_DIFFERENCE, CASH_MOVEMENT, STOCK_ADJUSTMENT
+  sourceType   String
+  sourceId     String
+  entryId      String?
+  entry        JournalEntry? @relation(fields: [entryId], references: [id])
+  skipped      Boolean       @default(false)
+  /// The document's number as shown (FR POS001-2026/57, PO-…).
+  documentNo   String?
+  documentDate DateTime      @db.Date
+  createdAt    DateTime      @default(now())
+
+  @@unique([businessId, sourceType, sourceId])
+  @@index([entryId])
+  @@map("accounting_source_links")
+}
+
+/// Why a POS record couldn't be posted yet (a missing mapping, a closed
+/// period…): the integration monitor shows these; gone once posted.
+model AccountingIntegrationError {
+  id           String   @id @default(cuid())
+  businessId   String
+  sourceType   String
+  sourceId     String
+  documentNo   String?
+  documentDate DateTime @db.Date
+  message      String
+  attempts     Int      @default(1)
+  lastTriedAt  DateTime @default(now())
+
+  @@unique([businessId, sourceType, sourceId])
+  @@map("accounting_integration_errors")
 }

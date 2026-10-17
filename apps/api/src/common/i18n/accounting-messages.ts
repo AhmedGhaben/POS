@@ -15,11 +15,46 @@ export const ACCOUNTING_EXACT: Record<string, Translations> = {
   "Journal codes have no spaces (up to 30 characters)": { "pt-PT": "O código do diário não tem espaços (até 30 caracteres)", "pt-BR": "O código do diário não tem espaços (até 30 caracteres)" },
   "Period 0 holds the opening balances only": { "pt-PT": "O período 0 é só para os saldos de abertura", "pt-BR": "O período 0 é só para os saldos de abertura" },
   "An entry needs at least two lines": { "pt-PT": "Um lançamento precisa de pelo menos duas linhas", "pt-BR": "Um lançamento precisa de pelo menos duas linhas" },
+  "This till has no cash account yet: open the missing accounts in the chart of accounts": {
+    "pt-PT": "Este terminal ainda não tem conta de caixa: abra as contas em falta no plano de contas",
+    "pt-BR": "Este terminal ainda não tem conta de caixa: abra as contas faltantes no plano de contas",
+  },
+  "This customer has no account yet: open the missing accounts in the chart of accounts": {
+    "pt-PT": "Este cliente ainda não tem conta: abra as contas em falta no plano de contas",
+    "pt-BR": "Este cliente ainda não tem conta: abra as contas faltantes no plano de contas",
+  },
+  "This supplier has no account yet: open the missing accounts in the chart of accounts": {
+    "pt-PT": "Este fornecedor ainda não tem conta: abra as contas em falta no plano de contas",
+    "pt-BR": "Este fornecedor ainda não tem conta: abra as contas faltantes no plano de contas",
+  },
+  "Unknown mapping key": { "pt-PT": "Chave de mapeamento desconhecida", "pt-BR": "Chave de mapeamento desconhecida" },
   "An entry needs at least one debit and one credit line": { "pt-PT": "Um lançamento precisa de pelo menos uma linha a débito e uma a crédito", "pt-BR": "Um lançamento precisa de pelo menos uma linha a débito e uma a crédito" },
 };
 
 /** Messages with values; $1, $2… are the captured values. */
 export const ACCOUNTING_PATTERNS: { re: RegExp; t: Translations }[] = [
+  {
+    re: /^The account for (.+) doesn't exist: set it in Contabilidade → Configuração$/,
+    t: { "pt-PT": "A conta para $1 não existe: defina-a em Contabilidade → Configuração", "pt-BR": "A conta para $1 não existe: defina-a em Contabilidade → Configuração" },
+  },
+  {
+    re: /^The account for (.+), (\S+), is not a movement account$/,
+    t: { "pt-PT": "A conta para $1, $2, não é uma conta de movimento", "pt-BR": "A conta para $1, $2, não é uma conta de movimento" },
+  },
+  { re: /^The account for (.+), (\S+), is inactive$/, t: { "pt-PT": "A conta para $1, $2, está inactiva", "pt-BR": "A conta para $1, $2, está inativa" } },
+  { re: /^No account is set for "(.+)"$/, t: { "pt-PT": 'Não há conta definida para "$1"', "pt-BR": 'Não há conta definida para "$1"' } },
+  {
+    re: /^(.+): what was paid \((\S+)\) doesn't match the document \((\S+)\)$/,
+    t: { "pt-PT": "$1: o valor pago ($2) não corresponde ao documento ($3)", "pt-BR": "$1: o valor pago ($2) não corresponde ao documento ($3)" },
+  },
+  { re: /^(.+): an invoice on credit needs a customer$/, t: { "pt-PT": "$1: uma factura a crédito precisa de um cliente", "pt-BR": "$1: uma fatura a prazo precisa de um cliente" } },
+  { re: /^(.+): a credit note not paid back needs a customer$/, t: { "pt-PT": "$1: uma nota de crédito não reembolsada precisa de um cliente", "pt-BR": "$1: uma nota de crédito não reembolsada precisa de um cliente" } },
+  { re: /^(.+): a receipt needs a customer$/, t: { "pt-PT": "$1: um recibo precisa de um cliente", "pt-BR": "$1: um recibo precisa de um cliente" } },
+  { re: /^Waiting for (.+), in the same daily summary$/, t: { "pt-PT": "À espera de $1, no mesmo resumo diário", "pt-BR": "Aguardando $1, no mesmo resumo diário" } },
+  {
+    re: /^(\d+) records of this period aren't posted yet: see the integration monitor$/,
+    t: { "pt-PT": "$1 registos deste período ainda não foram lançados: veja o monitor de integração", "pt-BR": "$1 registros deste período ainda não foram lançados: veja o monitor de integração" },
+  },
   { re: /^Account (\S+) is inactive$/, t: { "pt-PT": "A conta $1 está inactiva", "pt-BR": "A conta $1 está inativa" } },
   {
     re: /^Account (\S+) is not a movement account: only movement \(GM\) accounts take postings$/,
