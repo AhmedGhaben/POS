@@ -176,3 +176,79 @@ export class UpdateJournalDto {
   @IsBoolean()
   isActive?: boolean;
 }
+
+export class TemplateLineDto {
+  @IsString()
+  accountId!: string;
+
+  @IsIn(["D", "C"])
+  side!: "D" | "C";
+
+  /** Left out when it's typed each time. */
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  amount?: number | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  description?: string;
+}
+
+/** A lançamento pré-definido. */
+export class EntryTemplateDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  name!: string;
+
+  @IsString()
+  journalId!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  description!: string;
+
+  @IsOptional()
+  @IsEnum(TransactionType)
+  transactionType?: TransactionType;
+
+  @IsArray()
+  @ArrayMinSize(2)
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => TemplateLineDto)
+  lines!: TemplateLineDto[];
+}
+
+export class OpeningLineDto {
+  @IsString()
+  accountId!: string;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  debit?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  credit?: number;
+}
+
+/** Opening balances for a year: period 0 of the Abertura journal. */
+export class OpeningBalancesDto {
+  @IsInt()
+  @Min(2000)
+  @Max(9999)
+  year!: number;
+
+  @IsArray()
+  @ArrayMinSize(2)
+  @ArrayMaxSize(5000)
+  @ValidateNested({ each: true })
+  @Type(() => OpeningLineDto)
+  lines!: OpeningLineDto[];
+}

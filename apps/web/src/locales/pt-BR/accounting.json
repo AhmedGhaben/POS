@@ -118,6 +118,32 @@
       "expense_paidFrom": "Despesas pagas por"
     }
   },
+  "templates": {
+    "button": "Pré-definidos",
+    "title": "Lançamentos pré-definidos",
+    "hint": "Lançamentos que se repetem (aluguéis, salários, tarifas bancárias): comece um novo lançamento a partir de um e altere o necessário.",
+    "use": "Usar",
+    "remove": "Excluir pré-definido",
+    "empty": "Ainda sem pré-definidos. Salve um a partir do formulário de lançamento.",
+    "saveAs": "Salvar como pré-definido",
+    "namePlaceholder": "Nome, ex.: Aluguel mensal",
+    "save": "Salvar pré-definido",
+    "saved": "Pré-definido salvo"
+  },
+  "opening": {
+    "button": "Saldos de abertura",
+    "title": "Saldos de abertura",
+    "hint": "Uma linha por conta: código da conta; débito; crédito (planilha salva como CSV, ou colada). Lançado como um único lançamento no diário de Abertura, período 0, em 1 de janeiro.",
+    "file": "Planilha (CSV)",
+    "paste": "Ou cole as linhas",
+    "post": "Lançar a abertura de {{year}}",
+    "errors": {
+      "amount": "Linha {{line}}: o valor não é válido",
+      "bothSides": "Linha {{line}}: débito ou crédito, não ambos",
+      "unknownAccount": "Linha {{line}}: a conta não existe",
+      "notMovement": "Linha {{line}}: não é uma conta de movimento ativa"
+    }
+  },
   "entries": {
     "new": "Novo lançamento",
     "newTitle": "Novo lançamento",

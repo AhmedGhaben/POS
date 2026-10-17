@@ -1,6 +1,6 @@
 import * as React from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Plus, Search, Undo2 } from "lucide-react";
+import { BookCopy, ChevronDown, ChevronRight, Plus, Scale, Search, Undo2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,9 @@ import { ApiError } from "@/lib/api-client";
 import { formatCalendarDate } from "@/lib/format";
 import { ACCOUNTING_KEY, ENTRIES_KEY, fetchEntries, fetchJournals, JOURNALS_KEY, reverseEntry, type EntryDto } from "../api";
 import { usePeriodName } from "../use-period-name";
-import { emptyDraft, type EntryDraft } from "../entry-draft";
+import { draftFromTemplate, emptyDraft, type EntryDraft } from "../entry-draft";
+import { OpeningBalancesDialog } from "./OpeningBalancesDialog";
+import { TemplatesDialog } from "./TemplatesDialog";
 import { EntryForm } from "./EntryForm";
 
 const PAGE = 25;
@@ -37,6 +39,8 @@ export function EntriesTab({ canWrite, today, newDraft }: { canWrite: boolean; t
   const [creating, setCreating] = React.useState<EntryDraft | null>(null);
   const [reversing, setReversing] = React.useState<EntryDto | null>(null);
   const [reverseDate, setReverseDate] = React.useState(today);
+  const [showTemplates, setShowTemplates] = React.useState(false);
+  const [showOpening, setShowOpening] = React.useState(false);
   React.useEffect(() => setPage(0), [year, period, journalId, search]);
   React.useEffect(() => {
     if (newDraft) setCreating(newDraft);
@@ -92,10 +96,20 @@ export function EntriesTab({ canWrite, today, newDraft }: { canWrite: boolean; t
           <Input className="pl-8" placeholder={t("entries.search")} aria-label={t("entries.search")} value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         {canWrite && (
-          <Button className="ml-auto" onClick={() => setCreating(emptyDraft(today))}>
-            <Plus className="mr-2 h-4 w-4" aria-hidden />
-            {t("entries.new")}
-          </Button>
+          <div className="ml-auto flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setShowOpening(true)}>
+              <Scale className="mr-2 h-4 w-4" aria-hidden />
+              {t("opening.button")}
+            </Button>
+            <Button variant="outline" onClick={() => setShowTemplates(true)}>
+              <BookCopy className="mr-2 h-4 w-4" aria-hidden />
+              {t("templates.button")}
+            </Button>
+            <Button onClick={() => setCreating(emptyDraft(today))}>
+              <Plus className="mr-2 h-4 w-4" aria-hidden />
+              {t("entries.new")}
+            </Button>
+          </div>
         )}
       </div>
 
@@ -213,6 +227,16 @@ export function EntriesTab({ canWrite, today, newDraft }: { canWrite: boolean; t
           }}
         />
       )}
+      <TemplatesDialog
+        open={showTemplates}
+        canWrite={canWrite}
+        onClose={() => setShowTemplates(false)}
+        onUse={(tpl) => {
+          setShowTemplates(false);
+          setCreating(draftFromTemplate(tpl, today));
+        }}
+      />
+      <OpeningBalancesDialog open={showOpening} onClose={() => setShowOpening(false)} onDone={refresh} defaultYear={Number(today.slice(0, 4))} />
       <Dialog open={!!reversing} onOpenChange={(o) => !o && setReversing(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

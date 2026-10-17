@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useMoney } from "@/features/business/use-money";
 import { ApiError } from "@/lib/api-client";
-import { ACCOUNTS_KEY, createEntry, fetchAccounts, fetchJournals, JOURNALS_KEY, type EntryDto, type TransactionType } from "../api";
+import { ACCOUNTS_KEY, createEntry, createTemplate, fetchAccounts, fetchJournals, JOURNALS_KEY, type EntryDto, type TransactionType } from "../api";
 import { centsToInput, centsToNumber, parseCents } from "../amounts";
 import { draftTotals, newLine, type DraftLine, type EntryDraft } from "../entry-draft";
 import { usePeriodName } from "../use-period-name";
@@ -44,6 +44,28 @@ export function EntryForm({ open, onClose, onSaved, initial, title }: { open: bo
   const yearEnd = posting.endsWith("-12-31");
 
   const setLine = (key: number, patch: Partial<DraftLine>) => setDraft((d) => ({ ...d, lines: d.lines.map((l) => (l.key === key ? { ...l, ...patch } : l)) }));
+  const [templateName, setTemplateName] = React.useState("");
+  const saveTemplate = useMutation({
+    mutationFn: () =>
+      createTemplate({
+        name: templateName.trim(),
+        journalId: draft.journalId!,
+        description: draft.description.trim(),
+        transactionType: draft.transactionType,
+        lines: draft.lines
+          .filter((l) => l.accountId)
+          .map((l) => {
+            const d = parseCents(l.debit) ?? 0;
+            const c = parseCents(l.credit) ?? 0;
+            return { accountId: l.accountId!, side: c > 0 ? ("C" as const) : ("D" as const), amount: d || c ? centsToNumber(d || c) : null, description: l.description.trim() || null };
+          }),
+      }),
+    onSuccess: () => {
+      setTemplateName("");
+      toast.success(t("templates.saved"));
+    },
+    onError: (error) => toast.error(error instanceof ApiError ? error.message : t("failed")),
+  });
   const save = useMutation({
     mutationFn: () =>
       createEntry({
@@ -192,6 +214,15 @@ export function EntryForm({ open, onClose, onSaved, initial, title }: { open: bo
           <Button type="submit" disabled={!balanced || !linesReady || !draft.journalId || !draft.description.trim() || save.isPending}>
             {t("entries.post")}
           </Button>
+          <div className="flex flex-wrap items-end gap-2 border-t pt-3">
+            <div className="space-y-1">
+              <Label htmlFor="template-name">{t("templates.saveAs")}</Label>
+              <Input id="template-name" className="w-64" value={templateName} maxLength={80} placeholder={t("templates.namePlaceholder")} onChange={(e) => setTemplateName(e.target.value)} />
+            </div>
+            <Button type="button" variant="outline" disabled={!templateName.trim() || !draft.journalId || !draft.description.trim() || saveTemplate.isPending} onClick={() => saveTemplate.mutate()}>
+              {t("templates.save")}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

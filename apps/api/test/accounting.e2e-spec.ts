@@ -542,4 +542,41 @@ describe("Accounting (e2e)", () => {
       expect(entry.lines.map((l) => [l.account.code, l.debit, l.credit]).sort()).toEqual([["34.5.3.1", "14.00", "0.00"], ["45.1.2", "0.00", "114.00"], ["61.3.6", "100.00", "0.00"]]);
     });
   });
+  describe("A5: templates and opening balances", () => {
+    const idOf = async (code: string) => (await accounts()).find((a) => a.code === code)!.id;
+
+    it("a lançamento pré-definido keeps the accounts and sides (and fixed amounts) of a recurring entry", async () => {
+      const journalId = ((await http().get("/accounting/journals").set(auth(ownerToken)).expect(200)).body as { id: string; code: string }[]).find((j) => j.code === "BCO")!.id;
+      const body = {
+        name: "Comissões bancárias",
+        journalId,
+        description: "Comissão de manutenção de conta",
+        lines: [
+          { accountId: await idOf("76.8"), side: "D", amount: 2500 },
+          { accountId: await idOf("43.1.1"), side: "C", amount: 2500 },
+        ],
+      };
+      await http().post("/accounting/templates").set(auth(managerToken)).send(body).expect(403);
+      const t = (await http().post("/accounting/templates").set(auth(ownerToken)).send(body).expect(201)).body;
+      await http().post("/accounting/templates").set(auth(ownerToken)).send({ ...body, lines: [body.lines[0], { ...body.lines[1], side: "D" }] }).expect(400);
+      await http().put(`/accounting/templates/${t.id}`).set(auth(ownerToken)).send({ ...body, name: "Comissões BAI" }).expect(200);
+      const list = (await http().get("/accounting/templates").set(auth(managerToken)).expect(200)).body;
+      expect(list).toEqual([expect.objectContaining({ name: "Comissões BAI", lines: [expect.objectContaining({ side: "D", amount: 2500 }), expect.objectContaining({ side: "C" })] })]);
+      await http().delete(`/accounting/templates/${t.id}`).set(auth(ownerToken)).expect(200);
+    });
+
+    it("opening balances: one balanced entry in Abertura, period 0, 1 January; unbalanced ones are refused", async () => {
+      const lines = [
+        { accountId: await idOf("11.5"), debit: 800000 },
+        { accountId: await idOf("45.1.1"), debit: 200000 },
+        { accountId: await idOf("51.1"), credit: 1000000 },
+      ];
+      await http().post("/accounting/opening").set(auth(ownerToken)).send({ year: 2027, lines: [lines[0], lines[2]] }).expect(400);
+      const e = (await http().post("/accounting/opening").set(auth(ownerToken)).send({ year: 2027, lines }).expect(201)).body;
+      expect(e).toMatchObject({ period: 0, postingDate: "2027-01-01", journal: { code: "ABE" }, transactionId: "2027-01-01 ABE 2027/1", totalDebit: "1000000.00" });
+      // Period 0 is for openings only.
+      const opd = ((await http().get("/accounting/journals").set(auth(ownerToken)).expect(200)).body as { id: string; code: string }[]).find((j) => j.code === "OPD")!.id;
+      await http().post("/accounting/entries").set(auth(ownerToken)).send({ journalId: opd, transactionDate: "2027-01-01", period: 0, description: "x", lines }).expect(400);
+    });
+  });
 });

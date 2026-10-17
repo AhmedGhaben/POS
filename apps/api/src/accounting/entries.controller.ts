@@ -1,10 +1,11 @@
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query, UseGuards } from "@nestjs/common";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { ACCOUNTING_READ, ACCOUNTING_WRITE } from "./accounting-roles";
-import { CreateEntryDto, CreateJournalDto, ReverseEntryDto, UpdateJournalDto } from "./dto/accounting.dto";
+import { CreateEntryDto, CreateJournalDto, EntryTemplateDto, OpeningBalancesDto, ReverseEntryDto, UpdateJournalDto } from "./dto/accounting.dto";
+import { TemplatesService } from "./templates.service";
 import { EntriesService, serializeEntry } from "./entries.service";
 
 const int = (v?: string) => (v === undefined || v === "" ? undefined : Number(v));
@@ -13,7 +14,10 @@ const int = (v?: string) => (v === undefined || v === "" ? undefined : Number(v)
 @Controller("accounting")
 @UseGuards(RolesGuard)
 export class EntriesController {
-  constructor(private readonly entries: EntriesService) {}
+  constructor(
+    private readonly entries: EntriesService,
+    private readonly templates: TemplatesService,
+  ) {}
 
   @Get("journals")
   @Roles(...ACCOUNTING_READ)
@@ -71,5 +75,36 @@ export class EntriesController {
   @Roles(...ACCOUNTING_WRITE)
   async reverse(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() dto: ReverseEntryDto) {
     return serializeEntry(await this.entries.reverse(user.businessId, user.userId, id, dto));
+  }
+
+  @Get("templates")
+  @Roles(...ACCOUNTING_READ)
+  templateList(@CurrentUser() user: AuthenticatedUser) {
+    return this.templates.list(user.businessId);
+  }
+
+  @Post("templates")
+  @Roles(...ACCOUNTING_WRITE)
+  createTemplate(@CurrentUser() user: AuthenticatedUser, @Body() dto: EntryTemplateDto) {
+    return this.templates.save(user.businessId, null, dto);
+  }
+
+  @Put("templates/:id")
+  @Roles(...ACCOUNTING_WRITE)
+  updateTemplate(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() dto: EntryTemplateDto) {
+    return this.templates.save(user.businessId, id, dto);
+  }
+
+  @Delete("templates/:id")
+  @Roles(...ACCOUNTING_WRITE)
+  removeTemplate(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.templates.remove(user.businessId, id);
+  }
+
+  /** Opening balances for a year (period 0, journal Abertura). */
+  @Post("opening")
+  @Roles(...ACCOUNTING_WRITE)
+  async opening(@CurrentUser() user: AuthenticatedUser, @Body() dto: OpeningBalancesDto) {
+    return serializeEntry(await this.templates.opening(user.businessId, user.userId, dto.year, dto.lines));
   }
 }

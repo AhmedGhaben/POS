@@ -1830,3 +1830,20 @@ model AccountingIntegrationError {
   @@unique([businessId, sourceType, sourceId])
   @@map("accounting_integration_errors")
 }
+
+/// A lançamento pré-definido: a recurring entry (rent, salaries, bank fees)
+/// to start a new entry from. Lines: [{ accountId, side: "D"|"C", amount?, description? }].
+model EntryTemplate {
+  id              String          @id @default(cuid())
+  businessId      String
+  name            String
+  journalId       String
+  description     String
+  transactionType TransactionType @default(N)
+  lines           Json
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([businessId])
+  @@map("entry_templates")
+}

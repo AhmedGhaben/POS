@@ -27,6 +27,7 @@ export const ACCOUNTING_EXACT: Record<string, Translations> = {
     "pt-PT": "Este fornecedor ainda não tem conta: abra as contas em falta no plano de contas",
     "pt-BR": "Este fornecedor ainda não tem conta: abra as contas faltantes no plano de contas",
   },
+  "Template not found": { "pt-PT": "Lançamento pré-definido não encontrado", "pt-BR": "Lançamento pré-definido não encontrado" },
   "Unknown mapping key": { "pt-PT": "Chave de mapeamento desconhecida", "pt-BR": "Chave de mapeamento desconhecida" },
   "An entry needs at least one debit and one credit line": { "pt-PT": "Um lançamento precisa de pelo menos uma linha a débito e uma a crédito", "pt-BR": "Um lançamento precisa de pelo menos uma linha a débito e uma a crédito" },
 };

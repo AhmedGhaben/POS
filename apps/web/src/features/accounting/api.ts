@@ -46,6 +46,7 @@ export const JOURNALS_KEY = [...ACCOUNTING_KEY, "journals"] as const;
 export const ENTRIES_KEY = [...ACCOUNTING_KEY, "entries"] as const;
 export const INTEGRATION_KEY = [...ACCOUNTING_KEY, "integration"] as const;
 export const MAPPING_KEY = [...ACCOUNTING_KEY, "mapping"] as const;
+export const TEMPLATES_KEY = [...ACCOUNTING_KEY, "templates"] as const;
 
 export const fetchAccountingStatus = () => apiClient.get<AccountingStatusDto>("/accounting/status");
 export const updateAccountingSettings = (body: Partial<AccountingSettingsDto> & { enabled?: boolean }) =>
@@ -187,6 +188,22 @@ export const fetchIntegration = () => apiClient.get<IntegrationDto>("/accounting
 export const runIntegration = () => apiClient.post<{ posted: number; skipped: number; failed: number }>("/accounting/integration/run");
 export const fetchMapping = () => apiClient.get<MappingDto[]>("/accounting/mapping");
 export const setMapping = (key: string, accountId: string | null) => apiClient.put(`/accounting/mapping/${encodeURIComponent(key)}`, { accountId });
+
+export interface EntryTemplateDto {
+  id: string;
+  name: string;
+  journalId: string;
+  description: string;
+  transactionType: TransactionType;
+  lines: { accountId: string; side: "D" | "C"; amount: number | null; description: string | null }[];
+}
+
+export type NewTemplate = Omit<EntryTemplateDto, "id">;
+
+export const fetchTemplates = () => apiClient.get<EntryTemplateDto[]>("/accounting/templates");
+export const createTemplate = (body: NewTemplate) => apiClient.post<EntryTemplateDto>("/accounting/templates", body);
+export const removeTemplate = (id: string) => apiClient.delete(`/accounting/templates/${id}`);
+export const postOpening = (year: number, lines: { accountId: string; debit: number; credit: number }[]) => apiClient.post<EntryDto>("/accounting/opening", { year, lines });
 
 /** PGC classes, for headings. */
 export const PGC_CLASSES: Record<number, string> = {

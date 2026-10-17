@@ -1,4 +1,5 @@
-import type { TransactionType } from "./api";
+import type { EntryTemplateDto, TransactionType } from "./api";
+import { centsToInput, decimalToCents } from "./amounts";
 import { parseCents } from "./amounts";
 
 /** The entry form's state: what's typed, before it's posted. */
@@ -43,3 +44,19 @@ export function draftTotals(lines: DraftLine[]): { debit: number; credit: number
   return { debit, credit, valid };
 }
 
+
+/** A new entry started from a lançamento pré-definido (amounts left out are typed in). */
+export function draftFromTemplate(t: EntryTemplateDto, today: string): EntryDraft {
+  return {
+    journalId: t.journalId,
+    transactionDate: today,
+    postingDate: "",
+    period: null,
+    description: t.description,
+    transactionType: t.transactionType,
+    lines: t.lines.map((l) => {
+      const amount = l.amount ? centsToInput(decimalToCents(l.amount)) : "";
+      return newLine({ accountId: l.accountId, description: l.description ?? "", ...(l.side === "D" ? { debit: amount } : { credit: amount }) });
+    }),
+  };
+}

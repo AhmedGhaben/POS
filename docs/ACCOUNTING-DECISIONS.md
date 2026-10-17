@@ -119,6 +119,7 @@ Database rules (triggers in the migration, not only the API):
 | A1 | `see git log` | Chart of accounts: PGC template, GR/GA/GM from the tree, automatic customer/supplier/till/bank accounts, add/rename/deactivate/remove rules, screen. | unit (chart), e2e 6 |
 | A2 | | Years and periods 0-15, close/reopen with reason (audit log), screen. | unit (periods), e2e 3 |
 | A3 | | Journals (VEN, COM, CXA, BCO, OPD, ABE, APU, SAL), entries numbered per journal and year, TransactionID; database rules (balance, both sides, immutable, closed period, GM only); estorno; entries screen with the entry form. | unit (entry rules), e2e 7 |
+| A5 | | Lançamentos pré-definidos (save from the entry form, use, remove), opening balances (CSV or pasted: code; debit; credit → one entry in Abertura, period 0, 1 January). | unit (CSV), e2e 2 |
 | A4 | | Automatic posting of FR/FT/ND/NC/RC, annulments, purchases, supplier payments (and cancellations), expenses, shift differences, cash in/out, stock counts; mapping with defaults; daily summary option; monitor; month close refused while records of it aren't posted. | unit (posting rules 9), e2e 12 |
 
 **Found while testing (A3)**: Prisma doesn't report a failed COMMIT of an

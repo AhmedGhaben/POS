@@ -118,6 +118,32 @@
       "expense_paidFrom": "Despesas pagas por"
     }
   },
+  "templates": {
+    "button": "Pré-definidos",
+    "title": "Lançamentos pré-definidos",
+    "hint": "Lançamentos que se repetem (rendas, salários, comissões bancárias): comece um novo lançamento a partir de um e altere o necessário.",
+    "use": "Usar",
+    "remove": "Eliminar pré-definido",
+    "empty": "Ainda sem pré-definidos. Guarde um a partir do formulário de lançamento.",
+    "saveAs": "Guardar como pré-definido",
+    "namePlaceholder": "Nome, ex.: Renda mensal",
+    "save": "Guardar pré-definido",
+    "saved": "Pré-definido guardado"
+  },
+  "opening": {
+    "button": "Saldos de abertura",
+    "title": "Saldos de abertura",
+    "hint": "Uma linha por conta: código da conta; débito; crédito (folha de cálculo guardada como CSV, ou colada). Lançado como um só lançamento no diário de Abertura, período 0, a 1 de Janeiro.",
+    "file": "Folha de cálculo (CSV)",
+    "paste": "Ou cole as linhas",
+    "post": "Lançar a abertura de {{year}}",
+    "errors": {
+      "amount": "Linha {{line}}: o valor não é válido",
+      "bothSides": "Linha {{line}}: débito ou crédito, não ambos",
+      "unknownAccount": "Linha {{line}}: a conta não existe",
+      "notMovement": "Linha {{line}}: não é uma conta de movimento activa"
+    }
+  },
   "entries": {
     "new": "Novo lançamento",
     "newTitle": "Novo lançamento",

@@ -118,6 +118,32 @@
       "expense_paidFrom": "Expenses paid from"
     }
   },
+  "templates": {
+    "button": "Templates",
+    "title": "Entry templates",
+    "hint": "Recurring entries (rent, salaries, bank fees): start a new entry from one and change what's needed.",
+    "use": "Use",
+    "remove": "Remove template",
+    "empty": "No templates yet. Save one from the entry form.",
+    "saveAs": "Save as a template",
+    "namePlaceholder": "Name, e.g. Monthly rent",
+    "save": "Save template",
+    "saved": "Template saved"
+  },
+  "opening": {
+    "button": "Opening balances",
+    "title": "Opening balances",
+    "hint": "One row per account: account code; debit; credit (a spreadsheet saved as CSV, or pasted). Posted as one entry in the Abertura journal, period 0, on 1 January.",
+    "file": "Spreadsheet (CSV)",
+    "paste": "Or paste the rows",
+    "post": "Post the opening of {{year}}",
+    "errors": {
+      "amount": "Line {{line}}: the amount can't be read",
+      "bothSides": "Line {{line}}: debit or credit, not both",
+      "unknownAccount": "Line {{line}}: no such account",
+      "notMovement": "Line {{line}}: not an active movement account"
+    }
+  },
   "entries": {
     "new": "New entry",
     "newTitle": "New entry",
