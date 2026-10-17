@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
+import { unzip } from "../src/common/xlsx";
 import { PrismaService } from "../src/prisma/prisma.service";
 import { deleteBusiness } from "./cleanup";
 import { ensureShift } from "./shift-helper";
@@ -577,6 +578,90 @@ describe("Accounting (e2e)", () => {
       // Period 0 is for openings only.
       const opd = ((await http().get("/accounting/journals").set(auth(ownerToken)).expect(200)).body as { id: string; code: string }[]).find((j) => j.code === "OPD")!.id;
       await http().post("/accounting/entries").set(auth(ownerToken)).send({ journalId: opd, transactionDate: "2027-01-01", period: 0, description: "x", lines }).expect(400);
+    });
+  });
+  describe("A6: reports", () => {
+    type Table = { title?: string; columns: { key: string }[]; rows: Record<string, string | number | null>[]; totals: Record<string, string | number | null> | null };
+    const report = async (key: string, query = "") => (await http().get(`/accounting/reports/${key}?year=2026${query}`).set(auth(managerToken)).expect(200)).body as { tables: Table[] };
+    const lineOf = (t: Table, key: string) => t.rows.find((r) => r.line === key)?.amount;
+
+    it("balancete: debits equal credits, balances roll up to the first-degree accounts, levels", async () => {
+      const [t] = (await report("trialBalance", "&fromPeriod=0&toPeriod=15")).tables;
+      expect(t.totals!.accumulatedDebit).toBe(t.totals!.accumulatedCredit);
+      expect(t.totals!.balanceDebit).toBe(t.totals!.balanceCredit);
+      const row = (code: string) => t.rows.find((r) => r.code === code)!;
+      // 45 (Caixa) is the sum of 45.1.1 and the till's 45.1.2.
+      const net = (r: Record<string, string | number | null>) => Number(r.balanceDebit ?? 0) - Number(r.balanceCredit ?? 0);
+      expect(net(row("45"))).toBeCloseTo(net(row("45.1.1")) + net(row("45.1.2")), 2);
+      const top = (await report("trialBalance", "&level=1")).tables[0];
+      expect(top.rows.every((r) => !String(r.code).includes("."))).toBe(true);
+      expect(top.totals!.balanceDebit).toBe(t.totals!.balanceDebit);
+    });
+
+    it("razão: an account's movements with a running balance after the balance brought forward", async () => {
+      const cash = (await accounts()).find((a) => a.code === "45.1.1")!;
+      const [t] = (await report("ledger", `&accountId=${cash.id}&fromPeriod=1&toPeriod=12`)).tables;
+      expect(t.rows[0]).toMatchObject({ description: "openingBalance" });
+      const last = t.rows[t.rows.length - 1];
+      expect(t.totals!.balance).toBe(last.balance);
+      const sum = t.rows.slice(1).reduce((s, r) => s + Number(r.debit ?? 0) - Number(r.credit ?? 0), Number(t.rows[0].balance));
+      expect(sum).toBeCloseTo(Number(last.balance), 2);
+      await http().get("/accounting/reports/ledger?year=2026").set(auth(managerToken)).expect(400);
+    });
+
+    it("diário: every entry line by line, debits equal credits", async () => {
+      const [t] = (await report("journal", "&fromPeriod=1&toPeriod=12")).tables;
+      expect(t.totals!.debit).toBe(t.totals!.credit);
+      expect(t.rows.some((r) => String(r.entry ?? "").startsWith("VEN "))).toBe(true);
+    });
+
+    it("customer statement and ageing: the invoice on credit less the receipt", async () => {
+      const statement = (await report("statement", `&party=customer&partyId=${customerId}`)).tables;
+      expect(statement).toHaveLength(1);
+      expect(statement[0].totals!.balance).toBe("370.00");
+      const [ageing] = (await report("ageing", "&party=customer")).tables;
+      expect(ageing.rows).toEqual([expect.objectContaining({ name: "Kianda Comércio, SA", d0_30: "370.00", total: "370.00" })]);
+      const [suppliers] = (await report("ageing", "&party=supplier")).tables;
+      expect(suppliers.totals!.total).toBe("570.00"); // 1070 owed, 500 paid
+    });
+
+    it("balanço balances; the result is the same as in the demonstração de resultados", async () => {
+      const [bs] = (await report("balanceSheet", "&toPeriod=12")).tables;
+      expect(lineOf(bs, "totalAssets")).toBe(lineOf(bs, "totalEquityAndLiabilities"));
+      const [is] = (await report("incomeStatement", "&fromPeriod=1&toPeriod=12")).tables;
+      expect(lineOf(is, "netResult")).toBe(lineOf(bs, "netResult"));
+      expect(Number(lineOf(is, "sales"))).toBeGreaterThan(0);
+    });
+
+    it("IVA working papers: charged by rate, deductible by type, cativo, payable or recoverable", async () => {
+      const tables = (await report("vat", "&fromPeriod=1&toPeriod=12")).tables;
+      const charged = tables.find((t) => t.title === "vatCharged")!;
+      expect(charged.rows.find((r) => r.code === "NOR" && r.rate === 14)).toBeTruthy();
+      expect(charged.rows.find((r) => r.exemption === "M10")).toBeTruthy();
+      const deductible = tables.find((t) => t.title === "vatDeductible")!;
+      expect(deductible.rows).toEqual([expect.objectContaining({ typology: "INV", tax: "140.00", deductible: "140.00" })]);
+      const summary = tables.find((t) => t.title === "vatSummary")!;
+      expect(lineOf(summary, "vatCativo")).toBe("70.00");
+      expect(summary.rows.some((r) => r.line === "vatPayable" || r.line === "vatRecoverable")).toBe(true);
+    });
+
+    it("Excel: a workbook with the report's tables, headed in Portuguese", async () => {
+      const res = await http()
+        .get("/accounting/reports/trialBalance?year=2026&format=xlsx")
+        .set(auth(managerToken))
+        .buffer(true)
+        .parse((r, done) => {
+          const chunks: Buffer[] = [];
+          r.on("data", (c: Buffer) => chunks.push(c));
+          r.on("end", () => done(null, Buffer.concat(chunks)));
+        })
+        .expect(200);
+      expect(res.headers["content-type"]).toMatch(/spreadsheetml/);
+      const files = unzip(res.body as Buffer);
+      expect(files.get("xl/workbook.xml")!.toString()).toContain('name="Balancete"');
+      expect(files.get("xl/worksheets/sheet1.xml")!.toString()).toContain("Saldo devedor");
+      await http().get("/accounting/reports/nope").set(auth(managerToken)).expect(404);
+      await http().get("/accounting/reports/trialBalance").set(auth(cashierToken)).expect(403);
     });
   });
 });

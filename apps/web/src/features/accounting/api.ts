@@ -205,6 +205,39 @@ export const createTemplate = (body: NewTemplate) => apiClient.post<EntryTemplat
 export const removeTemplate = (id: string) => apiClient.delete(`/accounting/templates/${id}`);
 export const postOpening = (year: number, lines: { accountId: string; debit: number; credit: number }[]) => apiClient.post<EntryDto>("/accounting/opening", { year, lines });
 
+export type AccountingReportKey = "trialBalance" | "ledger" | "journal" | "statement" | "ageing" | "balanceSheet" | "incomeStatement" | "vat";
+export type ReportCell = string | number | null;
+
+export interface ReportTableDto {
+  title?: string;
+  columns: { key: string; kind: "text" | "code" | "label" | "money" | "date" | "count" | "percent" }[];
+  rows: Record<string, ReportCell>[];
+  totals: Record<string, ReportCell> | null;
+}
+
+export interface ReportParams {
+  report: AccountingReportKey;
+  year: number;
+  fromPeriod: number;
+  toPeriod: number;
+  level?: number;
+  accountId?: string;
+  journalId?: string;
+  party?: "customer" | "supplier";
+  partyId?: string;
+}
+
+export interface ReportResultDto {
+  report: AccountingReportKey;
+  year: number;
+  fromPeriod: number;
+  toPeriod: number;
+  company: { name: string; taxId: string | null };
+  tables: ReportTableDto[];
+}
+
+export const fetchReport = ({ report, ...p }: ReportParams) => apiClient.get<ReportResultDto>(`/accounting/reports/${report}?${query({ ...p })}`);
+
 /** PGC classes, for headings. */
 export const PGC_CLASSES: Record<number, string> = {
   1: "Meios fixos e investimentos",

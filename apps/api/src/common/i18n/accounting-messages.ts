@@ -28,6 +28,9 @@ export const ACCOUNTING_EXACT: Record<string, Translations> = {
     "pt-BR": "Este fornecedor ainda não tem conta: abra as contas faltantes no plano de contas",
   },
   "Template not found": { "pt-PT": "Lançamento pré-definido não encontrado", "pt-BR": "Lançamento pré-definido não encontrado" },
+  "Report not found": { "pt-PT": "Relatório não encontrado", "pt-BR": "Relatório não encontrado" },
+  "Choose an account": { "pt-PT": "Escolha uma conta", "pt-BR": "Escolha uma conta" },
+  "Periods go from 0 to 15, the first before the last": { "pt-PT": "Os períodos vão de 0 a 15, o primeiro antes do último", "pt-BR": "Os períodos vão de 0 a 15, o primeiro antes do último" },
   "Unknown mapping key": { "pt-PT": "Chave de mapeamento desconhecida", "pt-BR": "Chave de mapeamento desconhecida" },
   "An entry needs at least one debit and one credit line": { "pt-PT": "Um lançamento precisa de pelo menos uma linha a débito e uma a crédito", "pt-BR": "Um lançamento precisa de pelo menos uma linha a débito e uma a crédito" },
 };
