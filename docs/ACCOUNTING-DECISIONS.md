@@ -1,5 +1,24 @@
 # Accounting module ("Contabilidade"): plan, decisions, progress
 
+## Review fixes (2026-10-17, second round)
+
+| # | Commit | What changed |
+|---|---|---|
+| 1 | `10a9de9` | The SAF-T Facturação and Aquisição files are due by the **last day of the following month** (Decreto Presidencial 312/18, art. 3, n.º 1, checked in `docs/saft-ao/legislation/decreto-312-18.pdf`). The reminders follow it (30 Nov, 28/29 Feb…). The purchases file's due day can be changed in Accounting → Settings ("Due day each month"; empty = the last day; a day past the month's end counts as the last day). Tests updated: `export-periods.test.ts`, plus an e2e test for the setting. |
+| 2 | `6c1a3cc` | The document archive's PDFs use the **same A4 template as the printed invoice** (`FiscalA4`), marked **"2ª Via"**, with logo, QR code and watermark. The app draws each document and adds it to the server's ZIP (SAF-T files, attachments, index). In the Windows app they're printed to PDF exactly as a real print (selectable text; about 215 documents in 75 s). In a browser they're an image of the same page (checked by hand in Edge: 90 documents in about 40 s, identical layout). The server's text-only copies are removed. A bug found on the way is fixed: documents from different tills share numbers, so pages of the list could overlap. |
+| 3 | `8e8a3dd` | An accountant who already has a login, invited by another company, gets an **email** (who invited them, an accept link valid 30 days), and the company shows as a **pending invitation** under Your clients (Accept / Decline) until accepted. Until then it can't be opened, and the statements don't name them. The owner sees "Invitation pending" and can cancel it. The link works signed out (`/accountant-invitation`). If the only company is pending, sign-in says to accept from the email first. |
+| 4 | — | Full Windows-app suite rerun: **125 passed, 3 skipped, 0 failed**, including part-a and the new archive test. Then `part-a.spec.ts` was run **20 times in a row: 180 of 180 passed**, so no further fix was needed. The earlier failure's cause stands as fixed in `542a9f7`: the till sometimes queued the sale before it had seen the server again, so nothing reached the server. The test now waits for the till to be back online before cutting the responses. |
+
+**Tests after the fixes:**
+- API: unit 286, e2e 29 suites / 284 tests.
+- Web: unit 179 passed; lint has only the 4 old warnings.
+- Windows app: 125 passed, 3 skipped.
+- The Windows-app runs used a separate API on :4200 built from this branch, with the web bundle built into a temporary folder. Your own API on :4100 and your open Windows app were left alone, and their build folders weren't touched.
+
+**Still for you:**
+- The archive needs this branch's API and web app, and exact PDFs need a Windows app built from this branch. A Windows app 0.2.3 makes image PDFs instead, until 0.2.4 ships.
+- Rebuild/restart your :4100 API from this branch and run `npx prisma migrate deploy`. Two new migrations were applied to the local database: the due day, and the invitations.
+
 ## Summary (session of 2026-10-17)
 
 Everything in the brief's Phase A and Phase B is built and tested on
@@ -66,10 +85,10 @@ deployed**. CI is green on every commit.
 - **Balanço / DR layout** (23b): a simplified Decreto 82/01 model. Check it against the model your accountant uses.
 - **Decreto 207/15 depreciation rates** (B4a): the usual maximums. The decree is a scanned PDF the app can't read; confirm them.
 - **Bank reconciliation** (B3a): no saved bank formats (each import is mapped by hand); one statement line matches one ledger line.
-- **Purchases file deadline:** reminded monthly with day 15 as the due date. Check the date AGT expects.
-- **Archive PDFs** (B2a): text-only archive copies made by the server, not the printed layout. The JSON body limit is now 8 MB, for uploads.
+- **Monthly SAF-T deadlines** (fixed after review): the invoicing and purchases files are due by the last day of the following month (Decreto 312/18 art. 3); the purchases file's day can be changed in Settings.
+- **Archive PDFs** (B2a, fixed after review): the printed A4 layout, marked 2ª Via. The JSON body limit is now 8 MB, for uploads.
 - **Accountants** (B1a–c):
-  - An accountant who already has a login gets no email when another company invites them.
+  - An accountant who already has a login gets an email when another company invites them, and the invitation waits under Your clients until accepted (fixed after review).
   - Only the owner invites or removes accountants.
 - **Who can do what** (decision 21): the owner and accountants keep the books; managers only read.
 - **Outside accounting:**
@@ -222,17 +241,17 @@ Database rules (triggers in the migration, not only the API):
 |---|----------|-----|
 | B1a | An accountant is a user with role ACCOUNTANT; their own record sits in the company that first invited them; access to each company is a row in `accountant_access` (revoked, never deleted). The access token names the company being worked in; refresh keeps it; every request checks the access still stands. | One login for several companies without changing how staff logins work. |
 | B1b | An accountant reads whatever a manager may read (GET) and changes nothing outside `/accounting`, their sign-in and profile. Only the owner invites or removes accountants. | The brief: full accounting rights, read-only sales/purchases/stock, no POS operations or PINs. |
-| B2a | The archive's PDFs are archive copies made by the server (text, A4: seller, buyer, lines, totals, hash characters, "Cópia de arquivo"), not pixel copies of what the till prints (no logo, no QR). The JSON body limit went from 1 MB to 8 MB for the uploads. | A server-side copy of every document for the ZIP without a browser; **REVIEW** if the archive must hold the printed layout. |
+| B2a | *(Changed 2026-10-17, review item 2.)* The archive's PDFs have the printed layout: the app draws each document with the same A4 template it prints with (`FiscalA4`, copy label "2ª Via": logo, QR, watermark and all). The server ZIP holds the SAF-T files, attachments and index; `GET /accounting/archive/documents` pages the documents, and the app adds their PDFs. In the Windows app a PDF is printed from a hidden window like a real print (vector, selectable text, about 0.35 s per document); in a browser it's an image of the same page (html2canvas through the browser's own rendering, then jsPDF), and the screen says so. Windows apps 0.2.3 and older have no PDF call and use the browser way. The JSON body limit went from 1 MB to 8 MB for the uploads. | The archive is what the accountant and AGT look at: it must read as the printed document. The server can't draw the React template without a browser. |
 | B2b | Attachments live in the database (like logos and product photos) until object storage exists. | Same as the rest of the app; fine for scans of a few hundred KB. |
 | B3a | Statements are mapped per import (no saved bank formats yet). Matching is one statement line to one ledger line; a deposit of several sales (one bank line for many postings) is matched by posting a transfer entry, or left open. | Simple and safe first; **REVIEW** if you want saved formats per bank or many-to-one matching. |
 | B4a | Depreciation groups and maximum rates (buildings 4%, machinery 12,5%, tools 25%, light vehicles 25%, heavy 20%, furniture 10%, computers 25%, office equipment 12,5%, containers 20%, software 33,33%, other 10%) are the usual ones; Decreto 207/15's PDF is a scan the app can't read. **REVIEW** them with the accountant. | |
-| B1c | An existing accountant invited by another company gets no email; the company just appears in their client list. | No password to set. **REVIEW** if you want a notice. |
+| B1c | *(Changed 2026-10-17, review item 3.)* An accountant who already has a login, invited by another company, gets an email (who invited them, an accept link valid 30 days) and the company waits in their client list as a pending invitation (Accept / Decline) until accepted. A pending company can't be opened (switch, sign-in, token check) and doesn't name them on its statements; the owner sees "Invitation pending" and can cancel it. Someone new accepts by choosing their password. If their only company is pending, signing in says to accept from the email first; the link works signed out (page `/accountant-invitation`). | Access to a company's books shouldn't start without the accountant agreeing to it. |
 
 ### Open questions answered by me (**REVIEW**)
 
 | # | Question | What I did |
 |---|----------|------------|
-| Q1 | Is the monthly SAF-T "Aquisição de Bens e Serviços" file still required once AGT e-invoicing is active? | Built it. Setting "Ficheiro mensal de aquisições": **Automático** (default: reminded monthly only while e-invoicing is off, like the invoicing file), Sempre, Nunca. |
+| Q1 | Is the monthly SAF-T "Aquisição de Bens e Serviços" file still required once AGT e-invoicing is active? | Built it. Setting "Ficheiro mensal de aquisições": **Automático** (default: reminded monthly only while e-invoicing is off, like the invoicing file), Sempre, Nunca. Due date (changed 2026-10-17, review item 1): last month's file by the **last day of the month**, as Decreto Presidencial 312/18 art. 3 n.º 1 says for both monthly files; the business can set its own day in the settings (empty = the last day). |
 | Q2 | Does a revised PGC apply? | Shipped Decreto 82/01's structure (with the IVA accounts 34.5.x added since 2019); every account is editable and the template is marked "to be validated by an accountant". |
 | Q3 | Posting rules | As in decisions 11–17; every account used is a mapping the accountant can change in Contabilidade → Integração. |
 

@@ -322,8 +322,13 @@ Prisma backend.
     (A), validated against AGT's XSD; TransactionID and AccountID in the
     invoicing file; 10 April reminder.
   - Outside accountants (role ACCOUNTANT): one login for several companies,
-    full rights in the books, read-only elsewhere. Document archive (ZIP),
-    attachments, bank reconciliation (CSV/Excel), fixed assets with monthly
+    full rights in the books, read-only elsewhere. An accountant who already
+    has a login gets an email when another company invites them; the
+    invitation waits under Your clients until they accept it.
+  - Document archive (ZIP) for a period: every document as a PDF in its
+    printed A4 layout ("2ª Via"; exact PDFs in the Windows app, page images
+    in a browser), the SAF-T files, the attachments and an index.
+  - Attachments, bank reconciliation (CSV/Excel), fixed assets with monthly
     depreciation.
   - Local demo accountant: `npx ts-node prisma/demo-accountant.ts` in `apps/api`
     (accountant@demo-store.test / AccountantPass123!).
