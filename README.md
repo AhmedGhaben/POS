@@ -323,7 +323,7 @@ Prisma backend.
     full rights in the books, read-only elsewhere. Document archive (ZIP),
     attachments, bank reconciliation (CSV/Excel), fixed assets with monthly
     depreciation.
-  - Local demo accountant: `node apps/api/scripts/demo-accountant.js`
+  - Local demo accountant: `npx ts-node prisma/demo-accountant.ts` in `apps/api`
     (accountant@demo-store.test / AccountantPass123!).
 - Audit log, rate-limited auth, `/health` endpoint.
 

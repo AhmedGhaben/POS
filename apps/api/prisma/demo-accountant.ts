@@ -1,13 +1,16 @@
-// Local demo only: an accountant login with access to the seed business,
-// so the accounting section can be tried as an accountant. Safe to re-run.
-const { PrismaClient } = require("@prisma/client");
-const bcrypt = require("bcrypt");
+import { PrismaClient, Role } from "@prisma/client";
+import * as bcrypt from "bcrypt";
 
+/**
+ * Local demo only: an accountant login with access to the seed business,
+ * so the accounting section can be tried as an accountant. Safe to re-run:
+ * npx ts-node prisma/demo-accountant.ts
+ */
 async function main() {
   const prisma = new PrismaClient();
   const business = await prisma.business.findUnique({ where: { id: "seed-business" } });
   if (!business) throw new Error("Run the seed first: the demo business is missing");
-  const owner = await prisma.user.findFirst({ where: { businessId: business.id, role: "OWNER" } });
+  const owner = await prisma.user.findFirstOrThrow({ where: { businessId: business.id, role: Role.OWNER } });
   const email = "accountant@demo-store.test";
   const user = await prisma.user.upsert({
     where: { email },
@@ -18,7 +21,7 @@ async function main() {
       passwordHash: await bcrypt.hash("AccountantPass123!", 10),
       firstName: "Carla",
       lastName: "Contabilista",
-      role: "ACCOUNTANT",
+      role: Role.ACCOUNTANT,
       ocpcaNumber: "OCPCA-0001",
       emailVerifiedAt: new Date(),
     },
