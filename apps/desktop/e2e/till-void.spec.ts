@@ -112,7 +112,7 @@ test.describe.serial("Till: cancel a sale", () => {
     const dialog = page.getByRole("dialog");
     await expect(dialog).toContainText("Sale cancelled");
     await expect(dialog).toContainText(/Hand back .+ in cash/);
-    await expect(dialog).toContainText("*** CANCELLED ***");
+    await expect(dialog).toContainText("*** ANULADA ***"); // the slip: the store's document language (pt-AO)
     // The drawer opens to hand the money back.
     await expect.poll(() => printer.jobs.length).toBe(2);
     expect(printer.jobs[1]).toBe(KICK);

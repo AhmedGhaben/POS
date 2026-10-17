@@ -123,6 +123,20 @@ Portuguese (receipt discount, shift report, receipt RC, customer display)
 and where the inventory date field now shows 31/12/YYYY; `logOut` cancels
 a sale left in the cart.
 
+**Desktop e2e (after you restarted :4100 with the migration)**: full suite
+**119 passed, 3 skipped** (the usual conditional skips). New
+`cart-and-documents.spec.ts`: a sale with two products, a quantity, cash
+typed and an email survives Dashboard, Settings, This device and Products
+and back via "Back to POS", and closing and reopening the app; Log out asks,
+"Hold order" parks it and the cashier signing in next gets an empty cart; a
+completed sale empties the cart; its receipt is Factura-Recibo in
+Portuguese with a DD/MM/YYYY HH:mm date while the screens are English; the
+Sales date field shows and takes DD/MM/YYYY. Older specs updated because
+receipts, the slip of a cancelled sale, the pole and the shift report are
+now Portuguese ("A crédito", "0,5 kg", "*** ANULADA ***", "PAGO / TROCO"),
+and `getByLabel("Date")` now needs `exact` (the calendar button is "Pick a
+date").
+
 **Changes in behaviour you'll notice**: on the demo store, receipts and
 reports were English (the business language was "en"); they're now
 Portuguese, since the store is in Angola. To get English documents back,

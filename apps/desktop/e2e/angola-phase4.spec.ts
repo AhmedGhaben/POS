@@ -72,7 +72,7 @@ test.describe.serial("Angola phase 4: credit at the till, receipts and payables"
     const dialog = page.getByRole("dialog");
     await expect(dialog).toContainText("Sale complete");
     await expect(dialog).toContainText("Factura");
-    await expect(dialog).toContainText("On account");
+    await expect(dialog).toContainText("A crédito"); // the receipt: the store's document language (pt-AO)
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
   });
@@ -119,7 +119,7 @@ test.describe.serial("Angola phase 4: credit at the till, receipts and payables"
     await form.getByPlaceholder("Qty").fill("2");
     await form.getByPlaceholder("Unit cost").fill("100");
     await form.getByLabel("Number").fill(`FT SUP${RUN}/7`);
-    await form.getByLabel("Date").fill("2026-10-10");
+    await form.getByLabel("Date", { exact: true }).fill("2026-10-10");
     await form.getByRole("combobox", { name: "Rate" }).click();
     await page.getByRole("option", { name: /^14%/ }).click();
     await form.getByRole("combobox", { name: /IVA cativo/ }).click();

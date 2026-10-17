@@ -130,7 +130,7 @@ test.describe.serial("Angola phase 6: products, units, tax and stock", () => {
     await page.getByRole("button", { name: /^Charge/ }).click();
     const done = page.getByRole("dialog");
     await expect(done).toContainText("Sale complete");
-    await expect(done).toContainText(`0.5 kg x ${name}`);
+    await expect(done).toContainText(`0,5 kg x ${name}`); // the receipt: pt-AO number format
     await page.keyboard.press("Escape");
     await expect(done).toBeHidden();
 
@@ -152,7 +152,7 @@ test.describe.serial("Angola phase 6: products, units, tax and stock", () => {
       const d = new Date();
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     });
-    await page.getByLabel("Date").fill(today);
+    await page.getByLabel("Date", { exact: true }).fill(today);
     await page.getByRole("button", { name: "Show" }).click();
     await expect(page.getByRole("row", { name: new RegExp(name) }).last()).toContainText("2.5 kg");
   });

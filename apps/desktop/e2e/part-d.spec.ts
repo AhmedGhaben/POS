@@ -95,8 +95,9 @@ test.describe.serial("Part D: customer displays", () => {
   test("after a cash sale it shows paid and change, then the welcome again", async () => {
     await page.getByRole("button", { name: /^Charge/ }).click();
     await expect(page.getByRole("dialog")).toContainText("Sale complete");
-    const paid = await poleShows(/PAID.*CHANGE/s);
-    expect(paid).toMatch(/CHANGE\s+0,00 Kz/);
+    // The pole is for the customer: the store's document language (pt-AO).
+    const paid = await poleShows(/PAGO.*TROCO/s);
+    expect(paid).toMatch(/TROCO\s+0,00 Kz/);
     await page.keyboard.press("Escape");
     await poleShows(/Hello from Demo/);
   });
