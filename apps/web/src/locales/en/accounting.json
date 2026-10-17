@@ -372,7 +372,13 @@
     "reopenedToast": "Period reopened",
     "reopenTitle": "Reopen {{period}} ({{year}})",
     "reopenHint": "Say why: it's kept in the audit log with your name.",
-    "reason": "Reason"
+    "reason": "Reason",
+    "workOutResults": "Work out the results",
+    "resultsDone": "Results worked out (periods 14 and 15)",
+    "closeYear": "Close the year",
+    "yearClosed": "Year closed: its balances open the next year",
+    "reopenYear": "Reopen the year",
+    "reopenYearTitle": "Reopen {{year}}"
   },
   "setup": {
     "offTitle": "Keep the books here",

@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format";
-import { ACCOUNTING_KEY, closePeriod, createFiscalYear, fetchFiscalYears, reopenPeriod, YEARS_KEY, type FiscalYearDto } from "../api";
+import { ACCOUNTING_KEY, closePeriod, closeYear, createFiscalYear, fetchFiscalYears, reopenPeriod, reopenYear, workOutResults, YEARS_KEY, type FiscalYearDto } from "../api";
 import { usePeriodName } from "../use-period-name";
 
 /** Fiscal years and their periods: close a month when it's done; reopening asks why. */
@@ -20,13 +20,14 @@ export function FiscalYears({ canWrite, today }: { canWrite: boolean; today: str
   const queryClient = useQueryClient();
   const periodName = usePeriodName();
   const years = useQuery({ queryKey: YEARS_KEY, queryFn: fetchFiscalYears });
-  const [reopening, setReopening] = React.useState<{ year: number; number: number } | null>(null);
+  // number null = the whole year.
+  const [reopening, setReopening] = React.useState<{ year: number; number: number | null } | null>(null);
   const [reason, setReason] = React.useState("");
   const refresh = () => void queryClient.invalidateQueries({ queryKey: ACCOUNTING_KEY });
   const fail = (error: unknown) => toast.error(error instanceof ApiError ? error.message : t("failed"));
   const close = useMutation({ mutationFn: (p: { year: number; number: number }) => closePeriod(p.year, p.number), onSuccess: () => (refresh(), toast.success(t("periods.closedToast"))), onError: fail });
   const reopen = useMutation({
-    mutationFn: () => reopenPeriod(reopening!.year, reopening!.number, reason.trim()),
+    mutationFn: () => (reopening!.number === null ? reopenYear(reopening!.year, reason.trim()) : reopenPeriod(reopening!.year, reopening!.number, reason.trim())),
     onSuccess: () => {
       refresh();
       setReopening(null);
@@ -35,6 +36,8 @@ export function FiscalYears({ canWrite, today }: { canWrite: boolean; today: str
     },
     onError: fail,
   });
+  const results = useMutation({ mutationFn: workOutResults, onSuccess: () => (refresh(), toast.success(t("periods.resultsDone"))), onError: fail });
+  const closeTheYear = useMutation({ mutationFn: closeYear, onSuccess: () => (refresh(), toast.success(t("periods.yearClosed"))), onError: fail });
   const nextYear = Math.max(Number(today.slice(0, 4)), ...(years.data ?? []).map((y) => y.year)) + 1;
   const addYear = useMutation({ mutationFn: () => createFiscalYear(nextYear), onSuccess: refresh, onError: fail });
 
@@ -51,7 +54,24 @@ export function FiscalYears({ canWrite, today }: { canWrite: boolean; today: str
         <Card key={y.year}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-lg">{t("periods.year", { year: y.year })}</CardTitle>
-            <Badge variant={y.status === "OPEN" ? "secondary" : "outline"}>{t(`periods.statuses.${y.status}`)}</Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              {canWrite && y.status === "OPEN" && (
+                <>
+                  <Button size="sm" variant="outline" disabled={results.isPending} onClick={() => results.mutate(y.year)}>
+                    {t("periods.workOutResults")}
+                  </Button>
+                  <Button size="sm" variant="outline" disabled={closeTheYear.isPending} onClick={() => closeTheYear.mutate(y.year)}>
+                    {t("periods.closeYear")}
+                  </Button>
+                </>
+              )}
+              {canWrite && y.status === "CLOSED" && (
+                <Button size="sm" variant="outline" onClick={() => setReopening({ year: y.year, number: null })}>
+                  {t("periods.reopenYear")}
+                </Button>
+              )}
+              <Badge variant={y.status === "OPEN" ? "secondary" : "outline"}>{t(`periods.statuses.${y.status}`)}</Badge>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -83,7 +103,12 @@ export function FiscalYears({ canWrite, today }: { canWrite: boolean; today: str
       <Dialog open={!!reopening} onOpenChange={(o) => !o && setReopening(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{reopening && t("periods.reopenTitle", { period: `${reopening.number} · ${periodName(reopening.year, reopening.number)}`, year: reopening.year })}</DialogTitle>
+            <DialogTitle>
+              {reopening &&
+                (reopening.number === null
+                  ? t("periods.reopenYearTitle", { year: reopening.year })
+                  : t("periods.reopenTitle", { period: `${reopening.number} · ${periodName(reopening.year, reopening.number)}`, year: reopening.year }))}
+            </DialogTitle>
             <DialogDescription>{t("periods.reopenHint")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

@@ -31,12 +31,18 @@ export const ACCOUNTING_EXACT: Record<string, Translations> = {
   "Report not found": { "pt-PT": "Relatório não encontrado", "pt-BR": "Relatório não encontrado" },
   "Choose an account": { "pt-PT": "Escolha uma conta", "pt-BR": "Escolha uma conta" },
   "Periods go from 0 to 15, the first before the last": { "pt-PT": "Os períodos vão de 0 a 15, o primeiro antes do último", "pt-BR": "Os períodos vão de 0 a 15, o primeiro antes do último" },
+  "Work out the results first: classes 6 and 7 still have balances": { "pt-PT": "Apure primeiro os resultados: as classes 6 e 7 ainda têm saldo", "pt-BR": "Apure primeiro os resultados: as classes 6 e 7 ainda têm saldo" },
   "Unknown mapping key": { "pt-PT": "Chave de mapeamento desconhecida", "pt-BR": "Chave de mapeamento desconhecida" },
   "An entry needs at least one debit and one credit line": { "pt-PT": "Um lançamento precisa de pelo menos uma linha a débito e uma a crédito", "pt-BR": "Um lançamento precisa de pelo menos uma linha a débito e uma a crédito" },
 };
 
 /** Messages with values; $1, $2… are the captured values. */
 export const ACCOUNTING_PATTERNS: { re: RegExp; t: Translations }[] = [
+  { re: /^Account (\S+) is missing from the chart: open it to work out the results$/, t: { "pt-PT": "Falta a conta $1 no plano: abra-a para apurar os resultados", "pt-BR": "Falta a conta $1 no plano: abra-a para apurar os resultados" } },
+  { re: /^The results of (\d+) were already worked out: reverse those entries to do it again$/, t: { "pt-PT": "Os resultados de $1 já foram apurados: estorne esses lançamentos para repetir", "pt-BR": "Os resultados de $1 já foram apurados: estorne esses lançamentos para repetir" } },
+  { re: /^There's nothing in classes 6 and 7 for (\d+)$/, t: { "pt-PT": "Não há movimentos nas classes 6 e 7 em $1", "pt-BR": "Não há movimentos nas classes 6 e 7 em $1" } },
+  { re: /^Close the months first: (.+) still open$/, t: { "pt-PT": "Feche primeiro os meses: $1 ainda abertos", "pt-BR": "Feche primeiro os meses: $1 ainda abertos" } },
+  { re: /^Reopen (\d+) first$/, t: { "pt-PT": "Reabra primeiro $1", "pt-BR": "Reabra primeiro $1" } },
   {
     re: /^The account for (.+) doesn't exist: set it in Contabilidade → Configuração$/,
     t: { "pt-PT": "A conta para $1 não existe: defina-a em Contabilidade → Configuração", "pt-BR": "A conta para $1 não existe: defina-a em Contabilidade → Configuração" },

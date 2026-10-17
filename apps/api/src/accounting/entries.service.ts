@@ -178,6 +178,8 @@ export class EntriesService {
     // COMMIT of an interactive transaction (it resolves, the data is rolled
     // back). Checking it now makes any breach an error here.
     await tx.$executeRaw`SET CONSTRAINTS "journal_entries_balanced", "journal_entry_lines_balanced" IMMEDIATE`;
+    // …and back to deferred, for the next entry the same transaction may post.
+    await tx.$executeRaw`SET CONSTRAINTS "journal_entries_balanced", "journal_entry_lines_balanced" DEFERRED`;
     return tx.journalEntry.findUniqueOrThrow({ where: { id: entry.id }, include: ENTRY_INCLUDE });
   }
 
@@ -196,13 +198,15 @@ export class EntriesService {
     const business = await tx.business.findUniqueOrThrow({ where: { id: businessId } });
     const date = input.date ? parseCalendarDate(input.date) : businessToday(business);
     // An opening entry is reversed in its own period 0 (it moves no money).
-    const period = original.period === OPENING_PERIOD ? OPENING_PERIOD : undefined;
+    // The opening and the year-end periods are reversed in their own period, on their own date.
+    const samePeriod = original.period === OPENING_PERIOD || original.period > 12;
+    const period = samePeriod ? original.period : undefined;
     return this.post(
       {
         businessId,
         journalId: original.journalId,
-        transactionDate: period === OPENING_PERIOD ? isoDate(original.postingDate) : date,
-        postingDate: period === OPENING_PERIOD ? isoDate(original.postingDate) : date,
+        transactionDate: samePeriod ? isoDate(original.postingDate) : date,
+        postingDate: samePeriod ? isoDate(original.postingDate) : date,
         period,
         description: input.description?.trim() || `Estorno de ${original.transactionId}: ${original.description}`,
         transactionType: original.transactionType,

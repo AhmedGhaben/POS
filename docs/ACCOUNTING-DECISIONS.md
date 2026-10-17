@@ -122,6 +122,7 @@ Database rules (triggers in the migration, not only the API):
 | A3 | | Journals (VEN, COM, CXA, BCO, OPD, ABE, APU, SAL), entries numbered per journal and year, TransactionID; database rules (balance, both sides, immutable, closed period, GM only); estorno; entries screen with the entry form. | unit (entry rules), e2e 7 |
 | A5 | | Lançamentos pré-definidos (save from the entry form, use, remove), opening balances (CSV or pasted: code; debit; credit → one entry in Abertura, period 0, 1 January). | unit (CSV), e2e 2 |
 | A6 | | Reports from the posted entries: Balancete (opening, period, accumulated, balance; by level), Razão (running balance), Diário, customer/supplier statements, ageing (open invoices/purchases by days), Balanço and Demonstração de Resultados (PGC, result shown before and after the apuramento), IVA working papers (charged by rate/exemption, deductible by type, cativo, 7% simplified, IVA accounts). PDF in the app (documents' language), Excel from the server (Portuguese headings). | unit (statements 4), e2e 7 |
+| A7 | | Year-end: apuramento (period 14: classes 6/7 → 82-86; period 15: 82-87 → 88; type A, journal APU), year close (months must be closed, results worked out; balances of classes 1-5 and 8 carried into next year's period 0; all periods closed), year reopen (reason, audit log; the carry-forward is reversed). Entries in periods 0 and 13-15 are reversed in their own period. | unit (year-end 3), e2e 4 |
 | A4 | | Automatic posting of FR/FT/ND/NC/RC, annulments, purchases, supplier payments (and cancellations), expenses, shift differences, cash in/out, stock counts; mapping with defaults; daily summary option; monitor; month close refused while records of it aren't posted. | unit (posting rules 9), e2e 12 |
 
 **Found while testing (A3)**: Prisma doesn't report a failed COMMIT of an
@@ -129,4 +130,9 @@ interactive transaction: when the database's deferred balance check
 refused an entry at commit, Prisma resolved as if it had been saved (the
 data was rolled back). `EntriesService.post` and the integration now run
 `SET CONSTRAINTS … IMMEDIATE` before leaving the transaction, so a breach
-is an error at once. The database rule still guards any other writer.
+is an error at once, then set the constraints back to DEFERRED (found in A7:
+left IMMEDIATE, the next entry in the same transaction failed before its
+lines were in). The database rule still guards any other writer.
+
+**Also changed (A7)**: the API's error filter now logs unexpected errors
+(500s) with their stack; before, they were answered and lost.

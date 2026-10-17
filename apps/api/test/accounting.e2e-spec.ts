@@ -664,4 +664,73 @@ describe("Accounting (e2e)", () => {
       await http().get("/accounting/reports/trialBalance").set(auth(cashierToken)).expect(403);
     });
   });
+  describe("A7: year-end", () => {
+    type Table = { rows: Record<string, string | number | null>[]; totals: Record<string, string | number | null> | null };
+    const report = async (key: string, query: string) => (await http().get(`/accounting/reports/${key}?${query}`).set(auth(ownerToken)).expect(200)).body as { tables: Table[] };
+    const lineOf = (t: Table, key: string) => t.rows.find((r) => r.line === key)?.amount;
+    let netResult: string;
+
+    it("the year can't close before its months, nor before the results are worked out", async () => {
+      const state = (await http().get("/accounting/years/2026/state").set(auth(managerToken)).expect(200)).body;
+      expect(state).toMatchObject({ status: "OPEN", resultsDone: false });
+      expect(Number(state.incomeAndCostsLeft)).toBeGreaterThan(0);
+      const res = (await http().post("/accounting/years/2026/close").set(auth(ownerToken)).expect(400)).body;
+      expect(res.message).toMatch(/Close the months first/);
+      await http().post("/accounting/years/2026/results").set(auth(managerToken)).expect(403);
+    });
+
+    it("apuramento: classes 6 and 7 into 82-86 (period 14), then 82-87 into 88 (period 15), type A; once", async () => {
+      const done = (await http().post("/accounting/years/2026/results").set(auth(ownerToken)).expect(200)).body;
+      expect(done.entries).toHaveLength(2);
+      // Read after: working out the results first posts whatever was still waiting.
+      netResult = String(lineOf((await report("incomeStatement", "year=2026&fromPeriod=1&toPeriod=15")).tables[0], "netResult"));
+      const [first, second] = await Promise.all(done.entries.map(async (id: string) => (await http().get(`/accounting/entries/${id}`).set(auth(ownerToken)).expect(200)).body));
+      expect(first).toMatchObject({ period: 14, transactionType: "A", journal: { code: "APU" }, postingDate: "2026-12-31" });
+      expect(second).toMatchObject({ period: 15, transactionType: "A" });
+      expect(second.lines.some((l: { account: { code: string } }) => l.account.code === "88.1")).toBe(true);
+      const [tb] = (await report("trialBalance", "year=2026")).tables;
+      const balanceOf = (code: string) => {
+        const r = tb.rows.find((x) => x.code === code);
+        return r ? Number(r.balanceDebit ?? 0) - Number(r.balanceCredit ?? 0) : 0;
+      };
+      for (const c of ["61", "62", "71", "75", "78", "82", "85"]) expect(balanceOf(c)).toBeCloseTo(0, 2);
+      expect(-balanceOf("88")).toBeCloseTo(Number(netResult), 2);
+      // The balance sheet shows the same result after the apuramento, and still balances.
+      const [bs] = (await report("balanceSheet", "year=2026&toPeriod=15")).tables;
+      expect(lineOf(bs, "netResult")).toBe(Number(netResult).toFixed(2));
+      expect(lineOf(bs, "totalAssets")).toBe(lineOf(bs, "totalEquityAndLiabilities"));
+      await http().post("/accounting/years/2026/results").set(auth(ownerToken)).expect(409);
+    });
+
+    it("closing the year carries classes 1-5 and 8 into 2027's opening (period 0) and locks 2026", async () => {
+      for (let m = 1; m <= 12; m++) await http().post(`/accounting/periods/2026/${m}/close`).set(auth(ownerToken)).expect(200);
+      const years = (await http().post("/accounting/years/2026/close").set(auth(ownerToken)).expect(200)).body as { year: number; status: string; periods: { status: string }[] }[];
+      const y2026 = years.find((y) => y.year === 2026)!;
+      expect(y2026.status).toBe("CLOSED");
+      expect(y2026.periods.every((p) => p.status === "CLOSED")).toBe(true);
+      const carried = await prisma.journalEntry.findFirstOrThrow({ where: { businessId, year: 2027, origin: "CARRY_FORWARD" }, include: { lines: { include: { account: true } } } });
+      expect(carried.period).toBe(0);
+      expect(carried.lines.every((l) => [1, 2, 3, 4, 5, 8].includes(l.account.classNo))).toBe(true);
+      // 2027 opens with 2026's balance sheet (plus the opening entered by hand in A5).
+      const closing = (await report("balanceSheet", "year=2026&toPeriod=15")).tables[0];
+      const opening = (await report("balanceSheet", "year=2027&toPeriod=0")).tables[0];
+      expect(Number(lineOf(opening, "totalAssets"))).toBeCloseTo(Number(lineOf(closing, "totalAssets")) + 1_000_000, 2);
+      // Nothing more goes into 2026.
+      const opd = ((await http().get("/accounting/journals").set(auth(ownerToken)).expect(200)).body as { id: string; code: string }[]).find((j) => j.code === "OPD")!.id;
+      const cash = (await accounts()).find((a) => a.code === "45.1.1")!.id;
+      const rent = (await accounts()).find((a) => a.code === "75.2.1")!.id;
+      const refused = (await http().post("/accounting/entries").set(auth(ownerToken)).send({ journalId: opd, transactionDate: "2026-12-30", description: "Tarde", lines: [{ accountId: rent, debit: 1 }, { accountId: cash, credit: 1 }] }).expect(400)).body;
+      expect(refused.message).toMatch(/2026 is closed/);
+    });
+
+    it("reopening the year (with a reason) reverses its carry-forward; closing again carries the balances again", async () => {
+      await http().post("/accounting/years/2026/reopen").set(auth(ownerToken)).send({}).expect(400);
+      await http().post("/accounting/years/2026/reopen").set(auth(ownerToken)).send({ reason: "Correcção de amortizações" }).expect(200);
+      const first = await prisma.journalEntry.findFirstOrThrow({ where: { businessId, year: 2027, origin: "CARRY_FORWARD", reversesEntryId: null }, include: { reversedBy: true } });
+      expect(first.reversedBy).toBeTruthy();
+      expect(await prisma.auditLog.count({ where: { businessId, action: "ACCOUNTING_YEAR_REOPENED" } })).toBe(1);
+      await http().post("/accounting/years/2026/close").set(auth(ownerToken)).expect(200);
+      expect(await prisma.journalEntry.count({ where: { businessId, year: 2027, origin: "CARRY_FORWARD", reversesEntryId: null } })).toBe(2);
+    });
+  });
 });

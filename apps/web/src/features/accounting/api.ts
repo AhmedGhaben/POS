@@ -83,6 +83,9 @@ export const fetchFiscalYears = () => apiClient.get<FiscalYearDto[]>("/accountin
 export const createFiscalYear = (year: number) => apiClient.post<FiscalYearDto>("/accounting/years", { year });
 export const closePeriod = (year: number, number: number) => apiClient.post(`/accounting/periods/${year}/${number}/close`);
 export const reopenPeriod = (year: number, number: number, reason: string) => apiClient.post(`/accounting/periods/${year}/${number}/reopen`, { reason });
+export const workOutResults = (year: number) => apiClient.post<{ entries: string[] }>(`/accounting/years/${year}/results`);
+export const closeYear = (year: number) => apiClient.post(`/accounting/years/${year}/close`);
+export const reopenYear = (year: number, reason: string) => apiClient.post(`/accounting/years/${year}/reopen`, { reason });
 
 export type JournalKind = "SALES" | "PURCHASES" | "CASH" | "BANK" | "GENERAL" | "OPENING" | "CLOSING" | "PAYROLL";
 export type TransactionType = "N" | "R" | "A" | "J";

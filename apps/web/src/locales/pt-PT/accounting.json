@@ -372,7 +372,13 @@
     "reopenedToast": "Período reaberto",
     "reopenTitle": "Reabrir {{period}} ({{year}})",
     "reopenHint": "Indique o motivo: fica no registo de auditoria com o seu nome.",
-    "reason": "Motivo"
+    "reason": "Motivo",
+    "workOutResults": "Apurar resultados",
+    "resultsDone": "Resultados apurados (períodos 14 e 15)",
+    "closeYear": "Encerrar o exercício",
+    "yearClosed": "Exercício encerrado: os saldos abrem o exercício seguinte",
+    "reopenYear": "Reabrir o exercício",
+    "reopenYearTitle": "Reabrir o exercício {{year}}"
   },
   "setup": {
     "offTitle": "Fazer a contabilidade aqui",
