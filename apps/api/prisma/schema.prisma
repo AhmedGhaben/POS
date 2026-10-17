@@ -232,6 +232,7 @@ model Business {
 
   accountingSettings AccountingSettings?
   ledgerAccounts     LedgerAccount[]
+  fiscalYears        FiscalYear[]
 
   @@map("businesses")
 }
@@ -1600,4 +1601,50 @@ model LedgerAccount {
   @@unique([businessId, linkType, linkId])
   @@index([parentId])
   @@map("ledger_accounts")
+}
+
+enum PeriodStatus {
+  OPEN
+  CLOSED
+}
+
+/// An accounting year (the calendar year in Angola). Closed once the
+/// results are worked out and the balances carried to the next year.
+model FiscalYear {
+  id         String       @id @default(cuid())
+  businessId String
+  business   Business     @relation(fields: [businessId], references: [id])
+  year       Int
+  startDate  DateTime     @db.Date
+  endDate    DateTime     @db.Date
+  status     PeriodStatus @default(OPEN)
+  closedAt   DateTime?
+  closedById String?
+  createdAt  DateTime     @default(now())
+
+  periods AccountingPeriod[]
+
+  @@unique([businessId, year])
+  @@map("fiscal_years")
+}
+
+/// Period 0 is the opening (abertura), 1-12 the months, 13-15 the year-end
+/// (regularizações, apuramento de resultados, resultado líquido). A closed
+/// period takes no postings (a database rule).
+model AccountingPeriod {
+  id           String       @id @default(cuid())
+  businessId   String
+  fiscalYearId String
+  fiscalYear   FiscalYear   @relation(fields: [fiscalYearId], references: [id])
+  year         Int
+  number       Int
+  startDate    DateTime     @db.Date
+  endDate      DateTime     @db.Date
+  status       PeriodStatus @default(OPEN)
+  closedAt     DateTime?
+  closedById   String?
+  createdAt    DateTime     @default(now())
+
+  @@unique([businessId, year, number])
+  @@map("accounting_periods")
 }

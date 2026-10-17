@@ -8,7 +8,31 @@
   "cancel": "Cancelar",
   "tabs": {
     "setup": "Configuração",
-    "chart": "Plano de contas"
+    "chart": "Plano de contas",
+    "periods": "Exercícios e períodos"
+  },
+  "periods": {
+    "description": "Feche um mês depois de lançados e conferidos os seus documentos: num período fechado não se lança nada. Reabrir um período exige um motivo e fica registado.",
+    "year": "Exercício {{year}}",
+    "addYear": "Abrir o exercício {{year}}",
+    "statuses": {
+      "OPEN": "Aberto",
+      "CLOSED": "Fechado"
+    },
+    "special": {
+      "p0": "Abertura",
+      "p13": "Regularizações",
+      "p14": "Apuramento de resultados",
+      "p15": "Resultado líquido"
+    },
+    "close": "Fechar",
+    "reopen": "Reabrir",
+    "closedBy": "Fechado por {{name}} em {{at}}",
+    "closedToast": "Período fechado",
+    "reopenedToast": "Período reaberto",
+    "reopenTitle": "Reabrir {{period}} ({{year}})",
+    "reopenHint": "Indique o motivo: fica no registo de auditoria com o seu nome.",
+    "reason": "Motivo"
   },
   "setup": {
     "offTitle": "Fazer a contabilidade aqui",

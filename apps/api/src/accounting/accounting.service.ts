@@ -3,6 +3,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { parseCalendarDate } from "../fiscal/saft/period";
 import { businessToday, dateValue, isoDate } from "./accounting-dates";
 import { ChartService } from "./chart.service";
+import { PeriodsService } from "./periods.service";
 import { AccountingSettingsDto } from "./dto/accounting.dto";
 
 /** Contabilidade on or off, and its settings (docs/ACCOUNTING-DECISIONS.md). */
@@ -11,6 +12,7 @@ export class AccountingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly chart: ChartService,
+    private readonly periods: PeriodsService,
   ) {}
 
   async status(businessId: string) {
@@ -67,6 +69,8 @@ export class AccountingService {
         },
       });
       if (turningOn) await this.chart.installTemplate(tx, businessId);
+      // The years the integration posts into from the start.
+      for (let year = Number(startDate.slice(0, 4)); year <= Number(businessToday(business).slice(0, 4)); year++) await this.periods.ensureYear(tx, businessId, year);
     });
     if (turningOn || dto.cashPerTill) await this.chart.ensureLinkedAccounts(businessId);
     return this.status(businessId);

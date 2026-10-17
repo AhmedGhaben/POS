@@ -6,8 +6,9 @@ import { useAuthStore } from "@/features/auth/store";
 import { fetchAccountingStatus, STATUS_KEY } from "@/features/accounting/api";
 import { AccountingSetup } from "@/features/accounting/components/AccountingSetup";
 import { ChartOfAccounts } from "@/features/accounting/components/ChartOfAccounts";
+import { FiscalYears } from "@/features/accounting/components/FiscalYears";
 
-const TABS = ["chart", "setup"] as const;
+const TABS = ["chart", "periods", "setup"] as const;
 type Tab = (typeof TABS)[number];
 
 /**
@@ -46,6 +47,9 @@ export function AccountingPage() {
           </TabsList>
           <TabsContent value="chart" className="mt-4">
             <ChartOfAccounts canWrite={canWrite} />
+          </TabsContent>
+          <TabsContent value="periods" className="mt-4">
+            <FiscalYears canWrite={canWrite} today={status.data.today} />
           </TabsContent>
           <TabsContent value="setup" className="mt-4">
             <AccountingSetup status={status.data} canWrite={canWrite} />

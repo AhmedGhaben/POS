@@ -52,6 +52,8 @@ export async function deleteBusiness(prisma: PrismaService, businessId: string):
     prisma.refreshToken.deleteMany({ where: byUsers }),
     prisma.passwordResetToken.deleteMany({ where: byUsers }),
     prisma.emailVerificationToken.deleteMany({ where: byUsers }),
+    prisma.accountingPeriod.deleteMany({ where: { businessId } }),
+    prisma.fiscalYear.deleteMany({ where: { businessId } }),
     prisma.ledgerAccount.updateMany({ where: { businessId }, data: { parentId: null } }),
     prisma.ledgerAccount.deleteMany({ where: { businessId } }),
     prisma.accountingSettings.deleteMany({ where: { businessId } }),

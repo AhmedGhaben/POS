@@ -7,6 +7,9 @@ export const ACCOUNTING_EXACT: Record<string, Translations> = {
     "pt-BR": "O código da conta começa pelo dígito da classe e um segundo dígito (ex.: 31), seguidos de partes separadas por pontos (31.1.2): até 30 caracteres",
   },
   "Account not found": { "pt-PT": "Conta não encontrada", "pt-BR": "Conta não encontrada" },
+  "That year is out of range": { "pt-PT": "Esse ano não é válido", "pt-BR": "Esse ano não é válido" },
+  "Accounting period not found": { "pt-PT": "Período contabilístico não encontrado", "pt-BR": "Período contábil não encontrado" },
+  "The year is closed: reopen the year first": { "pt-PT": "O exercício está encerrado: reabra primeiro o exercício", "pt-BR": "O exercício está encerrado: reabra primeiro o exercício" },
 };
 
 /** Messages with values; $1, $2… are the captured values. */

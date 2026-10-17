@@ -8,7 +8,31 @@
   "cancel": "Cancel",
   "tabs": {
     "setup": "Settings",
-    "chart": "Chart of accounts"
+    "chart": "Chart of accounts",
+    "periods": "Years and periods"
+  },
+  "periods": {
+    "description": "Close a month once its documents are posted and checked: nothing can be posted in a closed period. Reopening one needs a reason and is logged.",
+    "year": "Year {{year}}",
+    "addYear": "Open year {{year}}",
+    "statuses": {
+      "OPEN": "Open",
+      "CLOSED": "Closed"
+    },
+    "special": {
+      "p0": "Opening",
+      "p13": "Year-end adjustments",
+      "p14": "Results (apuramento)",
+      "p15": "Net result"
+    },
+    "close": "Close",
+    "reopen": "Reopen",
+    "closedBy": "Closed by {{name}} on {{at}}",
+    "closedToast": "Period closed",
+    "reopenedToast": "Period reopened",
+    "reopenTitle": "Reopen {{period}} ({{year}})",
+    "reopenHint": "Say why: it's kept in the audit log with your name.",
+    "reason": "Reason"
   },
   "setup": {
     "offTitle": "Keep the books here",

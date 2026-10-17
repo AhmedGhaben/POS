@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, UseGuards } from "@nestjs/common";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { RolesGuard } from "../common/guards/roles.guard";
@@ -6,7 +6,8 @@ import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { ACCOUNTING_READ, ACCOUNTING_WRITE } from "./accounting-roles";
 import { AccountingService } from "./accounting.service";
 import { ChartService } from "./chart.service";
-import { AccountingSettingsDto, CreateAccountDto, UpdateAccountDto } from "./dto/accounting.dto";
+import { AccountingSettingsDto, CreateAccountDto, CreateFiscalYearDto, ReopenDto, UpdateAccountDto } from "./dto/accounting.dto";
+import { PeriodsService } from "./periods.service";
 
 /** Contabilidade: settings and the chart of accounts (docs/ACCOUNTING-DECISIONS.md). */
 @Controller("accounting")
@@ -15,6 +16,7 @@ export class AccountingController {
   constructor(
     private readonly accounting: AccountingService,
     private readonly chart: ChartService,
+    private readonly periods: PeriodsService,
   ) {}
 
   @Get("status")
@@ -60,5 +62,33 @@ export class AccountingController {
   @Roles(...ACCOUNTING_WRITE)
   removeAccount(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
     return this.chart.remove(user.businessId, id);
+  }
+
+  @Get("years")
+  @Roles(...ACCOUNTING_READ)
+  years(@CurrentUser() user: AuthenticatedUser) {
+    return this.periods.list(user.businessId);
+  }
+
+  @Post("years")
+  @Roles(...ACCOUNTING_WRITE)
+  async createYear(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateFiscalYearDto) {
+    await this.periods.ensureYear(null, user.businessId, dto.year);
+    return (await this.periods.list(user.businessId)).find((y) => y.year === dto.year);
+  }
+
+  @Post("periods/:year/:number/close")
+  @HttpCode(200)
+  @Roles(...ACCOUNTING_WRITE)
+  closePeriod(@CurrentUser() user: AuthenticatedUser, @Param("year", ParseIntPipe) year: number, @Param("number", ParseIntPipe) number: number) {
+    return this.periods.close(user.businessId, user.userId, year, number);
+  }
+
+  /** Opens a closed period again: owner (or accountant) only, with a reason; audit-logged. */
+  @Post("periods/:year/:number/reopen")
+  @HttpCode(200)
+  @Roles(...ACCOUNTING_WRITE)
+  reopenPeriod(@CurrentUser() user: AuthenticatedUser, @Param("year", ParseIntPipe) year: number, @Param("number", ParseIntPipe) number: number, @Body() dto: ReopenDto) {
+    return this.periods.reopen(user.businessId, user.userId, year, number, dto.reason);
   }
 }

@@ -143,4 +143,36 @@ describe("Accounting (e2e)", () => {
       ).rejects.toThrow(/ledger_accounts_code_format/);
     });
   });
+
+  describe("A2: fiscal years and periods", () => {
+    type Year = { year: number; status: string; periods: { number: number; status: string; startDate: string; endDate: string; closedBy: string | null }[] };
+    const years = async () => (await http().get("/accounting/years").set(auth(managerToken)).expect(200)).body as Year[];
+
+    it("switching on opened the years from the start date: 16 periods each (0 opening, 1-12, 13-15 year-end)", async () => {
+      const y = (await years()).find((x) => x.year === 2026)!;
+      expect(y.status).toBe("OPEN");
+      expect(y.periods.map((p) => p.number)).toEqual([...Array(16).keys()]);
+      expect(y.periods[2]).toMatchObject({ startDate: "2026-02-01", endDate: "2026-02-28" });
+      expect(y.periods[14]).toMatchObject({ startDate: "2026-12-31", endDate: "2026-12-31" });
+    });
+
+    it("a year is added on request (once)", async () => {
+      await http().post("/accounting/years").set(auth(ownerToken)).send({ year: 2027 }).expect(201);
+      await http().post("/accounting/years").set(auth(ownerToken)).send({ year: 2027 }).expect(201);
+      expect((await years()).filter((y) => y.year === 2027)).toHaveLength(1);
+      await http().post("/accounting/years").set(auth(managerToken)).send({ year: 2028 }).expect(403);
+    });
+
+    it("closing a period records who; reopening needs a reason and is in the audit log", async () => {
+      await http().post("/accounting/periods/2026/3/close").set(auth(managerToken)).expect(403);
+      await http().post("/accounting/periods/2026/3/close").set(auth(ownerToken)).expect(200);
+      expect((await years()).find((y) => y.year === 2026)!.periods[3]).toMatchObject({ status: "CLOSED", closedBy: "Ana Owner" });
+      await http().post("/accounting/periods/2026/3/reopen").set(auth(ownerToken)).send({}).expect(400);
+      await http().post("/accounting/periods/2026/3/reopen").set(auth(ownerToken)).send({ reason: "Factura de fornecedor esquecida" }).expect(200);
+      expect((await years()).find((y) => y.year === 2026)!.periods[3].status).toBe("OPEN");
+      const log = await prisma.auditLog.findFirstOrThrow({ where: { businessId, action: "ACCOUNTING_PERIOD_REOPENED" } });
+      expect(log.metadata).toMatchObject({ year: 2026, period: 3, reason: "Factura de fornecedor esquecida" });
+      await http().post("/accounting/periods/2026/16/close").set(auth(ownerToken)).expect(404);
+    });
+  });
 });

@@ -1,4 +1,4 @@
-import { IsBoolean, IsDateString, IsIn, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
+import { IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from "class-validator";
 
 export const GROUPINGS = ["PER_DOCUMENT", "DAILY_SUMMARY"] as const;
 export const PURCHASES_FILE_RULES = ["AUTO", "ALWAYS", "NEVER"] as const;
@@ -53,4 +53,19 @@ export class UpdateAccountDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+}
+
+export class CreateFiscalYearDto {
+  @IsInt()
+  @Min(2000)
+  @Max(9999)
+  year!: number;
+}
+
+/** Why a closed period (or year) is opened again: kept in the audit log. */
+export class ReopenDto {
+  @IsString()
+  @MinLength(3)
+  @MaxLength(300)
+  reason!: string;
 }

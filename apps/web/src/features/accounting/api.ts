@@ -41,6 +41,7 @@ export interface LedgerAccountDto {
 export const ACCOUNTING_KEY = ["accounting"] as const;
 export const STATUS_KEY = [...ACCOUNTING_KEY, "status"] as const;
 export const ACCOUNTS_KEY = [...ACCOUNTING_KEY, "accounts"] as const;
+export const YEARS_KEY = [...ACCOUNTING_KEY, "years"] as const;
 
 export const fetchAccountingStatus = () => apiClient.get<AccountingStatusDto>("/accounting/status");
 export const updateAccountingSettings = (body: Partial<AccountingSettingsDto> & { enabled?: boolean }) =>
@@ -51,6 +52,32 @@ export const createAccount = (body: { code: string; name: string }) => apiClient
 export const updateAccount = (id: string, body: { name?: string; isActive?: boolean }) => apiClient.patch<LedgerAccountDto>(`/accounting/accounts/${id}`, body);
 export const removeAccount = (id: string) => apiClient.delete<{ removed: boolean }>(`/accounting/accounts/${id}`);
 export const syncAccounts = () => apiClient.post<{ created: number }>("/accounting/accounts/sync");
+
+export type PeriodStatus = "OPEN" | "CLOSED";
+
+export interface AccountingPeriodDto {
+  number: number;
+  startDate: string;
+  endDate: string;
+  status: PeriodStatus;
+  closedAt: string | null;
+  closedBy: string | null;
+}
+
+export interface FiscalYearDto {
+  year: number;
+  startDate: string;
+  endDate: string;
+  status: PeriodStatus;
+  closedAt: string | null;
+  closedBy: string | null;
+  periods: AccountingPeriodDto[];
+}
+
+export const fetchFiscalYears = () => apiClient.get<FiscalYearDto[]>("/accounting/years");
+export const createFiscalYear = (year: number) => apiClient.post<FiscalYearDto>("/accounting/years", { year });
+export const closePeriod = (year: number, number: number) => apiClient.post(`/accounting/periods/${year}/${number}/close`);
+export const reopenPeriod = (year: number, number: number, reason: string) => apiClient.post(`/accounting/periods/${year}/${number}/reopen`, { reason });
 
 /** PGC classes, for headings. */
 export const PGC_CLASSES: Record<number, string> = {
