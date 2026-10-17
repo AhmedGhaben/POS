@@ -1,0 +1,74 @@
+{
+  "title": "Contabilidade",
+  "subtitle": "Os livros, lançados a partir do PDV: plano de contas, lançamentos, relatórios e o arquivo SAF-T (AO) de contabilidade.",
+  "readOnly": "Você pode consultar a contabilidade; só o proprietário a altera.",
+  "failed": "Algo deu errado. Tente novamente.",
+  "saved": "Salvo",
+  "save": "Salvar",
+  "cancel": "Cancelar",
+  "tabs": {
+    "setup": "Configuração",
+    "chart": "Plano de contas"
+  },
+  "setup": {
+    "offTitle": "Fazer a contabilidade aqui",
+    "offDescription": "Ative a contabilidade para ter o plano de contas (PGC), os lançamentos feitos automaticamente a partir das vendas, compras e pagamentos, os relatórios e o arquivo anual SAF-T (AO) de contabilidade.",
+    "enable": "Ativar a contabilidade",
+    "enabled": "Contabilidade ativa",
+    "disable": "Desativar",
+    "disabledNote": "A contabilidade está desativada: nada é lançado. Tudo o que já está nos livros é mantido.",
+    "startDate": "Lançar documentos do PDV a partir de",
+    "startDateHint": "Os documentos anteriores não são lançados: estão nos saldos de abertura.",
+    "cashPerTill": "Uma conta de caixa por terminal",
+    "cashPerTillHint": "Caso contrário, todo o dinheiro vai para 45.1.1 Caixa principal.",
+    "grouping": "Lançamento dos documentos do terminal",
+    "groupings": {
+      "PER_DOCUMENT": "Um lançamento por documento",
+      "DAILY_SUMMARY": "Resumo diário por terminal"
+    },
+    "groupingHint": "Resumo diário: Faturas-Recibo, notas de crédito e recibos são somados por terminal e dia (depois de o dia terminar). Faturas a prazo e compras têm sempre um lançamento cada.",
+    "autoPost": "Lançar automaticamente a cada 10 minutos",
+    "purchasesFile": "Arquivo SAF-T mensal de aquisições (Aquisição de Bens e Serviços)",
+    "purchasesFiles": {
+      "AUTO": "Automático: lembrar enquanto a faturação eletrônica estiver desligada",
+      "ALWAYS": "Lembrar sempre",
+      "NEVER": "Nunca"
+    },
+    "save": "Salvar configuração"
+  },
+  "chart": {
+    "templateNote": "Plano padrão: Plano Geral de Contabilidade (Decreto 82/01) — a validar por um contador.",
+    "search": "Buscar código ou nome",
+    "code": "Código",
+    "name": "Descrição",
+    "category": "Tipo",
+    "categories": {
+      "GR": "1.º grau",
+      "GA": "Agregadora",
+      "GM": "Movimento",
+      "AR": "Analítica 1.º grau",
+      "AA": "Analítica agregadora",
+      "AM": "Analítica movimento"
+    },
+    "class": "Classe {{number}} – {{name}}",
+    "linked": {
+      "CUSTOMER": "Cliente",
+      "SUPPLIER": "Fornecedor",
+      "TILL": "Terminal",
+      "BANK": "Conta bancária"
+    },
+    "inactive": "Inativa",
+    "add": "Nova conta",
+    "addTitle": "Nova conta",
+    "addHint": "O código fica sob a conta-mãe: 75.2.9.1 é uma subconta de 75.2.9.",
+    "edit": "Editar",
+    "editTitle": "Conta {{code}}",
+    "active": "Ativa (aceita lançamentos)",
+    "remove": "Excluir",
+    "removed": "Conta excluída",
+    "sync": "Abrir contas faltantes de clientes, fornecedores e terminais",
+    "synced": "{{count}} contas abertas",
+    "showLinked": "Mostrar contas de clientes e fornecedores",
+    "empty": "Nenhuma conta corresponde."
+  }
+}

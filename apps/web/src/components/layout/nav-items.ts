@@ -16,6 +16,7 @@ import {
   FileSpreadsheet,
   Contact,
   ListOrdered,
+  BookOpenCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,6 +39,7 @@ export type NavLabel =
   | "cashDrawer"
   | "shifts"
   | "reports"
+  | "accounting"
   | "customers"
   | "sales"
   | "expenses"
@@ -58,6 +60,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/drawer-events", label: "cashDrawer", icon: Vault },
   { to: "/shifts", label: "shifts", icon: Clock },
   { to: "/reports", label: "reports", icon: FileSpreadsheet },
+  { to: "/accounting", label: "accounting", icon: BookOpenCheck },
   { to: "/expenses", label: "expenses", icon: Receipt },
   { to: "/customers", label: "customers", icon: Contact },
   { to: "/suppliers", label: "suppliers", icon: Truck },

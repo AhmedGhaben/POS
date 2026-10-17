@@ -1,0 +1,74 @@
+{
+  "title": "Accounting",
+  "subtitle": "The books, posted from the POS: chart of accounts, entries, reports and the SAF-T (AO) accounting file.",
+  "readOnly": "You can look at the books; only the owner changes them.",
+  "failed": "Something went wrong. Try again.",
+  "saved": "Saved",
+  "save": "Save",
+  "cancel": "Cancel",
+  "tabs": {
+    "setup": "Settings",
+    "chart": "Chart of accounts"
+  },
+  "setup": {
+    "offTitle": "Keep the books here",
+    "offDescription": "Switch accounting on to get the chart of accounts (PGC), the entries posted automatically from sales, purchases and payments, the reports and the annual SAF-T (AO) accounting file.",
+    "enable": "Switch accounting on",
+    "enabled": "Accounting is on",
+    "disable": "Switch off",
+    "disabledNote": "Accounting is off: nothing is posted. Everything already in the books is kept.",
+    "startDate": "Post POS documents from",
+    "startDateHint": "Earlier documents are not posted: they are in the opening balances.",
+    "cashPerTill": "One cash account per till",
+    "cashPerTillHint": "Otherwise all cash goes to 45.1.1 Caixa principal.",
+    "grouping": "Posting of till documents",
+    "groupings": {
+      "PER_DOCUMENT": "One entry per document",
+      "DAILY_SUMMARY": "Daily summary per till"
+    },
+    "groupingHint": "Daily summary: Facturas-Recibo, credit notes and receipts are added up per till and day (once the day is over). Invoices on credit and purchases are always one entry each.",
+    "autoPost": "Post automatically every 10 minutes",
+    "purchasesFile": "Monthly SAF-T purchases file (Aquisição de Bens e Serviços)",
+    "purchasesFiles": {
+      "AUTO": "Automatic: remind me while e-invoicing is off",
+      "ALWAYS": "Always remind me",
+      "NEVER": "Never"
+    },
+    "save": "Save settings"
+  },
+  "chart": {
+    "templateNote": "Default chart: Plano Geral de Contabilidade (Decreto 82/01) — to be validated by an accountant.",
+    "search": "Search code or name",
+    "code": "Code",
+    "name": "Name",
+    "category": "Type",
+    "categories": {
+      "GR": "1st degree",
+      "GA": "Aggregating",
+      "GM": "Movement",
+      "AR": "Analytic 1st degree",
+      "AA": "Analytic aggregating",
+      "AM": "Analytic movement"
+    },
+    "class": "Class {{number}} – {{name}}",
+    "linked": {
+      "CUSTOMER": "Customer",
+      "SUPPLIER": "Supplier",
+      "TILL": "Till",
+      "BANK": "Bank account"
+    },
+    "inactive": "Inactive",
+    "add": "Add account",
+    "addTitle": "New account",
+    "addHint": "The code goes under its parent: 75.2.9.1 is a sub-account of 75.2.9.",
+    "edit": "Edit",
+    "editTitle": "Account {{code}}",
+    "active": "Active (takes postings)",
+    "remove": "Remove",
+    "removed": "Account removed",
+    "sync": "Open missing customer, supplier and till accounts",
+    "synced": "{{count}} accounts opened",
+    "showLinked": "Show customers' and suppliers' accounts",
+    "empty": "No account matches."
+  }
+}

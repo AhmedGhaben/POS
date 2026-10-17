@@ -230,6 +230,9 @@ model Business {
   customerPayments CustomerPayment[]
   supplierPayments SupplierPayment[]
 
+  accountingSettings AccountingSettings?
+  ledgerAccounts     LedgerAccount[]
+
   @@map("businesses")
 }
 
@@ -1527,4 +1530,74 @@ model AgtSubmission {
   @@index([status, nextAttemptAt])
   @@index([businessId, status])
   @@map("agt_submissions")
+}
+
+// ---------------------------------------------------------------------------
+// Accounting ("Contabilidade", docs/ACCOUNTING-DECISIONS.md)
+// ---------------------------------------------------------------------------
+
+/// SAF-T GroupingCategory: GR first-degree, GA aggregating, GM movement
+/// account of the general ledger; AR/AA/AM the same for analytic accounting.
+enum LedgerAccountCategory {
+  GR
+  GA
+  GM
+  AR
+  AA
+  AM
+}
+
+/// The business keeps its books here: on/off and how POS documents are posted.
+model AccountingSettings {
+  businessId    String    @id
+  business      Business  @relation(fields: [businessId], references: [id])
+  enabled       Boolean   @default(false)
+  /// POS documents from this day on are posted automatically; earlier ones
+  /// are in the opening balances.
+  startDate     DateTime  @db.Date
+  /// One cash account per till (else everything in Caixa principal).
+  cashPerTill   Boolean   @default(true)
+  /// PER_DOCUMENT, or DAILY_SUMMARY (FR, NC and RC summed per till per day).
+  grouping      String    @default("PER_DOCUMENT")
+  /// The integration runs by itself every few minutes.
+  autoPost      Boolean   @default(true)
+  /// The monthly SAF-T purchases file: AUTO (while e-invoicing is off), ALWAYS, NEVER.
+  purchasesFile String    @default("AUTO")
+  enabledAt     DateTime?
+  enabledById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("accounting_settings")
+}
+
+/// An account of the chart (Plano Geral de Contabilidade). The code is the
+/// SAF-T AccountID; the parent is its GroupingCode. Only GM accounts take
+/// postings (a database rule). Never deleted once it has movements.
+model LedgerAccount {
+  id           String                @id @default(cuid())
+  businessId   String
+  business     Business              @relation(fields: [businessId], references: [id])
+  /// "31.1.2.1.0001"
+  code         String
+  name         String
+  category     LedgerAccountCategory
+  parentId     String?
+  parent       LedgerAccount?        @relation("AccountTree", fields: [parentId], references: [id])
+  children     LedgerAccount[]       @relation("AccountTree")
+  /// PGC class 1-8 (the code's first digit).
+  classNo      Int
+  isActive     Boolean               @default(true)
+  /// An account the app keeps for a CUSTOMER, SUPPLIER, TILL or BANK (its id).
+  linkType     String?
+  linkId       String?
+  /// From the default PGC template.
+  fromTemplate Boolean               @default(false)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@unique([businessId, code])
+  @@unique([businessId, linkType, linkId])
+  @@index([parentId])
+  @@map("ledger_accounts")
 }

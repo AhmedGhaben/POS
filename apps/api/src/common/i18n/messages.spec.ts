@@ -24,6 +24,10 @@ describe("API message translations", () => {
     );
   });
 
+  it("puts every value back in its place", () => {
+    expect(translateMessage("Open account 75.7 first: 75.7.1 goes under it", "pt-PT")).toBe("Abra primeiro a conta 75.7: a 75.7.1 fica sob ela");
+  });
+
   it("keeps unknown messages as they are", () => {
     expect(translateMessage("email must be an email", "pt-PT")).toBe("email must be an email");
   });

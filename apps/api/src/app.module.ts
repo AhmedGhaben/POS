@@ -38,6 +38,7 @@ import { CompanyModule } from "./company/company.module";
 import { FiscalModule } from "./fiscal/fiscal.module";
 import { AccountsModule } from "./accounts/accounts.module";
 import { AgtModule } from "./agt/agt.module";
+import { AccountingModule } from "./accounting/accounting.module";
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { AgtModule } from "./agt/agt.module";
     FiscalModule,
     AccountsModule,
     AgtModule,
+    AccountingModule,
     CompanyModule,
     TillAuthModule,
     AuthModule,

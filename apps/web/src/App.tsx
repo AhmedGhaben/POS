@@ -35,6 +35,7 @@ import { ReportsPage } from "@/routes/reports";
 import { CustomersPage } from "@/routes/customers";
 import { SalesPage } from "@/routes/sales";
 import { AgtPage } from "@/routes/agt";
+import { AccountingPage } from "@/routes/accounting";
 
 /** Owner/Manager default to the back office; Cashier defaults straight to POS. */
 function DefaultLanding() {
@@ -83,6 +84,7 @@ export function App() {
               <Route path="/customers" element={<CustomersPage />} />
               <Route path="/sales" element={<SalesPage />} />
               <Route path="/agt" element={<AgtPage />} />
+              <Route path="/accounting" element={<AccountingPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>
