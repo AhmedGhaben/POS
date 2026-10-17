@@ -14,6 +14,8 @@ export interface AccountingSettingsDto {
   grouping: Grouping;
   autoPost: boolean;
   purchasesFile: PurchasesFileRule;
+  /** The purchases file's due day; null = the country's (the month's last day in Angola). */
+  purchasesFileDueDay: number | null;
   enabledAt: string | null;
 }
 

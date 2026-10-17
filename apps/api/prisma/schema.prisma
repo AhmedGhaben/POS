@@ -1576,6 +1576,8 @@ model AccountingSettings {
   autoPost      Boolean   @default(true)
   /// The monthly SAF-T purchases file: AUTO (while e-invoicing is off), ALWAYS, NEVER.
   purchasesFile String    @default("AUTO")
+  /// Its due day each month; null = the country's (Angola: the last day, Decreto 312/18 art. 3).
+  purchasesFileDueDay Int?
   enabledAt     DateTime?
   enabledById   String?
   createdAt     DateTime  @default(now())

@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsEnum, IsIn, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength, ValidateNested } from "class-validator";
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsEnum, IsIn, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from "class-validator";
 import { JournalKind, TransactionType } from "@prisma/client";
 
 export const GROUPINGS = ["PER_DOCUMENT", "DAILY_SUMMARY"] as const;
@@ -31,6 +31,13 @@ export class AccountingSettingsDto {
   @IsOptional()
   @IsIn(PURCHASES_FILE_RULES)
   purchasesFile?: (typeof PURCHASES_FILE_RULES)[number];
+
+  /** The purchases file's due day each month; null goes back to the country's (the last day). */
+  @ValidateIf((o: AccountingSettingsDto) => o.purchasesFileDueDay !== null && o.purchasesFileDueDay !== undefined)
+  @IsInt()
+  @Min(1)
+  @Max(31)
+  purchasesFileDueDay?: number | null;
 }
 
 export class CreateAccountDto {

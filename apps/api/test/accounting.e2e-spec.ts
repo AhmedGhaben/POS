@@ -107,6 +107,17 @@ describe("Accounting (e2e)", () => {
       expect(list.some((a) => a.linkId === finalConsumer.id)).toBe(false);
     });
 
+    it("the purchases file's due day: the country's by default (null), the business's own 1-31, and back", async () => {
+      const read = async () => (await http().get("/accounting/status").set(auth(ownerToken)).expect(200)).body.settings;
+      expect((await read()).purchasesFileDueDay).toBeNull();
+      await http().patch("/accounting/settings").set(auth(ownerToken)).send({ purchasesFileDueDay: 20 }).expect(200);
+      expect(await read()).toMatchObject({ purchasesFileDueDay: 20, purchasesFile: "AUTO" });
+      await http().patch("/accounting/settings").set(auth(ownerToken)).send({ purchasesFileDueDay: 32 }).expect(400);
+      await http().patch("/accounting/settings").set(auth(ownerToken)).send({ purchasesFileDueDay: 0 }).expect(400);
+      await http().patch("/accounting/settings").set(auth(ownerToken)).send({ purchasesFileDueDay: null }).expect(200);
+      expect((await read()).purchasesFileDueDay).toBeNull();
+    });
+
     it("new customers and suppliers get their account at the next sync; names follow renames", async () => {
       const other = (await http().post("/customers").set(auth(ownerToken)).send({ name: "Bar Ilha", country: "PT" }).expect(201)).body.id;
       await http().patch(`/customers/${customerId}`).set(auth(ownerToken)).send({ name: "Kianda Comércio, SA" }).expect(200);

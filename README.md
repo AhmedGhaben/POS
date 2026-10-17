@@ -138,9 +138,11 @@ Prisma backend.
     - Periods are **calendar dates in the shop's time zone** (Luanda): a
       sale at 00:30 on 1 November belongs to November even though it's
       still 31 October in UTC.
-    - The Dashboard reminds owners of the monthly file (until the 15th,
-      while e-invoicing is off) and of the yearly inventory (until 15
-      February).
+    - The Dashboard reminds owners of the monthly files (last month's
+      invoicing and purchases files, due by the last day of the month,
+      Decreto Presidencial 312/18 art. 3; while e-invoicing is off) and of
+      the yearly inventory (until 15 February). The purchases file's due
+      day can be changed in Accounting → Settings.
 - **Products & stock**: categories, per-store inventory, purchases,
   returns, transfers between stores, low-stock alerts, and **CSV
   import/export** with a validating preview.

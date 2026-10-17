@@ -547,6 +547,9 @@
       "ALWAYS": "Lembrar sempre",
       "NEVER": "Nunca"
     },
+    "purchasesDueDay": "Dia-limite de cada mês",
+    "purchasesDueDayLast": "Último dia",
+    "purchasesDueDayHint": "Vazio: o último dia do mês, como fixa o Decreto Presidencial 312/18 (art. 3.º) para o ficheiro do mês anterior. Um dia para lá do fim do mês conta como o último.",
     "save": "Guardar configuração"
   },
   "chart": {

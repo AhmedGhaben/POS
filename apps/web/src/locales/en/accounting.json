@@ -547,6 +547,9 @@
       "ALWAYS": "Always remind me",
       "NEVER": "Never"
     },
+    "purchasesDueDay": "Due day each month",
+    "purchasesDueDayLast": "Last day",
+    "purchasesDueDayHint": "Empty: the last day of the month, as Decreto Presidencial 312/18 (art. 3) sets for last month's file. A day past the month's end counts as its last day.",
     "save": "Save settings"
   },
   "chart": {

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Combobox } from "@/components/ui/combobox";
 import { DateInput } from "@/components/ui/date-input";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api-client";
 import { ACCOUNTING_KEY, updateAccountingSettings, type AccountingStatusDto, type Grouping, type PurchasesFileRule } from "../api";
@@ -20,9 +21,13 @@ export function AccountingSetup({ status, canWrite }: { status: AccountingStatus
   const [grouping, setGrouping] = React.useState<Grouping>(s?.grouping ?? "PER_DOCUMENT");
   const [autoPost, setAutoPost] = React.useState(s?.autoPost ?? true);
   const [purchasesFile, setPurchasesFile] = React.useState<PurchasesFileRule>(s?.purchasesFile ?? "AUTO");
+  // Empty: the country's due day (the month's last day in Angola).
+  const [dueDay, setDueDay] = React.useState(s?.purchasesFileDueDay ? String(s.purchasesFileDueDay) : "");
+  const dueDayValue = dueDay.trim() ? Number(dueDay) : null;
+  const dueDayValid = dueDayValue === null || (Number.isInteger(dueDayValue) && dueDayValue >= 1 && dueDayValue <= 31);
 
   const save = useMutation({
-    mutationFn: (enabled?: boolean) => updateAccountingSettings({ enabled, startDate, cashPerTill, grouping, autoPost, purchasesFile }),
+    mutationFn: (enabled?: boolean) => updateAccountingSettings({ enabled, startDate, cashPerTill, grouping, autoPost, purchasesFile, purchasesFileDueDay: dueDayValue }),
     onSuccess: (next) => {
       queryClient.setQueryData([...ACCOUNTING_KEY, "status"], next);
       void queryClient.invalidateQueries({ queryKey: ACCOUNTING_KEY });
@@ -70,6 +75,22 @@ export function AccountingSetup({ status, canWrite }: { status: AccountingStatus
           options={(["AUTO", "ALWAYS", "NEVER"] as const).map((r) => ({ value: r, label: t(`setup.purchasesFiles.${r}`) }))}
         />
       </div>
+      {purchasesFile !== "NEVER" && (
+        <div className="space-y-2">
+          <Label htmlFor="acc-purchases-due-day">{t("setup.purchasesDueDay")}</Label>
+          <Input
+            id="acc-purchases-due-day"
+            inputMode="numeric"
+            className="w-28"
+            placeholder={t("setup.purchasesDueDayLast")}
+            value={dueDay}
+            disabled={!canWrite}
+            aria-invalid={!dueDayValid}
+            onChange={(e) => setDueDay(e.target.value.replace(/[^0-9]/g, "").slice(0, 2))}
+          />
+          <p className="text-xs text-muted-foreground">{t("setup.purchasesDueDayHint")}</p>
+        </div>
+      )}
     </div>
   );
 
@@ -83,7 +104,7 @@ export function AccountingSetup({ status, canWrite }: { status: AccountingStatus
         <CardContent className="space-y-4">
           {fields}
           {canWrite && (
-            <Button onClick={() => save.mutate(true)} disabled={save.isPending}>
+            <Button onClick={() => save.mutate(true)} disabled={save.isPending || !dueDayValid}>
               {t("setup.enable")}
             </Button>
           )}
@@ -102,10 +123,10 @@ export function AccountingSetup({ status, canWrite }: { status: AccountingStatus
         {fields}
         {canWrite && (
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => save.mutate(undefined)} disabled={save.isPending}>
+            <Button onClick={() => save.mutate(undefined)} disabled={save.isPending || !dueDayValid}>
               {t("setup.save")}
             </Button>
-            <Button variant="outline" onClick={() => save.mutate(!status.enabled)} disabled={save.isPending}>
+            <Button variant="outline" onClick={() => save.mutate(!status.enabled)} disabled={save.isPending || !dueDayValid}>
               {status.enabled ? t("setup.disable") : t("setup.enable")}
             </Button>
           </div>

@@ -60,14 +60,23 @@ export interface Deadline {
 
 /**
  * The SAF-T deadlines to remind about today, from the country config:
- * the monthly invoicing file (only while e-invoicing is off) from the 1st
- * of the month until it's due; the yearly inventory file from 1 January
- * until it's due. `daysAfter` keeps showing one that has just passed.
+ * the monthly invoicing and purchases files (last month's, due by the last
+ * day of this month in Angola) from the 1st of the month until they're due;
+ * the yearly inventory file from 1 January until it's due. `daysAfter`
+ * keeps showing one that has just passed (a monthly file due before the
+ * month's end; one due on the last day gives way to next month's).
  */
 export function upcomingDeadlines(
   today: string,
   config: Pick<CountryConfig, "deadlines"> | null,
-  options: { eInvoicingActive: boolean; regimes: IvaRegime[]; accountingEnabled?: boolean; purchasesFile?: "AUTO" | "ALWAYS" | "NEVER" },
+  options: {
+    eInvoicingActive: boolean;
+    regimes: IvaRegime[];
+    accountingEnabled?: boolean;
+    purchasesFile?: "AUTO" | "ALWAYS" | "NEVER";
+    /** The business's own due day for the purchases file; none = the country's. */
+    purchasesFileDueDay?: number | null;
+  },
   daysAfter = 0,
 ): Deadline[] {
   if (!config) return [];
@@ -75,13 +84,17 @@ export function upcomingDeadlines(
   for (const d of config.deadlines) {
     if (d.when === "eInvoicingOff" && options.eInvoicingActive) continue;
     if (d.when === "accountingOn" && !options.accountingEnabled) continue;
+    let day = d.day;
     if (d.when === "purchasesFile") {
       const rule = options.purchasesFile ?? "AUTO";
       if (rule === "NEVER" || (rule === "AUTO" && options.eInvoicingActive)) continue;
+      if (options.purchasesFileDueDay) day = options.purchasesFileDueDay;
     }
     if (d.regimes && !options.regimes.some((r) => d.regimes!.includes(r))) continue;
     if (d.kind === "monthly") {
-      const due = `${today.slice(0, 7)}-${String(d.day).padStart(2, "0")}`;
+      // "last", or a day past the month's end (31 in a 30-day month), is the month's last day.
+      const lastDay = monthRange(today.slice(0, 7)).endDate;
+      const due = day === "last" || day >= Number(lastDay.slice(8)) ? lastDay : `${today.slice(0, 7)}-${String(day).padStart(2, "0")}`;
       if (today <= addDays(due, daysAfter)) out.push({ key: d.key, due, covers: previousMonth(today), overdue: today > due });
     } else {
       const due = `${today.slice(0, 4)}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}`;

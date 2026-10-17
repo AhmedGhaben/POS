@@ -30,6 +30,7 @@ export class AccountingService {
             grouping: settings.grouping,
             autoPost: settings.autoPost,
             purchasesFile: settings.purchasesFile,
+            purchasesFileDueDay: settings.purchasesFileDueDay,
             enabledAt: settings.enabledAt,
           }
         : null,
@@ -58,6 +59,7 @@ export class AccountingService {
           grouping: dto.grouping ?? "PER_DOCUMENT",
           autoPost: dto.autoPost ?? true,
           purchasesFile: dto.purchasesFile ?? "AUTO",
+          purchasesFileDueDay: dto.purchasesFileDueDay ?? null,
           ...(turningOn ? { enabledAt: new Date(), enabledById: userId } : {}),
         },
         update: {
@@ -67,6 +69,7 @@ export class AccountingService {
           ...(dto.grouping ? { grouping: dto.grouping } : {}),
           ...(dto.autoPost !== undefined ? { autoPost: dto.autoPost } : {}),
           ...(dto.purchasesFile ? { purchasesFile: dto.purchasesFile } : {}),
+          ...(dto.purchasesFileDueDay !== undefined ? { purchasesFileDueDay: dto.purchasesFileDueDay } : {}),
           ...(turningOn ? { enabledAt: new Date(), enabledById: userId } : {}),
         },
       });

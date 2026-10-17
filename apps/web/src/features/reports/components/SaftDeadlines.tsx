@@ -29,6 +29,7 @@ export function SaftDeadlines({ link = true }: { link?: boolean }) {
       regimes: stores.map((s) => s.ivaRegime ?? "GERAL"),
       accountingEnabled: !!accounting.data?.enabled,
       purchasesFile: accounting.data?.settings?.purchasesFile,
+      purchasesFileDueDay: accounting.data?.settings?.purchasesFileDueDay,
     },
     5,
   );

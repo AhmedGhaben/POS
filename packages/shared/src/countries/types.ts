@@ -83,7 +83,8 @@ export interface DeadlineConfig {
   key: string;
   /** "monthly" (day of the next month) or "yearly" (month/day of the next year). */
   kind: "monthly" | "yearly";
-  day: number;
+  /** Day of the month it's due; "last" = the month's last day. */
+  day: number | "last";
   /** 1-12, for yearly. */
   month?: number;
   /** When it applies. */
