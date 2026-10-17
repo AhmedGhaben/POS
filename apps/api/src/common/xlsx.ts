@@ -17,10 +17,11 @@ export interface XlsxSheet {
   widths?: number[];
 }
 
-// Styles (cellXfs): 0 plain, 1 bold (header), 2 amount #,##0.00, 3 date, 4 whole number.
+// Styles (cellXfs): 0 plain, 1 bold (header), 2 amount #,##0.00, 3 date (dd/mm/yyyy: the file is for
+// people; the cell is still a real date), 4 whole number.
 const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-<numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy\\-mm\\-dd"/></numFmts>
+<numFmts count="1"><numFmt numFmtId="164" formatCode="dd\\/mm\\/yyyy"/></numFmts>
 <fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>
 <fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
 <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>

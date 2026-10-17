@@ -46,15 +46,14 @@
   },
   "documents": {
     "title": "Receipts & invoices",
-    "language": "Language of receipts and invoices",
-    "languageHint": "Receipts, quotes, invoices, the customer display and receipt emails use this language. Each person's screens use their own.",
     "receiptHeader": "Receipt header",
     "receiptHeaderPlaceholder": "e.g. Open 7 days, 8am–8pm",
     "receiptFooter": "Receipt footer",
     "receiptFooterPlaceholder": "Thank you!",
     "receiptFooterHint": "Defaults to \"Thank you!\" when blank.",
     "invoiceFooter": "Invoice footer",
-    "invoiceFooterPlaceholder": "Bank details, payment terms…"
+    "invoiceFooterPlaceholder": "Bank details, payment terms…",
+    "languageMoved": "The language of receipts and invoices is set for each store, under Stores (\"Document language\")."
   },
   "logo": {
     "title": "Logo",
@@ -102,7 +101,10 @@
       "2": "Original + Duplicado",
       "3": "Original + Duplicado + Triplicado"
     },
-    "printingHint": "Printers, paper width and calibration are set on each till (This device). Any print can change copies or printer just for itself."
+    "printingHint": "Printers, paper width and calibration are set on each till (This device). Any print can change copies or printer just for itself.",
+    "documentLanguage": "Document language",
+    "documentLanguageAuto": "From the country: {{language}}",
+    "documentLanguageHint": "Receipts, invoices, quotes, shift and other reports, their PDF and CSV exports and emails to customers. Each person's screens keep their own language."
   },
   "tills": {
     "title": "Tills",

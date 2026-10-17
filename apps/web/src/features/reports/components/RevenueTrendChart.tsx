@@ -10,7 +10,7 @@ import {
 import type { SalesTrendPointDto } from "@pos/shared";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatCurrency, formatShortDate } from "@/lib/format";
+import { formatCalendarDate, formatCurrency, formatShortDate } from "@/lib/format";
 import { currentCurrency, useCompactMoney } from "@/features/business/use-money";
 
 interface RevenueTrendChartProps {
@@ -22,7 +22,7 @@ function TrendTooltip({ active, payload, label }: any) {
   const point = payload[0].payload as SalesTrendPointDto;
   return (
     <div className="rounded-md border bg-popover px-3 py-2 text-sm shadow-md">
-      <p className="font-medium text-foreground">{formatShortDate(label)}</p>
+      <p className="font-medium text-foreground">{formatCalendarDate(label)}</p>
       <p className="text-muted-foreground">
         {formatCurrency(point.revenue, currentCurrency())} · {point.orderCount} order{point.orderCount === 1 ? "" : "s"}
       </p>
@@ -45,7 +45,7 @@ export function RevenueTrendChart({ data }: RevenueTrendChartProps) {
             <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
             <XAxis
               dataKey="date"
-              tickFormatter={formatShortDate}
+              tickFormatter={(v: string) => formatShortDate(v)}
               tick={{ fill: "var(--chart-ink-muted)", fontSize: 12 }}
               axisLine={{ stroke: "var(--chart-axis)" }}
               tickLine={false}

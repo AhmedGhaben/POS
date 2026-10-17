@@ -2,7 +2,7 @@ import * as React from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { countryConfig, type IvaRegime, type SaleDocumentFormat, type StoreDto } from "@pos/shared";
+import { countryConfig, documentLanguageFor, type IvaRegime, type SaleDocumentFormat, type StoreDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuthStore } from "@/features/auth/store";
 import { updateStore } from "@/features/business/api";
+import { LANGUAGES } from "@/i18n";
+
+/** The "from the country" choice of the document language. */
+const AUTO = "auto";
 
 function isValidTimezone(tz: string): boolean {
   try {
@@ -34,11 +38,14 @@ interface StoreForm {
   pricesIncludeTax: boolean;
   saleDocumentFormat: SaleDocumentFormat;
   documentCopies: number;
+  /** "" = the country's. */
+  documentLanguage: string;
 }
 
 function EditStoreDialog({ store, onClose }: { store: StoreDto | null; onClose: () => void }) {
   const { t } = useTranslation(["settings", "common"]);
   const updateCached = useAuthStore((s) => s.updateStore);
+  const business = useAuthStore((s) => s.business);
   const country = countryConfig(store?.country ?? "AO");
   const [form, setForm] = React.useState<StoreForm | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -57,12 +64,13 @@ function EditStoreDialog({ store, onClose }: { store: StoreDto | null; onClose: 
       pricesIncludeTax: store.pricesIncludeTax ?? true,
       saleDocumentFormat: store.saleDocumentFormat ?? "RECEIPT",
       documentCopies: store.documentCopies ?? 1,
+      documentLanguage: store.documentLanguage ?? "",
     });
     setError(null);
   }, [store]);
 
   const mutation = useMutation({
-    mutationFn: () => updateStore(store!.id, { ...form!, province: form!.province || null }),
+    mutationFn: () => updateStore(store!.id, { ...form!, province: form!.province || null, documentLanguage: form!.documentLanguage || null }),
     onSuccess: (updated) => {
       updateCached(updated);
       toast.success(t("stores.updated"));
@@ -189,6 +197,24 @@ function EditStoreDialog({ store, onClose }: { store: StoreDto | null; onClose: 
                     options={[1, 2, 3].map((n) => ({ value: String(n), label: t(n === 1 ? "stores.copies.1" : n === 2 ? "stores.copies.2" : "stores.copies.3") }))}
                   />
                 </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="store-document-language">{t("stores.documentLanguage")}</Label>
+                <Combobox
+                  id="store-document-language"
+                  value={form.documentLanguage || AUTO}
+                  onChange={(v) => setForm((f) => (f ? { ...f, documentLanguage: !v || v === AUTO ? "" : v } : f))}
+                  options={[
+                    {
+                      value: AUTO,
+                      label: t("stores.documentLanguageAuto", {
+                        language: LANGUAGES.find((l) => l.code === documentLanguageFor({ country: store?.country }, business?.language))?.label ?? "",
+                      }),
+                    },
+                    ...LANGUAGES.map((l) => ({ value: l.code, label: l.label })),
+                  ]}
+                />
+                <p className="text-xs text-muted-foreground">{t("stores.documentLanguageHint")}</p>
               </div>
               <p className="text-xs text-muted-foreground">{t("stores.printingHint")}</p>
             </div>

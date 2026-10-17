@@ -6,7 +6,7 @@ import { useDocumentLanguage } from "@/i18n/use-document-language";
 /** An issued invoice, rendered from its stored snapshot: never from current settings. */
 export function InvoiceDocument({ invoice }: { invoice: InvoiceDto }) {
   const { sale, seller } = invoice;
-  const { t, money, longDate } = useDocumentLanguage(seller.currency);
+  const { t, money, date } = useDocumentLanguage(seller.currency, sale.storeId);
   const payments =
     sale.payments.length > 0 ? sale.payments : [{ id: "legacy", method: sale.paymentMethod, amount: sale.total }];
 
@@ -15,8 +15,8 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceDto }) {
       title={t("invoice.title")}
       meta={[
         [t("invoice.number"), invoice.number],
-        [t("invoice.date"), longDate(invoice.issuedAt)],
-        [t("invoice.saleDate"), longDate(sale.createdAt)],
+        [t("invoice.date"), date(invoice.issuedAt)],
+        [t("invoice.saleDate"), date(sale.createdAt)],
         [t("invoice.receiptNumber"), sale.receiptNumber],
       ]}
       seller={seller}

@@ -68,29 +68,5 @@ export function formatCompactNumber(value: number): string {
   }).format(value);
 }
 
-export function formatShortDate(isoDate: string): string {
-  const date = new Date(`${isoDate}T00:00:00`);
-  return date.toLocaleDateString(currentLanguage(), { month: "short", day: "numeric" });
-}
-
-/** Date and time, e.g. on receipts: "11/10/2026, 14:05" (pt) or "10/11/2026, 2:05 PM" (en). */
-export function formatDateTime(value: string | Date, locale: string = currentLanguage()): string {
-  return new Date(value).toLocaleString(locale);
-}
-
-/**
- * A calendar date ("2026-10-31") as written: the same day whatever the
- * computer's time zone (formatDate would read it as UTC midnight and show
- * the 30th west of Greenwich).
- */
-export function formatCalendarDate(date: string, options: Intl.DateTimeFormatOptions = {}, locale: string = currentLanguage()): string {
-  return new Date(`${date}T00:00:00Z`).toLocaleDateString(locale, { ...options, timeZone: "UTC" });
-}
-
-/** Date only; `long` gives "11 de outubro de 2026" / "October 11, 2026". */
-export function formatDate(value: string | Date, locale: string = currentLanguage(), long = false): string {
-  return new Date(value).toLocaleDateString(
-    locale,
-    long ? { day: "numeric", month: "long", year: "numeric" } : undefined,
-  );
-}
+// Dates follow the store's country, not the language: see ./dates.
+export { formatCalendarDate, formatDate, formatDateTime, formatMonth, formatShortDate } from "./dates";

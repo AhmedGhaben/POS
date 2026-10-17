@@ -9,7 +9,7 @@ import { emailLanguage } from "../common/i18n/languages";
 import { CreateSaleDto } from "./dto/create-sale.dto";
 import { VoidSaleDto } from "./dto/void-sale.dto";
 import { priceSaleCents, unitDecimals, type DiscountInput, type PricedSale } from "./pricing";
-import { countryConfig, lacksExemptionReason, lineTax, type IvaRegime, type LineTax } from "../countries";
+import { countryConfig, documentLanguageFor, lacksExemptionReason, lineTax, type IvaRegime, type LineTax } from "../countries";
 import { missingExemptionMessage } from "../fiscal/document-lines";
 import { recordMovement } from "../stock/stock";
 import { storeDateRange } from "../common/store-period";
@@ -662,8 +662,8 @@ export class SalesService {
       total: sale.total.toString(),
       taxIncluded: sale.pricesIncludeTax,
       },
-      // For the shop's customer: the business language.
-      emailLanguage(null, store?.business.language),
+      // For the shop's customer: the store's document language (AO → pt-AO).
+      emailLanguage(null, documentLanguageFor(store, store?.business.language)),
     );
   }
 }

@@ -10,7 +10,7 @@ export function ReceiptFiscalTop({ sale, customer: chosen }: { sale: SaleDto; cu
   const doc = saleDocument(sale);
   // The sale's own buyer (reprints), or the one chosen at the till.
   const customer = sale.customer ?? chosen;
-  const { t } = useDocumentLanguage();
+  const { t } = useDocumentLanguage(undefined, sale.storeId);
   const country = useAuthStore((s) => s.business?.country);
   if (!doc) return null;
   const config = countryConfig(doc.seller?.country ?? country);
@@ -38,7 +38,7 @@ export function ReceiptFiscalTop({ sale, customer: chosen }: { sale: SaleDto; cu
 /** Under the totals: IVA per rate, exemption reasons, the hash line, the AGT QR code. */
 export function ReceiptFiscalBottom({ sale }: { sale: SaleDto }) {
   const doc = saleDocument(sale);
-  const { t, money } = useDocumentLanguage();
+  const { t, money } = useDocumentLanguage(undefined, sale.storeId);
   const business = useAuthStore((s) => s.business);
   if (!doc) return null;
   const country = doc.seller?.country ?? business?.country;

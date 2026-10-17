@@ -185,7 +185,7 @@ model Business {
 
   /// ISO 4217 code. Only currencies with 0-2 decimals: money columns are Decimal(10, 2).
   currency                 String   @default("USD")
-  /// Language of receipts, quotes, invoices and customer emails: en, pt-PT, pt-BR.
+  /// Language for emails not about one store; documents use the store's (Store.documentLanguage, else its country's).
   language                 String   @default("en")
   /// Pre-fills the tax % of new products; each product keeps its own rate.
   defaultTaxRate           Decimal  @default(0) @db.Decimal(5, 2)
@@ -305,6 +305,10 @@ model Store {
   /// calibration belong to each till (This device).
   saleDocumentFormat SaleDocumentFormat @default(RECEIPT)
   documentCopies     Int                @default(1)
+  /// "Idioma dos documentos": receipts, invoices, reports and their exports,
+  /// customer emails. Null = the country's (AO → pt-AO), whatever language
+  /// the user reads the screens in.
+  documentLanguage   String?
   phone              String?
   timezone           String             @default("UTC")
   isActive           Boolean            @default(true)

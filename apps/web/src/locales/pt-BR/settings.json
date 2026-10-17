@@ -46,15 +46,14 @@
   },
   "documents": {
     "title": "Recibos e faturas",
-    "language": "Idioma dos recibos e faturas",
-    "languageHint": "Recibos, orçamentos, faturas, a tela do cliente e os recibos por e-mail usam este idioma. A tela de cada pessoa usa o idioma dela.",
     "receiptHeader": "Cabeçalho do recibo",
     "receiptHeaderPlaceholder": "ex.: Aberto todos os dias, 8h–20h",
     "receiptFooter": "Rodapé do recibo",
     "receiptFooterPlaceholder": "Obrigado!",
     "receiptFooterHint": "Em branco, mostra \"Obrigado!\".",
     "invoiceFooter": "Rodapé da fatura",
-    "invoiceFooterPlaceholder": "Dados bancários, Pix, condições de pagamento…"
+    "invoiceFooterPlaceholder": "Dados bancários, Pix, condições de pagamento…",
+    "languageMoved": "O idioma dos recibos e notas fiscais é definido em cada loja, em Lojas (\"Idioma dos documentos\")."
   },
   "logo": {
     "title": "Logotipo",
@@ -102,7 +101,10 @@
       "2": "Original + Duplicado",
       "3": "Original + Duplicado + Triplicado"
     },
-    "printingHint": "Impressoras, largura do papel e calibração são definidas em cada caixa (Este dispositivo). Qualquer impressão pode mudar as cópias ou a impressora só para ela."
+    "printingHint": "Impressoras, largura do papel e calibração são definidas em cada caixa (Este dispositivo). Qualquer impressão pode mudar as cópias ou a impressora só para ela.",
+    "documentLanguage": "Idioma dos documentos",
+    "documentLanguageAuto": "O do país: {{language}}",
+    "documentLanguageHint": "Recibos, notas fiscais, orçamentos, relatórios de turno e outros, suas exportações em PDF e CSV e os e-mails aos clientes. As telas de cada pessoa mantêm o idioma dela."
   },
   "tills": {
     "title": "Caixas",

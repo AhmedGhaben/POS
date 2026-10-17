@@ -24,7 +24,7 @@ const person = (p: { firstName: string; lastName: string } | null) => (p ? `${p.
 
 /** Every till shift in the store, with the cash difference at close. */
 export function ShiftsPage() {
-  const { t, i18n } = useTranslation(["shifts", "common"]);
+  const { t } = useTranslation(["shifts", "common"]);
   const money = useMoney();
   const storeId = useAuthStore((s) => s.currentStoreId);
   const stores = useAuthStore((s) => s.stores);
@@ -119,11 +119,11 @@ export function ShiftsPage() {
               )}
               {list.data?.items.map((s) => (
                 <TableRow key={s.id} className="cursor-pointer" onClick={() => setOpenId(s.id)}>
-                  <TableCell>{formatDateTime(s.openedAt, i18n.language)}</TableCell>
+                  <TableCell>{formatDateTime(s.openedAt)}</TableCell>
                   <TableCell>{s.terminal ? `${s.terminal.code} ${s.terminal.name}` : t("page.browser")}</TableCell>
                   <TableCell>{person(s.openedBy)}</TableCell>
                   <TableCell>
-                    {s.status === "OPEN" ? <Badge variant="secondary">{t("page.open")}</Badge> : formatDateTime(s.closedAt!, i18n.language)}
+                    {s.status === "OPEN" ? <Badge variant="secondary">{t("page.open")}</Badge> : formatDateTime(s.closedAt!)}
                   </TableCell>
                   <TableCell className="text-right">{s.expectedCash != null ? money(s.expectedCash) : "—"}</TableCell>
                   <TableCell className="text-right">{s.countedCash != null ? money(s.countedCash) : "—"}</TableCell>

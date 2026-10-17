@@ -40,11 +40,13 @@ export function cellText(kind: ColumnKind, value: Cell, f: CellFormatters): stri
 
 /**
  * A report cell in a CSV file: numbers stay plain (12345.67, the
- * spreadsheet formats them), dates ISO, codes translated.
+ * spreadsheet formats them), dates as people write them, codes translated.
  */
-export function csvCell(kind: ColumnKind, value: Cell, f: Pick<CellFormatters, "code">): Cell {
+export function csvCell(kind: ColumnKind, value: Cell, f: Pick<CellFormatters, "code" | "date">): Cell {
   if (value === null) return "";
   if (kind === "method" || kind === "docType" || kind === "agtStatus") return f.code(kind, String(value));
+  // For people: 17/10/2026 in Angola (amounts stay plain numbers, for sums).
+  if (kind === "date") return f.date(String(value));
   return value;
 }
 

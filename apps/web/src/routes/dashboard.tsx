@@ -6,7 +6,9 @@ import { Download, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/features/auth/store";
 import { BUSINESS_QUERY_KEY, fetchBusiness } from "@/features/business/api";
-import { useCompactMoney } from "@/features/business/use-money";
+import { useCompactMoney, useCurrency } from "@/features/business/use-money";
+import { useDocumentLang } from "@/i18n/use-document-language";
+import { formatCalendarDate, formatCurrency } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,8 +28,16 @@ import {
   fetchTopProducts,
 } from "@/features/reports/api";
 
+/** jsPDF's built-in fonts have no narrow no-break space (Portuguese thousands): use the plain no-break one. */
+const pdfText = (text: string) => text.replace(/\u202f/g, "\u00a0");
+
 export function DashboardPage() {
   const { t, i18n } = useTranslation(["reports", "common"]);
+  // The CSV and PDF leave the screen: the store's document language and number format.
+  const docLang = useDocumentLang();
+  const { t: docT } = useTranslation(["reports", "common"], { lng: docLang });
+  const currency = useCurrency();
+  const docCompact = (value: number) => pdfText(formatCurrency(value, currency, docLang));
   const compact = useCompactMoney();
   const stores = useAuthStore((s) => s.stores);
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
@@ -72,11 +82,11 @@ export function DashboardPage() {
 
   function exportTrendCsv() {
     downloadCsv(
-      t("export.trendFile", { store: storeName }),
+      docT("export.trendFile", { store: storeName }),
       [
-        { header: t("export.date"), value: (r: { date: string }) => r.date },
-        { header: t("kpi.revenue"), value: (r: { revenue: number }) => r.revenue },
-        { header: t("kpi.orders"), value: (r: { orderCount: number }) => r.orderCount },
+        { header: docT("export.date"), value: (r: { date: string }) => formatCalendarDate(r.date) },
+        { header: docT("kpi.revenue"), value: (r: { revenue: number }) => r.revenue },
+        { header: docT("kpi.orders"), value: (r: { orderCount: number }) => r.orderCount },
       ],
       trendQuery.data ?? [],
     );
@@ -85,33 +95,33 @@ export function DashboardPage() {
   function exportSummaryPdf() {
     const doc = new jsPDF();
     doc.setFontSize(16);
-    doc.text(`${businessQuery.data?.name ?? t("export.business")} — ${storeName}`, 14, 16);
+    doc.text(`${businessQuery.data?.name ?? docT("export.business")} — ${storeName}`, 14, 16);
     doc.setFontSize(10);
-    doc.text(t("lastDays", { count: days }), 14, 22);
+    doc.text(docT("lastDays", { count: days }), 14, 22);
 
     autoTable(doc, {
       startY: 28,
-      head: [[t("export.metric"), t("export.value")]],
+      head: [[docT("export.metric"), docT("export.value")]],
       body: [
-        [t("kpi.revenue"), summary ? compact(summary.revenue) : "—"],
-        [t("kpi.profit"), summary ? compact(summary.profit) : "—"],
-        [t("kpi.orders"), summary ? String(summary.orderCount) : "—"],
-        [t("kpi.avgOrder"), summary ? compact(summary.avgOrderValue) : "—"],
+        [docT("kpi.revenue"), summary ? docCompact(summary.revenue) : "—"],
+        [docT("kpi.profit"), summary ? docCompact(summary.profit) : "—"],
+        [docT("kpi.orders"), summary ? String(summary.orderCount) : "—"],
+        [docT("kpi.avgOrder"), summary ? docCompact(summary.avgOrderValue) : "—"],
       ],
     });
 
     const afterKpiY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 28;
     autoTable(doc, {
       startY: afterKpiY + 10,
-      head: [[t("export.topProduct"), t("export.qtySold"), t("kpi.revenue")]],
+      head: [[docT("export.topProduct"), docT("export.qtySold"), docT("kpi.revenue")]],
       body: (topProductsQuery.data ?? []).map((p) => [
         p.name,
         String(p.quantitySold),
-        compact(p.revenue),
+        docCompact(p.revenue),
       ]),
     });
 
-    doc.save(t("export.reportFile", { store: storeName }));
+    doc.save(docT("export.reportFile", { store: storeName }));
   }
 
   return (

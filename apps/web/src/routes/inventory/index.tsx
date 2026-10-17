@@ -3,9 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Download, History } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useDocumentLang } from "@/i18n/use-document-language";
 import { unitDecimals, type InventoryItemDto, type StockAtDateRowDto } from "@pos/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +21,8 @@ import { formatDateTime, formatQuantity } from "@/lib/format";
 
 export function InventoryPage() {
   const { t } = useTranslation(["stock", "common"]);
+  // Exports are for people outside the screen: the store's document language.
+  const { t: docT } = useTranslation(["stock", "common"], { lng: useDocumentLang() });
   const money = useMoney();
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const role = useAuthStore((s) => s.user?.role);
@@ -71,17 +75,17 @@ export function InventoryPage() {
           disabled={!items.length}
           onClick={() =>
             downloadCsv(
-              t("inventory.exportFile"),
+              docT("inventory.exportFile"),
               [
-                { header: t("columns.product"), value: (i: InventoryItemDto) => i.product.name },
-                { header: t("columns.sku"), value: (i: InventoryItemDto) => i.product.sku },
-                { header: t("inventory.unit"), value: (i: InventoryItemDto) => i.product.unit ?? "un" },
-                { header: t("columns.quantity"), value: (i: InventoryItemDto) => i.quantity },
-                { header: t("inventory.reorderLevel"), value: (i: InventoryItemDto) => i.reorderLevel },
+                { header: docT("columns.product"), value: (i: InventoryItemDto) => i.product.name },
+                { header: docT("columns.sku"), value: (i: InventoryItemDto) => i.product.sku },
+                { header: docT("inventory.unit"), value: (i: InventoryItemDto) => i.product.unit ?? "un" },
+                { header: docT("columns.quantity"), value: (i: InventoryItemDto) => i.quantity },
+                { header: docT("inventory.reorderLevel"), value: (i: InventoryItemDto) => i.reorderLevel },
                 ...(showCosts
                   ? [
-                      { header: t("inventory.averageCost"), value: (i: InventoryItemDto) => i.averageCost ?? "" },
-                      { header: t("inventory.value"), value: (i: InventoryItemDto) => (Number(i.quantity) * Number(i.averageCost ?? 0)).toFixed(2) },
+                      { header: docT("inventory.averageCost"), value: (i: InventoryItemDto) => i.averageCost ?? "" },
+                      { header: docT("inventory.value"), value: (i: InventoryItemDto) => (Number(i.quantity) * Number(i.averageCost ?? 0)).toFixed(2) },
                     ]
                   : []),
               ],
@@ -187,6 +191,8 @@ export function InventoryPage() {
 /** The stock and its book value at the end of a day: the yearly inventory at 31 December. */
 function StockAtDate({ storeId }: { storeId: string }) {
   const { t } = useTranslation(["stock", "common"]);
+  // Exports are for people outside the screen: the store's document language.
+  const { t: docT } = useTranslation(["stock", "common"], { lng: useDocumentLang() });
   const money = useMoney();
   const [date, setDate] = React.useState(lastYearEnd());
   const [asked, setAsked] = React.useState<string | null>(null);
@@ -209,7 +215,7 @@ function StockAtDate({ storeId }: { storeId: string }) {
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
             <Label htmlFor="stock-at-date">{t("stockAt.date")}</Label>
-            <Input id="stock-at-date" type="date" className="w-44" value={date} onChange={(e) => setDate(e.target.value)} />
+            <DateInput id="stock-at-date" className="w-44" value={date} onChange={setDate} />
           </div>
           <Button variant="outline" disabled={!date || query.isFetching} onClick={() => setAsked(date)}>
             {t("stockAt.show")}
@@ -219,18 +225,18 @@ function StockAtDate({ storeId }: { storeId: string }) {
               variant="outline"
               onClick={() =>
                 downloadCsv(
-                  t("stockAt.exportFile", { date: asked }),
+                  docT("stockAt.exportFile", { date: asked }),
                   [
-                    { header: t("columns.sku"), value: (r: StockAtDateRowDto) => r.sku },
-                    { header: t("columns.product"), value: (r: StockAtDateRowDto) => r.name },
-                    { header: t("stockAt.productType"), value: (r: StockAtDateRowDto) => r.productType },
-                    { header: t("stockAt.inventoryType"), value: (r: StockAtDateRowDto) => r.inventoryType ?? "" },
-                    { header: t("inventory.unit"), value: (r: StockAtDateRowDto) => r.unit },
-                    { header: t("columns.quantity"), value: (r: StockAtDateRowDto) => r.quantity },
+                    { header: docT("columns.sku"), value: (r: StockAtDateRowDto) => r.sku },
+                    { header: docT("columns.product"), value: (r: StockAtDateRowDto) => r.name },
+                    { header: docT("stockAt.productType"), value: (r: StockAtDateRowDto) => r.productType },
+                    { header: docT("stockAt.inventoryType"), value: (r: StockAtDateRowDto) => r.inventoryType ?? "" },
+                    { header: docT("inventory.unit"), value: (r: StockAtDateRowDto) => r.unit },
+                    { header: docT("columns.quantity"), value: (r: StockAtDateRowDto) => r.quantity },
                     ...(showCosts
                       ? [
-                          { header: t("inventory.averageCost"), value: (r: StockAtDateRowDto) => r.averageCost ?? "" },
-                          { header: t("inventory.value"), value: (r: StockAtDateRowDto) => r.value ?? "" },
+                          { header: docT("inventory.averageCost"), value: (r: StockAtDateRowDto) => r.averageCost ?? "" },
+                          { header: docT("inventory.value"), value: (r: StockAtDateRowDto) => r.value ?? "" },
                         ]
                       : []),
                   ],

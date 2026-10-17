@@ -35,7 +35,10 @@
     "newVersion": "Está disponível uma nova versão",
     "reload": "Recarregar",
     "lock": "Bloquear caixa",
-    "setMyPin": "Definir o meu PIN"
+    "setMyPin": "Definir o meu PIN",
+    "backToPos": "Voltar ao POS",
+    "cartItems_one": "{{count}} artigo no carrinho",
+    "cartItems_other": "{{count}} artigos no carrinho"
   },
   "language": {
     "label": "Idioma"
@@ -127,5 +130,11 @@
     "large": "Grande",
     "extraLarge": "Muito grande",
     "hint": "Só para si, em todas as caixas onde entrar. As impressões não mudam."
+  },
+  "dateInput": {
+    "day": "DD",
+    "month": "MM",
+    "year": "AAAA",
+    "pick": "Escolher uma data"
   }
 }

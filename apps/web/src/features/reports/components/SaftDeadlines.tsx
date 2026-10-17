@@ -3,7 +3,7 @@ import { CalendarClock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useAuthStore } from "@/features/auth/store";
-import { formatCalendarDate } from "@/lib/format";
+import { formatCalendarDate, formatMonth } from "@/lib/format";
 import { todayIn, upcomingDeadlines } from "../export-periods";
 
 /**
@@ -29,8 +29,8 @@ export function SaftDeadlines({ link = true }: { link?: boolean }) {
           <CalendarClock className="h-4 w-4 shrink-0" aria-hidden />
           <span className="flex-1">
             {t(d.key === "saftInventory" ? "deadlines.saftInventory" : "deadlines.saftInvoicing", {
-              covers: d.key === "saftInvoicing" ? formatCalendarDate(`${d.covers}-01`, { month: "long", year: "numeric" }) : formatCalendarDate(d.covers, { dateStyle: "long" }),
-              due: formatCalendarDate(d.due, { dateStyle: "long" }),
+              covers: d.key === "saftInvoicing" ? formatMonth(d.covers) : formatCalendarDate(d.covers),
+              due: formatCalendarDate(d.due),
             })}
             {d.overdue && <strong> {t("deadlines.overdue")}</strong>}
           </span>

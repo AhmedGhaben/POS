@@ -128,7 +128,7 @@ export class MailService {
     );
   }
 
-  /** In the business language: it goes to the shop's customer. */
+  /** In the store's document language: it goes to the shop's customer. */
   async sendReceiptEmail(to: string, params: ReceiptEmailParams, lang: Language = "en"): Promise<void> {
     const t = MAIL_TEXTS[lang].receipt;
     const money = (value: string) => escapeHtml(formatMoney(value, params.currency, lang));

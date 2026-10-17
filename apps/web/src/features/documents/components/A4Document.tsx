@@ -33,7 +33,7 @@ interface A4DocumentProps {
   /** Right-hand header rows, e.g. [["Quote ref", "Q-…"], ["Date", "8 Oct 2026"]]. */
   meta: [label: string, value: string][];
   /** Only address/phone are used, as fallbacks when the business has none. */
-  store: Pick<StoreDto, "address" | "phone"> | undefined;
+  store: (Pick<StoreDto, "address" | "phone"> & { id?: string }) | undefined;
   lines: DocumentLine[];
   seller?: SellerDetails;
   billTo?: BillTo | null;
@@ -48,7 +48,7 @@ interface A4DocumentProps {
 export function A4Document({ title, meta, store, lines, seller, billTo, notes }: A4DocumentProps) {
   const liveBusiness = useAuthStore((s) => s.business);
   const from = seller ?? liveBusiness;
-  const { t, money, qty } = useDocumentLanguage(from?.currency);
+  const { t, money, qty } = useDocumentLanguage(from?.currency, store?.id);
   if (!from) return null;
 
   const totals = documentTotals(lines);

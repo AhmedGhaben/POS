@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Combobox } from "@/components/ui/combobox";
-import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/features/auth/store";
@@ -110,7 +110,7 @@ export function ReportsPage() {
             ) : (
               <div className="space-y-2">
                 <Label htmlFor="inventory-date">{t("exports.stockDate")}</Label>
-                <Input id="inventory-date" type="date" value={inventoryDate} onChange={(e) => setInventoryDate(e.target.value)} />
+                <DateInput id="inventory-date" value={inventoryDate} onChange={setInventoryDate} />
                 <p className="text-xs text-muted-foreground">{t("exports.inventarioDraft")}</p>
               </div>
             )}

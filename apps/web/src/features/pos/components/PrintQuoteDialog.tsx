@@ -72,7 +72,7 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = nul
   });
   const reference = quoteReference(store?.id ?? "0000", issuedAt);
   const name = forName.trim() || undefined;
-  const date = doc.longDate(issuedAt);
+  const date = doc.date(issuedAt);
 
   const slip = <QuoteSlip store={store} lines={docLines} reference={reference} issuedAt={issuedAt} forName={name} />;
   const a4 = (

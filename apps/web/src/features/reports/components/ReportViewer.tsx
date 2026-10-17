@@ -11,40 +11,16 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { PrintArea } from "@/components/print/PrintArea";
 import { PrintButton } from "@/components/print/PrintButton";
 import { useAuthStore } from "@/features/auth/store";
-import { useMoney } from "@/features/business/use-money";
 import { printDocument } from "@/features/desktop/printing";
-import { documentTitle } from "@/features/fiscal/fiscal-text";
-import { currentLanguage } from "@/i18n";
 import { ApiError } from "@/lib/api-client";
 import { downloadCsv } from "@/lib/csv";
-import { formatCalendarDate, formatDateTime, formatQuantity } from "@/lib/format";
+import { formatCalendarDate, formatDateTime } from "@/lib/format";
+import { useDocumentLang } from "@/i18n/use-document-language";
 import { periodDates, todayIn, type PeriodValue } from "../export-periods";
 import { cellText, csvCell, isNumeric, type CellFormatters } from "../report-cells";
+import { useCellFormatters } from "../use-cell-formatters";
 import { fetchReport, REPORT_GROUPS, SNAPSHOT_REPORTS, type ReportKey, type ReportResultDto, type ReportTableDto } from "../tables-api";
 import { PeriodFields } from "./PeriodFields";
-
-function useCellFormatters(): CellFormatters {
-  const { t } = useTranslation(["reports", "common", "accounts"]);
-  const money = useMoney();
-  const country = useAuthStore((s) => s.business?.country ?? null);
-  return React.useMemo(() => {
-    const number = new Intl.NumberFormat(currentLanguage(), { maximumFractionDigits: 2 });
-    return {
-      money: (v) => money(v),
-      quantity: (v) => formatQuantity(v),
-      number: (v) => number.format(v),
-      date: (v) => formatCalendarDate(v),
-      month: (v) => formatCalendarDate(`${v}-01`, { year: "numeric", month: "long" }),
-      code: (kind, v) =>
-        kind === "method"
-          ? t(`common:paymentMethods.${v}`, { defaultValue: v })
-          : kind === "docType"
-            ? `${v} · ${documentTitle(v as Parameters<typeof documentTitle>[0], country)}`
-            : t(`accounts:agt.statuses.${v}`, { defaultValue: v }),
-      none: "—",
-    };
-  }, [t, money, country]);
-}
 
 /**
  * Reports → the business's figures (docs/plans/ANGOLA.md, phase 10): pick
@@ -72,7 +48,12 @@ export function ReportViewer() {
     placeholderData: keepPreviousData,
   });
   const f = useCellFormatters();
+  // Printed, PDF and CSV: in the store's document language (pt-AO in Angola), whatever the screen's.
+  const docLang = useDocumentLang(storeId);
+  const docF = useCellFormatters(docLang);
+  const { t: docT } = useTranslation("reports", { lng: docLang });
   const storeName = storeId ? (stores.find((s) => s.id === storeId)?.name ?? "") : t("exports.allStores");
+  const docStoreName = storeId ? storeName : docT("exports.allStores");
   const data = result.data?.report === report ? result.data : undefined;
 
   function exportCsv() {
@@ -82,8 +63,8 @@ export function ReportViewer() {
       const span = data.startDate ? `_${data.startDate}_${data.endDate}` : `_${today}`;
       downloadCsv(
         `${report}${suffix}${span}.csv`,
-        table.columns.map((c) => ({ header: t(`tables.columns.${c.key}`, { defaultValue: c.key }), value: (row: Record<string, unknown>) => csvCell(c.kind, (row[c.key] ?? null) as never, f) })),
-        table.totals ? [...table.rows, { ...table.totals, [table.columns[0].key]: t("tables.total") }] : table.rows,
+        table.columns.map((c) => ({ header: docT(`tables.columns.${c.key}`, { defaultValue: c.key }), value: (row: Record<string, unknown>) => csvCell(c.kind, (row[c.key] ?? null) as never, docF) })),
+        table.totals ? [...table.rows, { ...table.totals, [table.columns[0].key]: docT("tables.total") }] : table.rows,
       );
     });
   }
@@ -154,7 +135,7 @@ export function ReportViewer() {
 
       {data && (
         <PrintArea format="a4">
-          <ReportA4 data={data} storeName={storeName} f={f} />
+          <ReportA4 data={data} storeName={docStoreName} f={docF} lang={docLang} />
         </PrintArea>
       )}
     </div>
@@ -208,8 +189,8 @@ function ReportTableView({ table, f }: { table: ReportTableDto; f: CellFormatter
 }
 
 /** The report on A4: the company, which report, period and store, when it was made. */
-function ReportA4({ data, storeName, f }: { data: ReportResultDto; storeName: string; f: CellFormatters }) {
-  const { t } = useTranslation("reports");
+export function ReportA4({ data, storeName, f, lang }: { data: ReportResultDto; storeName: string; f: CellFormatters; lang: string }) {
+  const { t } = useTranslation("reports", { lng: lang });
   const business = useAuthStore((s) => s.business);
   return (
     <div className="a4-doc w-[210mm] bg-white p-[15mm] font-sans text-[8.5pt] leading-snug text-black">

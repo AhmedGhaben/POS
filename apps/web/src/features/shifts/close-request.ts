@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { useAuthStore } from "@/features/auth/store";
 import { logout } from "@/features/auth/api";
 import { useShiftStore } from "./shift-store";
+import { hasOpenCart } from "@/features/pos/cart-store";
+import { useCartGuard } from "@/features/pos/cart-guard";
 
 /**
  * A cashier can't just log out with their shift open: Log out goes into
@@ -36,10 +38,17 @@ export async function signOut(navigate: (path: string) => void) {
 }
 
 /**
- * The Log out button: with this person's shift open, it closes the shift
- * first (on the POS page); otherwise it signs out straight away.
+ * The Log out button: with a sale in the cart, it asks what to do with it
+ * first; with this person's shift open, it closes the shift first (both on
+ * the POS page); otherwise it signs out straight away.
  */
 export async function logOutOrCloseShift(navigate: (path: string) => void) {
+  // A sale still in the cart: the POS page asks what to do with it first.
+  if (hasOpenCart()) {
+    useCartGuard.getState().ask("logout");
+    navigate("/pos");
+    return;
+  }
   if (myOpenShift()) {
     useCloseShiftRequest.getState().request();
     navigate("/pos");

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatCalendarDate, formatCurrency, formatMoney } from "./format";
+import { formatCalendarDate, formatCurrency, formatMoney, formatMonth } from "./format";
 
 /** Intl uses no-break spaces for grouping and before the label; compare with plain ones. */
 const NO_BREAK_SPACES = new RegExp(`[${String.fromCharCode(0xa0, 0x202f)}]`, "g");
@@ -22,8 +22,8 @@ describe("money formats", () => {
 
 describe("calendar dates", () => {
   it("print as the day given, month end and year end included", () => {
-    expect(formatCalendarDate("2026-10-31", { dateStyle: "long" }, "en")).toBe("October 31, 2026");
-    expect(formatCalendarDate("2026-12-31", { dateStyle: "short" }, "pt-PT")).toBe("31/12/26");
-    expect(formatCalendarDate("2026-10-01", { month: "long", year: "numeric" }, "pt-PT")).toBe("outubro de 2026");
+    expect(formatCalendarDate("2026-10-31", "pt-AO")).toBe("31/10/2026");
+    expect(formatCalendarDate("2026-12-31", "pt-AO")).toBe("31/12/2026");
+    expect(formatMonth("2026-10", "pt-PT")).toBe("outubro de 2026");
   });
 });

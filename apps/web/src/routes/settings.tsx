@@ -22,7 +22,6 @@ import { TaxRatesSettings } from "@/features/business/components/TaxRatesSetting
 import { BankAccountsSettings } from "@/features/business/components/BankAccountsSettings";
 import { TillsSettings } from "@/features/business/components/TillsSettings";
 import { formatMoney } from "@/lib/format";
-import { LANGUAGES } from "@/i18n";
 
 const settingsSchema = z.object({
   name: z.string().trim().min(1, "validation.required").max(100),
@@ -41,7 +40,6 @@ const settingsSchema = z.object({
   email: z.union([z.literal(""), z.string().trim().email("validation.email")]),
   website: z.string().max(100),
   currency: z.string().length(3),
-  language: z.string(),
   defaultTaxRate: z
     .string()
     .refine((v) => v !== "" && !Number.isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100, "settings:money.taxRange"),
@@ -75,7 +73,6 @@ function toFormValues(b: BusinessDto): SettingsValues {
     email: b.email ?? "",
     website: b.website ?? "",
     currency: b.currency,
-    language: b.language ?? "en",
     defaultTaxRate: String(Number(b.defaultTaxRate)),
     maxDiscountPercent: b.maxDiscountPercent == null ? "" : String(Number(b.maxDiscountPercent)),
     shiftDifferenceThreshold: b.shiftDifferenceThreshold == null ? "" : String(Number(b.shiftDifferenceThreshold)),
@@ -351,25 +348,7 @@ export function SettingsPage() {
                   <CardTitle className="text-base">{t("documents.title")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="language"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("documents.language")}</FormLabel>
-                        <FormControl>
-                          <Combobox
-                            value={field.value}
-                            onChange={(v) => v !== null && field.onChange(v)}
-                            aria-label={t("documents.language")}
-                            options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))}
-                          />
-                        </FormControl>
-                        <FormDescription>{t("documents.languageHint")}</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <p className="text-sm text-muted-foreground">{t("documents.languageMoved")}</p>
                   <FormField
                     control={form.control}
                     name="receiptHeader"

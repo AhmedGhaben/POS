@@ -38,4 +38,10 @@ describe("xlsx writer", () => {
     expect(sheet).toContain("FR &lt;A&amp;B&gt;");
     expect(sheet).toContain('<c r="C2" s="2"><v>12.5</v></c>');
   });
+
+  it("dates are real dates shown DD/MM/YYYY: the file is for people (SAF-T and AGT stay ISO)", () => {
+    const styles = unzip(buildXlsx([{ name: "Vendas", header: ["Data"], rows: [[{ date: "2026-10-31" }]] }])).get("xl/styles.xml")!.toString();
+    expect(styles).toContain(String.raw`formatCode="dd\/mm\/yyyy"`);
+    expect(styles.match(/formatCode="[^"]*"/g)).toEqual([String.raw`formatCode="dd\/mm\/yyyy"`]);
+  });
 });

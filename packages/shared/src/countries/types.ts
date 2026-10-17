@@ -97,7 +97,7 @@ export interface CountryConfig {
   currency: string;
   /** Locale for numbers, money and dates on documents (e.g. "pt-AO": 245 000,00 Kz). */
   locale: string;
-  /** Screen/document language for new businesses here. */
+  /** Language of documents for stores here (unless a store picks another), and of new businesses. */
   defaultLanguage: string;
   /** Dates on fiscal documents, for stores left on UTC. */
   timeZone: string;

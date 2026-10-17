@@ -101,8 +101,10 @@ test.describe.serial("Angola phase 8b: SAF-T files and the accountant export", (
   test("the inventory file at last 31 December", async () => {
     await page.getByRole("combobox", { name: "File" }).click();
     await page.getByRole("option", { name: /Inventory/ }).click();
-    const date = await page.locator("#inventory-date").inputValue();
-    expect(date).toMatch(/^\d{4}-12-31$/);
+    // Shown as the store writes dates (DD/MM/YYYY in Angola); the file name keeps ISO.
+    const shown = await page.locator("#inventory-date").inputValue();
+    expect(shown).toMatch(/^31\/12\/\d{4}$/);
+    const date = `${shown.slice(6)}-12-31`;
     await page.getByRole("button", { name: "Generate file" }).click();
     const name = `SAFT-AO-Inventario_5417000000_${date}.csv`;
     await expect(page.getByText(`${name} downloaded`)).toBeVisible();

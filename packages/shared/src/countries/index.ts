@@ -87,3 +87,17 @@ export function productNeedsExemptionReason(config: CountryConfig | null, produc
 export function countryForCurrency(currency: string | null | undefined): CountryConfig | null {
   return Object.values(COUNTRIES).find((c) => c.currency === currency) ?? null;
 }
+
+/**
+ * The language of a store's documents (receipts, invoices, reports and
+ * their exports, customer emails): the store's own setting ("Idioma dos
+ * documentos"), else its country's (AO → pt-AO), else the business's,
+ * whatever language the person at the screen reads. With no store
+ * (business-wide reports), pass the business's country.
+ */
+export function documentLanguageFor(
+  store: { documentLanguage?: string | null; country?: string | null } | null | undefined,
+  businessLanguage?: string | null,
+): string {
+  return store?.documentLanguage || countryConfig(store?.country)?.defaultLanguage || businessLanguage || "en";
+}

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { PAYMENT_METHOD_ORDER, PaymentMethod } from "@pos/shared";
 import type { SalePaymentInputDto } from "@pos/shared";
+import type { PaymentDraft } from "@/features/pos/cart-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
@@ -8,32 +9,51 @@ import { useTranslation } from "react-i18next";
 import { useMoney } from "@/features/business/use-money";
 import { Combobox } from "@/components/ui/combobox";
 
-interface SplitRow {
-  id: number;
-  method: PaymentMethod;
-  amount: string;
-}
+type SplitRow = PaymentDraft["rows"][number];
 
 interface PaymentPanelProps {
   total: number;
   onChange: (payments: SalePaymentInputDto[], isValid: boolean) => void;
+  /** What was set so far (kept with the cart); null starts afresh. */
+  draft?: PaymentDraft | null;
+  onDraftChange?: (draft: PaymentDraft) => void;
 }
 
 let nextRowId = 0;
+/** Unique across restarts too: rows are kept with the cart. */
+const newRowId = () => Date.now() * 100 + (nextRowId++ % 100);
+
+const START: PaymentDraft = { isSplit: false, method: PaymentMethod.CASH, tendered: "", rows: [] };
 
 /**
  * Fast path is a single method Select (unchanged from before) plus, only for
  * CASH, a tendered-amount input with a live change-due readout. Split tender
  * is an opt-in toggle — it never appears in the default flow.
  */
-export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
+export function PaymentPanel({ total, onChange, draft, onDraftChange }: PaymentPanelProps) {
   const { t } = useTranslation(["pos", "common"]);
   const paymentMethodOptions = PAYMENT_METHOD_ORDER.map((m) => ({ value: m, label: t(`common:paymentMethods.${m}`) }));
   const money = useMoney();
-  const [isSplit, setIsSplit] = React.useState(false);
-  const [method, setMethod] = React.useState<PaymentMethod>(PaymentMethod.CASH);
-  const [tendered, setTendered] = React.useState("");
-  const [rows, setRows] = React.useState<SplitRow[]>([]);
+  // Controlled by the cart when it gives a draft, so a typed amount survives leaving the page.
+  const [own, setOwn] = React.useState<PaymentDraft>(draft ?? START);
+  const state = draft ?? own;
+  const { isSplit, method, tendered, rows } = state;
+  const stateRef = React.useRef(state);
+  stateRef.current = state;
+  const patch = React.useCallback(
+    (change: Partial<PaymentDraft> | ((prev: PaymentDraft) => Partial<PaymentDraft>)) => {
+      const prev = stateRef.current;
+      const next = { ...prev, ...(typeof change === "function" ? change(prev) : change) };
+      stateRef.current = next;
+      setOwn(next);
+      onDraftChange?.(next);
+    },
+    [onDraftChange],
+  );
+  const setMethod = (v: PaymentMethod) => patch({ method: v });
+  const setTendered = (v: string) => patch({ tendered: v });
+  const setRows = (change: SplitRow[] | ((prev: SplitRow[]) => SplitRow[])) =>
+    patch((prev) => ({ rows: typeof change === "function" ? change(prev.rows) : change }));
 
   const tenderedNum = tendered.trim() === "" ? null : Number(tendered);
   const changeDue =
@@ -66,16 +86,17 @@ export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
   }, [isSplit, method, tenderedNum, rows, total]);
 
   function enableSplit() {
-    setRows([
-      { id: nextRowId++, method: PaymentMethod.CASH, amount: total.toFixed(2) },
-      { id: nextRowId++, method: PaymentMethod.CARD, amount: "0.00" },
-    ]);
-    setIsSplit(true);
+    patch({
+      isSplit: true,
+      rows: [
+        { id: newRowId(), method: PaymentMethod.CASH, amount: total.toFixed(2) },
+        { id: newRowId(), method: PaymentMethod.CARD, amount: "0.00" },
+      ],
+    });
   }
 
   function disableSplit() {
-    setIsSplit(false);
-    setRows([]);
+    patch({ isSplit: false, rows: [] });
   }
 
   function updateRow(id: number, patch: Partial<SplitRow>) {
@@ -83,7 +104,7 @@ export function PaymentPanel({ total, onChange }: PaymentPanelProps) {
   }
 
   function addRow() {
-    setRows((prev) => [...prev, { id: nextRowId++, method: PaymentMethod.CARD, amount: "0.00" }]);
+    setRows((prev) => [...prev, { id: newRowId(), method: PaymentMethod.CARD, amount: "0.00" }]);
   }
 
   function removeRow(id: number) {

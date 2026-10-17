@@ -1,8 +1,8 @@
-import { Moon, Sun, LogOut, LayoutDashboard, MonitorCog, Download, Lock } from "lucide-react";
+import { ArrowLeft, Moon, Sun, LogOut, LayoutDashboard, MonitorCog, Download, Lock } from "lucide-react";
 import { useLockStore, useTillMode } from "@/features/till/lock-store";
 import { useTranslation } from "react-i18next";
 import { useDeviceStore } from "@/features/desktop/bridge";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { StoreSwitcher } from "./StoreSwitcher";
 import { useTheme } from "@/theme/ThemeProvider";
@@ -37,6 +37,7 @@ export function PosShell() {
   const { theme, toggleTheme } = useTheme();
   const role = useAuthStore((s) => s.user?.role);
   const navigate = useNavigate();
+  const location = useLocation();
   const tillMode = useTillMode();
   const lock = useLockStore((s) => s.lock);
 
@@ -50,7 +51,13 @@ export function PosShell() {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex h-14 items-center justify-between border-b px-4">
-        {canReturnToBackOffice ? (
+        {location.pathname !== "/pos" ? (
+          // This device (and any other page in the till's frame): back to the same sale.
+          <NavLink to="/pos" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" />
+            {t("shell.backToPos")}
+          </NavLink>
+        ) : canReturnToBackOffice ? (
           <NavLink
             to="/dashboard"
             className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"

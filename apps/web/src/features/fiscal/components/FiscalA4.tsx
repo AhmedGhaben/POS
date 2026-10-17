@@ -11,7 +11,7 @@ import { ANNULLED_STAMP, certificationLine, documentQrValue, documentTitle, MECH
  * taxes are summed per rate, exempt lines show their legal reason.
  */
 export function FiscalA4({ doc, copyLabel }: { doc: FiscalDocumentDto; /** Original, Duplicado... or "2ª Via"; default Original. */ copyLabel?: string }) {
-  const { t, money, qty, date, dateTime } = useDocumentLanguage(doc.currency);
+  const { t, money, qty, date, dateTime } = useDocumentLanguage(doc.currency, doc.storeId);
   const s = doc.seller;
   const config = countryConfig(s.country);
   const logo = logoSrc(s);
@@ -69,7 +69,7 @@ export function FiscalA4({ doc, copyLabel }: { doc: FiscalDocumentDto; /** Origi
             <tbody>
               <tr>
                 <td className="pr-3 text-neutral-600">{t("fiscal.issueDate")}</td>
-                <td className="font-medium">{date(doc.invoiceDate.slice(0, 10) + "T12:00:00")}</td>
+                <td className="font-medium">{date(doc.invoiceDate.slice(0, 10))}</td>
               </tr>
               <tr>
                 <td className="pr-3 text-neutral-600">{t("fiscal.recordedAt")}</td>
@@ -123,7 +123,7 @@ export function FiscalA4({ doc, copyLabel }: { doc: FiscalDocumentDto; /** Origi
             {(doc.settled ?? []).map((a) => (
               <tr key={a.documentNo} className="border-b border-neutral-300">
                 <td className="py-1 pr-2">{a.documentNo}</td>
-                <td className="py-1 pr-2">{date(a.invoiceDate.slice(0, 10) + "T12:00:00")}</td>
+                <td className="py-1 pr-2">{date(a.invoiceDate.slice(0, 10))}</td>
                 <td className="py-1 pr-2 text-right">{money(a.grossTotal)}</td>
                 <td className="py-1 text-right">{money(a.amount)}</td>
               </tr>

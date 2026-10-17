@@ -226,5 +226,15 @@
     "paidNow": "Paid now (optional)",
     "onAccount": "On account: {{amount}}",
     "needsOnline": "Selling on credit needs the server. Try again when the till is online."
+  },
+  "cartGuard": {
+    "title": "There's a sale in the cart",
+    "bodyLogout_one": "{{count}} item, {{amount}}. Put it on hold for later, or cancel it, before logging out.",
+    "bodyLogout_other": "{{count}} items, {{amount}}. Put it on hold for later, or cancel it, before logging out.",
+    "bodyCloseShift_one": "{{count}} item, {{amount}}. Put it on hold for later, or cancel it, before closing the shift.",
+    "bodyCloseShift_other": "{{count}} items, {{amount}}. Put it on hold for later, or cancel it, before closing the shift.",
+    "hold": "Hold order",
+    "cancel": "Cancel the sale",
+    "back": "Back to the sale"
   }
 }

@@ -90,7 +90,7 @@ test.describe.serial("Angola phase 4: credit at the till, receipts and payables"
     await pay.getByRole("button", { name: /^Receive/ }).click();
     await expect(page.getByText(/^Receipt RC .* issued$/)).toBeVisible();
     const receipt = page.getByRole("dialog", { name: /^Recibo RC / });
-    await expect(receipt).toContainText("Document settled");
+    await expect(receipt).toContainText("Documento liquidado"); // in the store's document language
     await expect(receipt).toContainText(/FT \S+\/\d+/);
     await page.keyboard.press("Escape");
   });

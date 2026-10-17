@@ -35,7 +35,10 @@
     "newVersion": "A new version is available",
     "reload": "Reload",
     "lock": "Lock till",
-    "setMyPin": "Set my PIN"
+    "setMyPin": "Set my PIN",
+    "backToPos": "Back to POS",
+    "cartItems_one": "{{count}} item in the cart",
+    "cartItems_other": "{{count}} items in the cart"
   },
   "language": {
     "label": "Language"
@@ -127,5 +130,11 @@
     "large": "Large",
     "extraLarge": "Extra large",
     "hint": "Just for you, on every till you sign in to. Printouts stay the same."
+  },
+  "dateInput": {
+    "day": "DD",
+    "month": "MM",
+    "year": "YYYY",
+    "pick": "Pick a date"
   }
 }

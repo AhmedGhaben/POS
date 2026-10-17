@@ -18,9 +18,9 @@ interface ReceiptProps {
 }
 
 
-/** 80 mm slip, in the business language. Shown as a preview on screen; wrap a copy in <PrintArea> to print it. */
+/** 80 mm slip, in the store's document language. Shown as a preview on screen; wrap a copy in <PrintArea> to print it. */
 export function Receipt({ sale, store, customer, copy }: ReceiptProps) {
-  const { t, money, qty, dateTime } = useDocumentLanguage();
+  const { t, money, qty, dateTime } = useDocumentLanguage(undefined, sale.storeId);
   const business = useAuthStore((s) => s.business);
   const changeDue = sale.changeDue !== null ? Number(sale.changeDue) : null;
   const saleDiscount = Number(sale.saleDiscountAmount ?? 0);

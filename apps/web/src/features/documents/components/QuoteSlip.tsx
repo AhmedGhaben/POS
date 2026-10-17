@@ -13,7 +13,7 @@ interface QuoteSlipProps {
 
 /** 80 mm quote. Deliberately different from a receipt: no payment section, a clear disclaimer. */
 export function QuoteSlip({ store, lines, reference, issuedAt, forName }: QuoteSlipProps) {
-  const { t, money, qty, dateTime, date } = useDocumentLanguage();
+  const { t, money, qty, dateTime, date } = useDocumentLanguage(undefined, store?.id);
   const totals = documentTotals(lines);
 
   return (

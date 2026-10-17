@@ -49,7 +49,7 @@ export function CustomerAccountSheet({ customer, onClose }: { customer: Customer
     onError: (error) => toast.error(error instanceof ApiError ? error.message : t("failed")),
   });
   const a = account.data;
-  const date = (d: string) => formatCalendarDate(d.slice(0, 10), { dateStyle: "short" });
+  const date = (d: string) => formatCalendarDate(d);
 
   return (
     <>

@@ -23,12 +23,12 @@ import { retryFailed, syncOutbox } from "@/features/pos/sync";
 import { listOutbox } from "@/lib/offline-db";
 import { ApiError } from "@/lib/api-client";
 import { LanguagePicker } from "@/components/layout/LanguagePicker";
-import { currentLanguage } from "@/i18n";
+import { formatDateTime } from "@/lib/format";
 import { TillSignInSection } from "@/features/till/components/TillSignInSection";
 
 function formatTime(iso: string | null | undefined, t: TFunction<"device">) {
   if (!iso) return t("never");
-  return new Date(iso).toLocaleString(currentLanguage(), { dateStyle: "medium", timeStyle: "short" });
+  return formatDateTime(iso);
 }
 
 /** Label/value line, the shape every section of this page uses. */

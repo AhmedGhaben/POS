@@ -46,15 +46,14 @@
   },
   "documents": {
     "title": "Talões e faturas",
-    "language": "Idioma dos talões e faturas",
-    "languageHint": "Os talões, orçamentos, faturas, o ecrã do cliente e os talões por email usam este idioma. O ecrã de cada pessoa usa o seu próprio idioma.",
     "receiptHeader": "Cabeçalho do talão",
     "receiptHeaderPlaceholder": "ex.: Aberto todos os dias, 8h–20h",
     "receiptFooter": "Rodapé do talão",
     "receiptFooterPlaceholder": "Obrigado!",
     "receiptFooterHint": "Se ficar em branco, mostra \"Obrigado!\".",
     "invoiceFooter": "Rodapé da fatura",
-    "invoiceFooterPlaceholder": "IBAN, condições de pagamento…"
+    "invoiceFooterPlaceholder": "IBAN, condições de pagamento…",
+    "languageMoved": "O idioma dos talões e faturas define-se em cada loja, em Lojas («Idioma dos documentos»)."
   },
   "logo": {
     "title": "Logótipo",
@@ -102,7 +101,10 @@
       "2": "Original + Duplicado",
       "3": "Original + Duplicado + Triplicado"
     },
-    "printingHint": "As impressoras, a largura do papel e a calibração definem-se em cada caixa (Este dispositivo). Qualquer impressão pode mudar as cópias ou a impressora só para si."
+    "printingHint": "As impressoras, a largura do papel e a calibração definem-se em cada caixa (Este dispositivo). Qualquer impressão pode mudar as cópias ou a impressora só para si.",
+    "documentLanguage": "Idioma dos documentos",
+    "documentLanguageAuto": "O do país: {{language}}",
+    "documentLanguageHint": "Talões, faturas, orçamentos, relatórios de turno e outros, as suas exportações em PDF e CSV e os emails aos clientes. Os ecrãs de cada pessoa mantêm o idioma dela."
   },
   "tills": {
     "title": "Caixas",

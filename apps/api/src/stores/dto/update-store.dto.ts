@@ -2,6 +2,7 @@ import { Transform } from "class-transformer";
 import { IvaRegime, SaleDocumentFormat } from "@prisma/client";
 import { IsBoolean, IsEnum, IsIn, IsInt, IsOptional, IsString, IsTimeZone, Max, MaxLength, Min, MinLength } from "class-validator";
 import { COUNTRIES } from "../../countries";
+import { SUPPORTED_LANGUAGES } from "../../common/i18n/languages";
 
 const BlankToNull = () =>
   Transform(({ value }) => (typeof value === "string" && value.trim() === "" ? null : value?.trim?.() ?? value));
@@ -58,4 +59,9 @@ export class UpdateStoreDto {
   @Min(1)
   @Max(3)
   documentCopies?: number;
+
+  /** "Idioma dos documentos"; null = the country's. */
+  @IsOptional() @BlankToNull()
+  @IsIn([...SUPPORTED_LANGUAGES], { message: "Unsupported language" })
+  documentLanguage?: string | null;
 }

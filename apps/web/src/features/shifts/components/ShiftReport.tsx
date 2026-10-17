@@ -29,8 +29,9 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
 }
 
 /**
- * The end-of-shift report, 80 mm. It's for the shop, not the customer, so
- * it uses the cashier's screen language.
+ * The end-of-shift report, 80 mm. A printed document like the others: in
+ * the store's document language (pt-AO in Angola), whatever the cashier's
+ * screens are in.
  */
 export function ShiftReport({
   data,
@@ -42,8 +43,8 @@ export function ShiftReport({
   /** Also list every sale (receipt, time, method, total). */
   withSales?: boolean;
 }) {
-  const { t } = useTranslation(["shifts", "common"]);
-  const { money, dateTime } = useDocumentLanguage();
+  const { money, dateTime, lang } = useDocumentLanguage(undefined, store?.id);
+  const { t } = useTranslation(["shifts", "common"], { lng: lang });
   const s = data.summary;
   const difference = data.countedCash != null ? data.countedCash - data.expectedCash : null;
 

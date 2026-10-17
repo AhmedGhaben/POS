@@ -119,8 +119,9 @@ test.describe.serial("Till: shifts", () => {
     await dialog.getByRole("button", { name: "Close the till" }).click();
     await expect(dialog).toContainText("Till closed");
     await expect(dialog).toContainText(/short/);
-    await expect(dialog).toContainText("END OF SHIFT");
-    await expect(dialog).toContainText("Expected cash");
+    // The report is a printed document: the store's language (AO → pt-AO).
+    await expect(dialog).toContainText("FECHO DE CAIXA");
+    await expect(dialog).toContainText("Dinheiro esperado");
 
     const list = await api<{ items: ShiftRow[] }>(page, `/shifts?storeId=${await storeId(page)}&pageSize=1`);
     const shift = list.items[0];

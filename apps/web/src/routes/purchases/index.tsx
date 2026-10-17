@@ -6,8 +6,10 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Download, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useDocumentLang } from "@/i18n/use-document-language";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -79,6 +81,8 @@ const defaultValues = {
 
 export function PurchasesPage() {
   const { t } = useTranslation(["stock", "common"]);
+  // Exports are for people outside the screen: the store's document language.
+  const { t: docT } = useTranslation(["stock", "common"], { lng: useDocumentLang() });
   const money = useMoney();
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -111,18 +115,18 @@ export function PurchasesPage() {
   async function exportCsv() {
     const rows: PurchaseDto[] = [];
     for (let skip = 0; skip < Math.min(total, 5000); skip += 200) rows.push(...(await fetchPurchasePage({ ...filter, take: 200, skip })).items);
-    downloadCsv(`${t("purchases.file")}.csv`, [
-      { header: t("purchases.date"), value: (p: PurchaseDto) => formatDateTime(p.createdAt) },
-      { header: t("purchases.poNumber"), value: (p: PurchaseDto) => p.purchaseNumber },
-      { header: t("purchases.supplier"), value: (p: PurchaseDto) => p.supplier.name },
+    downloadCsv(`${docT("purchases.file")}.csv`, [
+      { header: docT("purchases.date"), value: (p: PurchaseDto) => formatDateTime(p.createdAt) },
+      { header: docT("purchases.poNumber"), value: (p: PurchaseDto) => p.purchaseNumber },
+      { header: docT("purchases.supplier"), value: (p: PurchaseDto) => p.supplier.name },
       { header: "NIF", value: (p: PurchaseDto) => p.supplier.taxId ?? "" },
-      { header: t("purchases.docNo"), value: (p: PurchaseDto) => p.supplierDocNo ?? "" },
-      { header: t("purchases.net"), value: (p: PurchaseDto) => p.subtotal },
-      { header: t("purchases.iva"), value: (p: PurchaseDto) => p.taxTotal },
-      { header: t("columns.total"), value: (p: PurchaseDto) => p.total },
-      { header: t("purchases.withheld"), value: (p: PurchaseDto) => p.withholdingAmount ?? "0" },
-      { header: t("purchases.paidAmount"), value: (p: PurchaseDto) => p.paidAmount ?? "" },
-      { header: t("purchases.payment"), value: (p: PurchaseDto) => (p.paymentStatus ? t(`purchases.paymentStatus.${p.paymentStatus}`) : "") },
+      { header: docT("purchases.docNo"), value: (p: PurchaseDto) => p.supplierDocNo ?? "" },
+      { header: docT("purchases.net"), value: (p: PurchaseDto) => p.subtotal },
+      { header: docT("purchases.iva"), value: (p: PurchaseDto) => p.taxTotal },
+      { header: docT("columns.total"), value: (p: PurchaseDto) => p.total },
+      { header: docT("purchases.withheld"), value: (p: PurchaseDto) => p.withholdingAmount ?? "0" },
+      { header: docT("purchases.paidAmount"), value: (p: PurchaseDto) => p.paidAmount ?? "" },
+      { header: docT("purchases.payment"), value: (p: PurchaseDto) => (p.paymentStatus ? docT(`purchases.paymentStatus.${p.paymentStatus}`) : "") },
     ], rows);
   }
   const suppliersQuery = useQuery({ queryKey: ["suppliers"], queryFn: fetchSuppliers });
@@ -335,7 +339,7 @@ export function PurchasesPage() {
                         <FormItem>
                           <FormLabel>{t("purchases.docDate")}</FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <DateInput name={field.name} value={field.value ?? ""} onChange={field.onChange} onBlur={field.onBlur} ref={field.ref} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -486,11 +490,11 @@ export function PurchasesPage() {
       <div className="mb-4 grid gap-3 sm:grid-cols-5">
         <div className="space-y-1.5">
           <Label htmlFor="purchases-from">{t("purchases.from")}</Label>
-          <Input id="purchases-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <DateInput id="purchases-from" value={from} onChange={setFrom} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="purchases-to">{t("purchases.to")}</Label>
-          <Input id="purchases-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          <DateInput id="purchases-to" value={to} onChange={setTo} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="purchases-supplier">{t("purchases.supplier")}</Label>

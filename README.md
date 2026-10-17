@@ -15,6 +15,12 @@ Prisma backend.
   server is back.
   - **Quantities**: type one on a cart line, or put `3*` before a barcode
     or name in the search.
+  - **The cart is kept** (items, discounts, customer, cash typed…) per
+    till, store and person: going to another page, restarting or a crash
+    loses nothing, and someone else signing in on the till gets their own.
+    It goes only when the sale completes, is cleared or held. Logging out
+    or closing the till with a sale in it asks: "Deixar pendente" or
+    "Cancelar". Every page reached from the POS has "Voltar ao POS".
   - **Held orders** ("Deixar pendente" / "Vendas pendentes"): put an order
     on hold, serve someone else, resume it later. Kept on the till; no
     stock or document number until it's completed.
@@ -277,9 +283,15 @@ Prisma backend.
   - Each person picks their language (account menu, This device, or the
     corner of the sign-in pages). It's saved to their account, and before
     they choose it follows the computer's language.
-  - Receipts, quotes, invoices, the customer display and receipt emails
-    use the **business language** (Settings → Receipts & invoices).
-  - Numbers, money and dates follow the language; server error messages,
+  - Receipts, quotes, invoices, shift reports, printed/PDF/CSV reports and
+    exports, the customer display and receipt emails use the **store's
+    document language** (Settings → Stores → "Idioma dos documentos"; by
+    default its country's: Angola → pt-AO), whatever the screens are in.
+  - **Dates** follow the store's country, not the language: DD/MM/YYYY
+    (and DD/MM/YYYY HH:mm) in Angola, typed that way in date fields too
+    (`src/lib/dates.ts`). SAF-T, AGT, the hash and QR, and the database
+    stay ISO.
+  - Numbers and money follow the language; server error messages,
     emails, AI insights, the Windows installer and its first-start screen
     are translated too.
   - Text lives in `apps/web/src/locales/<language>/*.json`. Adding a

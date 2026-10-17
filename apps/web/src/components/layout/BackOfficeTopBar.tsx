@@ -18,6 +18,7 @@ import { StoreSwitcher } from "./StoreSwitcher";
 import { AgtIndicator } from "@/features/agt/components/AgtIndicator";
 import { DisplaySizeMenu } from "@/features/display/DisplaySizeMenu";
 import { SidebarNav } from "./Sidebar";
+import { BackToPos } from "./BackToPos";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuthStore } from "@/features/auth/store";
 import { logOutOrCloseShift } from "@/features/shifts/close-request";
@@ -54,6 +55,7 @@ export function BackOfficeTopBar() {
           </SheetContent>
         </Sheet>
       </div>
+      <BackToPos />
 
       <div className="ml-auto flex items-center gap-2">
         <kbd className="hidden items-center gap-1 rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-flex">

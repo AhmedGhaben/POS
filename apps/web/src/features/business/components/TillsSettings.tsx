@@ -16,7 +16,7 @@ import { formatDateTime } from "@/lib/format";
 
 /** Settings: the business's tills, and codes for setting up new ones. */
 export function TillsSettings() {
-  const { t, i18n } = useTranslation("settings");
+  const { t } = useTranslation("settings");
   const queryClient = useQueryClient();
   const stores = useAuthStore((s) => s.stores);
   const tills = useQuery({ queryKey: ["terminals"], queryFn: fetchTerminals });
@@ -41,7 +41,7 @@ export function TillsSettings() {
                 <p className="text-muted-foreground">
                   {storeName(till.storeId)}
                   {" · "}
-                  {till.lastSeenAt ? t("tillsList.lastSeen", { when: formatDateTime(till.lastSeenAt, i18n.language) }) : t("tillsList.neverSeen")}
+                  {till.lastSeenAt ? t("tillsList.lastSeen", { when: formatDateTime(till.lastSeenAt) }) : t("tillsList.neverSeen")}
                 </p>
               </div>
               <Button size="sm" variant="outline" disabled={toggle.isPending} onClick={() => toggle.mutate(till)}>

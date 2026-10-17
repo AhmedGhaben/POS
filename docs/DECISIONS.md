@@ -69,6 +69,67 @@ the freshly migrated `pos_ci`), web unit 150, desktop unit 28; lint clean
 
 ---
 
+## Four fixes from testing: dates, the POS cart, Back to POS, document language (2026-10-17)
+
+### Dates: DD/MM/YYYY
+
+| # | Decision | Why |
+|---|----------|-----|
+| 1 | **One helper**, `apps/web/src/lib/dates.ts` (re-exported by `lib/format.ts`): `formatDate`, `formatDateTime`, `formatCalendarDate`, `formatShortDate`, `formatMonth`, `parseDateInput`. The format comes from the **store's country** config (`locale`: AO → pt-AO → 17/10/2026 and 17/10/2026 14:05, always 24-hour), not the screen language: someone using English screens in an Angolan store sees the same dates as on the documents. With no country config, the screen language decides. | Your rule: one helper, by country, nothing hardcoded. |
+| 2 | Every date shown went through it: sales, invoices, purchases, shifts, reports (screen, A4/PDF, CSV), customers' and suppliers' accounts, AGT page, drawer events, inventory, transfers, returns, expenses, tills, This device, the SAF-T deadlines, receipts, A4 documents, quotes, shift reports. "Long" dates ("17 de outubro de 2026") became DD/MM/YYYY too. | "Every date". |
+| 3 | Not dates, so not DD/MM/YYYY: a **month** in words ("outubro de 2026", report rows by month, SAF-T deadline "covers"), and **chart axes**, which show DD/MM (the year is in the title; tooltips show the full date). | Readability; say if you want MM/YYYY or the year on the axes. |
+| 4 | **Date fields** (`components/ui/date-input.tsx`, all 12 of them): typed as DD/MM/YYYY (also 17-10-2026, 17.10.2026, 1/2/2026, 17102026, and ISO when pasted), with a calendar button. Half-typed or impossible dates (31/02) are refused and the field goes back to the last good date when left. The value in and out stays ISO. The browser's own date field showed the computer's format (MM/DD/YYYY on an English Windows), so it's only used for its calendar. The **month** picker on Reports → Files is still the browser's own. | Your rule: type DD/MM/YYYY. |
+| 5 | **Exports for people**: report CSVs write dates as DD/MM/YYYY (amounts stay plain numbers, so spreadsheets can add them); the accountant's Excel workbook keeps real date cells, now shown dd/mm/yyyy. File names keep ISO dates (`SAFT-AO-…_2025-12-31.csv`): they sort. | |
+| 6 | **Untouched, still ISO**: SAF-T XML, AGT payloads, the hash/signature message, the QR, the database, the API, the period logic. Tests check it (SAF-T and AGT specs, `xlsx.spec.ts`). | Your rule. |
+
+### The POS cart survives navigation, restarts and crashes
+
+| # | Decision | Why |
+|---|----------|-----|
+| 7 | The sale in progress lives in a **saved cart** (`features/pos/cart-store.ts`, browser storage of the till, written at every change): items, quantities, line and sale discounts, changed prices, managers' approvals, the customer, the receipt email, credit and amount paid now, the payment method, split rows and the **cash typed**, and a pro-forma being sold. | Your list, "exactly as they were". |
+| 8 | **One cart per till, store and person** (key: till id, or "browser"; store; user). Someone else signing in on the same till (password or PIN, after a lock too) gets their own, never the last person's; the first person's is still there when they're back. Switching store switches cart. | "Not see or inherit"; nothing lost either. |
+| 9 | **Cleared only** when the sale completes, on **Clear cart** (the explicit cancel), or when held ("Deixar pendente"). | Your rule. |
+| 10 | **Log out or Close the till with items in the cart** asks first: "Há uma venda no carrinho": **Deixar pendente** (it becomes a held order, then carries on), **Cancelar** (the sale is dropped, then carries on), or **Voltar à venda** (stays). Logging out from the back office goes to the POS to ask. Then the usual flow (with a shift open: blind count, report, sign out). | Your rule. "Cancelar" cancels the sale, not the logout; "Voltar à venda" is there so nobody is forced to choose. |
+| 11 | Held orders are still shared by the store's cashiers on that till, as before: parking a sale is the way to hand it over. | |
+| 12 | The completed-sale dialog isn't kept: once sold, the receipt is in Sales / Recent sales. | |
+
+### Back to the POS
+
+| # | Decision | Why |
+|---|----------|-----|
+| 13 | **"Voltar ao POS"** in the back office's top bar (Settings, Dashboard, Products, Customers… every page) once you came from the POS or while there's a sale in the cart; it shows the cart's item count and goes back to the same sale (the cart of point 7). On **This device** (the till's settings, the gear in the POS top bar) the top-left link is now "← Voltar ao POS". The sidebar's "Point of Sale" link also returns to the same sale. | Your point 3: every way out of the POS comes back to the same sale. |
+
+### Documents in the store's language
+
+| # | Decision | Why |
+|---|----------|-----|
+| 14 | **New per-store setting "Idioma dos documentos"** (Settings → Stores → edit a store): "From the country: Português (Angola)" by default, or any language. Stored as `stores.documentLanguage`, null = the country's (`documentLanguageFor` in the shared and API country helpers: the store's choice, else its country's `defaultLanguage`, else the business's). Migration `20261017090000_store_document_language`. | Your point 4; other countries get theirs from their config. |
+| 15 | The business-wide "Language of receipts and invoices" in Settings is **gone from the screen** (a line points to Stores). The column stays as the fallback for countries without a config and for emails not about one store (password reset, staff invite). | One place to set it. |
+| 16 | In the store's document language, **whatever the user's screen language**: receipts and fiscal receipts, A4 documents (Factura, Factura-Recibo, Recibo, Notas de Crédito/Débito, Pró-forma), quotes, the old A4 invoices, the **shift close report**, **Reports** when printed / saved as PDF / exported to CSV, the Sales / Purchases / Inventory / stock-at-date CSVs, the Dashboard's CSV and PDF, the customer display, and the **receipt email** to customers. The screens themselves stay in each person's language (a report on screen is in yours; its print, PDF and CSV in the store's). | Your rule. |
+| 17 | pt-AO wording on A4 documents: **"Total Ilíquido"** and **"Total Imposto"** (were "Total sem IVA" / "Total de IVA", still used in pt-PT). "Troco", the amount in words and exemption texts were already Portuguese. | Your list. |
+| 18 | The accountant's Excel and SAF-T were already Portuguese; unchanged. | |
+| 19 | Templates checked for hardcoded English: none left. Every document label comes from the translation files, so any language added later is complete or caught by the key-parity test. | |
+
+**Tests added**: `lib/dates.test.ts` (DD/MM/YYYY with English screens,
+24-hour times, typed input, impossible dates), `features/pos/cart-store.test.ts`
+(kept with everything, survives a restart, cleared, not shared between
+users, one per till/store/person), `i18n/document-language.test.tsx`
+(renders an AO Factura-Recibo, a report on A4 and a shift report with the
+screens in English and fails on any English label, using the English
+texts Portuguese says differently; checked that it does fail when the
+documents are English), `xlsx.spec.ts` (dd/mm/yyyy cells), `countries.spec.ts`
+(document language). Desktop e2e updated where documents are now in
+Portuguese (receipt discount, shift report, receipt RC, customer display)
+and where the inventory date field now shows 31/12/YYYY; `logOut` cancels
+a sale left in the cart.
+
+**Changes in behaviour you'll notice**: on the demo store, receipts and
+reports were English (the business language was "en"); they're now
+Portuguese, since the store is in Angola. To get English documents back,
+set the store's "Idioma dos documentos" to English.
+
+---
+
 ## 0 % products without an exemption reason (2026-10-16)
 
 Your instructions: a 0 % / Isento product must have an M-code; never

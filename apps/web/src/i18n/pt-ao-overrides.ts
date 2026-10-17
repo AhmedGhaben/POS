@@ -11,6 +11,13 @@ export const PT_AO_OVERRIDES: Record<string, Record<string, unknown>> = {
       MOBILE_MONEY: "Multicaixa Express / Unitel Money",
     },
   },
+  // The words Angolan invoices use for the totals.
+  documents: {
+    fiscal: {
+      netTotal: "Total Ilíquido",
+      taxTotal: "Total Imposto",
+    },
+  },
 };
 
 /** Deep-merges the overrides into a language's resources. */

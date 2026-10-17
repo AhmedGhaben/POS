@@ -83,8 +83,9 @@ test.describe.serial("Till: discounts", () => {
     await page.getByRole("button", { name: /^Charge/ }).click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toContainText("Sale complete");
-    await expect(dialog).toContainText("Sale discount");
-    await expect(dialog).toContainText(/You saved/);
+    // The receipt is in the store's document language (AO → pt-AO), the screens in English.
+    await expect(dialog).toContainText("Desconto na venda");
+    await expect(dialog).toContainText(/Poupou/);
     await page.keyboard.press("Escape");
 
     const [latest] = await sales(page);

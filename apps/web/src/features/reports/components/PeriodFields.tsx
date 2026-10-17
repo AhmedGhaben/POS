@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Combobox } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import type { PeriodValue } from "../export-periods";
 
@@ -30,11 +31,11 @@ export function PeriodFields({ id, value, onChange }: { id: string; value: Perio
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-2">
             <Label htmlFor={`${id}-start`}>{t("exports.startDate")}</Label>
-            <Input id={`${id}-start`} type="date" value={value.startDate} onChange={(e) => onChange({ ...value, startDate: e.target.value })} />
+            <DateInput id={`${id}-start`} value={value.startDate} onChange={(v) => onChange({ ...value, startDate: v })} />
           </div>
           <div className="space-y-2">
             <Label htmlFor={`${id}-end`}>{t("exports.endDate")}</Label>
-            <Input id={`${id}-end`} type="date" value={value.endDate} onChange={(e) => onChange({ ...value, endDate: e.target.value })} />
+            <DateInput id={`${id}-end`} value={value.endDate} onChange={(v) => onChange({ ...value, endDate: v })} />
           </div>
         </div>
       )}

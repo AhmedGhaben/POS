@@ -139,7 +139,7 @@ test.describe.serial("Part D: customer displays", () => {
     await expect(customer.getByText(productName)).toBeVisible();
 
     await page.getByRole("button", { name: /^Charge/ }).click();
-    await expect(customer.getByText("Thank you!")).toBeVisible();
+    await expect(customer.getByText("Obrigado!")).toBeVisible(); // the store's document language (AO → pt-AO)
     await expect(customer.getByTestId("customer-change")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(customer.getByText("Hello from Demo")).toBeVisible();

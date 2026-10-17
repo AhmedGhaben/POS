@@ -7,14 +7,13 @@ import { adoptShift, fetchCurrentShift } from "@/features/shifts/api";
 import type { LocalShift } from "@/features/shifts/ledger";
 import { OpenShiftPanel } from "@/features/shifts/components/OpenShiftPanel";
 import { OthersShiftPanel } from "@/features/shifts/components/OthersShiftPanel";
-import { useCloseShiftRequest } from "@/features/shifts/close-request";
 import { CashMovementDialog } from "@/features/shifts/components/CashMovementDialog";
 import { CloseShiftDialog } from "@/features/shifts/components/CloseShiftDialog";
 import { isWorkingOffline, useOfflineStore } from "@/features/pos/offline-store";
 import { CreditOption } from "@/features/pos/components/CreditOption";
 import { creditSplit, NO_CREDIT, type CreditChoice } from "@/features/pos/credit";
 import { useTranslation } from "react-i18next";
-import { countryConfig, DrawerOpenReason, fromCents, lacksExemptionReason, lineGrossCents, PaymentMethod, Permission } from "@pos/shared";
+import { countryConfig, DrawerOpenReason, fromCents, lacksExemptionReason, lineGrossCents, PaymentMethod } from "@pos/shared";
 import type { CustomerCardDto, CustomerDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +34,7 @@ import { PaymentPanel } from "@/features/pos/components/PaymentPanel";
 import { RecentSalesSheet } from "@/features/pos/components/RecentSalesSheet";
 import { HeldOrdersSheet } from "@/features/pos/components/HeldOrdersSheet";
 import { useHeldOrders, useStoreHeldOrders, type HeldOrder } from "@/features/pos/held-orders";
+import { useCartStore, type CartDraft } from "@/features/pos/cart-store";
 import { DiscountDialog } from "@/features/pos/components/DiscountDialog";
 import { PriceDialog } from "@/features/pos/components/PriceDialog";
 import type { Approval } from "@/features/overrides/approval";
@@ -51,7 +51,9 @@ import { useDeviceStore } from "@/features/desktop/bridge";
 import { syncTillSeries } from "@/features/fiscal/numbering";
 import { fetchFiscalDocument } from "@/features/fiscal/api";
 import { posFetchProducts } from "@/features/pos/catalog";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useCartGuard, useLeftPos, type CartGuardNext } from "@/features/pos/cart-guard";
+import { logOutOrCloseShift, useCloseShiftRequest } from "@/features/shifts/close-request";
 import { openCashDrawer, useCanOpenDrawer, useHasDrawer } from "@/features/desktop/drawer";
 import { OpenDrawerDialog } from "@/features/desktop/components/OpenDrawerDialog";
 import { useCustomerDisplay } from "@/features/desktop/customer-display";
@@ -64,6 +66,8 @@ export function PosPage() {
   const stores = useAuthStore((s) => s.stores);
   const currentStore = stores.find((s) => s.id === currentStoreId);
   const {
+    key: cartKey,
+    draft,
     lines,
     priced,
     saleDiscount,
@@ -77,38 +81,48 @@ export function PosPage() {
     restore,
     totals,
   } = useCart();
+  // Everything about the sale in progress is in the till's saved cart
+  // (cart-store.ts): it's still there after another page or a restart, and
+  // someone else signing in here gets their own.
+  const updateCart = React.useCallback(
+    (patch: Partial<CartDraft>) => {
+      if (cartKey) useCartStore.getState().update(cartKey, () => patch);
+    },
+    [cartKey],
+  );
   // Managers' approvals for this sale (discounts, price changes), one per
   // permission; they go with the sale and are used once.
-  const [approvals, setApprovals] = React.useState<Partial<Record<Permission, Approval>>>({});
-  const addApproval = React.useCallback((approval: Approval | null | undefined) => {
-    if (approval) setApprovals((a) => ({ ...a, [approval.permission]: approval }));
-  }, []);
-  const clear = React.useCallback(() => {
-    clearCart();
-    setApprovals({});
-  }, [clearCart]);
+  const approvals = draft.approvals;
+  const addApproval = React.useCallback(
+    (approval: Approval | null | undefined) => {
+      if (approval && cartKey) useCartStore.getState().update(cartKey, (c) => ({ approvals: { ...c.approvals, [approval.permission]: approval } }));
+    },
+    [cartKey],
+  );
+  const clear = clearCart;
   const [priceFor, setPriceFor] = React.useState<CartLine | null>(null);
-  // Someone else took over the till (PIN): their own cart, not the last person's.
   const userId = useAuthStore((s) => s.user?.id);
-  const cartOwner = React.useRef(userId);
-  React.useEffect(() => {
-    if (cartOwner.current !== userId) clear();
-    cartOwner.current = userId;
-  }, [userId, clear]);
+  // Wherever the cashier goes from here, that page offers "Voltar ao POS".
+  React.useEffect(() => () => useLeftPos.setState({ left: true }), []);
   const [discountFor, setDiscountFor] = React.useState<CartLine | "sale" | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = React.useState<string | null>(null);
   const [payments, setPayments] = React.useState<SalePaymentInputDto[]>([]);
   const [paymentsValid, setPaymentsValid] = React.useState(true);
-  const [customer, setCustomerState] = React.useState<CustomerDto | null>(null);
+  const customer = draft.customer;
   // A sale on credit (online, fiscal stores): the rest of the total goes on the customer's account.
-  const [credit, setCredit] = React.useState<CreditChoice>(NO_CREDIT);
+  const credit = draft.credit;
+  const setCredit = React.useCallback(
+    (next: CreditChoice) => {
+      // Credit on or off changes what's paid now: the payment starts again.
+      if (cartKey) useCartStore.getState().update(cartKey, (c) => ({ credit: next, ...(c.credit.on !== next.on ? { payment: null } : {}) }));
+    },
+    [cartKey],
+  );
   const [creditValid, setCreditValid] = React.useState(true);
-  const setCustomer = React.useCallback((c: CustomerDto | null) => {
-    setCustomerState(c);
-    setCredit(NO_CREDIT);
-  }, []);
+  const setCustomer = React.useCallback((c: CustomerDto | null) => updateCart({ customer: c, credit: NO_CREDIT, payment: null }), [updateCart]);
   const online = useOfflineStore((s) => !isWorkingOffline(s));
-  const [receiptEmail, setReceiptEmail] = React.useState("");
+  const receiptEmail = draft.receiptEmail;
+  const setReceiptEmail = (email: string) => updateCart({ receiptEmail: email });
   const [completedSale, setCompletedSale] = React.useState<SaleDto | null>(null);
   const [completedCustomer, setCompletedCustomer] = React.useState<CustomerDto | null>(null);
   const [paymentPanelKey, setPaymentPanelKey] = React.useState(0);
@@ -134,7 +148,6 @@ export function PosPage() {
       approvals: Object.values(approvals).filter((a): a is Approval => !!a),
     });
     clear();
-    setCustomer(null);
     setPaymentPanelKey((k) => k + 1);
   }
 
@@ -147,8 +160,7 @@ export function PosPage() {
       toast.info(t("held.swapped"));
     }
     restore(taken.lines, taken.saleDiscount);
-    setApprovals(Object.fromEntries((taken.approvals ?? []).map((a) => [a.permission, a])));
-    setCustomer(taken.customer);
+    updateCart({ approvals: Object.fromEntries((taken.approvals ?? []).map((a) => [a.permission, a])), customer: taken.customer, credit: NO_CREDIT });
     setHeldOpen(false);
     setCartSheetOpen(false);
   }
@@ -187,13 +199,28 @@ export function PosPage() {
     useCloseShiftRequest.getState().done();
     if (shift && !othersShift) setClosing(shift);
   }, [closeRequested, shift, othersShift]);
+  // Logging out or closing the shift with a sale in the cart: park it or
+  // cancel it first, then carry on.
+  const navigate = useNavigate();
+  const guard = useCartGuard((s) => s.pending);
+  function afterCartDecision(next: CartGuardNext) {
+    useCartGuard.getState().done();
+    if (next === "logout") void logOutOrCloseShift(navigate);
+    else if (shift && !othersShift) setClosing(shift);
+  }
+  // Nothing left to decide (the cart was emptied elsewhere): just carry on.
+  React.useEffect(() => {
+    if (guard && lines.length === 0) afterCartDecision(guard);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guard, lines.length]);
   // Kept separate from completedSale: only one dialog (and print area) is mounted at a time.
   const [invoiceFor, setInvoiceFor] = React.useState<{ sale: SaleDto; customer: CustomerDto | null } | null>(null);
   const [viewingDocument, setViewingDocument] = React.useState<string | null>(null);
   // Opened right after a sale in a store that prints A4: print the original at once.
   const [autoPrintDocument, setAutoPrintDocument] = React.useState(false);
   // A Factura Pró-forma being sold (opened from Invoices): the sale invoices it.
-  const [proforma, setProforma] = React.useState<{ id: string; documentNo: string } | null>(null);
+  const proforma = draft.proforma;
+  const setProforma = React.useCallback((p: CartDraft["proforma"]) => updateCart({ proforma: p }), [updateCart]);
   const [searchParams, setSearchParams] = useSearchParams();
   React.useEffect(() => {
     const id = searchParams.get("proforma");
@@ -218,7 +245,7 @@ export function PosPage() {
         toast.error((error as Error).message);
       }
     })();
-  }, [searchParams, setSearchParams, restore, setCustomer, t]);
+  }, [searchParams, setSearchParams, restore, setCustomer, setProforma, t]);
   const queryClient = useQueryClient();
 
   // Windows app with auto-print on: the receipt goes to the printer as soon
@@ -288,10 +315,8 @@ export function PosPage() {
       useShiftStore.getState().recordSale(sale, cashier ? `${cashier.firstName} ${cashier.lastName}` : "");
       setCompletedSale(sale);
       setCompletedCustomer(customer);
-      setProforma(null);
+      // Sold: the cart (customer, payment, pro-forma and all) goes.
       clear();
-      setCustomer(null);
-      setReceiptEmail("");
       setPaymentPanelKey((k) => k + 1);
       setCartSheetOpen(false);
       queryClient.invalidateQueries({ queryKey: ["inventory", currentStoreId] });
@@ -370,6 +395,8 @@ export function PosPage() {
           <PaymentPanel
             key={`${paymentPanelKey}-${credit.on}`}
             total={split.paidNow}
+            draft={draft.payment}
+            onDraftChange={(payment) => updateCart({ payment })}
             onChange={(p, valid) => {
               setPayments(p);
               setPaymentsValid(valid);
@@ -458,7 +485,8 @@ export function PosPage() {
               variant="outline"
               onClick={() => {
                 setCartSheetOpen(false);
-                setClosing(shift);
+                if (lines.length > 0) useCartGuard.getState().ask("closeShift");
+                else setClosing(shift);
               }}
             >
               <LockKeyhole className="mr-2 h-4 w-4" /> {t("shifts:buttons.close")}
@@ -547,6 +575,39 @@ export function PosPage() {
       <OpenDrawerDialog open={drawerDialogOpen} onOpenChange={setDrawerDialogOpen} />
       {shift && <CashMovementDialog shift={shift} open={movementOpen} onOpenChange={setMovementOpen} />}
       <CloseShiftDialog shift={closing} store={currentStore} open={!!closing} onOpenChange={(o) => !o && setClosing(null)} />
+      <Dialog open={!!guard && lines.length > 0} onOpenChange={(open) => !open && useCartGuard.getState().done()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("cartGuard.title")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {t(guard === "closeShift" ? "cartGuard.bodyCloseShift" : "cartGuard.bodyLogout", { count: lines.length, amount: money(totals.total) })}
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button
+              onClick={() => {
+                holdCurrent(null);
+                afterCartDecision(guard!);
+              }}
+            >
+              <Pause className="mr-2 h-4 w-4" /> {t("cartGuard.hold")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                clear();
+                setPaymentPanelKey((k) => k + 1);
+                afterCartDecision(guard!);
+              }}
+            >
+              {t("cartGuard.cancel")}
+            </Button>
+          </div>
+          <Button variant="ghost" onClick={() => useCartGuard.getState().done()}>
+            {t("cartGuard.back")}
+          </Button>
+        </DialogContent>
+      </Dialog>
       <HeldOrdersSheet open={heldOpen} onOpenChange={setHeldOpen} storeId={currentStoreId} onResume={resumeHeld} />
       <Dialog open={holdNoteOpen} onOpenChange={setHoldNoteOpen}>
         <DialogContent className="sm:max-w-sm">

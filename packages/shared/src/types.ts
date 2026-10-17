@@ -91,6 +91,8 @@ export interface UpdateStoreDto {
   timezone?: string;
   saleDocumentFormat?: SaleDocumentFormat;
   documentCopies?: number;
+  /** "Idioma dos documentos"; null = the country's. */
+  documentLanguage?: string | null;
 }
 
 /** What the till prints when a sale completes: the slip or the A4 document. */
@@ -117,6 +119,8 @@ export interface StoreDto {
   saleDocumentFormat?: SaleDocumentFormat;
   /** Copies of an A4 fiscal document: Original, Duplicado, Triplicado (default 1). */
   documentCopies?: number;
+  /** "Idioma dos documentos"; null = the country's (documentLanguageFor). */
+  documentLanguage?: string | null;
 }
 
 /** Structured address (SAF-T) for customers and suppliers. */

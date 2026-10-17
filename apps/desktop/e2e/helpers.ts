@@ -174,16 +174,26 @@ export async function openPosWithProducts(page: Page, { openShift = true } = {})
 }
 
 /**
- * Log out. With the person's shift open, Log out goes into closing it
- * (blind count, report): count 0, close, and sign out from there.
+ * Log out. A sale left in the cart is cancelled first (the till asks). With
+ * the person's shift open, Log out goes into closing it (blind count,
+ * report): count 0, close, and sign out from there.
  */
 export async function logOut(page: Page) {
   await page.getByRole("button", { name: "Log out" }).click();
   const closing = page.getByRole("dialog").filter({ hasText: "Close the till" });
-  const outcome = await Promise.race([
+  const cart = page.getByRole("dialog").filter({ hasText: "There's a sale in the cart" });
+  let outcome = await Promise.race([
     page.waitForURL(/\/login/).then(() => "out" as const),
     closing.waitFor().then(() => "close" as const),
+    cart.waitFor().then(() => "cart" as const),
   ]);
+  if (outcome === "cart") {
+    await cart.getByRole("button", { name: "Cancel the sale" }).click();
+    outcome = await Promise.race([
+      page.waitForURL(/\/login/).then(() => "out" as const),
+      closing.waitFor().then(() => "close" as const),
+    ]);
+  }
   if (outcome === "close") {
     await closing.getByLabel("Cash counted").fill("0");
     await closing.getByRole("button", { name: "Close the till" }).click();

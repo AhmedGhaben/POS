@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { activeExemptions, AO, countryConfig, findExemption, lacksExemptionReason, lineTax, productNeedsExemptionReason, ratesForStore } from "./index";
+import { activeExemptions, AO, countryConfig, documentLanguageFor, findExemption, lacksExemptionReason, lineTax, productNeedsExemptionReason, ratesForStore } from "./index";
 
 const API_DIR = __dirname;
 const SHARED_DIR = path.resolve(__dirname, "../../../../packages/shared/src/countries");
@@ -109,5 +109,18 @@ describe("country config", () => {
       expect(AO.inventoryTypes.map((t) => t.code)).toContain("M");
       expect(AO.inventoryTypesDraft).toBe(true);
     });
+  });
+});
+
+describe("document language (docs/DECISIONS.md, \"Document language\")", () => {
+  it("an Angolan store's documents are in pt-AO, whatever the business or screen language", () => {
+    expect(documentLanguageFor({ country: "AO" }, "en")).toBe("pt-AO");
+    expect(documentLanguageFor({ country: "AO", documentLanguage: null }, "en")).toBe("pt-AO");
+  });
+
+  it("a store can choose another one; a country without a config falls back to the business's", () => {
+    expect(documentLanguageFor({ country: "AO", documentLanguage: "pt-PT" }, "en")).toBe("pt-PT");
+    expect(documentLanguageFor({ country: "XX" }, "pt-BR")).toBe("pt-BR");
+    expect(documentLanguageFor(null, null)).toBe("en");
   });
 });

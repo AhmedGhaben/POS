@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useMoney } from "@/features/business/use-money";
@@ -46,7 +47,7 @@ export function SupplierAccountSheet({ supplier, onClose }: { supplier: Supplier
     onError: (error) => toast.error(error instanceof ApiError ? error.message : t("failed")),
   });
   const a = account.data;
-  const date = (d: string) => formatCalendarDate(d.slice(0, 10), { dateStyle: "short" });
+  const date = (d: string) => formatCalendarDate(d);
 
   return (
     <>
@@ -187,7 +188,7 @@ function PaySupplierDialog({ supplier, balance, open, onOpenChange, onPaid }: { 
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="pay-date">{t("supplierAccount.paidOn")}</Label>
-              <Input id="pay-date" type="date" value={paidOn} onChange={(e) => setPaidOn(e.target.value)} />
+              <DateInput id="pay-date" value={paidOn} onChange={setPaidOn} />
             </div>
           </div>
           <div className="space-y-1.5">

@@ -28,9 +28,9 @@ describe("report cells", () => {
     expect(cellText("percent", null, f)).toBe("");
   });
 
-  it("CSV keeps plain numbers and ISO dates, translates codes", () => {
+  it("CSV keeps plain numbers, writes dates as people do (DD/MM/YYYY in Angola), translates codes", () => {
     expect(csvCell("money", "1234.50", f)).toBe("1234.50");
-    expect(csvCell("date", "2026-10-31", f)).toBe("2026-10-31");
+    expect(csvCell("date", "2026-10-31", f)).toBe("31/10/2026");
     expect(csvCell("docType", "NC", f)).toBe("docType:NC");
     expect(csvCell("text", null, f)).toBe("");
     expect(isNumeric("money") && !isNumeric("text")).toBe(true);

@@ -6,7 +6,7 @@ import { useDocumentLanguage } from "@/i18n/use-document-language";
 /** Top of an 80 mm slip (receipt or quote): logo, names, store contact, tax ID, custom header. */
 export function SlipHeader({ store }: { store: StoreDto | undefined }) {
   const business = useAuthStore((s) => s.business);
-  const { t } = useDocumentLanguage();
+  const { t } = useDocumentLanguage(undefined, store?.id);
   const logo = logoSrc(business);
   const storeName = store?.name ?? t("store");
   // Show the business name too when the store has its own (e.g. "Main Street").

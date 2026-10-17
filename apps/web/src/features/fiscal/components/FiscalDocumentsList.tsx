@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Combobox } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useMoney } from "@/features/business/use-money";
-import { formatDate } from "@/lib/format";
+import { formatCalendarDate } from "@/lib/format";
 import { fetchFiscalDocuments } from "../api";
 import { documentTitle } from "../fiscal-text";
 import { FiscalDocumentDialog } from "./FiscalDocumentDialog";
@@ -53,8 +54,8 @@ export function FiscalDocumentsList() {
             options={TYPES.map((code) => ({ value: code, label: documentTitle(code, "AO"), description: code }))}
           />
         </div>
-        <Input type="date" className="w-40" aria-label={t("fiscal.from")} value={from} onChange={(e) => (setFrom(e.target.value), reset())} />
-        <Input type="date" className="w-40" aria-label={t("fiscal.to")} value={to} onChange={(e) => (setTo(e.target.value), reset())} />
+        <DateInput className="w-40" aria-label={t("fiscal.from")} value={from} onChange={(v) => (setFrom(v), reset())} />
+        <DateInput className="w-40" aria-label={t("fiscal.to")} value={to} onChange={(v) => (setTo(v), reset())} />
         <Input className="max-w-xs" placeholder={t("fiscal.searchPlaceholder")} value={search} onChange={(e) => (setSearch(e.target.value), reset())} />
       </div>
 
@@ -87,7 +88,7 @@ export function FiscalDocumentsList() {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{formatDate(d.invoiceDate.slice(0, 10) + "T12:00:00")}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatCalendarDate(d.invoiceDate)}</TableCell>
                   <TableCell>
                     {d.buyerName}
                     <span className="block text-xs text-muted-foreground">NIF {d.buyerTaxId}</span>

@@ -32,6 +32,9 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
+        // The app's main bundle (just over 2 MiB, workbox's default limit)
+        // must be precached, or the web POS can't start offline.
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {

@@ -226,5 +226,15 @@
     "paidNow": "Pago agora (opcional)",
     "onAccount": "A crédito: {{amount}}",
     "needsOnline": "Vender a crédito precisa do servidor. Tente de novo quando a caixa estiver online."
+  },
+  "cartGuard": {
+    "title": "Há uma venda no carrinho",
+    "bodyLogout_one": "{{count}} artigo, {{amount}}. Deixe-a pendente para depois, ou cancele-a, antes de sair.",
+    "bodyLogout_other": "{{count}} artigos, {{amount}}. Deixe-a pendente para depois, ou cancele-a, antes de sair.",
+    "bodyCloseShift_one": "{{count}} artigo, {{amount}}. Deixe-a pendente para depois, ou cancele-a, antes de fechar o turno.",
+    "bodyCloseShift_other": "{{count}} artigos, {{amount}}. Deixe-a pendente para depois, ou cancele-a, antes de fechar o turno.",
+    "hold": "Deixar pendente",
+    "cancel": "Cancelar",
+    "back": "Voltar à venda"
   }
 }

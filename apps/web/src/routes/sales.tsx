@@ -3,12 +3,14 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { countryConfig, SaleStatus, type SaleDto } from "@pos/shared";
 import { Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useDocumentLang } from "@/i18n/use-document-language";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Combobox } from "@/components/ui/combobox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PrintArea } from "@/components/print/PrintArea";
@@ -36,6 +38,8 @@ const PAGE = 25;
  */
 export function SalesPage() {
   const { t } = useTranslation(["backoffice", "common"]);
+  // The CSV is for people outside the screen (accountant, owner): the store's document language.
+  const { t: docT } = useTranslation(["backoffice", "common"], { lng: useDocumentLang() });
   const money = useMoney();
   const storeId = useAuthStore((s) => s.currentStoreId);
   const stores = useAuthStore((s) => s.stores);
@@ -62,24 +66,24 @@ export function SalesPage() {
   const total = sales.data?.total ?? 0;
 
   const docNo = (s: SaleDto) => saleDocument(s)?.documentNo ?? s.receiptNumber;
-  const paidWith = (s: SaleDto) =>
-    [...s.payments.map((p) => t(`common:paymentMethods.${p.method}`)), ...(Number(s.creditAmount ?? 0) > 0 ? [t("sales.onAccount")] : [])].join(" + ");
+  const paidWith = (s: SaleDto, tr: typeof t = t) =>
+    [...s.payments.map((p) => tr(`common:paymentMethods.${p.method}`)), ...(Number(s.creditAmount ?? 0) > 0 ? [tr("sales.onAccount")] : [])].join(" + ");
 
   async function exportCsv() {
     setExporting(true);
     try {
       const rows: SaleDto[] = [];
       for (let skip = 0; skip < Math.min(total, 5000); skip += 200) rows.push(...(await fetchSalesHistory({ ...filter, take: 200, skip })).items);
-      downloadCsv(`${t("sales.file")}-${from || "start"}-${to || today}.csv`, [
-        { header: t("sales.date"), value: (s: SaleDto) => formatDateTime(s.createdAt) },
-        { header: t("sales.document"), value: docNo },
-        { header: t("sales.customer"), value: (s: SaleDto) => s.customer?.name ?? "" },
+      downloadCsv(`${docT("sales.file")}-${from || "start"}-${to || today}.csv`, [
+        { header: docT("sales.date"), value: (s: SaleDto) => formatDateTime(s.createdAt) },
+        { header: docT("sales.document"), value: docNo },
+        { header: docT("sales.customer"), value: (s: SaleDto) => s.customer?.name ?? "" },
         { header: "NIF", value: (s: SaleDto) => s.customer?.taxId ?? "" },
-        { header: t("sales.cashier"), value: (s: SaleDto) => (s.cashier ? `${s.cashier.firstName} ${s.cashier.lastName}` : "") },
-        { header: t("sales.paidWith"), value: paidWith },
-        { header: t("sales.tax"), value: (s: SaleDto) => s.taxTotal },
-        { header: t("sales.total"), value: (s: SaleDto) => s.total },
-        { header: t("sales.status"), value: (s: SaleDto) => (s.status === SaleStatus.VOIDED ? t("sales.cancelled") : t("sales.completed")) },
+        { header: docT("sales.cashier"), value: (s: SaleDto) => (s.cashier ? `${s.cashier.firstName} ${s.cashier.lastName}` : "") },
+        { header: docT("sales.paidWith"), value: (s: SaleDto) => paidWith(s, docT) },
+        { header: docT("sales.tax"), value: (s: SaleDto) => s.taxTotal },
+        { header: docT("sales.total"), value: (s: SaleDto) => s.total },
+        { header: docT("sales.status"), value: (s: SaleDto) => (s.status === SaleStatus.VOIDED ? docT("sales.cancelled") : docT("sales.completed")) },
       ], rows);
     } finally {
       setExporting(false);
@@ -101,11 +105,11 @@ export function SalesPage() {
       <div className="grid gap-3 sm:grid-cols-4">
         <div className="space-y-1.5">
           <Label htmlFor="sales-from">{t("sales.from")}</Label>
-          <Input id="sales-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <DateInput id="sales-from" value={from} onChange={setFrom} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="sales-to">{t("sales.to")}</Label>
-          <Input id="sales-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          <DateInput id="sales-to" value={to} onChange={setTo} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="sales-status">{t("sales.status")}</Label>

@@ -33,7 +33,7 @@ interface RecentSalesSheetProps {
  * upload: reprint a receipt, or cancel a sale (VOID_SALE).
  */
 export function RecentSalesSheet({ open, onOpenChange, storeId, store }: RecentSalesSheetProps) {
-  const { t, i18n } = useTranslation(["pos", "common"]);
+  const { t } = useTranslation(["pos", "common"]);
   const money = useMoney();
   const queryClient = useQueryClient();
   const userId = useAuthStore((s) => s.user?.id);
@@ -99,7 +99,7 @@ export function RecentSalesSheet({ open, onOpenChange, storeId, store }: RecentS
                       {sale.queued && <Badge variant="secondary">{t("recent.waiting")}</Badge>}
                     </div>
                     <p className="truncate text-xs text-muted-foreground">
-                      {formatDateTime(sale.createdAt, i18n.language)} · {sale.receiptNumber}
+                      {formatDateTime(sale.createdAt)} · {sale.receiptNumber}
                       {who && ` · ${who}`}
                     </p>
                   </div>

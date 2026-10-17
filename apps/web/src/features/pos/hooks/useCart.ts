@@ -13,6 +13,7 @@ import {
   type StoreDto,
 } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
+import { useCartDraft, useCartKey, useCartStore } from "../cart-store";
 
 /** What the store's settings say about tax: prices with or without it, and its regime. */
 export interface TaxContext {
@@ -65,56 +66,93 @@ export function priceCart(lines: CartLine[], saleDiscount: DiscountInput | null,
   return priceSale(pricingInput(lines, ctx), saleDiscount, { taxIncluded: ctx.taxIncluded });
 }
 
+/**
+ * The cart of the sale being rung up. It lives in the till's saved carts
+ * (cart-store.ts), one per till, store and person, so it's still there
+ * after going to another page, a restart or a crash.
+ */
 export function useCart() {
-  const [lines, setLines] = React.useState<CartLine[]>([]);
-  const [saleDiscount, setSaleDiscount] = React.useState<DiscountInput | null>(null);
+  const key = useCartKey();
+  const draft = useCartDraft(key);
+  const { lines, saleDiscount } = draft;
   // Re-price when the store (or its tax settings) changes.
   const store = useAuthStore((s) => s.stores.find((x) => x.id === s.currentStoreId));
   const ctx = React.useMemo(() => taxContextFor(store), [store]);
 
-  const addProduct = React.useCallback((product: ProductDto, quantity = 1) => {
-    setLines((prev) => {
-      const existing = prev.find((l) => l.product.id === product.id);
-      if (existing) {
-        return prev.map((l) =>
-          l.product.id === product.id ? { ...l, quantity: roundQuantity(l.quantity + quantity, product.unit) } : l,
-        );
-      }
-      return [...prev, { product, quantity }];
-    });
-  }, []);
+  const setLines = React.useCallback(
+    (change: (prev: CartLine[]) => CartLine[]) => {
+      if (key) useCartStore.getState().update(key, (cart) => ({ lines: change(cart.lines) }));
+    },
+    [key],
+  );
+
+  const addProduct = React.useCallback(
+    (product: ProductDto, quantity = 1) => {
+      setLines((prev) => {
+        const existing = prev.find((l) => l.product.id === product.id);
+        if (existing) {
+          return prev.map((l) =>
+            l.product.id === product.id ? { ...l, quantity: roundQuantity(l.quantity + quantity, product.unit) } : l,
+          );
+        }
+        return [...prev, { product, quantity }];
+      });
+    },
+    [setLines],
+  );
 
   /** Puts back a cart that was put on hold. */
-  const restore = React.useCallback((restored: CartLine[], discount: DiscountInput | null) => {
-    setLines(restored);
-    setSaleDiscount(discount);
-  }, []);
+  const restore = React.useCallback(
+    (restored: CartLine[], discount: DiscountInput | null) => {
+      if (key) useCartStore.getState().update(key, () => ({ lines: restored, saleDiscount: discount }));
+    },
+    [key],
+  );
 
-  const setQuantity = React.useCallback((productId: string, quantity: number) => {
-    setLines((prev) =>
-      quantity <= 0
-        ? prev.filter((l) => l.product.id !== productId)
-        : prev.map((l) => (l.product.id === productId ? { ...l, quantity } : l)),
-    );
-  }, []);
+  const setQuantity = React.useCallback(
+    (productId: string, quantity: number) => {
+      setLines((prev) =>
+        quantity <= 0
+          ? prev.filter((l) => l.product.id !== productId)
+          : prev.map((l) => (l.product.id === productId ? { ...l, quantity } : l)),
+      );
+    },
+    [setLines],
+  );
 
-  const setLineDiscount = React.useCallback((productId: string, discount: DiscountInput | null) => {
-    setLines((prev) => prev.map((l) => (l.product.id === productId ? { ...l, discount } : l)));
-  }, []);
+  const setLineDiscount = React.useCallback(
+    (productId: string, discount: DiscountInput | null) => {
+      setLines((prev) => prev.map((l) => (l.product.id === productId ? { ...l, discount } : l)));
+    },
+    [setLines],
+  );
+
+  const setSaleDiscount = React.useCallback(
+    (discount: DiscountInput | null) => {
+      if (key) useCartStore.getState().update(key, () => ({ saleDiscount: discount }));
+    },
+    [key],
+  );
 
   /** null puts the product's own price back. */
-  const setLinePrice = React.useCallback((productId: string, unitPrice: number | null) => {
-    setLines((prev) => prev.map((l) => (l.product.id === productId ? { ...l, unitPrice } : l)));
-  }, []);
+  const setLinePrice = React.useCallback(
+    (productId: string, unitPrice: number | null) => {
+      setLines((prev) => prev.map((l) => (l.product.id === productId ? { ...l, unitPrice } : l)));
+    },
+    [setLines],
+  );
 
-  const removeLine = React.useCallback((productId: string) => {
-    setLines((prev) => prev.filter((l) => l.product.id !== productId));
-  }, []);
+  const removeLine = React.useCallback(
+    (productId: string) => {
+      setLines((prev) => prev.filter((l) => l.product.id !== productId));
+    },
+    [setLines],
+  );
 
+  /** Empties the whole sale: items, customer, approvals, what was typed. */
   const clear = React.useCallback(() => {
-    setLines([]);
-    setSaleDiscount(null);
-  }, []);
+    if (key) useCartStore.getState().clear(key);
+  }, [key]);
 
   const priced = React.useMemo(() => priceCart(lines, saleDiscount, ctx), [lines, saleDiscount, ctx]);
   const totals = React.useMemo(
@@ -129,6 +167,8 @@ export function useCart() {
   );
 
   return {
+    key,
+    draft,
     lines,
     priced,
     saleDiscount,
