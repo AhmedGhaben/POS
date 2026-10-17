@@ -16,7 +16,8 @@
     "integration": "Integration",
     "reports": "Reports",
     "saft": "SAF-T",
-    "bank": "Banks"
+    "bank": "Banks",
+    "assets": "Fixed assets"
   },
   "integration": {
     "title": "Integration monitor",
@@ -354,6 +355,35 @@
     "post": "Post",
     "unexplained": "In the books, not on the statement",
     "nothingUnexplained": "Nothing."
+  },
+  "assets": {
+    "description": "Fixed assets: bought, depreciated monthly in a straight line (rates within Decreto 207/15), sold or written off.",
+    "month": "Month",
+    "depreciate": "Post the month's depreciation",
+    "depreciated": "{{count}} assets depreciated: {{total}}",
+    "nothingToDepreciate": "Nothing to depreciate for that month (already done, or no assets)",
+    "add": "New asset",
+    "code": "Code",
+    "name": "Asset",
+    "category": "Group (Decreto 207/15)",
+    "categoryHint": "up to {{rate}}% a year · account {{account}}",
+    "acquired": "Acquired on",
+    "value": "Acquisition value",
+    "rate": "Rate (% a year)",
+    "residual": "Residual value",
+    "paidFrom": "Post the purchase against",
+    "noPosting": "Don't post it (already in the books)",
+    "rateNote": "Rates default to the group's maximum and can't exceed it. The maximums shipped are the usual ones: to be confirmed against Decreto Presidencial 207/15.",
+    "depreciatedSoFar": "Depreciated",
+    "bookValue": "Book value",
+    "dispose": "Sell or write off",
+    "disposeTitle": "Sell or write off {{name}}",
+    "disposeHint": "Book value today: {{value}}. Leave the sale value empty to write it off.",
+    "saleValue": "Sale value",
+    "receivedIn": "Received in",
+    "disposed": "Done: gain or loss {{result}}",
+    "disposedOn": "Disposed {{date}}",
+    "empty": "No fixed assets."
   },
   "saft": {
     "title": "SAF-T (AO) accounting file",

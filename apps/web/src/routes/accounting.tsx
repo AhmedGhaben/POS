@@ -14,8 +14,9 @@ import { SaftTab } from "@/features/accounting/components/SaftTab";
 import { AccountantClients } from "@/features/accounting/components/AccountantClients";
 import { AccountantsSettings } from "@/features/accounting/components/AccountantsSettings";
 import { BankTab } from "@/features/accounting/components/BankTab";
+import { AssetsTab } from "@/features/accounting/components/AssetsTab";
 
-const TABS = ["entries", "reports", "saft", "bank", "integration", "chart", "periods", "setup"] as const;
+const TABS = ["entries", "reports", "saft", "bank", "assets", "integration", "chart", "periods", "setup"] as const;
 type Tab = (typeof TABS)[number];
 
 /**
@@ -64,6 +65,9 @@ export function AccountingPage() {
           </TabsContent>
           <TabsContent value="bank" className="mt-4">
             <BankTab canWrite={canWrite} />
+          </TabsContent>
+          <TabsContent value="assets" className="mt-4">
+            <AssetsTab canWrite={canWrite} today={status.data.today} />
           </TabsContent>
           <TabsContent value="integration" className="mt-4">
             <IntegrationTab canWrite={canWrite} />

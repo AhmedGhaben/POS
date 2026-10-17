@@ -1933,3 +1933,51 @@ model BankStatementLine {
   @@index([statementId])
   @@map("bank_statement_lines")
 }
+
+/// A fixed asset (imobilizado, B4): bought, depreciated monthly in a straight
+/// line at a rate within Decreto Presidencial 207/15's maximum, disposed of.
+model FixedAsset {
+  id                   String              @id @default(cuid())
+  businessId           String
+  /// "IMO-0001"
+  code                 String
+  name                 String
+  /// The Decreto 207/15 group (see fixed-assets.ts).
+  category             String
+  assetAccountId       String
+  accumulatedAccountId String
+  expenseAccountId     String
+  acquisitionDate      DateTime            @db.Date
+  acquisitionValue     Decimal             @db.Decimal(16, 2)
+  residualValue        Decimal             @default(0) @db.Decimal(16, 2)
+  /// Per year, percent.
+  annualRate           Decimal             @db.Decimal(5, 2)
+  /// Depreciated from this month (YYYY-MM-01).
+  depreciationStart    DateTime            @db.Date
+  /// ACTIVE, DISPOSED
+  status               String              @default("ACTIVE")
+  acquisitionEntryId   String?
+  disposalDate         DateTime?           @db.Date
+  disposalValue        Decimal?            @db.Decimal(16, 2)
+  disposalEntryId      String?
+  note                 String?
+  createdAt            DateTime            @default(now())
+  depreciations        AssetDepreciation[]
+
+  @@unique([businessId, code])
+  @@map("fixed_assets")
+}
+
+/// One month's depreciation of an asset, posted once (unique per month).
+model AssetDepreciation {
+  id      String     @id @default(cuid())
+  assetId String
+  asset   FixedAsset @relation(fields: [assetId], references: [id])
+  year    Int
+  month   Int
+  amount  Decimal    @db.Decimal(16, 2)
+  entryId String
+
+  @@unique([assetId, year, month])
+  @@map("asset_depreciations")
+}

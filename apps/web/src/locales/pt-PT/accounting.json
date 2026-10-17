@@ -16,7 +16,8 @@
     "integration": "Integração",
     "reports": "Relatórios",
     "saft": "SAF-T",
-    "bank": "Bancos"
+    "bank": "Bancos",
+    "assets": "Imobilizado"
   },
   "integration": {
     "title": "Monitor de integração",
@@ -354,6 +355,35 @@
     "post": "Lançar",
     "unexplained": "Nos livros, não no extracto",
     "nothingUnexplained": "Nada."
+  },
+  "assets": {
+    "description": "Imobilizado: adquirido, amortizado mensalmente em quotas constantes (taxas dentro do Decreto 207/15), alienado ou abatido.",
+    "month": "Mês",
+    "depreciate": "Lançar as amortizações do mês",
+    "depreciated": "{{count}} bens amortizados: {{total}}",
+    "nothingToDepreciate": "Nada a amortizar nesse mês (já feito, ou sem bens)",
+    "add": "Novo bem",
+    "code": "Código",
+    "name": "Bem",
+    "category": "Grupo (Decreto 207/15)",
+    "categoryHint": "até {{rate}}% ao ano · conta {{account}}",
+    "acquired": "Data de aquisição",
+    "value": "Valor de aquisição",
+    "rate": "Taxa (% ao ano)",
+    "residual": "Valor residual",
+    "paidFrom": "Lançar a aquisição contra",
+    "noPosting": "Não lançar (já está na contabilidade)",
+    "rateNote": "A taxa por omissão é a máxima do grupo e não a pode exceder. Os máximos incluídos são os habituais: a confirmar com o Decreto Presidencial 207/15.",
+    "depreciatedSoFar": "Amortizado",
+    "bookValue": "Valor líquido",
+    "dispose": "Alienar ou abater",
+    "disposeTitle": "Alienar ou abater {{name}}",
+    "disposeHint": "Valor líquido actual: {{value}}. Deixe o valor de venda vazio para o abater.",
+    "saleValue": "Valor de venda",
+    "receivedIn": "Recebido em",
+    "disposed": "Feito: mais ou menos-valia {{result}}",
+    "disposedOn": "Alienado {{date}}",
+    "empty": "Sem imobilizado."
   },
   "saft": {
     "title": "Ficheiro SAF-T (AO) de contabilidade",

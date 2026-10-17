@@ -74,6 +74,8 @@ export async function deleteBusiness(prisma: PrismaService, businessId: string):
 async function deleteBooks(prisma: PrismaService, businessId: string): Promise<void> {
   await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT set_config('pos.allow_fiscal_delete', 'on', true)`;
+    await tx.assetDepreciation.deleteMany({ where: { asset: { businessId } } });
+    await tx.fixedAsset.deleteMany({ where: { businessId } });
     await tx.bankStatementLine.deleteMany({ where: { businessId } });
     await tx.bankStatement.deleteMany({ where: { businessId } });
     await tx.accountingSourceLink.deleteMany({ where: { businessId } });

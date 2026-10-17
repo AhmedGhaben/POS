@@ -55,12 +55,23 @@ export const ACCOUNTING_EXACT: Record<string, Translations> = {
   "The amounts differ": { "pt-PT": "Os valores são diferentes", "pt-BR": "Os valores são diferentes" },
   "That entry line is already matched with another movement": { "pt-PT": "Essa linha já está conciliada com outro movimento", "pt-BR": "Essa linha já está conciliada com outro movimento" },
   "It was posted from here: reverse that entry instead": { "pt-PT": "Foi lançado a partir daqui: estorne esse lançamento", "pt-BR": "Foi lançado a partir daqui: estorne esse lançamento" },
+  "Unknown asset category": { "pt-PT": "Categoria de imobilizado desconhecida", "pt-BR": "Categoria de imobilizado desconhecida" },
+  "The value must be positive and the residual value below it": { "pt-PT": "O valor tem de ser positivo e o valor residual inferior a ele", "pt-BR": "O valor tem de ser positivo e o valor residual inferior a ele" },
+  "Choose a month from 1 to 12": { "pt-PT": "Escolha um mês de 1 a 12", "pt-BR": "Escolha um mês de 1 a 12" },
+  "Asset not found": { "pt-PT": "Imobilizado não encontrado", "pt-BR": "Imobilizado não encontrado" },
+  "This asset was already disposed of": { "pt-PT": "Este bem já foi alienado ou abatido", "pt-BR": "Este bem já foi alienado ou baixado" },
+  "Say where the money from the sale went": { "pt-PT": "Indique a conta onde entrou o valor da venda", "pt-BR": "Informe a conta onde entrou o valor da venda" },
   "Unknown mapping key": { "pt-PT": "Chave de mapeamento desconhecida", "pt-BR": "Chave de mapeamento desconhecida" },
   "An entry needs at least one debit and one credit line": { "pt-PT": "Um lançamento precisa de pelo menos uma linha a débito e uma a crédito", "pt-BR": "Um lançamento precisa de pelo menos uma linha a débito e uma a crédito" },
 };
 
 /** Messages with values; $1, $2… are the captured values. */
 export const ACCOUNTING_PATTERNS: { re: RegExp; t: Translations }[] = [
+  { re: /^Account (\S+) is not an active movement account$/, t: { "pt-PT": "A conta $1 não é uma conta de movimento activa", "pt-BR": "A conta $1 não é uma conta de movimento ativa" } },
+  {
+    re: /^The rate for this category is at most (\S+)% a year \(Decreto 207\/15\)$/,
+    t: { "pt-PT": "A taxa desta categoria é no máximo $1% ao ano (Decreto 207/15)", "pt-BR": "A taxa desta categoria é no máximo $1% ao ano (Decreto 207/15)" },
+  },
   {
     re: /^The SAF-T accounting file can't be made yet: (.+)$/,
     t: { "pt-PT": "O ficheiro SAF-T de contabilidade ainda não pode ser gerado: $1 (veja a verificação)", "pt-BR": "O arquivo SAF-T de contabilidade ainda não pode ser gerado: $1 (veja a verificação)" },

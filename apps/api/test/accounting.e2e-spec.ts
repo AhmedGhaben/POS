@@ -933,4 +933,41 @@ describe("Accounting (e2e)", () => {
       await http().post(`/accounting/bank/lines/${unknown.id}/match`).set(auth(managerToken)).send({ ledgerLineId: ledgerLine.lineId }).expect(403);
     });
   });
+  describe("B4: fixed assets", () => {
+    type Line = { account: { code: string }; debit: string; credit: string };
+    const lines = async (entryId: string) => ((await http().get(`/accounting/entries/${entryId}`).set(auth(ownerToken)).expect(200)).body.lines as Line[]).map((l) => [l.account.code, Number(l.debit) ? `D ${l.debit}` : `C ${l.credit}`]).sort();
+    let assetId: string;
+
+    it("an asset is registered with its purchase posted; the rate can't pass the decree's maximum", async () => {
+      const fornecedor = (await accounts()).find((a) => a.code === "37.1.1")!.id;
+      await http().post("/accounting/assets").set(auth(ownerToken)).send({ name: "Computador", category: "COMPUTERS", acquisitionDate: "2027-01-15", acquisitionValue: 1200000, annualRate: 30 }).expect(400);
+      const a = (await http().post("/accounting/assets").set(auth(ownerToken)).send({ name: "Computador portátil", category: "COMPUTERS", acquisitionDate: "2027-01-15", acquisitionValue: 1200000, counterAccountId: fornecedor }).expect(201)).body;
+      assetId = a.id;
+      expect(a).toMatchObject({ code: "IMO-0001", annualRate: "25" });
+      expect(await lines(a.acquisitionEntryId)).toEqual([["11.5", "D 1200000.00"], ["37.1.1", "C 1200000.00"]].sort());
+      await http().post("/accounting/assets").set(auth(managerToken)).send({ name: "x", category: "OTHER", acquisitionDate: "2027-01-15", acquisitionValue: 1 }).expect(403);
+    });
+
+    it("the month's depreciation is one entry, posted once: 1 200 000 × 25% / 12 = 25 000", async () => {
+      const jan = (await http().post("/accounting/assets/depreciate").set(auth(ownerToken)).send({ year: 2027, month: 1 }).expect(200)).body;
+      expect(jan).toMatchObject({ assets: 1, total: "25000.00" });
+      expect(await lines(jan.entryId)).toEqual([["18.1.5", "C 25000.00"], ["73.1", "D 25000.00"]].sort());
+      const entry = (await http().get(`/accounting/entries/${jan.entryId}`).set(auth(ownerToken)).expect(200)).body;
+      expect(entry).toMatchObject({ postingDate: "2027-01-31", origin: "DEPRECIATION", period: 1 });
+      expect((await http().post("/accounting/assets/depreciate").set(auth(ownerToken)).send({ year: 2027, month: 1 }).expect(200)).body).toMatchObject({ assets: 0, entryId: null });
+      await http().post("/accounting/assets/depreciate").set(auth(ownerToken)).send({ year: 2027, month: 2 }).expect(200);
+      const list = (await http().get("/accounting/assets").set(auth(managerToken)).expect(200)).body;
+      expect(list).toEqual([expect.objectContaining({ code: "IMO-0001", depreciated: "50000.00", netBookValue: "1150000.00", status: "ACTIVE" })]);
+    });
+
+    it("selling it below book value: the asset and its depreciation leave the books, the loss goes to 78.4.1", async () => {
+      const bank = (await accounts()).find((a) => a.code === "43.1.1")!.id;
+      const sold = (await http().post(`/accounting/assets/${assetId}/dispose`).set(auth(ownerToken)).send({ date: "2027-03-10", saleValue: 1000000, counterAccountId: bank }).expect(200)).body;
+      expect(sold).toMatchObject({ bookValue: "1150000.00", result: "-150000.00" });
+      expect(await lines(sold.entryId)).toEqual([["11.5", "C 1200000.00"], ["18.1.5", "D 50000.00"], ["43.1.1", "D 1000000.00"], ["78.4.1", "D 150000.00"]].sort());
+      await http().post(`/accounting/assets/${assetId}/dispose`).set(auth(ownerToken)).send({ date: "2027-03-11" }).expect(400);
+      // A disposed asset isn't depreciated any more.
+      expect((await http().post("/accounting/assets/depreciate").set(auth(ownerToken)).send({ year: 2027, month: 3 }).expect(200)).body.assets).toBe(0);
+    });
+  });
 });

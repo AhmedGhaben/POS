@@ -341,6 +341,39 @@ export const matchBankLine = (lineId: string, ledgerLineId: string) => apiClient
 export const unmatchBankLine = (lineId: string) => apiClient.post(`/accounting/bank/lines/${lineId}/unmatch`);
 export const postBankLine = (lineId: string, accountId: string) => apiClient.post<{ entryId: string; transactionId: string }>(`/accounting/bank/lines/${lineId}/post`, { accountId });
 
+export interface FixedAssetDto {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
+  acquisitionDate: string;
+  acquisitionValue: string;
+  residualValue: string;
+  annualRate: string;
+  depreciated: string;
+  netBookValue: string;
+  status: "ACTIVE" | "DISPOSED";
+  disposalDate: string | null;
+  disposalValue: string | null;
+}
+
+export interface AssetCategoryDto {
+  key: string;
+  name: string;
+  maxRate: number;
+  asset: string;
+  accumulated: string;
+  expense: string;
+}
+
+export const fetchAssets = () => apiClient.get<FixedAssetDto[]>("/accounting/assets");
+export const fetchAssetCategories = () => apiClient.get<AssetCategoryDto[]>("/accounting/assets/categories");
+export const createAsset = (body: { name: string; category: string; acquisitionDate: string; acquisitionValue: number; residualValue?: number; annualRate?: number; counterAccountId?: string }) =>
+  apiClient.post<FixedAssetDto>("/accounting/assets", body);
+export const depreciateAssets = (year: number, month: number) => apiClient.post<{ assets: number; total: string; entryId: string | null }>("/accounting/assets/depreciate", { year, month });
+export const disposeAsset = (id: string, body: { date: string; saleValue?: number; counterAccountId?: string }) =>
+  apiClient.post<{ entryId: string; transactionId: string; bookValue: string; result: string }>(`/accounting/assets/${id}/dispose`, body);
+
 /** PGC classes, for headings. */
 export const PGC_CLASSES: Record<number, string> = {
   1: "Meios fixos e investimentos",

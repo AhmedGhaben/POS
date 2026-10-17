@@ -20,12 +20,14 @@ import { ArchiveController } from "./archive.controller";
 import { ArchiveService } from "./archive.service";
 import { BankController } from "./bank.controller";
 import { BankService } from "./bank.service";
+import { FixedAssetsController } from "./fixed-assets.controller";
+import { FixedAssetsService } from "./fixed-assets.service";
 
 /** Contabilidade: the books, posted from the POS (docs/ACCOUNTING-DECISIONS.md). */
 @Module({
   imports: [MailModule],
-  controllers: [AccountingController, EntriesController, IntegrationController, AccountingReportsController, AccountantsController, ArchiveController, BankController],
-  providers: [AccountingService, ChartService, PeriodsService, EntriesService, IntegrationService, MappingService, TemplatesService, AccountingReportsService, YearEndService, AccountingSaftService, AccountantsService, ArchiveService, BankService],
+  controllers: [AccountingController, EntriesController, IntegrationController, AccountingReportsController, AccountantsController, ArchiveController, BankController, FixedAssetsController],
+  providers: [AccountingService, ChartService, PeriodsService, EntriesService, IntegrationService, MappingService, TemplatesService, AccountingReportsService, YearEndService, AccountingSaftService, AccountantsService, ArchiveService, BankService, FixedAssetsService],
   exports: [AccountingService, ChartService, PeriodsService, EntriesService, IntegrationService],
 })
 export class AccountingModule {}
