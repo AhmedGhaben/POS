@@ -53,8 +53,9 @@ export class AccountingReportsService {
     private readonly suppliers: SupplierAccountsService,
   ) {}
 
-  async build(businessId: string, report: AccountingReport, p: ReportParams) {
+  async build(businessId: string, report: AccountingReport, p: ReportParams, userId?: string) {
     const business = await this.prisma.business.findUniqueOrThrow({ where: { id: businessId } });
+    const accountant = await this.accountantFor(businessId, userId);
     const today = businessToday(business);
     const year = p.year ?? Number(today.slice(0, 4));
     const fromPeriod = p.fromPeriod ?? 0;
@@ -90,7 +91,21 @@ export class AccountingReportsService {
       default:
         throw new NotFoundException("Report not found");
     }
-    return { report, year, fromPeriod, toPeriod, company: { name: business.legalName || business.name, taxId: business.taxId }, tables };
+    return { report, year, fromPeriod, toPeriod, company: { name: business.legalName || business.name, taxId: business.taxId }, accountant, tables };
+  }
+
+  /**
+   * The accountant whose name and OCPCA number go on the statements: the
+   * accountant asking for them, else the company's first accountant.
+   */
+  private async accountantFor(businessId: string, userId?: string): Promise<{ name: string; ocpcaNumber: string | null } | null> {
+    const access = await this.prisma.accountantAccess.findMany({
+      where: { businessId, revokedAt: null },
+      include: { user: { select: { id: true, firstName: true, lastName: true, ocpcaNumber: true } } },
+      orderBy: { createdAt: "asc" },
+    });
+    const a = access.find((x) => x.userId === userId) ?? access[0];
+    return a ? { name: `${a.user.firstName} ${a.user.lastName}`, ocpcaNumber: a.user.ocpcaNumber } : null;
   }
 
   // ---------------------------------------------------------------- queries
@@ -464,8 +479,8 @@ export class AccountingReportsService {
   // ---------------------------------------------------------------- Excel
 
   /** The report as an Excel workbook (one sheet per table), headed in Portuguese, amounts as numbers, dates as dates. */
-  async xlsx(businessId: string, report: AccountingReport, p: ReportParams) {
-    const result = await this.build(businessId, report, p);
+  async xlsx(businessId: string, report: AccountingReport, p: ReportParams, userId?: string) {
+    const result = await this.build(businessId, report, p, userId);
     const label = (k: string) => PT_LABELS[k] ?? k;
     const sheets = result.tables.map((t, i) => ({
       name: (t.title ? label(t.title) : label(report)).slice(0, 31) || `Folha ${i + 1}`,

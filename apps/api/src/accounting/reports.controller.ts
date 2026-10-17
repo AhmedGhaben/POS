@@ -59,8 +59,8 @@ export class AccountingReportsController {
       party: q.party === "supplier" ? "supplier" : q.party === "customer" ? "customer" : undefined,
       partyId: q.partyId || undefined,
     };
-    if (q.format !== "xlsx") return this.reports.build(user.businessId, report, params);
-    const file = await this.reports.xlsx(user.businessId, report, params);
+    if (q.format !== "xlsx") return this.reports.build(user.businessId, report, params, user.userId);
+    const file = await this.reports.xlsx(user.businessId, report, params, user.userId);
     res.set({
       "Content-Type": file.mimeType,
       "Content-Disposition": `attachment; filename="${encodeURIComponent(file.fileName)}"`,

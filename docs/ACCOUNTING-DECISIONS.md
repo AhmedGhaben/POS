@@ -103,6 +103,14 @@ Database rules (triggers in the migration, not only the API):
 | 23b | Balanço: loans (33) are shown as non-current and accounts of classes 31-37 go to assets or liabilities by the sign of each account's balance; the year's result is classes 6, 7 and 82-88, so it's right before and after the apuramento. Demonstração de resultados leaves out the apuramento entries (type A). **REVIEW** the line layout against the official model your accountant uses. | Decreto 82/01 model, simplified. |
 | 23 | Reports: PDF made in the app (jsPDF, as the dashboard) and Excel made by the server (same writer as the accountant export); dates DD/MM/YYYY, SAF-T ISO. | |
 
+### Phase B decisions
+
+| # | Decision | Why |
+|---|----------|-----|
+| B1a | An accountant is a user with role ACCOUNTANT; their own record sits in the company that first invited them; access to each company is a row in `accountant_access` (revoked, never deleted). The access token names the company being worked in; refresh keeps it; every request checks the access still stands. | One login for several companies without changing how staff logins work. |
+| B1b | An accountant reads whatever a manager may read (GET) and changes nothing outside `/accounting`, their sign-in and profile. Only the owner invites or removes accountants. | The brief: full accounting rights, read-only sales/purchases/stock, no POS operations or PINs. |
+| B1c | An existing accountant invited by another company gets no email; the company just appears in their client list. | No password to set. **REVIEW** if you want a notice. |
+
 ### Open questions answered by me (**REVIEW**)
 
 | # | Question | What I did |
@@ -125,6 +133,7 @@ Database rules (triggers in the migration, not only the API):
 | A7 | | Year-end: apuramento (period 14: classes 6/7 → 82-86; period 15: 82-87 → 88; type A, journal APU), year close (months must be closed, results worked out; balances of classes 1-5 and 8 carried into next year's period 0; all periods closed), year reopen (reason, audit log; the carry-forward is reversed). Entries in periods 0 and 13-15 are reversed in their own period. | unit (year-end 3), e2e 4 |
 | A8 | | SAF-T (AO) Contabilidade, TaxAccountingBasis I, TaxEntity Sede: every account (classes left out) with opening (period 0) and closing debit/credit balances, aggregating accounts showing debit and credit sub-balances; entries of periods 1-15 by journal (debit lines first); invoices, working documents and receipts with the TransactionID they were posted in; customer/supplier AccountID from the chart. The monthly invoicing file now carries TransactionID and AccountID too. Pre-export check (NIF, AOA, unposted, balance, open periods unless draft, results not worked out = warning, movement accounts with sub-accounts). Deadline reminders: accounting file by 10 April (when accounting is on), purchases file monthly (by its setting). | unit (XSD 2), e2e 3 (both files validated against the XSD) |
 | A9 | | SAF-T (AO) Aquisição de Bens e Serviços (TaxAccountingBasis A): suppliers (with AccountID), tax table and the period's purchases with the supplier's document (deductible IVA by type, IVA cativo); Reports → Files → SAF-T type "Aquisição"; monthly reminder by the setting (Q1). | unit (XSD 1), e2e 1 |
+| B1 | | Accountant role: invited by the owner by email (new login: password from the email; existing accountant: the company is added to their clients, no email); one login for several companies, switch from "Your clients" (status per client: not posted, errors, months open, last year's SAF-T); full rights in Contabilidade, read-only wherever managers read, no sales/purchases/stock/staff/PIN changes and no till (AccountantGuard + RolesGuard); OCPCA number on the user, printed on report PDFs; revoking stops that company's sessions at once. | unit (guard, JWT), e2e 4 |
 | A4 | | Automatic posting of FR/FT/ND/NC/RC, annulments, purchases, supplier payments (and cancellations), expenses, shift differences, cash in/out, stock counts; mapping with defaults; daily summary option; monitor; month close refused while records of it aren't posted. | unit (posting rules 9), e2e 12 |
 
 **Found while testing (A3)**: Prisma doesn't report a failed COMMIT of an

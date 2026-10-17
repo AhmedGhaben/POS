@@ -11,6 +11,8 @@ import { EntriesTab } from "@/features/accounting/components/EntriesTab";
 import { IntegrationTab } from "@/features/accounting/components/IntegrationTab";
 import { AccountingReports } from "@/features/accounting/components/AccountingReports";
 import { SaftTab } from "@/features/accounting/components/SaftTab";
+import { AccountantClients } from "@/features/accounting/components/AccountantClients";
+import { AccountantsSettings } from "@/features/accounting/components/AccountantsSettings";
 
 const TABS = ["entries", "reports", "saft", "integration", "chart", "periods", "setup"] as const;
 type Tab = (typeof TABS)[number];
@@ -23,7 +25,7 @@ type Tab = (typeof TABS)[number];
 export function AccountingPage() {
   const { t } = useTranslation(["accounting", "common"]);
   const role = useAuthStore((s) => s.user?.role);
-  const canWrite = role === "OWNER";
+  const canWrite = role === "OWNER" || role === "ACCOUNTANT";
   const status = useQuery({ queryKey: STATUS_KEY, queryFn: fetchAccountingStatus });
   const [params, setParams] = useSearchParams();
   const requested = params.get("tab");
@@ -36,6 +38,7 @@ export function AccountingPage() {
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
         {!canWrite && <p className="text-sm text-muted-foreground">{t("readOnly")}</p>}
       </div>
+      {role === "ACCOUNTANT" && <AccountantClients />}
       {!status.data ? (
         <p className="text-muted-foreground">{t("common:actions.loading")}</p>
       ) : !status.data.enabled && !status.data.settings ? (
@@ -68,7 +71,10 @@ export function AccountingPage() {
             <FiscalYears canWrite={canWrite} today={status.data.today} />
           </TabsContent>
           <TabsContent value="setup" className="mt-4">
-            <AccountingSetup status={status.data} canWrite={canWrite} />
+            <div className="space-y-4">
+              <AccountingSetup status={status.data} canWrite={canWrite} />
+              {role === "OWNER" && <AccountantsSettings />}
+            </div>
           </TabsContent>
         </Tabs>
       )}

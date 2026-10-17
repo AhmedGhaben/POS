@@ -29,6 +29,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           </NavLink>
         ))}
       </nav>
+      {role !== "ACCOUNTANT" && (
       <NavLink
         to="/pos"
         onClick={onNavigate}
@@ -37,6 +38,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         <ShoppingCart className="h-5 w-5 shrink-0" aria-hidden />
         {t("nav.pointOfSale")}
       </NavLink>
+      )}
     </>
   );
 }

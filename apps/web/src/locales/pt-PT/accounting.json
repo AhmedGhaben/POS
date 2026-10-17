@@ -159,6 +159,7 @@
     "total": "Total",
     "span": "Exercício {{year}}, períodos {{from}} a {{to}}",
     "at": "Em {{date}}",
+    "accountantLine": "Contabilista: {{name}} (OCPCA n.º {{ocpca}})",
     "labels": {
       "trialBalance": "Balancete",
       "ledger": "Razão",
@@ -261,6 +262,40 @@
       "extraordinaryResult": "Resultados extraordinários",
       "resultBeforeTax": "Resultados antes de impostos",
       "incomeTax": "Imposto sobre o rendimento"
+    }
+  },
+  "accountant": {
+    "title": "Os seus clientes",
+    "description": "Todas as empresas que lhe deram acesso, com o que há para fazer. Abra uma para trabalhar na sua contabilidade.",
+    "company": "Empresa",
+    "pending": "Por lançar",
+    "errors": "Erros",
+    "openMonths": "Meses por fechar",
+    "lastYearSaft": "SAF-T do ano anterior",
+    "made": "Gerado",
+    "notMade": "Ainda não",
+    "notEnabled": "Contabilidade desactivada",
+    "current": "Aberta",
+    "open": "Abrir",
+    "switched": "Agora em {{name}}",
+    "ocpca": "O seu número OCPCA",
+    "ocpcaPlaceholder": "Impresso nas demonstrações"
+  },
+  "accountants": {
+    "title": "Contabilistas",
+    "description": "Dê acesso à contabilidade ao seu contabilista: todos os direitos na Contabilidade, apenas leitura no resto, sem acesso ao POS. Um único acesso serve para todas as empresas que o convidem.",
+    "none": "Ainda sem contabilista.",
+    "since": "desde {{date}}",
+    "revoke": "Retirar acesso",
+    "revoked": "Acesso retirado",
+    "invite": "Dar acesso",
+    "invited": "Convite enviado: escolhe a palavra-passe a partir do email",
+    "added": "Acesso dado: já tinha um acesso",
+    "fields": {
+      "email": "Email",
+      "firstName": "Nome",
+      "lastName": "Apelido",
+      "ocpcaNumber": "N.º OCPCA (opcional)"
     }
   },
   "saft": {

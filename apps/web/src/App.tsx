@@ -4,6 +4,7 @@ import { PwaUpdatePrompt } from "@/components/layout/PwaUpdatePrompt";
 import { BackOfficeShell } from "@/components/layout/BackOfficeShell";
 import { BackOfficeRoute } from "@/components/layout/BackOfficeRoute";
 import { PosShell } from "@/components/layout/PosShell";
+import { homePathFor } from "@/components/layout/nav-items";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { useAuthStore } from "@/features/auth/store";
 import { useLanguageSync } from "@/i18n/use-language";
@@ -37,10 +38,10 @@ import { SalesPage } from "@/routes/sales";
 import { AgtPage } from "@/routes/agt";
 import { AccountingPage } from "@/routes/accounting";
 
-/** Owner/Manager default to the back office; Cashier defaults straight to POS. */
+/** Owner/Manager default to the back office, Cashier straight to POS, an accountant to the books. */
 function DefaultLanding() {
   const role = useAuthStore((s) => s.user?.role);
-  return <Navigate to={role === "CASHIER" ? "/pos" : "/dashboard"} replace />;
+  return <Navigate to={homePathFor(role)} replace />;
 }
 
 export function App() {

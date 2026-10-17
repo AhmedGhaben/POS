@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import type { BusinessDto, StoreDto, UserDto } from "@pos/shared";
 
 /** Contabilidade (docs/ACCOUNTING-DECISIONS.md). */
 
@@ -236,6 +237,8 @@ export interface ReportResultDto {
   fromPeriod: number;
   toPeriod: number;
   company: { name: string; taxId: string | null };
+  /** Their name and OCPCA number go on the statements. */
+  accountant: { name: string; ocpcaNumber: string | null } | null;
   tables: ReportTableDto[];
 }
 
@@ -250,6 +253,37 @@ export interface SaftCheckDto {
 }
 
 export const checkSaft = (year: number, draft: boolean) => apiClient.get<SaftCheckDto>(`/accounting/saft/check?year=${year}${draft ? "&draft=true" : ""}`);
+
+export interface AccountantClientDto {
+  businessId: string;
+  name: string;
+  taxId: string | null;
+  country: string;
+  current: boolean;
+  accountingEnabled: boolean;
+  pending: number;
+  errors: number;
+  openMonths: number;
+  lastYearSaftMade: boolean;
+}
+
+export interface AccountantDto {
+  userId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  ocpcaNumber: string | null;
+  since: string;
+}
+
+export const fetchClients = () => apiClient.get<AccountantClientDto[]>("/accountant/clients");
+export const switchBusiness = (businessId: string) =>
+  apiClient.post<{ accessToken: string; user: UserDto; stores: StoreDto[]; business: BusinessDto }>("/auth/switch-business", { businessId });
+export const saveProfile = (ocpcaNumber: string | null) => apiClient.patch<{ ocpcaNumber: string | null }>("/accountant/profile", { ocpcaNumber });
+export const fetchAccountants = () => apiClient.get<AccountantDto[]>("/accounting/accountants");
+export const inviteAccountant = (body: { email: string; firstName: string; lastName: string; ocpcaNumber?: string }) =>
+  apiClient.post<{ userId: string; email: string; newLogin: boolean }>("/accounting/accountants", body);
+export const revokeAccountant = (userId: string) => apiClient.delete(`/accounting/accountants/${userId}`);
 
 /** PGC classes, for headings. */
 export const PGC_CLASSES: Record<number, string> = {

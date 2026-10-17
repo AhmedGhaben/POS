@@ -105,6 +105,11 @@ export function AccountingReports({ today }: { today: string }) {
     const span = params.report === "ageing" ? docT("reports.at", { date: formatCalendarDate(today) }) : docT("reports.span", { year: params.year, from: params.fromPeriod, to: params.toPeriod });
     doc.text(pdfText(`${result.data.company.name}${result.data.company.taxId ? ` · NIF ${result.data.company.taxId}` : ""} · ${span}`), 14, 20);
     let y = 26;
+    const accountant = result.data.accountant;
+    if (accountant) {
+      doc.text(pdfText(docT("reports.accountantLine", { name: accountant.name, ocpca: accountant.ocpcaNumber ?? "—" })), 14, 25);
+      y = 31;
+    }
     for (const tbl of result.data.tables) {
       const title = heading(tbl, docTr);
       if (title) {

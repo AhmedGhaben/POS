@@ -16,6 +16,10 @@ enum Role {
   OWNER
   MANAGER
   CASHIER
+  /// An outside accountant (docs/ACCOUNTING-DECISIONS.md, B1): full
+  /// accounting rights in the companies that invited them, reads the rest,
+  /// changes nothing outside the books. One login for several companies.
+  ACCOUNTANT
 }
 
 enum SaleStatus {
@@ -230,6 +234,7 @@ model Business {
   customerPayments CustomerPayment[]
   supplierPayments SupplierPayment[]
 
+  accountantAccess   AccountantAccess[]
   accountingSettings AccountingSettings?
   ledgerAccounts     LedgerAccount[]
   fiscalYears        FiscalYear[]
@@ -365,9 +370,12 @@ model User {
   pinLockedUntil  DateTime?
   /// Null until the user clicks the link in their verification email.
   emailVerifiedAt DateTime?
+  /// An accountant's number in the Ordem dos Contabilistas e Peritos Contabilistas de Angola (OCPCA).
+  ocpcaNumber     String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  accountantAccess        AccountantAccess[]
   storeUsers              StoreUser[]
   salesCreated            Sale[]                   @relation("SaleCashier")
   salesVoided             Sale[]                   @relation("SaleVoidedBy")
@@ -420,6 +428,8 @@ model RefreshToken {
   /// Id of the token this one was rotated into, for traceability only — not
   /// a Prisma relation, just a plain reference to keep rotation lightweight.
   replacedByTokenId String?
+  /// For an accountant: the client company the session is in (they switch between them).
+  businessId        String?
   createdAt         DateTime  @default(now())
 
   @@index([userId])
@@ -1846,4 +1856,21 @@ model EntryTemplate {
 
   @@index([businessId])
   @@map("entry_templates")
+}
+
+/// An accountant's access to a client company. Revoked, not deleted.
+model AccountantAccess {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id])
+  invitedById String
+  createdAt   DateTime  @default(now())
+  revokedAt   DateTime?
+  revokedById String?
+
+  @@unique([userId, businessId])
+  @@index([businessId])
+  @@map("accountant_access")
 }

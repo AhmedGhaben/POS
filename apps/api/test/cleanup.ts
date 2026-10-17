@@ -48,6 +48,7 @@ export async function deleteBusiness(prisma: PrismaService, businessId: string):
     prisma.managerOverride.deleteMany({ where: { businessId } }),
     prisma.auditLog.deleteMany({ where: { businessId } }),
     prisma.employee.deleteMany({ where: { businessId } }),
+    prisma.accountantAccess.deleteMany({ where: { OR: [{ businessId }, byUsers] } }),
     prisma.storeUser.deleteMany({ where: byUsers }),
     prisma.userPermission.deleteMany({ where: byUsers }),
     prisma.refreshToken.deleteMany({ where: byUsers }),

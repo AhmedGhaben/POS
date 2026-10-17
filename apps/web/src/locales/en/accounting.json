@@ -159,6 +159,7 @@
     "total": "Total",
     "span": "Year {{year}}, periods {{from}} to {{to}}",
     "at": "At {{date}}",
+    "accountantLine": "Accountant: {{name}} (OCPCA no. {{ocpca}})",
     "labels": {
       "trialBalance": "Trial balance",
       "ledger": "General ledger",
@@ -261,6 +262,40 @@
       "extraordinaryResult": "Extraordinary result",
       "resultBeforeTax": "Result before tax",
       "incomeTax": "Income tax"
+    }
+  },
+  "accountant": {
+    "title": "Your clients",
+    "description": "Every company that gave you access, with what needs doing. Open one to work in its books.",
+    "company": "Company",
+    "pending": "Not posted",
+    "errors": "Errors",
+    "openMonths": "Months still open",
+    "lastYearSaft": "Last year's SAF-T",
+    "made": "Made",
+    "notMade": "Not yet",
+    "notEnabled": "Accounting off",
+    "current": "Open now",
+    "open": "Open",
+    "switched": "Now in {{name}}",
+    "ocpca": "Your OCPCA number",
+    "ocpcaPlaceholder": "Printed on the statements"
+  },
+  "accountants": {
+    "title": "Accountants",
+    "description": "Give your accountant access to the books: full rights in Contabilidade, read-only elsewhere, no till work. One login works for every company that invites them.",
+    "none": "No accountant yet.",
+    "since": "since {{date}}",
+    "revoke": "Remove access",
+    "revoked": "Access removed",
+    "invite": "Give access",
+    "invited": "Invitation sent: they choose their password from the email",
+    "added": "Access given: they already had a login",
+    "fields": {
+      "email": "Email",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "ocpcaNumber": "OCPCA number (optional)"
     }
   },
   "saft": {

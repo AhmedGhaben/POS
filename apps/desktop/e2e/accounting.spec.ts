@@ -1,0 +1,90 @@
+import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
+import { API_URL, connect, launch, login, openPosWithProducts, sellFirstProduct, SwitchableProxy, tempUserData } from "./helpers";
+
+/**
+ * Contabilidade in the Windows app (docs/ACCOUNTING-DECISIONS.md): switch
+ * it on, the PGC chart, a manual entry that must balance, the automatic
+ * posting of a sale made at this till, a report and the SAF-T check.
+ */
+test.describe.serial("Accounting (Contabilidade)", () => {
+  const proxy = new SwitchableProxy(new URL(API_URL));
+  const userData = tempUserData();
+  let app: ElectronApplication;
+  let page: Page;
+
+  /** Picks an option in one of the app's comboboxes, typing to narrow the list. */
+  async function choose(name: string | RegExp, search: string, option: string | RegExp) {
+    await page.getByRole("combobox", { name }).click();
+    await page.getByPlaceholder("Type to search...").fill(search);
+    await page.getByRole("option", { name: option }).first().click();
+  }
+
+  test.beforeAll(async () => {
+    await proxy.up();
+    ({ app, page } = await launch(userData));
+    await connect(page, proxy.url);
+    await login(page);
+  });
+
+  test.afterAll(async () => {
+    await app?.close().catch(() => {});
+    await proxy.down();
+  });
+
+  test("the owner switches accounting on (once) and gets the PGC chart, with an account for this till", async () => {
+    await page.goto("app://pos/accounting");
+    await expect(page.getByRole("heading", { name: "Accounting" })).toBeVisible();
+    const enable = page.getByRole("button", { name: "Switch accounting on" });
+    if (await enable.isVisible().catch(() => false)) await enable.click();
+    await page.getByRole("tab", { name: "Chart of accounts" }).click();
+    await expect(page.getByText(/to be validated by an accountant/)).toBeVisible();
+    await page.getByPlaceholder("Search code or name").fill("45.1");
+    await expect(page.getByRole("cell", { name: "Caixa principal" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: /^Caixa POS-\d+/ }).first()).toBeVisible();
+  });
+
+  test("a manual entry can only be posted once it balances", async () => {
+    await page.getByRole("tab", { name: "Entries" }).click();
+    await page.getByRole("button", { name: "New entry" }).click();
+    const dialog = page.getByRole("dialog");
+    await choose("Journal", "OPD", /^OPD/);
+    await dialog.getByLabel("Description", { exact: true }).fill("Material de limpeza (teste)");
+    await choose("Account, line 1", "75.2.9", /^75\.2\.9 /);
+    await dialog.getByLabel("Debit, line 1").fill("1500");
+    await choose("Account, line 2", "45.1.1", /^45\.1\.1 /);
+    await dialog.getByLabel("Credit, line 2").fill("1400");
+    const post = dialog.getByRole("button", { name: "Post entry" });
+    await expect(post).toBeDisabled();
+    await expect(dialog.getByRole("status")).toContainText("Difference");
+    await dialog.getByLabel("Credit, line 2").fill("1500");
+    await expect(dialog.getByRole("status")).toHaveText("Balanced");
+    await post.click();
+    await expect(page.getByText(/^Entry \d{4}-\d{2}-\d{2} OPD \d{4}\/\d+ posted$/)).toBeVisible();
+    await expect(page.getByRole("cell", { name: /Material de limpeza \(teste\)/ }).first()).toBeVisible();
+  });
+
+  test("a sale at this till is posted by 'Post now' and shows up as an automatic entry", async () => {
+    await openPosWithProducts(page);
+    await sellFirstProduct(page);
+    await page.goto("app://pos/accounting?tab=integration");
+    await page.getByRole("button", { name: "Post now" }).click();
+    await expect(page.getByText(/\d+ posted, \d+ skipped, \d+ with errors/)).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByTestId("pending-FISCAL_DOCUMENT")).toHaveText("0");
+    await page.getByRole("tab", { name: "Entries" }).click();
+    await expect(page.getByText("From the POS").first()).toBeVisible();
+  });
+
+  test("the trial balance shows, with debits equal to credits; the SAF-T check says what's missing", async () => {
+    await page.getByRole("tab", { name: "Reports" }).click();
+    await page.getByRole("button", { name: "Show" }).click();
+    const report = page.getByTestId("accounting-report");
+    await expect(report.getByRole("columnheader", { name: "Debit balance" })).toBeVisible();
+    const totals = report.locator("tfoot td");
+    // Columns: code, name, then debit/credit pairs: the balances' totals are equal.
+    await expect(totals.nth(8)).toHaveText((await totals.nth(9).textContent()) ?? "");
+    await page.getByRole("tab", { name: "SAF-T" }).click();
+    await page.getByLabel("Draft (periods still open)").check();
+    await page.getByRole("button", { name: "Check the books" }).click();
+    await expect(page.getByRole("status").filter({ hasText: /Ready|Periods still open|NIF|records of the year/ })).toBeVisible({ timeout: 120_000 });
+  });
+});

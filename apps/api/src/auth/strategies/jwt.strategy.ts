@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
+import { Role } from "@prisma/client";
 import { ConfigService } from "@nestjs/config";
 import { AuthenticatedUser } from "../../common/types/authenticated-user";
 import { PrismaService } from "../../prisma/prisma.service";
@@ -36,6 +37,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
     });
     if (!user || !user.isActive) {
       throw new UnauthorizedException("Account is deactivated");
+    }
+    // An accountant works in the client the token names, while that client still gives them access.
+    if (user.role === Role.ACCOUNTANT) {
+      const access = await this.prisma.accountantAccess.findFirst({ where: { userId: user.id, businessId: payload.businessId, revokedAt: null }, select: { id: true } });
+      if (!access) throw new UnauthorizedException("Your access to this company was removed");
+      return { userId: user.id, businessId: payload.businessId, role: user.role };
     }
     return { userId: user.id, businessId: user.businessId, role: user.role };
   }

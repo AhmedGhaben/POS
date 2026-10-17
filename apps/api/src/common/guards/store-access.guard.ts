@@ -39,7 +39,8 @@ export class StoreAccessGuard implements CanActivate {
       throw new ForbiddenException("Store not found in your business");
     }
 
-    if (user.role === Role.OWNER) {
+    // Owners have every store; accountants read every store of the client they're in.
+    if (user.role === Role.OWNER || user.role === Role.ACCOUNTANT) {
       return true;
     }
 

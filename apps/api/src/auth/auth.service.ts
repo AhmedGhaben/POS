@@ -62,9 +62,9 @@ export class AuthService {
     private readonly till: TillAuthService,
   ) {}
 
-  private signAccessToken(user: { id: string; businessId: string; role: Role }): string {
+  private signAccessToken(user: { id: string; businessId: string; role: Role }, businessId = user.businessId): string {
     return this.jwt.sign(
-      { sub: user.id, businessId: user.businessId, role: user.role },
+      { sub: user.id, businessId, role: user.role },
       {
         secret: this.config.get<string>("JWT_ACCESS_SECRET"),
         expiresIn: this.config.get<string>("JWT_ACCESS_TTL") ?? "30m",
@@ -72,12 +72,13 @@ export class AuthService {
     );
   }
 
-  private async issueRefreshToken(userId: string): Promise<string> {
+  private async issueRefreshToken(userId: string, businessId: string | null = null): Promise<string> {
     const rawToken = generateOpaqueToken();
     const ttlMs = parseDurationMs(this.config.get<string>("JWT_REFRESH_TTL") ?? "30d");
     await this.prisma.refreshToken.create({
       data: {
         userId,
+        businessId,
         tokenHash: hashToken(rawToken),
         expiresAt: new Date(Date.now() + ttlMs),
       },
@@ -96,7 +97,27 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
+    if (user.role === Role.ACCOUNTANT) return this.buildSession(user, await this.accountantBusiness(user.id, user.businessId));
     return this.buildSession(user);
+  }
+
+  /**
+   * The client an accountant works in: the one asked for, if it still gives
+   * them access; else their first client.
+   */
+  private async accountantBusiness(userId: string, preferred: string | null): Promise<string> {
+    const access = await this.prisma.accountantAccess.findMany({ where: { userId, revokedAt: null }, orderBy: { createdAt: "asc" }, select: { businessId: true } });
+    if (!access.length) throw new UnauthorizedException("No company has given you access");
+    return access.find((a) => a.businessId === preferred)?.businessId ?? access[0].businessId;
+  }
+
+  /** An accountant moves to another of their clients: a new session there. */
+  async switchBusiness(userId: string, businessId: string): Promise<LoginResult> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.isActive || user.role !== Role.ACCOUNTANT) throw new UnauthorizedException("Only accountants switch between companies");
+    const access = await this.prisma.accountantAccess.findFirst({ where: { userId, businessId, revokedAt: null } });
+    if (!access) throw new UnauthorizedException("No company has given you access");
+    return this.buildSession(user, businessId);
   }
 
   /**
@@ -194,15 +215,16 @@ export class AuthService {
     return this.buildSession(user);
   }
 
-  private async buildSession(user: User): Promise<LoginResult> {
+  private async buildSession(user: User, businessId = user.businessId): Promise<LoginResult> {
     const [allStores, business] = await Promise.all([
       // Oldest first: the business's first store is the default one.
-      this.prisma.store.findMany({ where: { businessId: user.businessId, isActive: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
-      this.prisma.business.findUniqueOrThrow({ where: { id: user.businessId } }),
+      this.prisma.store.findMany({ where: { businessId, isActive: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
+      this.prisma.business.findUniqueOrThrow({ where: { id: businessId } }),
     ]);
 
     let accessibleStoreIds: string[];
-    if (user.role === Role.OWNER) {
+    // An accountant reads every store of the client they're in.
+    if (user.role === Role.OWNER || user.role === Role.ACCOUNTANT) {
       accessibleStoreIds = allStores.map((s) => s.id);
     } else {
       const storeUsers = await this.prisma.storeUser.findMany({
@@ -212,8 +234,8 @@ export class AuthService {
       accessibleStoreIds = storeUsers.map((su) => su.storeId);
     }
 
-    const accessToken = this.signAccessToken(user);
-    const refreshToken = await this.issueRefreshToken(user.id);
+    const accessToken = this.signAccessToken(user, businessId);
+    const refreshToken = await this.issueRefreshToken(user.id, user.role === Role.ACCOUNTANT ? businessId : null);
 
     const accessibleStores = allStores.filter((s) => accessibleStoreIds.includes(s.id));
 
@@ -222,7 +244,7 @@ export class AuthService {
       refreshToken,
       user: {
         id: user.id,
-        businessId: user.businessId,
+        businessId,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -266,7 +288,9 @@ export class AuthService {
       throw new UnauthorizedException("Invalid or expired refresh token");
     }
 
-    const newRawToken = await this.issueRefreshToken(user.id);
+    // An accountant stays in the client they were in (while it still gives them access).
+    const businessId = user.role === Role.ACCOUNTANT ? await this.accountantBusiness(user.id, stored.businessId) : user.businessId;
+    const newRawToken = await this.issueRefreshToken(user.id, user.role === Role.ACCOUNTANT ? businessId : null);
     const newRecord = await this.prisma.refreshToken.findUnique({
       where: { tokenHash: hashToken(newRawToken) },
     });
@@ -275,7 +299,7 @@ export class AuthService {
       data: { revokedAt: new Date(), replacedByTokenId: newRecord?.id },
     });
 
-    return { accessToken: this.signAccessToken(user), refreshToken: newRawToken };
+    return { accessToken: this.signAccessToken(user, businessId), refreshToken: newRawToken };
   }
 
   /** Idempotent — always "succeeds" whether or not the token was still valid. */
