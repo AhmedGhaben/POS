@@ -4,6 +4,7 @@ import { PwaUpdatePrompt } from "@/components/layout/PwaUpdatePrompt";
 import { BackOfficeShell } from "@/components/layout/BackOfficeShell";
 import { BackOfficeRoute } from "@/components/layout/BackOfficeRoute";
 import { PosShell } from "@/components/layout/PosShell";
+import { DeviceShell } from "@/components/layout/DeviceShell";
 import { homePathFor } from "@/components/layout/nav-items";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { useAuthStore } from "@/features/auth/store";
@@ -67,6 +68,8 @@ export function App() {
           <Route path="/welcome" element={<WelcomePage />} />
           <Route element={<PosShell />}>
             <Route path="/pos" element={<PosPage />} />
+          </Route>
+          <Route element={<DeviceShell />}>
             <Route path="/device" element={<DevicePage />} />
           </Route>
           <Route element={<BackOfficeRoute />}>

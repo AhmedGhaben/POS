@@ -68,7 +68,8 @@ test.describe.serial("POS cart kept, Back to POS, documents in the store's langu
 
     await page.getByRole("link", { name: "This device" }).click();
     await expect(page).toHaveURL(/\/device$/);
-    await page.getByRole("link", { name: "Back to POS" }).click();
+    // The owner sees This device in the back office: Back to POS shows the cart's count.
+    await page.getByRole("link", { name: /^Back to POS/ }).click();
     expect(await snapshot()).toEqual(before);
 
     await page.goto("app://pos/products");
