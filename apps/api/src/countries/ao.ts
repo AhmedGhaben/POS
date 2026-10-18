@@ -172,10 +172,16 @@ export const AO: CountryConfig = {
   documentQrUrl: (issuerTaxId, documentNo) =>
     `https://quiosqueagt.minfin.gov.ao/facturacao-eletronica/consultar-fe?emissor=${encodeURIComponent(issuerTaxId)}&document=${documentNo.replace(/ /g, "%20")}`,
   deadlines: [
-    // SAF-T (AO) Facturação, monthly while e-invoicing isn't live. Day to confirm.
-    { key: "saftInvoicing", kind: "monthly", day: 15, when: "eInvoicingOff" },
+    // SAF-T (AO) Facturação, monthly while e-invoicing isn't live: last month's
+    // operations by the last day of this month (Decreto Presidencial 312/18, art. 3, n.º 1).
+    { key: "saftInvoicing", kind: "monthly", day: "last", when: "eInvoicingOff" },
     // SAF-T de Inventários: stock at 31 Dec, by 15 February.
     { key: "saftInventory", kind: "yearly", month: 2, day: 15, when: "always", regimes: ["GERAL", "SIMPLIFICADO"] },
+    // SAF-T (AO) Contabilidade for last year: by 10 April (Decreto Presidencial 71/25).
+    { key: "saftAccounting", kind: "yearly", month: 4, day: 10, when: "accountingOn" },
+    // SAF-T Aquisição de Bens e Serviços: same rule (Decreto 312/18, art. 3, n.º 1);
+    // the business can set another day (accounting settings).
+    { key: "saftPurchases", kind: "monthly", day: "last", when: "purchasesFile" },
   ],
   // SAF-T (AO) 1.01 ProductType.
   productTypes: [

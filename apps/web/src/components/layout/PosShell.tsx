@@ -2,7 +2,7 @@ import { ArrowLeft, Moon, Sun, LogOut, LayoutDashboard, MonitorCog, Download, Lo
 import { useLockStore, useTillMode } from "@/features/till/lock-store";
 import { useTranslation } from "react-i18next";
 import { useDeviceStore } from "@/features/desktop/bridge";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { StoreSwitcher } from "./StoreSwitcher";
 import { useTheme } from "@/theme/ThemeProvider";
@@ -47,6 +47,8 @@ export function PosShell() {
   }
 
   const canReturnToBackOffice = role !== "CASHIER";
+  // An accountant never works a till.
+  if (role === "ACCOUNTANT") return <Navigate to="/accounting" replace />;
 
   return (
     <div className="flex min-h-screen flex-col">

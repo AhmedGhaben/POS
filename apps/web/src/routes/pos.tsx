@@ -7,6 +7,9 @@ import { adoptShift, fetchCurrentShift } from "@/features/shifts/api";
 import type { LocalShift } from "@/features/shifts/ledger";
 import { OpenShiftPanel } from "@/features/shifts/components/OpenShiftPanel";
 import { OthersShiftPanel } from "@/features/shifts/components/OthersShiftPanel";
+import { BackOfficeDevicePanel } from "@/features/shifts/components/BackOfficeDevicePanel";
+import { DeviceRoleQuestion } from "@/features/shifts/components/DeviceRoleQuestion";
+import { useDeviceRole } from "@/features/desktop/device-role";
 import { CashMovementDialog } from "@/features/shifts/components/CashMovementDialog";
 import { CloseShiftDialog } from "@/features/shifts/components/CloseShiftDialog";
 import { isWorkingOffline, useOfflineStore } from "@/features/pos/offline-store";
@@ -167,6 +170,10 @@ export function PosPage() {
 
   // Shifts: no selling until this person opens one on this till; a shift
   // someone else left open has to be closed first (by them, or a manager).
+  // A back-office device never opens or picks up a shift, so it doesn't sell;
+  // a browser nobody has set up yet asks first.
+  const deviceRole = useDeviceRole();
+  const isTill = deviceRole === "TILL";
   const shift = useCurrentShift(currentStoreId);
   const role = useAuthStore((s) => s.user?.role);
   const othersShift = shift && shift.openedBy.id !== userId ? shift : null;
@@ -176,7 +183,7 @@ export function PosPage() {
   const [closing, setClosing] = React.useState<LocalShift | null>(null);
   const terminalId = useDeviceStore((s) => s.terminal?.id ?? null);
   React.useEffect(() => {
-    if (shift || !currentStoreId || isWorkingOffline()) return;
+    if (!isTill || shift || !currentStoreId || isWorkingOffline()) return;
     // Opened on another device, or this one lost its record (app closed
     // or crashed): carry on with it.
     fetchCurrentShift(currentStoreId, terminalId)
@@ -184,7 +191,7 @@ export function PosPage() {
         if (open && !useShiftStore.getState().current) adoptShift(open);
       })
       .catch(() => undefined);
-  }, [shift, currentStoreId, terminalId]);
+  }, [isTill, shift, currentStoreId, terminalId]);
   // Where this till's document series are, so it can number its own (offline too).
   // Its signing key too: fetched, rotated, or dropped if the till's access was withdrawn.
   React.useEffect(() => {
@@ -370,6 +377,10 @@ export function PosPage() {
             canForceClose={role === "OWNER" || role === "MANAGER"}
             onForceClose={() => setClosing(othersShift)}
           />
+        ) : needsShift && deviceRole === null ? (
+          <DeviceRoleQuestion canChoose={role === "OWNER" || role === "MANAGER"} />
+        ) : needsShift && !isTill ? (
+          <BackOfficeDevicePanel canChange={role === "OWNER" || role === "MANAGER"} />
         ) : needsShift ? (
           <OpenShiftPanel storeId={currentStoreId} />
         ) : (

@@ -16,6 +16,10 @@ enum Role {
   OWNER
   MANAGER
   CASHIER
+  /// An outside accountant (docs/ACCOUNTING-DECISIONS.md, B1): full
+  /// accounting rights in the companies that invited them, reads the rest,
+  /// changes nothing outside the books. One login for several companies.
+  ACCOUNTANT
 }
 
 enum SaleStatus {
@@ -230,6 +234,13 @@ model Business {
   customerPayments CustomerPayment[]
   supplierPayments SupplierPayment[]
 
+  accountantAccess   AccountantAccess[]
+  accountingSettings AccountingSettings?
+  ledgerAccounts     LedgerAccount[]
+  fiscalYears        FiscalYear[]
+  journals           Journal[]
+  journalEntries     JournalEntry[]
+
   @@map("businesses")
 }
 
@@ -359,9 +370,12 @@ model User {
   pinLockedUntil  DateTime?
   /// Null until the user clicks the link in their verification email.
   emailVerifiedAt DateTime?
+  /// An accountant's number in the Ordem dos Contabilistas e Peritos Contabilistas de Angola (OCPCA).
+  ocpcaNumber     String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  accountantAccess        AccountantAccess[]
   storeUsers              StoreUser[]
   salesCreated            Sale[]                   @relation("SaleCashier")
   salesVoided             Sale[]                   @relation("SaleVoidedBy")
@@ -414,6 +428,8 @@ model RefreshToken {
   /// Id of the token this one was rotated into, for traceability only — not
   /// a Prisma relation, just a plain reference to keep rotation lightweight.
   replacedByTokenId String?
+  /// For an accountant: the client company the session is in (they switch between them).
+  businessId        String?
   createdAt         DateTime  @default(now())
 
   @@index([userId])
@@ -1527,4 +1543,449 @@ model AgtSubmission {
   @@index([status, nextAttemptAt])
   @@index([businessId, status])
   @@map("agt_submissions")
+}
+
+// ---------------------------------------------------------------------------
+// Accounting ("Contabilidade", docs/ACCOUNTING-DECISIONS.md)
+// ---------------------------------------------------------------------------
+
+/// SAF-T GroupingCategory: GR first-degree, GA aggregating, GM movement
+/// account of the general ledger; AR/AA/AM the same for analytic accounting.
+enum LedgerAccountCategory {
+  GR
+  GA
+  GM
+  AR
+  AA
+  AM
+}
+
+/// The business keeps its books here: on/off and how POS documents are posted.
+model AccountingSettings {
+  businessId          String    @id
+  business            Business  @relation(fields: [businessId], references: [id])
+  enabled             Boolean   @default(false)
+  /// POS documents from this day on are posted automatically; earlier ones
+  /// are in the opening balances.
+  startDate           DateTime  @db.Date
+  /// One cash account per till (else everything in Caixa principal).
+  cashPerTill         Boolean   @default(true)
+  /// PER_DOCUMENT, or DAILY_SUMMARY (FR, NC and RC summed per till per day).
+  grouping            String    @default("PER_DOCUMENT")
+  /// The integration runs by itself every few minutes.
+  autoPost            Boolean   @default(true)
+  /// The monthly SAF-T purchases file: AUTO (while e-invoicing is off), ALWAYS, NEVER.
+  purchasesFile       String    @default("AUTO")
+  /// Its due day each month; null = the country's (Angola: the last day, Decreto 312/18 art. 3).
+  purchasesFileDueDay Int?
+  enabledAt           DateTime?
+  enabledById         String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@map("accounting_settings")
+}
+
+/// An account of the chart (Plano Geral de Contabilidade). The code is the
+/// SAF-T AccountID; the parent is its GroupingCode. Only GM accounts take
+/// postings (a database rule). Never deleted once it has movements.
+model LedgerAccount {
+  id             String                @id @default(cuid())
+  businessId     String
+  business       Business              @relation(fields: [businessId], references: [id])
+  /// "31.1.2.1.0001"
+  code           String
+  name           String
+  category       LedgerAccountCategory
+  parentId       String?
+  parent         LedgerAccount?        @relation("AccountTree", fields: [parentId], references: [id])
+  children       LedgerAccount[]       @relation("AccountTree")
+  /// PGC class 1-8 (the code's first digit).
+  classNo        Int
+  isActive       Boolean               @default(true)
+  /// An account the app keeps for a CUSTOMER, SUPPLIER, TILL or BANK (its id).
+  linkType       String?
+  linkId         String?
+  /// From the default PGC template.
+  fromTemplate   Boolean               @default(false)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  lines          JournalEntryLine[]
+  AccountMapping AccountMapping[]
+
+  @@unique([businessId, code])
+  @@unique([businessId, linkType, linkId])
+  @@index([parentId])
+  @@map("ledger_accounts")
+}
+
+enum PeriodStatus {
+  OPEN
+  CLOSED
+}
+
+/// An accounting year (the calendar year in Angola). Closed once the
+/// results are worked out and the balances carried to the next year.
+model FiscalYear {
+  id         String       @id @default(cuid())
+  businessId String
+  business   Business     @relation(fields: [businessId], references: [id])
+  year       Int
+  startDate  DateTime     @db.Date
+  endDate    DateTime     @db.Date
+  status     PeriodStatus @default(OPEN)
+  closedAt   DateTime?
+  closedById String?
+  createdAt  DateTime     @default(now())
+
+  periods AccountingPeriod[]
+
+  @@unique([businessId, year])
+  @@map("fiscal_years")
+}
+
+/// Period 0 is the opening (abertura), 1-12 the months, 13-15 the year-end
+/// (regularizações, apuramento de resultados, resultado líquido). A closed
+/// period takes no postings (a database rule).
+model AccountingPeriod {
+  id           String       @id @default(cuid())
+  businessId   String
+  fiscalYearId String
+  fiscalYear   FiscalYear   @relation(fields: [fiscalYearId], references: [id])
+  year         Int
+  number       Int
+  startDate    DateTime     @db.Date
+  endDate      DateTime     @db.Date
+  status       PeriodStatus @default(OPEN)
+  closedAt     DateTime?
+  closedById   String?
+  createdAt    DateTime     @default(now())
+
+  @@unique([businessId, year, number])
+  @@map("accounting_periods")
+}
+
+/// SALES, PURCHASES, CASH, BANK, GENERAL, OPENING, CLOSING, PAYROLL.
+enum JournalKind {
+  SALES
+  PURCHASES
+  CASH
+  BANK
+  GENERAL
+  OPENING
+  CLOSING
+  PAYROLL
+}
+
+/// SAF-T TransactionType: N normal, R regularização do período, A
+/// apuramento de resultados, J ajustamento.
+enum TransactionType {
+  N
+  R
+  A
+  J
+}
+
+/// A diário. Its code is the SAF-T JournalID; entries are numbered in it per year.
+model Journal {
+  id         String      @id @default(cuid())
+  businessId String
+  business   Business    @relation(fields: [businessId], references: [id])
+  /// SAF-T JournalID (no spaces, up to 30).
+  code       String
+  name       String
+  kind       JournalKind
+  /// Made by the app (the integration and the year-end post here).
+  system     Boolean     @default(false)
+  isActive   Boolean     @default(true)
+  createdAt  DateTime    @default(now())
+
+  entries  JournalEntry[]
+  counters JournalCounter[]
+
+  @@unique([businessId, code])
+  @@map("journals")
+}
+
+/// The next entry number of a journal in a year (gap-free: taken with a
+/// row lock in the entry's transaction, given back if it rolls back).
+model JournalCounter {
+  journalId String
+  journal   Journal @relation(fields: [journalId], references: [id])
+  year      Int
+  next      Int     @default(1)
+
+  @@id([journalId, year])
+  @@map("journal_counters")
+}
+
+/// A lançamento: posted, immutable, balanced (all database rules).
+/// Corrections are made with a reversing entry (estorno) that points here.
+model JournalEntry {
+  id                String          @id @default(cuid())
+  businessId        String
+  business          Business        @relation(fields: [businessId], references: [id])
+  journalId         String
+  journal           Journal         @relation(fields: [journalId], references: [id])
+  year              Int
+  /// Accounting period 0-15.
+  period            Int
+  /// Its number in the journal and year.
+  number            Int
+  /// SAF-T DocArchivalNumber: "2026/57".
+  docArchivalNumber String
+  /// SAF-T TransactionID: "<TransactionDate> <JournalID> <DocArchivalNumber>".
+  transactionId     String
+  /// The date on the document behind it (SAF-T TransactionDate).
+  transactionDate   DateTime        @db.Date
+  /// The date it counts in the books (SAF-T GLPostingDate).
+  postingDate       DateTime        @db.Date
+  description       String
+  transactionType   TransactionType @default(N)
+  /// Who posted it (SAF-T SourceID): the user, or whoever issued the POS document.
+  sourceUserId      String
+  /// For SAF-T CustomerID / SupplierID.
+  customerId        String?
+  supplierId        String?
+  /// MANUAL, AUTO (from the POS), OPENING, CARRY_FORWARD, YEAR_END, REVERSAL, DEPRECIATION, BANK.
+  origin            String
+  /// An estorno: the entry it reverses (once).
+  reversesEntryId   String?         @unique
+  reverses          JournalEntry?   @relation("Reversal", fields: [reversesEntryId], references: [id])
+  reversedBy        JournalEntry?   @relation("Reversal")
+  totalDebit        Decimal         @db.Decimal(16, 2)
+  totalCredit       Decimal         @db.Decimal(16, 2)
+  /// When it was recorded (SAF-T SystemEntryDate, to the second).
+  systemEntryDate   DateTime        @default(now())
+  createdAt         DateTime        @default(now())
+
+  lines   JournalEntryLine[]
+  sources AccountingSourceLink[]
+
+  @@unique([journalId, year, number])
+  @@unique([businessId, transactionId])
+  @@index([businessId, year, period])
+  @@index([businessId, postingDate])
+  @@map("journal_entries")
+}
+
+/// A debit or a credit on a movement account (never both, never negative).
+model JournalEntryLine {
+  id               String        @id @default(cuid())
+  entryId          String
+  entry            JournalEntry  @relation(fields: [entryId], references: [id])
+  lineNumber       Int
+  accountId        String
+  account          LedgerAccount @relation(fields: [accountId], references: [id])
+  debit            Decimal       @default(0) @db.Decimal(16, 2)
+  credit           Decimal       @default(0) @db.Decimal(16, 2)
+  description      String
+  /// SAF-T SourceDocumentID: the POS document behind the line ("FR POS001-2026/57").
+  sourceDocumentId String?
+
+  @@unique([entryId, lineNumber])
+  @@index([accountId])
+  @@map("journal_entry_lines")
+}
+
+/// Which account the integration uses for something (a key such as
+/// "sales.goods.14", "payment.CARD", "expense.RENT"). Without a row, the
+/// key's default account from the PGC template is used.
+model AccountMapping {
+  id         String        @id @default(cuid())
+  businessId String
+  key        String
+  accountId  String
+  account    LedgerAccount @relation(fields: [accountId], references: [id])
+  updatedAt  DateTime      @updatedAt
+
+  @@unique([businessId, key])
+  @@map("account_mappings")
+}
+
+/// A POS record the integration has dealt with: posted (entryId) or
+/// skipped (annulled before it was posted). Unique per source, so nothing
+/// is ever posted twice.
+model AccountingSourceLink {
+  id           String        @id @default(cuid())
+  businessId   String
+  /// FISCAL_DOCUMENT, FISCAL_DOCUMENT_ANNULMENT, PURCHASE, SUPPLIER_PAYMENT,
+  /// SUPPLIER_PAYMENT_CANCEL, EXPENSE, SHIFT_DIFFERENCE, CASH_MOVEMENT, STOCK_ADJUSTMENT
+  sourceType   String
+  sourceId     String
+  entryId      String?
+  entry        JournalEntry? @relation(fields: [entryId], references: [id])
+  skipped      Boolean       @default(false)
+  /// The document's number as shown (FR POS001-2026/57, PO-…).
+  documentNo   String?
+  documentDate DateTime      @db.Date
+  createdAt    DateTime      @default(now())
+
+  @@unique([businessId, sourceType, sourceId])
+  @@index([entryId])
+  @@map("accounting_source_links")
+}
+
+/// Why a POS record couldn't be posted yet (a missing mapping, a closed
+/// period…): the integration monitor shows these; gone once posted.
+model AccountingIntegrationError {
+  id           String   @id @default(cuid())
+  businessId   String
+  sourceType   String
+  sourceId     String
+  documentNo   String?
+  documentDate DateTime @db.Date
+  message      String
+  attempts     Int      @default(1)
+  lastTriedAt  DateTime @default(now())
+
+  @@unique([businessId, sourceType, sourceId])
+  @@map("accounting_integration_errors")
+}
+
+/// A lançamento pré-definido: a recurring entry (rent, salaries, bank fees)
+/// to start a new entry from. Lines: [{ accountId, side: "D"|"C", amount?, description? }].
+model EntryTemplate {
+  id              String          @id @default(cuid())
+  businessId      String
+  name            String
+  journalId       String
+  description     String
+  transactionType TransactionType @default(N)
+  lines           Json
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([businessId])
+  @@map("entry_templates")
+}
+
+/// An accountant's access to a client company. Revoked, not deleted.
+model AccountantAccess {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  businessId      String
+  business        Business  @relation(fields: [businessId], references: [id])
+  invitedById     String
+  createdAt       DateTime  @default(now())
+  /// Null while the invitation is pending: an accountant who already had a
+  /// login accepts another company's access (in the app or from the email).
+  acceptedAt      DateTime?
+  /// The email's accept link (hashed), until it's used or expires.
+  inviteTokenHash String?   @unique
+  inviteExpiresAt DateTime?
+  revokedAt       DateTime?
+  revokedById     String?
+
+  @@unique([userId, businessId])
+  @@index([businessId])
+  @@map("accountant_access")
+}
+
+/// A scanned supplier invoice or receipt (or any supporting paper) kept
+/// with a purchase, an expense or a journal entry (B2). Small files only:
+/// they live in the row until object storage exists.
+model Attachment {
+  id           String   @id @default(cuid())
+  businessId   String
+  /// PURCHASE, EXPENSE, ENTRY
+  ownerType    String
+  ownerId      String
+  fileName     String
+  mimeType     String
+  size         Int
+  data         Bytes
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  @@index([businessId, ownerType, ownerId])
+  @@map("attachments")
+}
+
+/// A bank statement imported for reconciliation (B3), for one bank account
+/// of the chart (a movement account of class 4).
+model BankStatement {
+  id           String              @id @default(cuid())
+  businessId   String
+  accountId    String
+  fileName     String
+  /// The first and last movement's dates.
+  periodFrom   DateTime            @db.Date
+  periodTo     DateTime            @db.Date
+  importedById String
+  createdAt    DateTime            @default(now())
+  lines        BankStatementLine[]
+
+  @@index([businessId, accountId])
+  @@map("bank_statements")
+}
+
+/// A movement on the bank statement: matched to the ledger line that
+/// records it (once), or posted as a new entry (fees, interest).
+model BankStatementLine {
+  id            String        @id @default(cuid())
+  statementId   String
+  statement     BankStatement @relation(fields: [statementId], references: [id])
+  businessId    String
+  date          DateTime      @db.Date
+  description   String
+  reference     String?
+  /// Money in positive, out negative.
+  amount        Decimal       @db.Decimal(16, 2)
+  /// The journal entry line it was matched with (a ledger line matches one statement line).
+  matchedLineId String?       @unique
+  /// MANUAL, AUTO, POSTED (an entry made for it here).
+  matchKind     String?
+
+  @@index([statementId])
+  @@map("bank_statement_lines")
+}
+
+/// A fixed asset (imobilizado, B4): bought, depreciated monthly in a straight
+/// line at a rate within Decreto Presidencial 207/15's maximum, disposed of.
+model FixedAsset {
+  id                   String              @id @default(cuid())
+  businessId           String
+  /// "IMO-0001"
+  code                 String
+  name                 String
+  /// The Decreto 207/15 group (see fixed-assets.ts).
+  category             String
+  assetAccountId       String
+  accumulatedAccountId String
+  expenseAccountId     String
+  acquisitionDate      DateTime            @db.Date
+  acquisitionValue     Decimal             @db.Decimal(16, 2)
+  residualValue        Decimal             @default(0) @db.Decimal(16, 2)
+  /// Per year, percent.
+  annualRate           Decimal             @db.Decimal(5, 2)
+  /// Depreciated from this month (YYYY-MM-01).
+  depreciationStart    DateTime            @db.Date
+  /// ACTIVE, DISPOSED
+  status               String              @default("ACTIVE")
+  acquisitionEntryId   String?
+  disposalDate         DateTime?           @db.Date
+  disposalValue        Decimal?            @db.Decimal(16, 2)
+  disposalEntryId      String?
+  note                 String?
+  createdAt            DateTime            @default(now())
+  depreciations        AssetDepreciation[]
+
+  @@unique([businessId, code])
+  @@map("fixed_assets")
+}
+
+/// One month's depreciation of an asset, posted once (unique per month).
+model AssetDepreciation {
+  id      String     @id @default(cuid())
+  assetId String
+  asset   FixedAsset @relation(fields: [assetId], references: [id])
+  year    Int
+  month   Int
+  amount  Decimal    @db.Decimal(16, 2)
+  entryId String
+
+  @@unique([assetId, year, month])
+  @@map("asset_depreciations")
 }

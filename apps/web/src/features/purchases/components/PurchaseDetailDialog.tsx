@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { PurchaseDetailDto } from "@pos/shared";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AttachmentsPanel } from "@/features/accounting/components/AttachmentsPanel";
 import { PrintArea } from "@/components/print/PrintArea";
 import { PrintButton } from "@/components/print/PrintButton";
 import { useAuthStore } from "@/features/auth/store";
@@ -127,7 +128,7 @@ function PurchaseA4({ p }: { p: PurchaseDetailDto }) {
 }
 
 export function PurchaseDetailDialog({ purchaseId, onClose }: { purchaseId: string | null; onClose: () => void }) {
-  const { t } = useTranslation(["stock", "common"]);
+  const { t } = useTranslation(["stock", "common", "accounting"]);
   const query = useQuery({ queryKey: ["purchase", purchaseId], queryFn: () => fetchPurchase(purchaseId!), enabled: !!purchaseId });
   const p = query.data;
   return (
@@ -145,6 +146,10 @@ export function PurchaseDetailDialog({ purchaseId, onClose }: { purchaseId: stri
               <PurchaseA4 p={p} />
             </A4Preview>
             <PrintButton onPrint={({ copies, deviceName }) => printDocument({ copies, deviceName })} />
+            <div className="border-t pt-3">
+              <p className="mb-2 text-sm font-medium">{t("accounting:attachments.supplierPapers")}</p>
+              <AttachmentsPanel ownerType="PURCHASE" ownerId={p.id} />
+            </div>
             <PrintArea format="a4">
               <PurchaseA4 p={p} />
             </PrintArea>

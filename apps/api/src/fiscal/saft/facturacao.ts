@@ -2,7 +2,8 @@ import { Prisma } from "@prisma/client";
 import { optionalText, text, UNKNOWN, XmlWriter } from "./xml";
 
 /**
- * SAF-T (AO) Facturação file (TaxAccountingBasis "F"), as
+ * SAF-T (AO) Facturação file (TaxAccountingBasis "F"), and the integrated
+ * accounting file ("I": the general ledger as well, see GeneralLedgerInput), as
  * docs/saft-ao/xsd/SAFTAO1.01_01.xsd lays it out, with the field rules of
  * Decreto Executivo 317/20. Pure: SaftExportService loads the data; the
  * tests validate what this writes against the XSD.
@@ -48,6 +49,8 @@ export interface SaftSoftware {
 
 export interface SaftCustomer {
   id: string;
+  /** The customer's account in the chart (AccountID); "Desconhecido" without one. */
+  accountId?: string | null;
   taxId: string;
   name: string;
   finalConsumer: boolean;
@@ -101,6 +104,8 @@ export interface SaftLine {
 
 export interface SaftDocument {
   documentNo: string;
+  /** The entry it was posted in (integrated accounting). */
+  transactionId?: string | null;
   /** FT, FR, NC, ND… (sales) or PF, OR… (working documents). */
   documentType: string;
   /** N, A (and F for an invoiced proforma). */
@@ -131,6 +136,8 @@ export interface SaftDocument {
 /** A receipt (RC) for invoices bought on credit. */
 export interface SaftPayment {
   paymentRefNo: string;
+  /** The entry it was posted in (integrated accounting). */
+  transactionId?: string | null;
   /** RC, RG */
   paymentType: string;
   period: number;
@@ -152,6 +159,8 @@ export interface SaftPayment {
 
 export interface SaftSupplier {
   id: string;
+  /** The supplier's account in the chart (AccountID); "Desconhecido" without one. */
+  accountId?: string | null;
   /** NIF; "999999999" when unknown. */
   taxId: string;
   name: string;
@@ -181,7 +190,56 @@ export interface SaftPurchaseInvoice {
   withholding?: { percent: Money; amount: Money } | null;
 }
 
+/** An account of the chart with its balances at the start and end of the period (GeneralLedgerAccounts). */
+export interface SaftLedgerAccount {
+  id: string;
+  description: string;
+  openingDebit: Money;
+  openingCredit: Money;
+  closingDebit: Money;
+  closingCredit: Money;
+  /** GR, GA, GM (AR, AA, AM) */
+  category: string;
+  /** The aggregating account one level up (not for first-degree accounts). */
+  groupingCode?: string | null;
+}
+
+export interface SaftLedgerLine {
+  recordId: string;
+  accountId: string;
+  sourceDocumentId?: string | null;
+  systemEntryDateTime: string;
+  description: string;
+  debit?: Money | null;
+  credit?: Money | null;
+}
+
+export interface SaftTransaction {
+  /** "YYYY-MM-DD JournalID DocArchivalNumber" */
+  id: string;
+  period: number;
+  date: string;
+  sourceId: string;
+  description: string;
+  docArchivalNumber: string;
+  /** N, R, A, J */
+  type: string;
+  postingDate: string;
+  customerId?: string | null;
+  supplierId?: string | null;
+  lines: SaftLedgerLine[];
+}
+
+export interface GeneralLedgerInput {
+  accounts: SaftLedgerAccount[];
+  journals: { id: string; description: string; transactions: SaftTransaction[] }[];
+}
+
 export interface FacturacaoInput {
+  /** F (invoicing, default), I (accounting integrated with invoicing), A (purchases: Aquisição de Bens e Serviços). */
+  taxAccountingBasis?: "F" | "I" | "A";
+  /** The chart and the entries, for an "I" file. */
+  generalLedger?: GeneralLedgerInput | null;
   company: SaftCompany;
   software: SaftSoftware;
   fiscalYear: number;
@@ -271,7 +329,7 @@ export function buildFacturacaoXml(input: FacturacaoInput): string {
   w.el("AuditFileVersion", "1.01_01");
   w.el("CompanyID", text(c.companyId, 50));
   w.el("TaxRegistrationNumber", c.taxId);
-  w.el("TaxAccountingBasis", "F");
+  w.el("TaxAccountingBasis", input.taxAccountingBasis ?? "F");
   w.el("CompanyName", text(c.legalName, 200));
   w.el("BusinessName", c.businessName && c.businessName !== c.legalName ? optionalText(c.businessName, 60) : null);
   address(w, "CompanyAddress", c.address, { angola: true });
@@ -291,10 +349,26 @@ export function buildFacturacaoXml(input: FacturacaoInput): string {
   w.close("Header");
 
   w.open("MasterFiles");
+  if (input.generalLedger?.accounts.length) {
+    w.open("GeneralLedgerAccounts");
+    for (const a of input.generalLedger.accounts) {
+      w.open("Account");
+      w.el("AccountID", a.id);
+      w.el("AccountDescription", text(a.description, 100));
+      w.el("OpeningDebitBalance", m2(a.openingDebit));
+      w.el("OpeningCreditBalance", m2(a.openingCredit));
+      w.el("ClosingDebitBalance", m2(a.closingDebit));
+      w.el("ClosingCreditBalance", m2(a.closingCredit));
+      w.el("GroupingCategory", a.category);
+      w.el("GroupingCode", a.groupingCode ?? null);
+      w.close("Account");
+    }
+    w.close("GeneralLedgerAccounts");
+  }
   for (const cu of input.customers) {
     w.open("Customer");
     w.el("CustomerID", cu.id);
-    w.el("AccountID", UNKNOWN);
+    w.el("AccountID", cu.accountId || UNKNOWN);
     w.el("CustomerTaxID", text(cu.taxId, 30));
     w.el("CompanyName", text(cu.name, 100));
     address(
@@ -312,7 +386,7 @@ export function buildFacturacaoXml(input: FacturacaoInput): string {
   for (const su of input.suppliers) {
     w.open("Supplier");
     w.el("SupplierID", su.id);
-    w.el("AccountID", UNKNOWN);
+    w.el("AccountID", su.accountId || UNKNOWN);
     w.el("SupplierTaxID", text(su.taxId, 20));
     w.el("CompanyName", text(su.name, 100));
     w.el("Contact", optionalText(su.contact, 50));
@@ -353,8 +427,11 @@ export function buildFacturacaoXml(input: FacturacaoInput): string {
   }
   w.close("MasterFiles");
 
+  if (input.generalLedger) generalLedgerEntries(w, input.generalLedger);
+
   w.open("SourceDocuments");
-  salesInvoices(w, input.salesInvoices);
+  // The purchases file has its purchases only.
+  if (input.taxAccountingBasis !== "A") salesInvoices(w, input.salesInvoices);
   if (input.workingDocuments.length) workingDocuments(w, input.workingDocuments);
   if (input.payments.length) payments(w, input.payments);
   if (input.purchaseInvoices.length) purchaseInvoices(w, input.purchaseInvoices);
@@ -392,6 +469,7 @@ function salesInvoices(w: XmlWriter, docs: SaftDocument[]) {
     w.close("SpecialRegimes");
     w.el("SourceID", text(d.sourceId, 30));
     w.el("SystemEntryDate", d.systemEntryDateTime);
+    w.el("TransactionID", d.transactionId ?? null);
     w.el("CustomerID", d.customerId);
     const debit = isDebitDocument(d.documentType);
     for (const l of d.lines) {
@@ -456,6 +534,7 @@ function workingDocuments(w: XmlWriter, docs: SaftDocument[]) {
     w.el("WorkType", d.documentType);
     w.el("SourceID", text(d.sourceId, 30));
     w.el("SystemEntryDate", d.systemEntryDateTime);
+    w.el("TransactionID", d.transactionId ?? null);
     w.el("CustomerID", d.customerId);
     for (const l of d.lines) {
       w.open("Line");
@@ -495,6 +574,7 @@ function payments(w: XmlWriter, receipts: SaftPayment[]) {
     w.open("Payment");
     w.el("PaymentRefNo", r.paymentRefNo);
     w.el("Period", r.period);
+    w.el("TransactionID", r.transactionId ?? null);
     w.el("TransactionDate", r.transactionDate);
     w.el("PaymentType", r.paymentType);
     w.open("DocumentStatus");
@@ -570,3 +650,57 @@ function purchaseInvoices(w: XmlWriter, invoices: SaftPurchaseInvoice[]) {
   }
   w.close("PurchaseInvoices");
 }
+
+/**
+ * GeneralLedgerEntries: the period's entries by journal (never the opening,
+ * which is only in the accounts' opening balances), debit lines first.
+ */
+function generalLedgerEntries(w: XmlWriter, gl: GeneralLedgerInput) {
+  const transactions = gl.journals.flatMap((j) => j.transactions);
+  const sum = (side: "debit" | "credit") => transactions.reduce((s, t) => t.lines.reduce((x, l) => x.plus(l[side] ?? ZERO), s), ZERO);
+  w.open("GeneralLedgerEntries");
+  w.el("NumberOfEntries", transactions.length);
+  w.el("TotalDebit", m2(sum("debit")));
+  w.el("TotalCredit", m2(sum("credit")));
+  for (const j of gl.journals) {
+    w.open("Journal");
+    w.el("JournalID", j.id);
+    w.el("Description", text(j.description, 60));
+    for (const t of j.transactions) {
+      w.open("Transaction");
+      w.el("TransactionID", t.id);
+      w.el("Period", t.period);
+      w.el("TransactionDate", t.date);
+      w.el("SourceID", text(t.sourceId, 30));
+      w.el("Description", text(t.description, 200));
+      w.el("DocArchivalNumber", t.docArchivalNumber);
+      w.el("TransactionType", t.type);
+      w.el("GLPostingDate", t.postingDate);
+      if (t.customerId) w.el("CustomerID", t.customerId);
+      else if (t.supplierId) w.el("SupplierID", t.supplierId);
+      w.open("Lines");
+      for (const side of ["debit", "credit"] as const) {
+        for (const l of t.lines) {
+          const amount = l[side];
+          if (!amount || amount.isZero()) continue;
+          const tag = side === "debit" ? "DebitLine" : "CreditLine";
+          w.open(tag);
+          w.el("RecordID", text(l.recordId, 30));
+          w.el("AccountID", l.accountId);
+          w.el("SourceDocumentID", optionalText(l.sourceDocumentId, 30));
+          w.el("SystemEntryDate", l.systemEntryDateTime);
+          w.el("Description", text(l.description, 200));
+          w.el(side === "debit" ? "DebitAmount" : "CreditAmount", m2(amount));
+          w.close(tag);
+        }
+      }
+      w.close("Lines");
+      w.close("Transaction");
+    }
+    w.close("Journal");
+  }
+  w.close("GeneralLedgerEntries");
+}
+
+/** The builder serves both files: "F" (invoicing) and "I" (integrated accounting). */
+export const buildSaftXml = buildFacturacaoXml;

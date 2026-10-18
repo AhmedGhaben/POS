@@ -7,6 +7,8 @@
     "saftType": "File",
     "facturacao": "Invoicing (Facturação)",
     "facturacaoHint": "sales documents, proformas",
+    "aquisicao": "Purchases (Aquisição de Bens e Serviços)",
+    "aquisicaoHint": "Monthly: purchases with the supplier's document, deductible IVA and IVA cativo",
     "inventario": "Inventory (Inventários)",
     "inventarioHint": "stock at a date",
     "inventarioDraft": "Draft layout until AGT publishes the inventory file format (Circular 05/2026).",
@@ -31,6 +33,8 @@
   "deadlines": {
     "saftInvoicing": "SAF-T invoicing file for {{covers}}: due by {{due}}.",
     "saftInventory": "SAF-T inventory file (stock at {{covers}}): due by {{due}}.",
+    "saftAccounting": "SAF-T accounting file for {{covers}}: due by {{due}}.",
+    "saftPurchases": "SAF-T purchases file (Aquisição de Bens e Serviços) for {{covers}}: due by {{due}}.",
     "overdue": "Overdue.",
     "makeIt": "Generate it"
   },

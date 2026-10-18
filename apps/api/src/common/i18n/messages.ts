@@ -1,5 +1,6 @@
 import type { Language, TranslatedLanguage } from "./languages";
 import { aoSpelling } from "./ao-spelling";
+import { ACCOUNTING_EXACT, ACCOUNTING_PATTERNS } from "./accounting-messages";
 
 /**
  * Translations of the messages the API sends back, keyed by the English
@@ -7,7 +8,7 @@ import { aoSpelling } from "./ao-spelling";
  * them in using the request's X-Language header; a message missing here
  * stays in English, so adding a new error never breaks anything.
  */
-type Translations = Record<TranslatedLanguage, string>;
+export type Translations = Record<TranslatedLanguage, string>;
 
 const EXACT: Record<string, Translations> = {
   // Generic
@@ -429,6 +430,7 @@ const EXACT: Record<string, Translations> = {
     "pt-PT": "Cada venda já tem a sua Factura-Recibo; imprima essa",
     "pt-BR": "Cada venda já tem sua Fatura-Recibo; imprima essa",
   },
+  ...ACCOUNTING_EXACT,
 };
 
 /** Messages with a value inside; `$1` is the captured value. */
@@ -505,6 +507,7 @@ const PATTERNS: { re: RegExp; t: Translations }[] = [
     re: /^Product (\S+) was not part of this sale$/,
     t: { "pt-PT": "O produto $1 não fazia parte desta venda", "pt-BR": "O produto $1 não fazia parte desta venda" },
   },
+  ...ACCOUNTING_PATTERNS,
 ];
 
 export function translateMessage(message: string, lang: Language): string {
@@ -515,7 +518,7 @@ export function translateMessage(message: string, lang: Language): string {
   if (exact) return exact[lang];
   for (const { re, t } of PATTERNS) {
     const match = message.match(re);
-    if (match) return t[lang].replace("$1", match[1]);
+    if (match) return t[lang].replace(/\$(\d)/g, (_, n: string) => match[Number(n)] ?? "");
   }
   return message;
 }

@@ -195,8 +195,15 @@ export async function logOut(page: Page) {
     ]);
   }
   if (outcome === "close") {
-    await closing.getByLabel("Cash counted").fill("0");
-    await closing.getByRole("button", { name: "Close the till" }).click();
+    // A shift with nothing in it asks "count = opening float?" (one click); otherwise count 0.
+    const quick = closing.getByRole("button", { name: /^Yes, close with/ });
+    const counted = closing.getByLabel("Cash counted");
+    await Promise.race([quick.waitFor(), counted.waitFor()]);
+    if (await quick.isVisible()) await quick.click();
+    else {
+      await counted.fill("0");
+      await closing.getByRole("button", { name: "Close the till" }).click();
+    }
     await page.getByRole("button", { name: "Done (sign out)" }).click();
     await page.waitForURL(/\/login/);
   }

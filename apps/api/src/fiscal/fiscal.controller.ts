@@ -106,6 +106,20 @@ export class FiscalController {
     return sendFile(res, await this.saftExport.facturacao(user.businessId, user.userId, { storeId, startDate, endDate }));
   }
 
+  /** SAF-T (AO) Aquisição de Bens e Serviços for a period (same dates as the invoicing file; neither = last month). */
+  @Get("saft/aquisicao")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  async saftAquisicao(
+    @CurrentUser() user: AuthenticatedUser,
+    @Res({ passthrough: true }) res: Response,
+    @Query("storeId") storeId?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    return sendFile(res, await this.saftExport.aquisicao(user.businessId, user.userId, { storeId, startDate, endDate }));
+  }
+
   /** SAF-T de Inventários (draft format): stock at the end of `date` (default: last 31 December). */
   @Get("saft/inventario")
   @UseGuards(RolesGuard)

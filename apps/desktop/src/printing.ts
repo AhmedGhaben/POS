@@ -28,6 +28,11 @@ export const printJobSchema = z.object({
 });
 
 export type PrintJob = z.infer<typeof printJobSchema>;
+
+/** An A4 document to turn into a PDF (the accountant's archive): the same markup a print sends. */
+export const pdfJobSchema = printJobSchema.pick({ html: true, stylesheets: true });
+
+export type PdfJob = z.infer<typeof pdfJobSchema>;
 export type PrintResult = { ok: true; deviceName: string } | { ok: false; error: string };
 
 const MICRONS_PER_MM = 1000;
@@ -192,7 +197,56 @@ async function printToPdfForTests(
   return { ok: true, deviceName: options.deviceName! };
 }
 
+/** 15 mm, in inches: the A4 page margin of a print (printOptions, @page a4). */
+const A4_MARGIN_IN = 15 / 25.4;
+
+/** Prints and PDFs run one at a time. */
 let queue: Promise<unknown> = Promise.resolve();
+
+let pdfWindow: BrowserWindow | null = null;
+/** The stylesheets the PDF window's page has: another set (the app was updated) reloads it. */
+let pdfStylesheets: string | null = null;
+
+/**
+ * An A4 document as a PDF, laid out exactly as it prints: a hidden window
+ * like the print window, with the same stylesheets, print rules, page size
+ * and margins, but no printer. The archive's "2ª Via" copies are made this
+ * way, often hundreds in a row: the page is loaded once and each document
+ * replaces the last one in it.
+ */
+export function documentPdf(job: PdfJob): Promise<Buffer> {
+  const result = queue.then(async () => {
+    if (!pdfWindow || pdfWindow.isDestroyed()) {
+      pdfWindow = new BrowserWindow({ show: false, width: 900, height: 1200, webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false } });
+      pdfWindow.on("closed", () => {
+        pdfWindow = null;
+        pdfStylesheets = null;
+      });
+      pdfStylesheets = null;
+    }
+    const win = pdfWindow;
+    const stylesheets = job.stylesheets.join("\n");
+    if (stylesheets !== pdfStylesheets) {
+      const id = randomUUID();
+      pending.set(id, buildPrintPage({ kind: "a4", html: "<div></div>", stylesheets: job.stylesheets }, getPrinting()));
+      try {
+        await win.loadURL(`${APP_ORIGIN}/__print/${id}`);
+      } finally {
+        pending.delete(id);
+      }
+      pdfStylesheets = stylesheets;
+    }
+    await win.webContents.executeJavaScript(`document.getElementById("print-root").innerHTML = ${JSON.stringify(job.html)};${SETTLE_SCRIPT}`, true);
+    return win.webContents.printToPDF({
+      printBackground: true,
+      pageSize: "A4",
+      margins: { top: A4_MARGIN_IN, bottom: A4_MARGIN_IN, left: A4_MARGIN_IN, right: A4_MARGIN_IN },
+    });
+  });
+  queue = result.catch(() => undefined);
+  return result;
+}
+
 
 /** Prints one job at a time; the sale never waits on the printer. */
 export function printJob(job: PrintJob): Promise<PrintResult> {
@@ -225,4 +279,6 @@ export async function listPrinters() {
 export function closePrintWindow() {
   if (printWindow && !printWindow.isDestroyed()) printWindow.destroy();
   printWindow = null;
+  if (pdfWindow && !pdfWindow.isDestroyed()) pdfWindow.destroy();
+  pdfWindow = null;
 }

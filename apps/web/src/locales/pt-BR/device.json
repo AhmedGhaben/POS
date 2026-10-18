@@ -205,5 +205,24 @@
     "doneDescription": "Os funcionários já podem entrar. Tudo isso pode ser alterado depois em Este dispositivo.",
     "finish": "Ir para a entrada",
     "runAgain": "Configurar de novo"
+  },
+  "role": {
+    "title": "Para que serve este dispositivo",
+    "description": "Um caixa vende e abre um turno (com fundo de caixa) quando alguém começa a vender. A retaguarda nunca abre turnos. Até escolher: {{default}}.",
+    "names": {
+      "TILL": "Caixa",
+      "BACK_OFFICE": "Retaguarda"
+    },
+    "hints": {
+      "TILL": "Vende, tem a gaveta, abre turnos.",
+      "BACK_OFFICE": "Painel, relatórios, produtos, configurações, contabilidade. Sem vendas nem turnos."
+    },
+    "saved": {
+      "TILL": "Este dispositivo agora é um caixa",
+      "BACK_OFFICE": "Este dispositivo agora é de retaguarda"
+    },
+    "closeShiftFirst": "Há um turno aberto neste dispositivo: feche-o primeiro.",
+    "managersOnly": "Só o proprietário ou um gerente pode alterar isto.",
+    "notChosen": "ainda não escolhido (perguntado na primeira vez que o PDV é aberto aqui)"
   }
 }

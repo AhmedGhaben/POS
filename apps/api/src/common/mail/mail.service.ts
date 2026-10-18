@@ -128,6 +128,28 @@ export class MailService {
     );
   }
 
+  /**
+   * Another company gives an accountant who already has a login access to
+   * its books: accept from the link (or from the client list after signing in).
+   */
+  async sendAccountantAccessEmail(
+    to: string,
+    params: { firstName: string; businessName: string; inviterName: string; token: string },
+    lang: Language = "en",
+  ): Promise<void> {
+    const t = MAIL_TEXTS[lang].accountantAccess;
+    const link = `${this.appUrl}/accountant-invitation?token=${encodeURIComponent(params.token)}`;
+    const businessName = escapeHtml(params.businessName);
+    await this.send(
+      to,
+      t.subject(businessName),
+      `<p>${t.hi(escapeHtml(params.firstName))}</p>
+       <p>${t.given(businessName, escapeHtml(params.inviterName))}</p>
+       <p><a href="${link}">${t.link}</a> ${t.expires}</p>
+       <p>${t.orInApp}</p>`,
+    );
+  }
+
   /** In the store's document language: it goes to the shop's customer. */
   async sendReceiptEmail(to: string, params: ReceiptEmailParams, lang: Language = "en"): Promise<void> {
     const t = MAIL_TEXTS[lang].receipt;

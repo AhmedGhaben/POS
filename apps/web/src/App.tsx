@@ -4,6 +4,7 @@ import { PwaUpdatePrompt } from "@/components/layout/PwaUpdatePrompt";
 import { BackOfficeShell } from "@/components/layout/BackOfficeShell";
 import { BackOfficeRoute } from "@/components/layout/BackOfficeRoute";
 import { PosShell } from "@/components/layout/PosShell";
+import { homePathFor } from "@/components/layout/nav-items";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { useAuthStore } from "@/features/auth/store";
 import { useLanguageSync } from "@/i18n/use-language";
@@ -13,6 +14,7 @@ import { SignupPage } from "@/routes/signup";
 import { ForgotPasswordPage } from "@/routes/forgot-password";
 import { ResetPasswordPage } from "@/routes/reset-password";
 import { VerifyEmailPage } from "@/routes/verify-email";
+import { AccountantInvitationPage } from "@/routes/accountant-invitation";
 import { WelcomePage } from "@/routes/welcome";
 import { PosPage } from "@/routes/pos";
 import { ProductsPage } from "@/routes/products";
@@ -35,11 +37,12 @@ import { ReportsPage } from "@/routes/reports";
 import { CustomersPage } from "@/routes/customers";
 import { SalesPage } from "@/routes/sales";
 import { AgtPage } from "@/routes/agt";
+import { AccountingPage } from "@/routes/accounting";
 
-/** Owner/Manager default to the back office; Cashier defaults straight to POS. */
+/** Owner/Manager default to the back office, Cashier straight to POS, an accountant to the books. */
 function DefaultLanding() {
   const role = useAuthStore((s) => s.user?.role);
-  return <Navigate to={role === "CASHIER" ? "/pos" : "/dashboard"} replace />;
+  return <Navigate to={homePathFor(role)} replace />;
 }
 
 export function App() {
@@ -55,6 +58,7 @@ export function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/accountant-invitation" element={<AccountantInvitationPage />} />
         {/* The customer-facing screen: no sign-in of its own, it only shows
             what the POS on this computer broadcasts. */}
         <Route path="/customer-display" element={<CustomerDisplayPage />} />
@@ -83,6 +87,7 @@ export function App() {
               <Route path="/customers" element={<CustomersPage />} />
               <Route path="/sales" element={<SalesPage />} />
               <Route path="/agt" element={<AgtPage />} />
+              <Route path="/accounting" element={<AccountingPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>

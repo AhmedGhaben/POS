@@ -138,9 +138,11 @@ Prisma backend.
     - Periods are **calendar dates in the shop's time zone** (Luanda): a
       sale at 00:30 on 1 November belongs to November even though it's
       still 31 October in UTC.
-    - The Dashboard reminds owners of the monthly file (until the 15th,
-      while e-invoicing is off) and of the yearly inventory (until 15
-      February).
+    - The Dashboard reminds owners of the monthly files (last month's
+      invoicing and purchases files, due by the last day of the month,
+      Decreto Presidencial 312/18 art. 3; while e-invoicing is off) and of
+      the yearly inventory (until 15 February). The purchases file's due
+      day can be changed in Accounting → Settings.
 - **Products & stock**: categories, per-store inventory, purchases,
   returns, transfers between stores, low-stock alerts, and **CSV
   import/export** with a validating preview.
@@ -194,21 +196,31 @@ Prisma backend.
   - **Archiving**: hides a product from the till and the list without
     touching past sales or reports. "Show archived products" lets you
     restore it.
-- **Shifts and cash counts** (always on):
-  - The cashier opens a shift with the opening float before the first
-    sale; the server refuses sales without an open shift on that till (an
-    offline upload is never dropped). One open shift per till, owned by
+- **Shifts and cash counts** (always on; shifts follow selling, not signing in):
+  - Each device is a **till** or **back office** (This device). The
+    Windows app is a till until changed; a browser asks an owner or
+    manager once, the first time the POS screen is opened there. Signing in never opens a shift, and back-office work
+    (dashboard, reports, products, settings, accounting) never needs one.
+    On a till, the shift opens with the opening float when someone goes to
+    sell; a back-office device never opens one. The server refuses sales
+    without an open shift on that till (an offline upload is never
+    dropped). One open shift per till, owned by
     whoever opened it: someone else signing in can't sell until it's
     closed, and a manager can close an abandoned one for them (logged as
     forced). A shift survives the app closing or crashing.
   - **Cash in / out** with a reason; cash out needs CASH_OUT or a
     manager's approval.
-  - **Close the till** (or Log out, which goes into closing) asks for a
-    blind count, as a total or note by note, then shows the expected
+  - **Log out** with no shift of your own open is a plain sign-out (a
+    manager who takes over a cashier's till to check something leaves the
+    cashier's shift open).
+  - **Close the till** (or Log out with your shift open, which goes into
+    closing) asks for a blind count, as a total or note by note, then shows the expected
     cash, the count and the difference, prints the end-of-shift report
     (optionally listing every sale) and signs the cashier out. The report
     covers sales by payment method, discounts, cancels, returns, cash
-    in/out and each cashier.
+    in/out and each cashier. A shift with no sales and no cash in or out
+    closes in one click ("Contagem = fundo de caixa?"), or with another
+    amount typed.
   - Expected cash = float + cash taken − cash refunds + cash in − cash
     out. The server keeps its own figure and the till's, and works offline
     through the outbox.
@@ -301,6 +313,35 @@ Prisma backend.
   (`components/ui/combobox.tsx`). Start typing to filter (accents and
   case don't matter, codes are searchable too), pick with the mouse or
   arrows + Enter, Esc closes.
+- **Contabilidade** (accounting, `apps/api/src/accounting`, branch
+  `feature/accounting`; plan and decisions in `docs/ACCOUNTING-DECISIONS.md`):
+  - Chart of accounts from the PGC (Decreto 82/01) with GR/GA/GM accounts and
+    an account per customer, supplier, till and bank account; years with
+    periods 0–15 that close and reopen (with a reason, audit-logged).
+  - Journals and entries that must balance, can't change once posted (an
+    estorno corrects them) and can't go into a closed period: all enforced by
+    the database. Templates, opening balances (CSV).
+  - Sales, receipts, credit notes, purchases, supplier payments, expenses,
+    cash differences and stock counts are posted automatically (account
+    mapping per company, daily summary per till as an option, integration
+    monitor; nothing is posted twice).
+  - Reports (Balancete, Razão, Diário, statements and ageing, Balanço,
+    Demonstração de Resultados, IVA) as PDF and Excel; year-end (apuramento,
+    close, carry forward).
+  - SAF-T (AO) accounting file (TaxAccountingBasis I) and purchases file
+    (A), validated against AGT's XSD; TransactionID and AccountID in the
+    invoicing file; 10 April reminder.
+  - Outside accountants (role ACCOUNTANT): one login for several companies,
+    full rights in the books, read-only elsewhere. An accountant who already
+    has a login gets an email when another company invites them; the
+    invitation waits under Your clients until they accept it.
+  - Document archive (ZIP) for a period: every document as a PDF in its
+    printed A4 layout ("2ª Via"; exact PDFs in the Windows app, page images
+    in a browser), the SAF-T files, the attachments and an index.
+  - Attachments, bank reconciliation (CSV/Excel), fixed assets with monthly
+    depreciation.
+  - Local demo accountant: `npx ts-node prisma/demo-accountant.ts` in `apps/api`
+    (accountant@demo-store.test / AccountantPass123!).
 - Audit log, rate-limited auth, `/health` endpoint.
 
 ## Structure
@@ -345,10 +386,12 @@ docker compose --profile api up -d --build   # again after pulling new code
 docker compose stop api                      # before `npm run dev:api` on :4000
 ```
 
-**Demo logins (from the seed):**
+**Demo logins (from the seed).** The seed makes an Angolan demo store
+("Demo Retail Co."): AOA, pt-AO documents, Africa/Luanda, Regime Geral,
+70 products priced in kwanzas.
 
-- `owner@demo-store.test` / `OwnerPass123!`
-- `cashier@demo-store.test` / `CashierPass123!`
+- `owner@demo-store.test` / `OwnerPass123!` (till PIN 8642)
+- `cashier@demo-store.test` / `CashierPass123!` (till PIN 2468)
 
 Or create your own business at http://localhost:5173/signup.
 
@@ -399,6 +442,7 @@ it they're printed to the API console, links included.
   Offline sales keep the price and time they were rung up with. Products
   are saved on the till, so the POS starts and sells offline.
 - **This device** (`/device`):
+  - what the device is for: till or back office
   - till registration (`POS-001 "Front Till"`)
   - server and sync status
   - failed sales with Retry

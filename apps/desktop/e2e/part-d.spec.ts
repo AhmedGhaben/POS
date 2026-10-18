@@ -12,6 +12,14 @@ import {
   SwitchableProxy,
   tempUserData,
 } from "./helpers";
+import { leftRight } from "../src/hardware/pole-display";
+
+/** The two 20-character lines of an Epson-style frame: cursor to line 1, text, cursor to line 2, text. */
+function poleRows(frame: string): [string, string] {
+  const m = /\x1f\$\x01\x01([\s\S]{20})\x1f\$\x01\x02([\s\S]{20})/.exec(frame);
+  if (!m) throw new Error(`Not a two-line pole frame: ${JSON.stringify(frame)}`);
+  return [m[1], m[2]];
+}
 
 /**
  * Part D, customer displays (docs/plans/DESKTOP_APP.md). The pole display
@@ -85,11 +93,18 @@ test.describe.serial("Part D: customer displays", () => {
     const first = page.locator("div.grid > button.text-left").first();
     productName = (await first.locator(".font-medium").first().textContent())!;
     await first.click();
-    const text = await poleShows(/TOTAL/);
-    expect(text).toContain(productName.slice(0, 10));
+    // Line 1: the item, cut to what's left beside its price; line 2: the total.
+    // With one product in the cart, the item's amount is the total.
+    const [item, total] = poleRows(await poleShows(/TOTAL/));
+    expect(total).toMatch(/^TOTAL +\S/);
+    const amount = total.replace(/^TOTAL +/, "");
+    expect(item).toBe(leftRight(productName, amount));
+    expect(item.startsWith(productName.slice(0, 5))).toBe(true);
 
     await first.click();
-    await poleShows(new RegExp(`2x ${productName.slice(0, 8).replace(/[()]/g, ".")}`));
+    const [twice, total2] = poleRows(await poleShows(/2x /));
+    expect(twice).toBe(leftRight(`2x ${productName}`, total2.replace(/^TOTAL +/, "")));
+    expect(total2).not.toBe(total);
   });
 
   test("after a cash sale it shows paid and change, then the welcome again", async () => {

@@ -4,6 +4,8 @@ import { Role } from "@prisma/client";
 import { ROLES_KEY } from "../decorators/roles.decorator";
 import { AuthenticatedUser } from "../types/authenticated-user";
 
+const READ_METHODS = new Set(["GET", "HEAD"]);
+
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
@@ -19,6 +21,9 @@ export class RolesGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const user: AuthenticatedUser | undefined = request.user;
-    return !!user && requiredRoles.includes(user.role);
+    if (!user) return false;
+    if (requiredRoles.includes(user.role)) return true;
+    // An accountant reads whatever a manager may read (and changes nothing outside the books: AccountantGuard).
+    return user.role === Role.ACCOUNTANT && READ_METHODS.has(request.method) && requiredRoles.includes(Role.MANAGER);
   }
 }

@@ -1,3 +1,4 @@
+import { AttachmentsButton } from "@/features/accounting/components/AttachmentsPanel";
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -168,6 +169,7 @@ export function ExpensesPage() {
                 <TableHead>{t("expenses.category")}</TableHead>
                 <TableHead>{t("expenses.description")}</TableHead>
                 <TableHead className="text-right">{t("expenses.amount")}</TableHead>
+                <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -179,11 +181,14 @@ export function ExpensesPage() {
                   <TableCell>{t(`expenses.categories.${expense.category}`)}</TableCell>
                   <TableCell className="text-muted-foreground">{expense.description ?? "—"}</TableCell>
                   <TableCell className="text-right">{money(expense.amount)}</TableCell>
+                  <TableCell>
+                    <AttachmentsButton ownerType="EXPENSE" ownerId={expense.id} title={`${formatDate(expense.incurredAt)} · ${money(expense.amount)}`} />
+                  </TableCell>
                 </TableRow>
               ))}
               {expensesQuery.data?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="p-6 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="p-6 text-center text-muted-foreground">
                     {t("expenses.empty")}
                   </TableCell>
                 </TableRow>

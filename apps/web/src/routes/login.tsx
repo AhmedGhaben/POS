@@ -1,3 +1,4 @@
+import { homePathFor } from "@/components/layout/nav-items";
 import * as React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -39,7 +40,7 @@ export function LoginPage() {
     try {
       const { accessToken, user, stores, business } = await login(email, password);
       setSession(accessToken, user, stores, business);
-      navigate(user.role === "CASHIER" ? "/pos" : "/dashboard");
+      navigate(homePathFor(user.role));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("login.failed"));
     } finally {

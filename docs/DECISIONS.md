@@ -69,6 +69,46 @@ the freshly migrated `pos_ci`), web unit 150, desktop unit 28; lint clean
 
 ---
 
+## Shifts follow selling, not signing in (2026-10-18)
+
+**The bug:** the owner signed in, only looked at the dashboard, and Log out
+asked for a cash count. Signing in never opened a shift. But the POS screen
+picked up any shift the server still had open for that person (or that
+till) and kept it on the device. On a PC used for back office, one visit to
+the POS screen was enough: from then on Log out meant "close your shift".
+Shifts left open by earlier sessions (or another device) made it look
+random.
+
+| # | Decision | Why |
+|---|----------|-----|
+| 1 | **Each device has a role**, in This device → "What this device is for": **Till** (sells, has the drawer, opens shifts) or **Back office** (dashboard, reports, products, settings, accounting; never a shift). The Windows app is a till until changed. A **browser asks once**: the first time an owner or manager opens the POS screen there, it asks "Este dispositivo é uma caixa (vende) ou back office?" and saves the answer. A cashier sees "Peça a um gerente para configurar este dispositivo como caixa" and can't sell there until then. Kept on the device (`features/desktop/device-role.ts`). Owners and managers change it; not to back office while a shift is open there. | Your point 4, and the follow-up: ask in a browser instead of silently choosing back office. |
+| 2 | **A shift opens only on a till, when someone goes to sell**: the POS screen asks for the opening float, as before. Signing in never opens one. A back-office device shows "This device is for back office" instead of the float, picks up no shift from the server, and `openShift` refuses to run there. | Your points 1 and 3. |
+| 3 | **Log out with no shift of your own open on this device is a plain sign-out.** Before asking for a count, the device checks with the server: a shift already closed elsewhere (by a manager, or on another device) is forgotten, and Log out is plain. Offline, or not uploaded yet, it's treated as open. | Your point 2; no count for a shift that no longer exists. |
+| 4 | **An empty shift closes in one click.** No sale (even a cancelled one), no cash in or out, no receipt: the dialog asks "Contagem = fundo de caixa (…)?" with **Sim, fechar com …**, and **Indicar outro valor** opens the normal count. For a shift taken over from another device, the server's figures decide. Once something happened in the shift, the count stays blind, as before. | Your point 5. Showing the float isn't a leak when nothing else happened: the person typed it. |
+| 5 | **A manager at a cashier's till leaves the cashier's shift alone.** Taking over with a PIN to approve or check something: their Log out is plain and the cashier's shift stays open, on the device and the server. The cashier signs back in to the same shift. Selling on someone else's open shift is still blocked. Closing it stays a separate, explicit "Close …'s shift" (forced close, for a shift someone abandoned). | Your point 6. |
+| 6 | **Not enforced by the server**: the role lives on the device, and the API doesn't know which device is a till (a browser has no registered terminal). Sales still need an open shift on the server, as before. | A server-side role would need every browser registered like a till. |
+| 7 | **For shops that sell in a browser**: after this update, the first time an owner or manager opens the POS screen in each browser, they're asked once whether it's a till. | Nothing changes silently. |
+
+**Tests:** `apps/desktop/e2e/shifts-follow-selling.spec.ts` covers:
+- the owner signs in, looks at the dashboard and signs out: no count
+- a back-office device never opens or picks up a shift, even on the POS screen
+- on a till, the shift opens with the float when someone goes to sell
+- an empty shift closes in one click, or with another amount
+- a shift closed elsewhere is forgotten here
+- a manager taking over a cashier's till leaves the cashier's shift open
+
+Unit tests: `device-role.test.tsx` (defaults, and the browser's question for an owner and for a cashier), and the empty-shift cases in `ledger.test.ts`. The shared test helper `logOut` handles the one-click close.
+
+### The demo seed is an Angolan store (2026-10-18)
+
+| # | Decision | Why |
+|---|----------|-----|
+| 8 | `prisma/seed.ts` now makes the demo store the way sign-up makes an Angolan business: **AOA**, business language **pt-AO**, store in **Africa/Luanda**, country AO, **Regime Geral**. Prices include IVA, the schema's default for a new store. The catalog, the seeded purchase, the expenses and the wage are in **kwanzas**: the old figures × 1000 (Bagel (6-pack) 2 990 Kz, Sparkling Water 1 500 Kz). | A fresh database (CI, `pos_ci`) came out in dollars, and 6 Angola tests in the Windows app failed on it while passing on the hand-configured local `pos`. No test was changed for it. |
+| 8b | The seeded owner and cashier also get their **till PINs** (owner 8642, cashier 2468), the ones the local demo database already had. | On a fresh database the manager-approval dialog listed nobody, so `angola-phase3` (a cashier's price change approved with the owner's PIN) failed; it passed locally only because the PINs had been set by hand. |
+| 9 | Product names and units stay as they were ("Bananas (lb)"). Screens stay in each person's own language: the business language only sets what the store's customers read. | Tests and the people using the demo read English screens; documents were already Portuguese (AO). |
+
+---
+
 ## Four fixes from testing: dates, the POS cart, Back to POS, document language (2026-10-17)
 
 ### Dates: DD/MM/YYYY
@@ -240,7 +280,7 @@ mentioned a migration "prepared"; there is none in the repo.
 | 13 | Inventário (draft until Circular 05/2026): semicolon CSV, header row, dot decimals, CRLF, columns `ProductCategory;ProductCode;ProductDescription;ProductNumberCode;ClosingStockQuantity;UnitOfMeasure;ClosingStockValue;CostingMethod` (CMP). Stock = each store's last movement before local midnight after the date, summed per product; nothing held is left out; no stock = header only. | Portuguese inventory file's names and separator; swap the `InventoryFormat`, not the data, when the circular arrives. |
 | 14 | Accountant export = real `.xlsx` (own ~200-line writer, no library), sheets Vendas / Compras / Recebimentos e pagamentos, Portuguese headers, base + IVA per rate (Cabinda separate), exempt base and codes, credit notes negative, annulled documents and cancelled purchases listed at 0, totals row. FT payment status "Por pagar" until phase 4. | Accountants in Angola work in Portuguese; Excel with real dates and number formats. Checked with openpyxl. |
 | 15 | Reports page in the menu for owners and managers; managers export the whole business like the fiscal documents list allows. | Consistent with the existing fiscal list permissions. |
-| 16 | Deadline reminders (Dashboard, Reports): monthly file from the 1st until 5 days after the 15th; inventory from 1 January until 5 days after 15 February; nothing once e-invoicing is active. | The country config's deadlines; no tracking of what was submitted. |
+| 16 | Deadline reminders (Dashboard, Reports): monthly file from the 1st until the last day of the month (Decreto Presidencial 312/18, art. 3, n.º 1: last month's file by the last day of the following month; was the 15th until 2026-10-17); inventory from 1 January until 5 days after 15 February; nothing once e-invoicing is active. | The country config's deadlines; no tracking of what was submitted. |
 | 17 | `formatCalendarDate` for `YYYY-MM-DD` strings in the web (formats in UTC). | `formatDate("2026-10-15")` shows the 14th west of Greenwich. |
 
 ## Phase 4: credit and payables
