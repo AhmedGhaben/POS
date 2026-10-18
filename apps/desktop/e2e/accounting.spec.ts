@@ -11,6 +11,19 @@ import { pdfText } from "./pdf-text";
  * it on, the PGC chart, a manual entry that must balance, the automatic
  * posting of a sale made at this till, a report and the SAF-T check.
  */
+/** Changes the business's own data (here: its NIF) as the owner. */
+async function patchBusiness(page: Page, body: object): Promise<{ taxId: string | null }> {
+  return page.evaluate(async (body) => {
+    const auth = JSON.parse(localStorage.getItem("pos-auth")!).state;
+    const res = await fetch("/api/businesses/me", {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${auth.accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  }, body);
+}
+
 test.describe.serial("Accounting (Contabilidade)", () => {
   const proxy = new SwitchableProxy(new URL(API_URL));
   const userData = tempUserData();
@@ -112,6 +125,17 @@ test.describe.serial("Accounting (Contabilidade)", () => {
 
   test("the document archive: every document as a PDF in its printed layout (2ª Via), with the SAF-T files and the index", async () => {
     test.setTimeout(300_000);
+    // The SAF-T files go in only for a company with a NIF: give the demo one for this test, then put back what it had.
+    const originalTaxId = (await patchBusiness(page, {})).taxId;
+    await patchBusiness(page, { taxId: "5417000000" });
+    try {
+      await archiveTest();
+    } finally {
+      await patchBusiness(page, { taxId: originalTaxId ?? "" });
+    }
+  });
+
+  async function archiveTest() {
     await page.goto("app://pos/accounting?tab=saft");
     // Today only (the sale above is in it), to keep the run short.
     await page.getByLabel("From", { exact: true }).fill(await page.getByLabel("To", { exact: true }).inputValue());
@@ -139,5 +163,5 @@ test.describe.serial("Accounting (Contabilidade)", () => {
     const text = pdf.text.replace(/\s+/g, "");
     for (const expected of ["2ªVia", documentNo.replace(/\s+/g, ""), "Factura-Recibo", "NIF", "Total"]) expect(text).toContain(expected);
     expect(Object.keys(files).some((n) => /^saft\/SAFT-AO_.*\.xml$/.test(n))).toBe(true);
-  });
+  }
 });
