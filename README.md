@@ -509,6 +509,9 @@ it they're printed to the API console, links included.
     the background, and install when the app next restarts. They never
     interrupt a sale.
   - "Restart and update now" is on This device.
+  - **Update channel** (This device): *Stable*, the default, installs full
+    releases only; *Beta* also installs pre-releases, so a version can be
+    tried on one computer before the shops get it.
   - Releases are built by GitHub Actions (see below).
 
 ```bash
@@ -520,7 +523,9 @@ npm run dist --workspace apps/desktop        # installer: apps/desktop/release/P
 **Releasing a new version:** bump `version` in `apps/desktop/package.json`,
 commit, then `git tag v<version> && git push origin v<version>`. The
 *Desktop release* workflow builds the installer on Windows and publishes it
-as a GitHub Release. Installed tills update themselves from there.
+as a GitHub **pre-release**: only computers on the Beta channel install
+it. Once it's tested, make it a full release so every till updates:
+`gh release edit v<version> --prerelease=false --latest`.
 Release builds are locked down with Electron fuses. `npm run dist:test
 --workspace apps/desktop` builds a copy Playwright can drive.
 

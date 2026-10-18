@@ -1,6 +1,8 @@
 import { app, BrowserWindow } from "electron";
 import { autoUpdater } from "electron-updater";
+import { getConfig } from "./config";
 import { log } from "./logging";
+import { allowsPrerelease } from "./update-channel";
 
 /**
  * Auto-update. New versions download in the background and install when
@@ -8,8 +10,10 @@ import { log } from "./logging";
  * on This device applies one sooner.
  *
  * Feed: this repository's GitHub Releases (see electron-builder.config.js).
- * POS_DESKTOP_UPDATE_URL points at another feed (a folder with latest.yml
- * and the installer) for testing.
+ * Releases are published as pre-releases first: only computers on the Beta
+ * channel (This device) take them; Stable ones wait until the release is
+ * made a full release. POS_DESKTOP_UPDATE_URL points at another feed (a
+ * folder with latest.yml and the installer) for testing.
  */
 /**
  * `code` lets the app's screens show the message in their own language;
@@ -52,7 +56,7 @@ export function initUpdater() {
   // Tests set POS_DESKTOP_UPDATE_INSTALL_ON_QUIT=0: otherwise closing the
   // test app would install the test build over the real one on that PC.
   autoUpdater.autoInstallOnAppQuit = process.env.POS_DESKTOP_UPDATE_INSTALL_ON_QUIT !== "0";
-  autoUpdater.allowPrerelease = false;
+  applyUpdateChannel();
   if (testFeed) {
     autoUpdater.setFeedURL({ provider: "generic", url: testFeed });
     autoUpdater.forceDevUpdateConfig = !app.isPackaged;
@@ -92,6 +96,13 @@ function friendlyError(message: string): { error: string; code: UpdateErrorCode 
   }
   if (/404|Cannot find latest/i.test(message)) return { error: "No published version found yet", code: "none-published" };
   return { error: message.split("\n")[0].slice(0, 200), code: "other" };
+}
+
+/** Applies the channel chosen on This device (at start, and when it changes). */
+export function applyUpdateChannel() {
+  const channel = getConfig().updateChannel ?? "stable";
+  autoUpdater.allowPrerelease = allowsPrerelease(channel);
+  log.info(`[update] channel: ${channel}`);
 }
 
 export async function checkForUpdates(): Promise<UpdateStatus> {

@@ -262,6 +262,11 @@ function DesktopSection() {
     await settingsQuery.refetch();
   }
 
+  async function setChannel(updateChannel: "stable" | "beta") {
+    await desktop!.settings.update({ updateChannel });
+    await settingsQuery.refetch();
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -310,6 +315,18 @@ function DesktopSection() {
               />
               {t("app.startWithWindows")}
             </label>
+            {/* Absent in Windows apps before 0.2.4. */}
+            {settings.updateChannel && (
+              <div className="space-y-1.5">
+                <Label htmlFor="update-channel">{t("updates.channel")}</Label>
+                <Combobox
+                  id="update-channel"
+                  value={settings.updateChannel}
+                  onChange={(v) => v && void setChannel(v as "stable" | "beta")}
+                  options={(["stable", "beta"] as const).map((c) => ({ value: c, label: t(`updates.channels.${c}`), description: t(`updates.channelHints.${c}`) }))}
+                />
+              </div>
+            )}
           </div>
         )}
         <Button variant="outline" className="gap-2" onClick={() => void desktop!.app.openLogFolder()}>

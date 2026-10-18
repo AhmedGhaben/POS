@@ -111,6 +111,8 @@ export interface DesktopSettings {
   startWithWindows: boolean;
   /** Absent before 0.2.3. */
   autoLockMinutes?: number;
+  /** Which releases this computer installs. Absent before 0.2.4. */
+  updateChannel?: "stable" | "beta";
 }
 
 /** Someone who can sign in on this till with a PIN. */
@@ -149,7 +151,7 @@ export interface PosDesktopApi {
   };
   settings: {
     get(): Promise<DesktopSettings>;
-    update(patch: Partial<Pick<DesktopSettings, "kiosk" | "startWithWindows" | "autoLockMinutes">>): Promise<DesktopSettings>;
+    update(patch: Partial<Pick<DesktopSettings, "kiosk" | "startWithWindows" | "autoLockMinutes" | "updateChannel">>): Promise<DesktopSettings>;
     setServer(url: string): Promise<{ ok: true } | { ok: false; error: string }>;
   };
   terminal: {

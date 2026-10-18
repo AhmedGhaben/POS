@@ -1,7 +1,7 @@
 {
   "name": "@pos/desktop",
   "productName": "POS",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "private": true,
   "description": "POS for Windows: offline till, silent printing, POS hardware",
   "author": "POS",

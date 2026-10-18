@@ -71,6 +71,7 @@ interface Settings {
   kiosk: boolean;
   startWithWindows: boolean;
   autoLockMinutes: number;
+  updateChannel: "stable" | "beta";
 }
 
 interface StaffMember {
@@ -106,7 +107,7 @@ const posDesktop = {
   },
   settings: {
     get: (): Promise<Settings> => ipcRenderer.invoke("settings:get"),
-    update: (patch: Partial<Pick<Settings, "kiosk" | "startWithWindows" | "autoLockMinutes">>): Promise<Settings> =>
+    update: (patch: Partial<Pick<Settings, "kiosk" | "startWithWindows" | "autoLockMinutes" | "updateChannel">>): Promise<Settings> =>
       ipcRenderer.invoke("settings:update", patch),
     setServer: (url: string): Promise<{ ok: true } | { ok: false; code: "invalid" | "unreachable"; error: string }> =>
       ipcRenderer.invoke("settings:set-server", url),

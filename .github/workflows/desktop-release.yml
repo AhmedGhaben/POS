@@ -6,6 +6,11 @@ name: Desktop release
 #
 # To release: bump "version" in apps/desktop/package.json, commit, then
 #   git tag v<version> && git push origin v<version>
+#
+# It's published as a pre-release: only computers on the Beta update
+# channel (This device) install it. Once tested, make it a full release
+# for every shop:
+#   gh release edit v<version> --prerelease=false --latest
 
 on:
   push:

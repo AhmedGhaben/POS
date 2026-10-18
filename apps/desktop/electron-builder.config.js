@@ -43,7 +43,9 @@ module.exports = {
   },
   // Updates come from this repository's GitHub Releases (public, so the
   // app needs no token). latest.yml + the installer are uploaded there.
-  publish: [{ provider: "github", owner: "AhmedGhaben", repo: "POS", releaseType: "release" }],
+  // Published as a pre-release: only computers on the Beta channel take it
+  // until it's made a full release (gh release edit v<version> --prerelease=false).
+  publish: [{ provider: "github", owner: "AhmedGhaben", repo: "POS", releaseType: "prerelease" }],
   electronFuses: testBuild
     ? undefined
     : {
