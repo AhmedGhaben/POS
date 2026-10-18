@@ -17,7 +17,7 @@ import { syncOutbox } from "@/features/pos/sync";
 import { closeShift, fetchShiftByClient } from "../api";
 import { signOut } from "../close-request";
 import { cleanCounts, countTotal, denominationsFor } from "../denominations";
-import type { LocalShift } from "../ledger";
+import { isEmptyShift, isEmptySummary, type LocalShift } from "../ledger";
 import { reportFromLocal, reportFromServer } from "../report-data";
 import { ShiftReport, type ShiftReportData } from "./ShiftReport";
 
@@ -26,6 +26,9 @@ import { ShiftReport, type ShiftReportData } from "./ShiftReport";
  * (so the count is honest), as a total or note by note; then see the
  * difference, print the report, and the person who closed it is signed
  * out. A manager closing someone else's abandoned shift stays signed in.
+ * A shift with no sales and no cash in or out closes in one click: the
+ * cash should be the opening float ("Contagem = fundo de caixa?"), and
+ * another amount can still be typed.
  */
 export function CloseShiftDialog({
   shift,
@@ -53,6 +56,26 @@ export function CloseShiftDialog({
   const [report, setReport] = React.useState<ShiftReportData | null>(null);
   const [withSales, setWithSales] = React.useState(false);
   const forced = !!shift && !!user && shift.openedBy.id !== user.id;
+  // Nothing happened in the shift: offer the opening float as the count.
+  const [empty, setEmpty] = React.useState(false);
+  const [checking, setChecking] = React.useState(false);
+  const [otherAmount, setOtherAmount] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!open || !shift) return;
+    setOtherAmount(false);
+    setEmpty(false);
+    if (!shift.adopted) {
+      setEmpty(isEmptyShift(shift));
+    } else if (!isWorkingOffline()) {
+      // A shift taken over from another device: only the server knows what's in it.
+      setChecking(true);
+      void fetchShiftByClient(shift.storeId, shift.clientId)
+        .then((server) => setEmpty(!!server.summary && isEmptySummary(server.summary)))
+        .catch(() => undefined)
+        .finally(() => setChecking(false));
+    }
+  }, [open, shift]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -69,11 +92,15 @@ export function CloseShiftDialog({
   const value = byNote ? (cleaned ? countTotal(cleaned) : NaN) : Number(counted.replace(",", "."));
   const valid = byNote ? cleaned !== null : counted.trim() !== "" && Number.isFinite(value) && value >= 0;
 
-  async function submit(e: React.FormEvent) {
+  function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!shift || !valid || busy) return;
+    if (!valid) return;
+    void closeWith(Math.round(value * 100) / 100);
+  }
+
+  async function closeWith(countedCash: number) {
+    if (!shift || busy) return;
     setBusy(true);
-    const countedCash = Math.round(value * 100) / 100;
     const { closedAt } = await closeShift(shift, countedCash, note, byNote ? cleaned : null);
     let data = reportFromLocal(shift, {
       countedCash,
@@ -111,6 +138,20 @@ export function CloseShiftDialog({
               <DialogTitle>{forced ? t("close.titleFor", { name: shift?.openedBy.name ?? "" }) : t("close.title")}</DialogTitle>
               <DialogDescription>{forced ? t("close.descriptionForced") : t("close.description")}</DialogDescription>
             </DialogHeader>
+            {checking ? (
+              <p className="text-sm text-muted-foreground">{t("close.checking")}</p>
+            ) : empty && !otherAmount ? (
+              <div className="space-y-3" data-testid="quick-close">
+                <p className="font-medium">{t("close.quickQuestion", { amount: money(shift?.openingFloat ?? 0) })}</p>
+                <p className="text-sm text-muted-foreground">{t("close.quickHint")}</p>
+                <Button className="w-full" disabled={busy} onClick={() => void closeWith(shift?.openingFloat ?? 0)}>
+                  {busy ? t("close.closing") : t("close.quickConfirm", { amount: money(shift?.openingFloat ?? 0) })}
+                </Button>
+                <Button variant="outline" className="w-full" disabled={busy} onClick={() => setOtherAmount(true)}>
+                  {t("close.quickOther")}
+                </Button>
+              </div>
+            ) : (
             <form className="space-y-4" onSubmit={submit}>
               {denominations && (
                 <label className="flex items-center gap-2 text-sm">
@@ -156,6 +197,7 @@ export function CloseShiftDialog({
                 {busy ? t("close.closing") : t("close.submit")}
               </Button>
             </form>
+            )}
           </>
         ) : (
           <>

@@ -91,10 +91,10 @@ test.describe.serial("POS cart kept, Back to POS, documents in the store's langu
     await expect(ask.getByRole("button", { name: "Hold order" })).toBeVisible();
     await expect(ask.getByRole("button", { name: "Cancel the sale" })).toBeVisible();
     await ask.getByRole("button", { name: "Hold order" }).click();
-    // Then the usual way out: the owner's shift is closed first.
+    // Then the usual way out: the owner's shift is closed first. Nothing was
+    // sold in it (the sale was held), so it closes in one click at the float.
     const closing = page.getByRole("dialog").filter({ hasText: "Close the till" });
-    await closing.getByLabel("Cash counted").fill("0");
-    await closing.getByRole("button", { name: "Close the till" }).click();
+    await closing.getByRole("button", { name: /^Yes, close with/ }).click();
     await page.getByRole("button", { name: "Done (sign out)" }).click();
     await page.waitForURL(/\/login/);
 

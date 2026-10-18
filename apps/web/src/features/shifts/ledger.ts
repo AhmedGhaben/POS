@@ -58,6 +58,25 @@ export interface LocalShift {
   adopted?: boolean;
 }
 
+/**
+ * Nothing happened in the shift: no sale (even a cancelled one), no cash in
+ * or out, no receipt. The cash should still be the opening float.
+ */
+export function isEmptyShift(shift: LocalShift): boolean {
+  return shift.sales.length === 0 && shift.movements.length === 0 && (shift.receipts ?? []).length === 0;
+}
+
+/** The same, from the server's figures (a shift taken over from another device). */
+export function isEmptySummary(summary: ShiftSummaryDto): boolean {
+  return (
+    summary.salesCount === 0 &&
+    summary.voided.count === 0 &&
+    summary.returns.count === 0 &&
+    summary.movements.length === 0 &&
+    (summary.receipts?.count ?? 0) === 0
+  );
+}
+
 export function ledgerSale(sale: SaleDto, cashierName: string): LedgerSale {
   return {
     key: sale.clientId ?? sale.id,

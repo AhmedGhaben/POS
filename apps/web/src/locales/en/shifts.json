@@ -51,7 +51,12 @@
     "countTotal": "Counted: {{amount}}",
     "countInvalid": "Use whole numbers.",
     "withSales": "Include every sale in the report",
-    "finishSignOut": "Done (sign out)"
+    "finishSignOut": "Done (sign out)",
+    "quickQuestion": "Nothing was sold or taken out: is the cash still the opening float ({{amount}})?",
+    "quickHint": "If it is, close in one click. If not, type what's in the drawer.",
+    "quickConfirm": "Yes, close with {{amount}}",
+    "quickOther": "Enter a different amount",
+    "checking": "One moment…"
   },
   "report": {
     "title": "END OF SHIFT",
@@ -113,5 +118,18 @@
     "description": "{{name}} opened this till at {{time}} and hasn't closed it. Sales wait until it's closed.",
     "forceClose": "Close {{name}}'s shift (count the cash)",
     "askManager": "Ask {{name}} or a manager to close it."
+  },
+  "backOffice": {
+    "title": "This device is for back office",
+    "description": "It doesn't sell and never opens a shift. Selling happens on a till.",
+    "change": "Make this device a till (This device)",
+    "askManager": "Ask a manager to make it a till."
+  },
+  "deviceRole": {
+    "question": "Is this device a till (sells) or back office?",
+    "hint": "Asked once on this device. A till opens a shift with a float when someone sells; back office never does. You can change it in This device.",
+    "till": "Till (sells)",
+    "backOffice": "Back office",
+    "askManager": "Ask a manager to set this device up as a till."
   }
 }

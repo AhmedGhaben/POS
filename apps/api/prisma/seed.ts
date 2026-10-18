@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient, Role } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import { countryConfig } from "../src/countries";
+import { hashPin } from "../src/common/utils/pin";
 
 const prisma = new PrismaClient();
 
@@ -8,110 +9,114 @@ const SEED_OWNER_EMAIL = "owner@demo-store.test";
 const SEED_OWNER_PASSWORD = "OwnerPass123!";
 const SEED_CASHIER_EMAIL = "cashier@demo-store.test";
 const SEED_CASHIER_PASSWORD = "CashierPass123!";
+/** Till PINs, so the demo can sign in by name on a till and approve as a manager. */
+const SEED_OWNER_PIN = "8642";
+const SEED_CASHIER_PIN = "2468";
 
 /**
- * [name, costPrice, sellPrice, tax]: the tax is the IVA rate (14, Taxa
- * geral) or, for an exempt product, its exemption reason ("M10", bens
- * alimentares: no fiscal document may have an exempt line without one).
+ * [name, costPrice, sellPrice, tax], prices in kwanzas: the tax is the IVA
+ * rate (14, Taxa geral) or, for an exempt product, its exemption reason
+ * ("M10", bens alimentares: no fiscal document may have an exempt line
+ * without one).
  */
 type ProductSeed = [string, number, number, 14 | "M10"];
 
 const CATALOG: Record<string, ProductSeed[]> = {
   Beverages: [
-    ["Sparkling Water 500ml", 0.6, 1.5, 14],
-    ["Cold Brew Coffee 12oz", 1.2, 3.25, 14],
-    ["Orange Juice 1L", 1.8, 3.99, 14],
-    ["Green Tea Bottle 16oz", 1.1, 2.79, 14],
-    ["Energy Drink 8oz", 0.95, 2.99, 14],
-    ["Sports Drink 20oz", 0.85, 2.49, 14],
-    ["Sparkling Lemonade 500ml", 0.7, 1.99, 14],
+    ["Sparkling Water 500ml", 600, 1500, 14],
+    ["Cold Brew Coffee 12oz", 1200, 3250, 14],
+    ["Orange Juice 1L", 1800, 3990, 14],
+    ["Green Tea Bottle 16oz", 1100, 2790, 14],
+    ["Energy Drink 8oz", 950, 2990, 14],
+    ["Sports Drink 20oz", 850, 2490, 14],
+    ["Sparkling Lemonade 500ml", 700, 1990, 14],
   ],
   Snacks: [
-    ["Trail Mix 100g", 0.9, 2.75, 14],
-    ["Potato Chips 150g", 0.75, 2.49, 14],
-    ["Pretzels 200g", 0.65, 2.19, 14],
-    ["Chocolate Bar 45g", 0.4, 1.75, 14],
-    ["Granola Bar Box", 1.5, 3.99, 14],
-    ["Popcorn 100g", 0.5, 1.99, 14],
+    ["Trail Mix 100g", 900, 2750, 14],
+    ["Potato Chips 150g", 750, 2490, 14],
+    ["Pretzels 200g", 650, 2190, 14],
+    ["Chocolate Bar 45g", 400, 1750, 14],
+    ["Granola Bar Box", 1500, 3990, 14],
+    ["Popcorn 100g", 500, 1990, 14],
   ],
   Dairy: [
-    ["Whole Milk 1L", 0.95, 1.99, "M10"],
-    ["Greek Yogurt 500g", 1.4, 3.49, "M10"],
-    ["Cheddar Cheese 200g", 2.1, 4.99, "M10"],
-    ["Butter 250g", 1.6, 3.79, "M10"],
-    ["Eggs (Dozen)", 1.9, 3.99, "M10"],
+    ["Whole Milk 1L", 950, 1990, "M10"],
+    ["Greek Yogurt 500g", 1400, 3490, "M10"],
+    ["Cheddar Cheese 200g", 2100, 4990, "M10"],
+    ["Butter 250g", 1600, 3790, "M10"],
+    ["Eggs (Dozen)", 1900, 3990, "M10"],
   ],
   Bakery: [
-    ["Sourdough Loaf", 1.3, 3.49, "M10"],
-    ["Croissant", 0.6, 1.99, "M10"],
-    ["Bagel (6-pack)", 1.1, 2.99, "M10"],
-    ["Blueberry Muffin", 0.7, 2.29, "M10"],
-    ["Baguette", 0.5, 1.79, "M10"],
+    ["Sourdough Loaf", 1300, 3490, "M10"],
+    ["Croissant", 600, 1990, "M10"],
+    ["Bagel (6-pack)", 1100, 2990, "M10"],
+    ["Blueberry Muffin", 700, 2290, "M10"],
+    ["Baguette", 500, 1790, "M10"],
   ],
   Produce: [
-    ["Bananas (lb)", 0.3, 0.69, "M10"],
-    ["Avocado", 0.5, 1.29, "M10"],
-    ["Roma Tomatoes (lb)", 0.6, 1.49, "M10"],
-    ["Baby Spinach 5oz", 1.1, 2.99, "M10"],
-    ["Red Apples (lb)", 0.55, 1.39, "M10"],
-    ["Carrots (lb)", 0.35, 0.99, "M10"],
+    ["Bananas (lb)", 300, 690, "M10"],
+    ["Avocado", 500, 1290, "M10"],
+    ["Roma Tomatoes (lb)", 600, 1490, "M10"],
+    ["Baby Spinach 5oz", 1100, 2990, "M10"],
+    ["Red Apples (lb)", 550, 1390, "M10"],
+    ["Carrots (lb)", 350, 990, "M10"],
   ],
   "Meat & Seafood": [
-    ["Chicken Breast (lb)", 2.4, 4.99, "M10"],
-    ["Ground Beef (lb)", 2.9, 5.49, "M10"],
-    ["Salmon Fillet (lb)", 5.5, 9.99, "M10"],
-    ["Bacon 12oz", 3.1, 5.99, "M10"],
-    ["Shrimp 1lb Bag", 6.2, 10.99, "M10"],
+    ["Chicken Breast (lb)", 2400, 4990, "M10"],
+    ["Ground Beef (lb)", 2900, 5490, "M10"],
+    ["Salmon Fillet (lb)", 5500, 9990, "M10"],
+    ["Bacon 12oz", 3100, 5990, "M10"],
+    ["Shrimp 1lb Bag", 6200, 10990, "M10"],
   ],
   "Frozen Foods": [
-    ["Frozen Pizza", 2.2, 5.49, 14],
-    ["Ice Cream Pint", 1.8, 4.29, 14],
-    ["Frozen Mixed Veggies", 0.9, 2.29, 14],
-    ["Frozen Waffles", 1.2, 3.29, 14],
-    ["Frozen Burritos (4-pack)", 2.0, 4.99, 14],
+    ["Frozen Pizza", 2200, 5490, 14],
+    ["Ice Cream Pint", 1800, 4290, 14],
+    ["Frozen Mixed Veggies", 900, 2290, 14],
+    ["Frozen Waffles", 1200, 3290, 14],
+    ["Frozen Burritos (4-pack)", 2000, 4990, 14],
   ],
   Household: [
-    ["Paper Towels (6-roll)", 3.5, 7.99, 14],
-    ["Dish Soap 500ml", 1.1, 2.99, 14],
-    ["Laundry Detergent 1L", 3.8, 8.49, 14],
-    ["Trash Bags (30-pack)", 2.6, 5.99, 14],
-    ["All-Purpose Cleaner", 1.4, 3.49, 14],
-    ["Aluminum Foil Roll", 1.9, 3.99, 14],
+    ["Paper Towels (6-roll)", 3500, 7990, 14],
+    ["Dish Soap 500ml", 1100, 2990, 14],
+    ["Laundry Detergent 1L", 3800, 8490, 14],
+    ["Trash Bags (30-pack)", 2600, 5990, 14],
+    ["All-Purpose Cleaner", 1400, 3490, 14],
+    ["Aluminum Foil Roll", 1900, 3990, 14],
   ],
   "Personal Care": [
-    ["Toothpaste 100ml", 1.0, 2.79, 14],
-    ["Shampoo 400ml", 2.2, 5.49, 14],
-    ["Bar Soap (3-pack)", 1.3, 3.29, 14],
-    ["Deodorant Stick", 1.6, 3.99, 14],
-    ["Hand Sanitizer 250ml", 0.9, 2.49, 14],
+    ["Toothpaste 100ml", 1000, 2790, 14],
+    ["Shampoo 400ml", 2200, 5490, 14],
+    ["Bar Soap (3-pack)", 1300, 3290, 14],
+    ["Deodorant Stick", 1600, 3990, 14],
+    ["Hand Sanitizer 250ml", 900, 2490, 14],
   ],
   Electronics: [
-    ["AA Batteries (4-pack)", 1.8, 4.49, 14],
-    ["USB-C Cable 1m", 1.5, 5.99, 14],
-    ["Earbuds (Basic)", 4.2, 9.99, 14],
-    ["Phone Charger 20W", 3.8, 8.99, 14],
-    ["Portable Power Bank", 6.5, 14.99, 14],
+    ["AA Batteries (4-pack)", 1800, 4490, 14],
+    ["USB-C Cable 1m", 1500, 5990, 14],
+    ["Earbuds (Basic)", 4200, 9990, 14],
+    ["Phone Charger 20W", 3800, 8990, 14],
+    ["Portable Power Bank", 6500, 14990, 14],
   ],
   Stationery: [
-    ["Ballpoint Pens (5-pack)", 0.8, 2.29, 14],
-    ["Spiral Notebook", 0.9, 2.49, 14],
-    ["Sticky Notes", 0.6, 1.79, 14],
-    ["Printer Paper Ream", 3.4, 6.99, 14],
-    ["Highlighters (4-pack)", 1.1, 2.99, 14],
+    ["Ballpoint Pens (5-pack)", 800, 2290, 14],
+    ["Spiral Notebook", 900, 2490, 14],
+    ["Sticky Notes", 600, 1790, 14],
+    ["Printer Paper Ream", 3400, 6990, 14],
+    ["Highlighters (4-pack)", 1100, 2990, 14],
   ],
   "Toys & Games": [
-    ["Deck of Playing Cards", 0.7, 2.49, 14],
-    ["Puzzle 500pc", 3.2, 7.99, 14],
-    ["Bouncy Ball", 0.3, 1.49, 14],
-    ["Coloring Book", 0.9, 2.99, 14],
-    ["Mini Puzzle Cube", 1.4, 3.99, 14],
+    ["Deck of Playing Cards", 700, 2490, 14],
+    ["Puzzle 500pc", 3200, 7990, 14],
+    ["Bouncy Ball", 300, 1490, 14],
+    ["Coloring Book", 900, 2990, 14],
+    ["Mini Puzzle Cube", 1400, 3990, 14],
   ],
   "Pet Supplies": [
-    ["Dog Food 2lb Bag", 3.5, 7.49, 14],
-    ["Cat Litter 10lb", 3.8, 7.99, 14],
-    ["Dog Treats", 1.6, 3.99, 14],
-    ["Cat Food Can", 0.6, 1.49, 14],
-    ["Pet Waste Bags", 1.1, 2.79, 14],
+    ["Dog Food 2lb Bag", 3500, 7490, 14],
+    ["Cat Litter 10lb", 3800, 7990, 14],
+    ["Dog Treats", 1600, 3990, 14],
+    ["Cat Food Can", 600, 1490, 14],
+    ["Pet Waste Bags", 1100, 2790, 14],
   ],
 };
 
@@ -120,9 +125,12 @@ function toBarcode(index: number): string {
 }
 
 async function main() {
+  // An Angolan demo store, as sign-up makes one for Angola: AOA, pt-AO
+  // documents, Africa/Luanda, Regime Geral.
+  const ao = countryConfig("AO")!;
   const business = await prisma.business.upsert({
     where: { id: "seed-business" },
-    create: { id: "seed-business", name: "Demo Retail Co.", plan: "SIMPLE" },
+    create: { id: "seed-business", name: "Demo Retail Co.", plan: "SIMPLE", country: ao.code, currency: ao.currency, language: ao.defaultLanguage },
     update: {},
   });
 
@@ -140,7 +148,9 @@ async function main() {
       businessId: business.id,
       name: "Main Street Store",
       address: "123 Main St",
-      timezone: "UTC",
+      timezone: ao.timeZone,
+      country: ao.code,
+      ivaRegime: ao.defaultIvaRegime,
     },
     update: {},
   });
@@ -155,6 +165,7 @@ async function main() {
       firstName: "Ada",
       lastName: "Owner",
       role: Role.OWNER,
+      pinHash: await hashPin(SEED_OWNER_PIN),
       emailVerifiedAt: new Date(),
     },
     update: {},
@@ -170,6 +181,7 @@ async function main() {
       firstName: "Cara",
       lastName: "Cashier",
       role: Role.CASHIER,
+      pinHash: await hashPin(SEED_CASHIER_PIN),
       emailVerifiedAt: new Date(),
     },
     update: {},
@@ -282,7 +294,7 @@ async function main() {
       lastName: cashier.lastName,
       position: "Cashier",
       hireDate: new Date("2026-01-15"),
-      wage: "18.50",
+      wage: "1850.00",
     },
     update: {},
   });
@@ -304,8 +316,8 @@ async function main() {
     const lineItems = createdProducts.slice(0, 2).map((p) => ({
       productId: p.id,
       quantity: 24,
-      unitCost: "1.00",
-      lineTotal: "24.00",
+      unitCost: "1000.00",
+      lineTotal: "24000.00",
     }));
     await prisma.purchase.create({
       data: {
@@ -313,9 +325,9 @@ async function main() {
         supplierId: suppliers[0].id,
         createdById: owner.id,
         purchaseNumber: `PO-SEED-${Date.now()}`,
-        subtotal: "48.00",
+        subtotal: "48000.00",
         taxTotal: "0.00",
-        total: "48.00",
+        total: "48000.00",
         status: "RECEIVED",
         lineItems: { create: lineItems },
       },
@@ -331,7 +343,7 @@ async function main() {
           createdById: owner.id,
           category: "RENT",
           description: "Monthly storefront rent",
-          amount: "2400.00",
+          amount: "240000.00",
           incurredAt: new Date("2026-07-01"),
         },
         {
@@ -339,7 +351,7 @@ async function main() {
           createdById: owner.id,
           category: "UTILITIES",
           description: "Electricity & water",
-          amount: "310.25",
+          amount: "31025.00",
           incurredAt: new Date("2026-07-05"),
         },
       ],
@@ -349,8 +361,8 @@ async function main() {
   console.log("Seed complete.");
   console.log(`  Categories: ${Object.keys(CATALOG).length}, Products: ${totalProducts}`);
   console.log(`  Suppliers: ${suppliers.length}`);
-  console.log(`  Owner login:   ${SEED_OWNER_EMAIL} / ${SEED_OWNER_PASSWORD}`);
-  console.log(`  Cashier login: ${SEED_CASHIER_EMAIL} / ${SEED_CASHIER_PASSWORD}`);
+  console.log(`  Owner login:   ${SEED_OWNER_EMAIL} / ${SEED_OWNER_PASSWORD} (till PIN ${SEED_OWNER_PIN})`);
+  console.log(`  Cashier login: ${SEED_CASHIER_EMAIL} / ${SEED_CASHIER_PASSWORD} (till PIN ${SEED_CASHIER_PIN})`);
 }
 
 main()
