@@ -10,7 +10,8 @@ const ROLES: DeviceRole[] = ["TILL", "BACK_OFFICE"];
 /**
  * What this device is for: a till (sells, opens shifts with a float) or
  * back office (dashboard, reports, products, settings, accounting; never a
- * shift). Owners and managers choose; not while a shift is open here.
+ * shift). Owners and managers choose; not while a shift is open here. A
+ * browser starts with neither (it's asked on the POS screen).
  */
 export function DeviceRoleSection() {
   const { t } = useTranslation("device");
@@ -19,6 +20,8 @@ export function DeviceRoleSection() {
   const userRole = useAuthStore((s) => s.user?.role);
   const canChange = userRole === "OWNER" || userRole === "MANAGER";
   const shiftOpen = useShiftStore((s) => !!s.current);
+  // The Windows app's starting point; a browser has none (it's asked on the POS screen).
+  const platformDefault = defaultDeviceRole();
 
   function choose(next: DeviceRole) {
     if (next === role) return;
@@ -34,7 +37,7 @@ export function DeviceRoleSection() {
     <Card>
       <CardHeader>
         <CardTitle>{t("role.title")}</CardTitle>
-        <CardDescription>{t("role.description", { default: t(`role.names.${defaultDeviceRole()}`) })}</CardDescription>
+        <CardDescription>{t("role.description", { default: platformDefault ? t(`role.names.${platformDefault}`) : t("role.notChosen") })}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3" role="radiogroup" aria-label={t("role.title")}>
         {ROLES.map((r) => (

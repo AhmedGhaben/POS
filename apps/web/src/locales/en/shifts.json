@@ -124,5 +124,12 @@
     "description": "It doesn't sell and never opens a shift. Selling happens on a till.",
     "change": "Make this device a till (This device)",
     "askManager": "Ask a manager to make it a till."
+  },
+  "deviceRole": {
+    "question": "Is this device a till (sells) or back office?",
+    "hint": "Asked once on this device. A till opens a shift with a float when someone sells; back office never does. You can change it in This device.",
+    "till": "Till (sells)",
+    "backOffice": "Back office",
+    "askManager": "Ask a manager to set this device up as a till."
   }
 }

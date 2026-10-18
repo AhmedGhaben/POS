@@ -195,9 +195,9 @@ Prisma backend.
     touching past sales or reports. "Show archived products" lets you
     restore it.
 - **Shifts and cash counts** (always on; shifts follow selling, not signing in):
-  - Each device is a **till** or **back office** (This device; the
-    Windows app is a till and a browser back office until someone
-    chooses). Signing in never opens a shift, and back-office work
+  - Each device is a **till** or **back office** (This device). The
+    Windows app is a till until changed; a browser asks an owner or
+    manager once, the first time the POS screen is opened there. Signing in never opens a shift, and back-office work
     (dashboard, reports, products, settings, accounting) never needs one.
     On a till, the shift opens with the opening float when someone goes to
     sell; a back-office device never opens one. The server refuses sales
@@ -355,10 +355,12 @@ docker compose --profile api up -d --build   # again after pulling new code
 docker compose stop api                      # before `npm run dev:api` on :4000
 ```
 
-**Demo logins (from the seed):**
+**Demo logins (from the seed).** The seed makes an Angolan demo store
+("Demo Retail Co."): AOA, pt-AO documents, Africa/Luanda, Regime Geral,
+70 products priced in kwanzas.
 
-- `owner@demo-store.test` / `OwnerPass123!`
-- `cashier@demo-store.test` / `CashierPass123!`
+- `owner@demo-store.test` / `OwnerPass123!` (till PIN 8642)
+- `cashier@demo-store.test` / `CashierPass123!` (till PIN 2468)
 
 Or create your own business at http://localhost:5173/signup.
 

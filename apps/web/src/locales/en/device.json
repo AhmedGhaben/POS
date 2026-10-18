@@ -222,6 +222,7 @@
       "BACK_OFFICE": "This device is now back office"
     },
     "closeShiftFirst": "A shift is open on this device: close it first.",
-    "managersOnly": "Only an owner or manager can change this."
+    "managersOnly": "Only an owner or manager can change this.",
+    "notChosen": "not chosen yet (asked the first time the POS screen is opened here)"
   }
 }

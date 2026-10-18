@@ -124,5 +124,12 @@
     "description": "Não vende nem abre turnos. As vendas fazem-se num terminal de caixa.",
     "change": "Tornar este dispositivo um terminal de caixa (Este dispositivo)",
     "askManager": "Peça a um gerente que o torne um terminal de caixa."
+  },
+  "deviceRole": {
+    "question": "Este dispositivo é uma caixa (vende) ou back office?",
+    "hint": "Pergunta feita uma vez neste dispositivo. Uma caixa abre um turno com fundo de caixa quando alguém vende; o back office nunca abre. Pode alterar em Este dispositivo.",
+    "till": "Caixa (vende)",
+    "backOffice": "Back office",
+    "askManager": "Peça a um gerente para configurar este dispositivo como caixa."
   }
 }

@@ -222,6 +222,7 @@
       "BACK_OFFICE": "Este dispositivo agora é de retaguarda"
     },
     "closeShiftFirst": "Há um turno aberto neste dispositivo: feche-o primeiro.",
-    "managersOnly": "Só o proprietário ou um gerente pode alterar isto."
+    "managersOnly": "Só o proprietário ou um gerente pode alterar isto.",
+    "notChosen": "ainda não escolhido (perguntado na primeira vez que o PDV é aberto aqui)"
   }
 }

@@ -124,5 +124,12 @@
     "description": "Não vende nem abre turnos. As vendas são feitas em um caixa.",
     "change": "Tornar este dispositivo um caixa (Este dispositivo)",
     "askManager": "Peça a um gerente para torná-lo um caixa."
+  },
+  "deviceRole": {
+    "question": "Este dispositivo é um caixa (vende) ou retaguarda?",
+    "hint": "Pergunta feita uma vez neste dispositivo. Um caixa abre um turno com fundo de caixa quando alguém vende; a retaguarda nunca abre. Você pode alterar em Este dispositivo.",
+    "till": "Caixa (vende)",
+    "backOffice": "Retaguarda",
+    "askManager": "Peça a um gerente para configurar este dispositivo como caixa."
   }
 }
