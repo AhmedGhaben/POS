@@ -52,6 +52,15 @@
       "damaged": "The download was damaged; it will be fetched again",
       "none-published": "No published version found yet",
       "other": "Update failed"
+    },
+    "channel": "Update channel",
+    "channels": {
+      "stable": "Stable",
+      "beta": "Beta (test versions first)"
+    },
+    "channelHints": {
+      "stable": "Full releases only. For shops.",
+      "beta": "Also pre-releases, before the shops get them. For testing."
     }
   },
   "app": {

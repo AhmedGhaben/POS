@@ -159,6 +159,12 @@ const configSchema = z.object({
   /** Fullscreen till mode with no window frame. */
   kiosk: z.boolean().optional().catch(undefined),
   startWithWindows: z.boolean().optional().catch(undefined),
+  /**
+   * Which releases this computer installs: "stable" (full releases only,
+   * the default) or "beta" (pre-releases too, to try a version before
+   * the shops get it).
+   */
+  updateChannel: z.enum(["stable", "beta"]).optional().catch(undefined),
   printing: printingSchema.optional().catch(undefined),
   drawer: drawerSchema.optional().catch(undefined),
   display: displaySchema.optional().catch(undefined),
@@ -174,6 +180,7 @@ export const settingsPatchSchema = z
     kiosk: z.boolean(),
     startWithWindows: z.boolean(),
     autoLockMinutes: z.number().int().min(0).max(120),
+    updateChannel: z.enum(["stable", "beta"]),
   })
   .partial()
   .strict();

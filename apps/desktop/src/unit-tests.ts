@@ -4,3 +4,4 @@ import "./scrub.test";
 import "./hardware/hardware.test";
 import "./hardware/pole-display.test";
 import "./pin-check.test";
+import "./update-channel.test";

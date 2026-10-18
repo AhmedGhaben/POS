@@ -26,7 +26,7 @@ import {
 import { openDrawer } from "./hardware/drawer";
 import { listComPorts, stopRawPrintHelper, warmRawPrintHelper } from "./hardware/transports";
 import { closePrintWindow, documentPdf, listPrinters, pdfJobSchema, printJob, printJobSchema } from "./printing";
-import { checkForUpdates, getUpdateStatus, initUpdater, installUpdateNow } from "./updater";
+import { applyUpdateChannel, checkForUpdates, getUpdateStatus, initUpdater, installUpdateNow } from "./updater";
 import { APP_ORIGIN, handleAppScheme, registerAppScheme } from "./protocol";
 import {
   checkApproval,
@@ -154,6 +154,7 @@ function publicSettings() {
     kiosk: !!config.kiosk,
     startWithWindows: !!config.startWithWindows,
     autoLockMinutes: config.autoLockMinutes ?? 0,
+    updateChannel: config.updateChannel ?? "stable",
   };
 }
 
@@ -174,6 +175,10 @@ function registerIpc() {
     updateConfig(patch);
     if (patch.kiosk !== undefined) mainWindow?.setKiosk(patch.kiosk);
     if (patch.startWithWindows !== undefined) applyStartWithWindows(patch.startWithWindows);
+    if (patch.updateChannel !== undefined) {
+      applyUpdateChannel();
+      void checkForUpdates();
+    }
     log.info(`[settings] updated ${Object.keys(patch).join(", ")}`);
     return publicSettings();
   });

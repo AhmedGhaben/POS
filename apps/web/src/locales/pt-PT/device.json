@@ -52,6 +52,15 @@
       "damaged": "A transferência chegou danificada; vai ser descarregada de novo",
       "none-published": "Ainda não há nenhuma versão publicada",
       "other": "A atualização falhou"
+    },
+    "channel": "Canal de atualizações",
+    "channels": {
+      "stable": "Estável",
+      "beta": "Beta (versões de teste primeiro)"
+    },
+    "channelHints": {
+      "stable": "Só versões finais. Para as lojas.",
+      "beta": "Também pré-lançamentos, antes das lojas. Para testes."
     }
   },
   "app": {
