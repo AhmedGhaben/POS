@@ -54,7 +54,7 @@ export function PosShell() {
     <div className="flex min-h-screen flex-col">
       <header className="flex h-14 items-center justify-between border-b px-4">
         {location.pathname !== "/pos" ? (
-          // This device (and any other page in the till's frame): back to the same sale.
+          // This device for a cashier (any page in the till's frame): back to the same sale.
           <NavLink to="/pos" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
             {t("shell.backToPos")}
