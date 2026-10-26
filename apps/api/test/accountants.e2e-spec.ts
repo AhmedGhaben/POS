@@ -72,6 +72,14 @@ describe("Accountants (e2e)", () => {
     }
   });
 
+  it("a staff login's email can't become an accountant: they need their own email address", async () => {
+    const ownEmail = `acc-owner-ClienteUm-${RUN}@e2e.test`;
+    const res = await http().post("/accounting/accountants").set(auth(owners[0])).send({ email: ownEmail, firstName: "Dono", lastName: "Um" }).expect(409);
+    expect(res.body.message).toBe("That email is already a staff login here. An accountant needs their own email address.");
+    const pt = await http().post("/accounting/accountants").set(auth(owners[0])).set("X-Language", "pt-AO").send({ email: ownEmail, firstName: "Dono", lastName: "Um" }).expect(409);
+    expect(pt.body.message).toMatch(/precisa de um endereço de email próprio/);
+  });
+
   it("the owner invites an accountant by email: a new login, password chosen from the email", async () => {
     await http().post("/accounting/accountants").set(auth(owners[0])).send({ email: accountantEmail, firstName: "Carla", lastName: "Contabilista", ocpcaNumber: "OCPCA-1234" }).expect(201);
     expect(inviteToken).toBeTruthy();

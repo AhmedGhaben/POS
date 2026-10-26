@@ -57,7 +57,7 @@ export class AccountantsService {
     const email = normalizeEmail(input.email);
     const business = await this.prisma.business.findUniqueOrThrow({ where: { id: businessId } });
     const existing = await this.prisma.user.findUnique({ where: { email } });
-    if (existing && existing.role !== Role.ACCOUNTANT) throw new ConflictException("That email belongs to someone who isn't an accountant");
+    if (existing && existing.role !== Role.ACCOUNTANT) throw new ConflictException("That email is already a staff login here. An accountant needs their own email address.");
     let inviteToken: string | null = null;
     let acceptToken: string | null = null;
     const user = await this.prisma.$transaction(async (tx) => {

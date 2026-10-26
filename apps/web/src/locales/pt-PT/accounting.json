@@ -320,7 +320,11 @@
       "firstName": "Nome",
       "lastName": "Apelido",
       "ocpcaNumber": "N.º OCPCA (opcional)"
-    }
+    },
+    "staffTitle": "Acesso à contabilidade para {{name}}",
+    "staffExplain": "O contabilista entra com um endereço de email próprio, diferente do acesso da equipa (um acesso, uma função). Enviamos um convite para este endereço; o acesso da equipa fica como está.",
+    "staffSameEmail": "Use um email diferente do acesso da equipa.",
+    "close": "Fechar"
   },
   "attachments": {
     "title": "Anexos",

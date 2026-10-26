@@ -34,6 +34,7 @@ import {
   type LoginFieldsValue,
 } from "@/features/users/login-fields";
 import { useAuthStore } from "@/features/auth/store";
+import { GiveAccountingAccessDialog } from "@/features/accounting/components/GiveAccountingAccessDialog";
 
 const employeeSchema = z.object({
   firstName: z.string().min(1, "validation.required"),
@@ -61,6 +62,8 @@ export function EmployeesPage() {
   const stores = useAuthStore((s) => s.stores);
   const isOwner = useAuthStore((s) => s.user?.role) === "OWNER";
   const employeesQuery = useQuery({ queryKey: ["employees"], queryFn: fetchEmployees });
+  // Someone on the staff who should also see the books (an in-house accountant).
+  const [accountingFor, setAccountingFor] = React.useState<{ firstName: string; lastName: string; staffEmail: string | null } | null>(null);
   const storeNames = React.useMemo(() => new Map(stores.map((s) => [s.id, s.name])), [stores]);
   const defaultLoginStoreIds = stores.length === 1 ? [stores[0].id] : [];
 
@@ -329,7 +332,19 @@ export function EmployeesPage() {
                     )}
                   </TableCell>
                   {isOwner && (
-                    <TableCell className="text-right">
+                    <TableCell className="whitespace-nowrap text-right">
+                      {employee.user?.role !== "OWNER" && employee.user?.role !== "ACCOUNTANT" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mr-1"
+                          onClick={() =>
+                            setAccountingFor({ firstName: employee.firstName, lastName: employee.lastName, staffEmail: employee.user?.email ?? null })
+                          }
+                        >
+                          {t("accounting.give")}
+                        </Button>
+                      )}
                       {employee.user ? (
                         employee.user.role !== "OWNER" && (
                           <Button variant="outline" size="sm" onClick={() => setManageLoginFor(employee)}>
@@ -361,6 +376,7 @@ export function EmployeesPage() {
         <>
           <CreateLoginDialog employee={createLoginFor} onClose={() => setCreateLoginFor(null)} />
           <ManageLoginDialog employee={manageLoginFor} onClose={() => setManageLoginFor(null)} />
+          <GiveAccountingAccessDialog person={accountingFor} onClose={() => setAccountingFor(null)} />
         </>
       )}
     </div>

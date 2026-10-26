@@ -81,5 +81,8 @@
       "SELL_ON_CREDIT": "Vender a prazo (pagar depois)",
       "CASH_OUT": "Retirar dinheiro da gaveta"
     }
+  },
+  "accounting": {
+    "give": "Dar acesso à contabilidade"
   }
 }

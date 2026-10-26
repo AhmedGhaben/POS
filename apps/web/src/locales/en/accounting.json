@@ -320,7 +320,11 @@
       "firstName": "First name",
       "lastName": "Last name",
       "ocpcaNumber": "OCPCA number (optional)"
-    }
+    },
+    "staffTitle": "Accounting access for {{name}}",
+    "staffExplain": "An accountant signs in with their own email address, separate from their staff login (one login, one role). We'll send an invitation to this address; their staff login stays as it is.",
+    "staffSameEmail": "Use a different email from their staff login.",
+    "close": "Close"
   },
   "attachments": {
     "title": "Attachments",
