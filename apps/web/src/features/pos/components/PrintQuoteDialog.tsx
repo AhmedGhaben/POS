@@ -50,8 +50,12 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = nul
     if (!open) return;
     setIssuedAt(new Date());
     setForName(customer?.name ?? "");
+    setValidDays("30");
   }, [open, customer]);
 
+  // How many days a saved proforma is valid ("Válida até" on it).
+  const [validDays, setValidDays] = React.useState("30");
+  const validDaysOk = Number.isInteger(Number(validDays)) && Number(validDays) >= 1 && Number(validDays) <= 365;
   const docLines = React.useMemo(() => linesFromCart(lines, saleDiscount), [lines, saleDiscount]);
   // Where sales are fiscal documents a quote can be kept as a Factura Pró-forma
   // (numbered and signed on the server), and sold from later.
@@ -63,6 +67,7 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = nul
         customerId: customer && !customer.isFinalConsumer ? customer.id : undefined,
         lineItems: lines.map((l) => ({ productId: l.product.id, quantity: l.quantity, unitPrice: l.unitPrice ?? undefined, discount: l.discount ?? null })),
         discount: saleDiscount,
+        validDays: Number(validDays) || 30,
       }),
     onSuccess: (document) => {
       onOpenChange(false);
@@ -135,9 +140,20 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = nul
           <Printer className="mr-2 h-4 w-4" /> {format === "receipt" ? t("quote.printSlip") : t("quote.printA4")}
         </Button>
         {fiscal && store && (
-          <Button variant="outline" disabled={lines.length === 0 || proformaMutation.isPending} onClick={() => proformaMutation.mutate()}>
-            <FileCheck className="mr-2 h-4 w-4" /> {t("quote.saveProforma")}
-          </Button>
+          <div className="flex items-end gap-2">
+            <div className="w-36 space-y-1">
+              <Label htmlFor="quote-valid-days">{t("quote.validDays")}</Label>
+              <Input id="quote-valid-days" type="number" min={1} max={365} step={1} value={validDays} onChange={(e) => setValidDays(e.target.value)} />
+            </div>
+            <Button
+              variant="outline"
+              className="flex-1"
+              disabled={lines.length === 0 || proformaMutation.isPending || !validDaysOk}
+              onClick={() => proformaMutation.mutate()}
+            >
+              <FileCheck className="mr-2 h-4 w-4" /> {t("quote.saveProforma")}
+            </Button>
+          </div>
         )}
 
         {open && <PrintArea format={format}>{format === "receipt" ? slip : a4}</PrintArea>}

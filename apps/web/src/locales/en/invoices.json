@@ -67,6 +67,9 @@
       "NUMBER_GAP": "Missing or out-of-order number",
       "KEY_VERSION": "Unknown key version"
     },
-    "firstPrintNote": "First print: the original (and the store's copies). Later prints say \"2ª Via\"."
+    "firstPrintNote": "First print: the original (and the store's copies). Later prints say \"2ª Via\".",
+    "showExpired": "Show expired proformas",
+    "expired": "Expired",
+    "validUntil": "Valid until {{date}}"
   }
 }

@@ -38,8 +38,10 @@ export class FiscalController {
     @Query("search") search?: string,
     @Query("take") take?: string,
     @Query("skip") skip?: string,
+    @Query("includeExpired") includeExpired?: string,
   ) {
     const [items, total] = await this.fiscal.list(user.businessId, {
+      includeExpired: includeExpired === "true",
       storeId,
       type,
       from,

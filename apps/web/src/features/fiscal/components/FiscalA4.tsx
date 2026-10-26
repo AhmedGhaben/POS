@@ -75,6 +75,12 @@ export function FiscalA4({ doc, copyLabel }: { doc: FiscalDocumentDto; /** Origi
                 <td className="pr-3 text-neutral-600">{t("fiscal.recordedAt")}</td>
                 <td className="font-medium">{dateTime(doc.systemEntryDate)}</td>
               </tr>
+              {doc.documentType === "PF" && doc.validUntil && (
+                <tr>
+                  <td className="pr-3 text-neutral-600">{t("fiscal.validUntil")}</td>
+                  <td className="font-medium">{date(doc.validUntil)}</td>
+                </tr>
+              )}
             </tbody>
           </table>
           {doc.status === "A" && (

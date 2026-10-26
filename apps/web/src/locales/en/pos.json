@@ -94,7 +94,8 @@
     "forPlaceholder": "Customer or company name",
     "printSlip": "Print quote",
     "printA4": "Print A4 quotation",
-    "saveProforma": "Save as proforma"
+    "saveProforma": "Save as proforma",
+    "validDays": "Valid for (days)"
   },
   "drawer": {
     "title": "Open cash drawer",
@@ -222,7 +223,8 @@
   "proforma": {
     "selling": "Selling proforma {{number}}: this sale invoices it.",
     "detach": "Sell without it",
-    "notOpen": "Proforma {{number}} isn't open any more."
+    "notOpen": "Proforma {{number}} isn't open any more.",
+    "expired": "Proforma {{number}} has expired. Issue a new one."
   },
   "fiscal": {
     "cantIssueOffline": "This sale can't be completed offline: invoices must be signed when they're issued, and this till has no signing key yet. Connect to the server (or register the till) and try again."

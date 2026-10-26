@@ -15,6 +15,8 @@ import {
 } from "./fiscal-format";
 import { hashExcerpt, hashMessage, SIGNATURE_PROVIDER, type SignatureProvider } from "./signature";
 import { AGT_DOCUMENT_TYPES, agtFlagOn } from "../agt/agt-config";
+import { businessToday, dateValue, isoDate } from "../accounting/accounting-dates";
+import { addDays } from "./saft/period";
 
 type Tx = Prisma.TransactionClient;
 
@@ -66,6 +68,16 @@ export const DOCUMENT_INCLUDE = {
   lines: { include: { taxes: true }, orderBy: { lineNumber: "asc" } },
   referencedDocument: { select: { id: true, documentNo: true, documentType: true, invoiceDate: true } },
 } satisfies Prisma.FiscalDocumentInclude;
+
+/** How long a proforma is valid when not said otherwise. */
+export const PROFORMA_VALID_DAYS = 30;
+
+/** A proforma's "Válida até" (YYYY-MM-DD) and whether that has passed; null for other documents. */
+function proformaValidity(terms: { validUntil: Date } | null, today: string): { validUntil: string | null; expired: boolean } {
+  if (!terms) return { validUntil: null, expired: false };
+  const validUntil = isoDate(terms.validUntil);
+  return { validUntil, expired: validUntil < today };
+}
 
 /** On a sale: enough to print the number and know its state. */
 export const DOCUMENT_SUMMARY = {
@@ -155,6 +167,10 @@ export class FiscalService {
         select: { id: true },
       });
       if (!referenced) throw new BadRequestException("That proforma isn't open any more");
+      const terms = await tx.proformaTerms.findUnique({ where: { documentId: referenced.id } });
+      if (terms && isoDate(terms.validUntil) < localDateTime(new Date(), input.issuer.timeZone).date) {
+        throw new BadRequestException("That proforma has expired. Issue a new one.");
+      }
     }
     const onCredit = sale.creditAmount.gt(0);
     if (onCredit && input.requested) throw new BadRequestException("A sale on credit is numbered by the server, not the till");
@@ -262,13 +278,17 @@ export class FiscalService {
     }
   }
 
-  /** A proforma (Factura Pró-forma): not a fiscal sale, but numbered, signed and exported as a working document. */
+  /**
+   * A proforma (Factura Pró-forma): not a fiscal sale, but numbered, signed
+   * and exported as a working document. Valid for `validDays` from its date,
+   * kept beside it (ProformaTerms), not on the signed document.
+   */
   async issueProforma(
     tx: Tx,
-    input: { issuer: IssuerContext; userId: string; buyer: Buyer | null; pricesIncludeTax: boolean; lines: SourceLine[]; at?: Date },
+    input: { issuer: IssuerContext; userId: string; buyer: Buyer | null; pricesIncludeTax: boolean; lines: SourceLine[]; at?: Date; validDays?: number },
   ) {
     const lines = input.lines.map((l, i) => documentLine(l, i + 1, input.issuer.config, input.pricesIncludeTax));
-    return this.write(tx, {
+    const document = await this.write(tx, {
       issuer: input.issuer,
       documentType: "PF",
       terminal: null,
@@ -279,6 +299,9 @@ export class FiscalService {
       lines,
       payments: null,
     });
+    const validUntil = addDays(isoDate(document.invoiceDate), input.validDays ?? PROFORMA_VALID_DAYS);
+    await tx.proformaTerms.create({ data: { documentId: document.id, validUntil: dateValue(validUntil) } });
+    return { ...document, validUntil, expired: false };
   }
 
   /**
@@ -521,15 +544,25 @@ export class FiscalService {
     const customer = dto.customerId ? await this.prisma.customer.findFirst({ where: { id: dto.customerId, businessId } }) : null;
     if (dto.customerId && !customer) throw new NotFoundException("Customer not found");
     return this.prisma.$transaction((tx) =>
-      this.issueProforma(tx, { issuer, userId, buyer: customer && !customer.isFinalConsumer ? buyerOf(customer) : null, pricesIncludeTax: store.pricesIncludeTax, lines }),
+      this.issueProforma(tx, { issuer, userId, buyer: customer && !customer.isFinalConsumer ? buyerOf(customer) : null, pricesIncludeTax: store.pricesIncludeTax, lines, validDays: dto.validDays }),
     );
   }
 
   // ---- Reading ----
 
-  list(businessId: string, filter: { storeId?: string; type?: string; from?: string; to?: string; search?: string; take?: number; skip?: number }) {
+  /**
+   * Documents, newest first. Expired proformas are left out unless
+   * `includeExpired`; each proforma says until when it's valid.
+   */
+  async list(
+    businessId: string,
+    filter: { storeId?: string; type?: string; from?: string; to?: string; search?: string; take?: number; skip?: number; includeExpired?: boolean },
+  ) {
+    const business = await this.prisma.business.findUniqueOrThrow({ where: { id: businessId }, select: { country: true } });
+    const today = businessToday(business);
     const where: Prisma.FiscalDocumentWhereInput = {
       businessId,
+      ...(filter.includeExpired ? {} : { NOT: { documentType: "PF", proformaTerms: { validUntil: { lt: dateValue(today) } } } }),
       ...(filter.storeId ? { storeId: filter.storeId } : {}),
       ...(filter.type ? { documentType: filter.type } : {}),
       ...(filter.from || filter.to
@@ -558,10 +591,11 @@ export class FiscalService {
           taxPayable: true,
           storeId: true,
           saleId: true,
+          proformaTerms: { select: { validUntil: true } },
         },
       }),
       this.prisma.fiscalDocument.count({ where }),
-    ]);
+    ]).then(([items, total]) => [items.map(({ proformaTerms, ...d }) => ({ ...d, ...proformaValidity(proformaTerms, today) })), total] as const);
   }
 
   async get(businessId: string, id: string) {
@@ -572,12 +606,15 @@ export class FiscalService {
         // A receipt: what it settled, and the payment's reference.
         customerPayment: { select: { reference: true, allocations: { select: { amount: true, document: { select: { documentNo: true, invoiceDate: true, grossTotal: true } } } } } },
         _count: { select: { prints: true } },
+        proformaTerms: { select: { validUntil: true } },
+        business: { select: { country: true } },
       },
     });
     if (!document) throw new NotFoundException("Document not found");
-    const { customerPayment, _count, ...rest } = document;
+    const { customerPayment, _count, proformaTerms, business, ...rest } = document;
     return {
       ...rest,
+      ...proformaValidity(proformaTerms, businessToday(business)),
       /** Times printed: 0 means the next print is the original. */
       printCount: _count.prints,
       paymentReference: customerPayment?.reference ?? null,

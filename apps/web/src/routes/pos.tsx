@@ -242,6 +242,10 @@ export function PosPage() {
           toast.error(t("proforma.notOpen", { number: doc.documentNo }));
           return;
         }
+        if (doc.expired) {
+          toast.error(t("proforma.expired", { number: doc.documentNo }));
+          return;
+        }
         const products = new Map((await posFetchProducts()).map((p) => [p.id, p]));
         const restored: CartLine[] = doc.lines.flatMap((l) => {
           const product = l.productId ? products.get(l.productId) : undefined;

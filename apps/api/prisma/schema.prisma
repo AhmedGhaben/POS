@@ -1367,12 +1367,27 @@ model FiscalDocument {
   prints          DocumentPrint[]
   /// Its submission to AGT, where the business has e-invoicing on.
   agtSubmission   AgtSubmission?
+  /// A proforma's validity (kept apart: the document row itself is never changed).
+  proformaTerms   ProformaTerms?
 
   @@unique([seriesId, number])
   @@unique([businessId, documentNo])
   @@index([businessId, invoiceDate])
   @@index([saleId])
   @@map("fiscal_documents")
+}
+
+/// How long a proforma (PF) is valid. Its own table so the issued document
+/// (numbered, signed, immutable) is untouched; not part of the hash.
+/// Proformas issued before this have none and don't expire.
+model ProformaTerms {
+  id         String         @id @default(cuid())
+  documentId String         @unique
+  document   FiscalDocument @relation(fields: [documentId], references: [id])
+  validUntil DateTime       @db.Date
+  createdAt  DateTime       @default(now())
+
+  @@map("proforma_terms")
 }
 
 model FiscalDocumentLine {

@@ -1422,6 +1422,9 @@ export interface FiscalDocumentDto {
   /** A receipt (RC): the invoices it settled, and the transfer/cheque reference. */
   settled?: { documentNo: string; invoiceDate: string; grossTotal: string; amount: string }[] | null;
   paymentReference?: string | null;
+  /** A proforma: valid until this day (YYYY-MM-DD), printed as "Válida até"; null when it doesn't expire. */
+  validUntil?: string | null;
+  expired?: boolean;
 }
 
 export interface FiscalDocumentListItemDto {
@@ -1437,6 +1440,10 @@ export interface FiscalDocumentListItemDto {
   taxPayable: string;
   storeId: string;
   saleId: string | null;
+  /** A proforma: valid until this day (YYYY-MM-DD); null for others and older proformas. */
+  validUntil?: string | null;
+  /** A proforma past its validity: it can't be sold, only issued again. */
+  expired?: boolean;
 }
 
 /** GET /fiscal-documents/series/till/:terminalId */
@@ -1452,6 +1459,8 @@ export interface CreateProformaDto {
   customerId?: string;
   lineItems: { productId: string; quantity: number; unitPrice?: number; discount?: DiscountInput | null }[];
   discount?: DiscountInput | null;
+  /** Days it's valid from its date; 30 when not given. */
+  validDays?: number;
 }
 
 /** A break in a series' hash chain, for managers (GET /fiscal-documents/alerts). */

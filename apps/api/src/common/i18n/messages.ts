@@ -233,6 +233,10 @@ const EXACT: Record<string, Translations> = {
     "pt-BR": "Escolha uma loja para a coluna Estoque",
   },
   "Supplier not found": { "pt-PT": "Fornecedor não encontrado", "pt-BR": "Fornecedor não encontrado" },
+  "That proforma has expired. Issue a new one.": {
+    "pt-PT": "Esta factura pró-forma expirou. Emita uma nova.",
+    "pt-BR": "Esta fatura pró-forma expirou. Emita uma nova.",
+  },
   "Expense not found": { "pt-PT": "Despesa não encontrada", "pt-BR": "Despesa não encontrada" },
   "This expense was cancelled": { "pt-PT": "Esta despesa foi cancelada", "pt-BR": "Esta despesa foi cancelada" },
   "This expense was already cancelled": { "pt-PT": "Esta despesa já foi cancelada", "pt-BR": "Esta despesa já foi cancelada" },

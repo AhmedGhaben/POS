@@ -94,7 +94,8 @@
     "forPlaceholder": "Nome do cliente ou da empresa",
     "printSlip": "Imprimir orçamento",
     "printA4": "Imprimir orçamento A4",
-    "saveProforma": "Guardar como pró-forma"
+    "saveProforma": "Guardar como pró-forma",
+    "validDays": "Validade (dias)"
   },
   "drawer": {
     "title": "Abrir gaveta de dinheiro",
@@ -222,7 +223,8 @@
   "proforma": {
     "selling": "A vender a pró-forma {{number}}: esta venda factura-a.",
     "detach": "Vender sem ela",
-    "notOpen": "A pró-forma {{number}} já não está em aberto."
+    "notOpen": "A pró-forma {{number}} já não está em aberto.",
+    "expired": "A pró-forma {{number}} expirou. Emita uma nova."
   },
   "fiscal": {
     "cantIssueOffline": "Esta venda não pode ser concluída sem ligação: as facturas têm de ser assinadas quando são emitidas e esta caixa ainda não tem chave de assinatura. Ligue-se ao servidor (ou registe a caixa) e tente novamente."

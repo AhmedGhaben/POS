@@ -11,6 +11,8 @@ export interface FiscalDocumentFilter {
   to?: string;
   search?: string;
   storeId?: string;
+  /** Expired proformas too (hidden by default). */
+  includeExpired?: boolean;
   page: number;
   pageSize: number;
 }
@@ -20,6 +22,7 @@ export function fetchFiscalDocuments(f: FiscalDocumentFilter) {
   for (const key of ["type", "from", "to", "search", "storeId"] as const) {
     if (f[key]) params.set(key, f[key]!);
   }
+  if (f.includeExpired) params.set("includeExpired", "true");
   return apiClient.get<Pick<PagedDto<FiscalDocumentListItemDto>, "items" | "total">>(`/fiscal-documents?${params}`);
 }
 

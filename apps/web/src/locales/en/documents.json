@@ -103,6 +103,7 @@
     "documentTotal": "Document total",
     "amountSettled": "Amount paid",
     "received": "Received",
-    "paymentReference": "Reference: {{reference}}"
+    "paymentReference": "Reference: {{reference}}",
+    "validUntil": "Valid until"
   }
 }

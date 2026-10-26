@@ -67,6 +67,9 @@
       "NUMBER_GAP": "Número faltando ou fora de ordem",
       "KEY_VERSION": "Versão de chave desconhecida"
     },
-    "firstPrintNote": "Primeira impressão: o original (e as cópias da loja). As seguintes dizem \"2ª Via\"."
+    "firstPrintNote": "Primeira impressão: o original (e as cópias da loja). As seguintes dizem \"2ª Via\".",
+    "showExpired": "Mostrar pró-formas expiradas",
+    "expired": "Expirada",
+    "validUntil": "Válida até {{date}}"
   }
 }
