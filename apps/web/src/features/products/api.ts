@@ -20,6 +20,11 @@ export function updateProduct(id: string, dto: UpdateProductDto) {
   return apiClient.patch<ProductDto>(`/products/${id}`, dto);
 }
 
+/** Only a product with no sales, purchases, stock or document history (409 otherwise: archive it). */
+export function deleteProduct(id: string) {
+  return apiClient.delete<void>(`/products/${id}`);
+}
+
 export interface ImportProductsRequest {
   rows: ImportRowPayload[];
   updateExisting: boolean;

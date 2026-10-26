@@ -154,6 +154,32 @@ export class ProductsService {
     });
   }
 
+  /**
+   * Deletes a product for good, only when nothing refers to it: no sale,
+   * return, purchase or transfer lines, no stock movements and no fiscal
+   * document lines (FiscalDocumentLine.productId has no foreign key, so it's
+   * checked here). Anything with history is archived instead (isActive).
+   */
+  async remove(businessId: string, productId: string) {
+    const product = await this.prisma.product.findFirst({ where: { id: productId, businessId }, select: { id: true } });
+    if (!product) throw new NotFoundException("Product not found");
+    const [counts, documentLines] = await Promise.all([
+      this.prisma.product.findUniqueOrThrow({
+        where: { id: productId },
+        select: { _count: { select: { saleLineItems: true, returnLineItems: true, purchaseLineItems: true, transferLineItems: true, stockMovements: true } } },
+      }),
+      this.prisma.fiscalDocumentLine.count({ where: { productId } }),
+    ]);
+    if (Object.values(counts._count).some((n) => n > 0) || documentLines > 0) {
+      throw new ConflictException("This product has sales, purchases or stock history. Archive it instead.");
+    }
+    await this.prisma.$transaction([
+      this.prisma.inventoryItem.deleteMany({ where: { productId } }),
+      this.prisma.productPhoto.deleteMany({ where: { productId } }),
+      this.prisma.product.delete({ where: { id: productId } }),
+    ]);
+  }
+
   async removePhoto(businessId: string, productId: string) {
     await this.findOwned(businessId, productId);
     return this.prisma.$transaction(async (tx) => {

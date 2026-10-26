@@ -222,6 +222,10 @@ const EXACT: Record<string, Translations> = {
     "pt-BR": "Nenhum produto com esse código de barras",
   },
   "SKU already exists": { "pt-PT": "Essa referência já existe", "pt-BR": "Esse código já existe" },
+  "This product has sales, purchases or stock history. Archive it instead.": {
+    "pt-PT": "Este produto tem vendas, compras ou movimentos de stock. Arquive-o em vez de o eliminar.",
+    "pt-BR": "Este produto tem vendas, compras ou movimentos de estoque. Arquive-o em vez de excluí-lo.",
+  },
   "Category not found": { "pt-PT": "Categoria não encontrada", "pt-BR": "Categoria não encontrada" },
   "Category already exists": { "pt-PT": "Essa categoria já existe", "pt-BR": "Essa categoria já existe" },
   "One or more products were not found": {
