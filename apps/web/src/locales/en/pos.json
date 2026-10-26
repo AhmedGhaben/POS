@@ -74,7 +74,10 @@
     "recentSales": "Recent sales",
     "saleDiscount": "Discount on the whole sale",
     "changeSaleDiscount": "Change the sale discount",
-    "exemptionMissing": "\"{{name}}\" is exempt from IVA without a reason, so it can't be sold. A manager must fix the product first (Products → Products to review)."
+    "exemptionMissing": "\"{{name}}\" is exempt from IVA without a reason, so it can't be sold. A manager must fix the product first (Products → Products to review).",
+    "emailSent": "Receipt emailed",
+    "emailFailed": "The receipt email didn't go: {{error}}",
+    "emailQueued": "The receipt will be emailed when the sale syncs"
   },
   "complete": {
     "title": "Sale complete",
@@ -129,7 +132,9 @@
     "cancelled": "Cancelled",
     "waiting": "Waiting to upload",
     "reprint": "Reprint receipt",
-    "cancel": "Cancel sale"
+    "cancel": "Cancel sale",
+    "emailSent": "Emailed",
+    "emailFailed": "Email failed"
   },
   "void": {
     "title": "Cancel sale {{number}}?",

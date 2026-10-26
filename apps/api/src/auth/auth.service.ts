@@ -264,7 +264,7 @@ export class AuthService {
         accessibleStoreIds,
       },
       stores: accessibleStores,
-      business: toBusinessSettings(business),
+      business: toBusinessSettings(business, this.mail.configured),
     };
   }
 

@@ -49,7 +49,12 @@ export interface BusinessDto {
   invoiceFooter: string | null;
   /** Relative to the API root (prefix with /api in the web app); null without a logo. */
   logoUrl: string | null;
+  /** The server can send email: without it the till hides "Email receipt". */
+  emailEnabled?: boolean;
 }
+
+/** Whether the receipt emailed with a sale went (GET /sales/:id/receipt-email). */
+export type ReceiptEmailStatus = "PENDING" | "SENT" | "FAILED";
 
 export type UpdateBusinessDto = Partial<
   Pick<
@@ -1013,6 +1018,9 @@ export interface SaleDto {
   /** The till's idempotency key for this sale. */
   clientId?: string | null;
   /** Client-only: a receipt built on the till for a sale still waiting in the outbox. */
+  /** The receipt emailed to the customer; null when none was asked for. */
+  receiptEmailStatus?: ReceiptEmailStatus | null;
+  receiptEmailError?: string | null;
   queued?: boolean;
   lineItems: SaleLineItemDto[];
   /** Its Factura-Recibo (where sales are fiscal documents; absent on older sales). */

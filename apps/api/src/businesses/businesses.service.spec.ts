@@ -19,7 +19,7 @@ function buildService() {
       update: jest.fn().mockImplementation(({ data }) => Promise.resolve({ ...BUSINESS, ...data })),
     },
   };
-  return { service: new BusinessesService(prisma as any), prisma };
+  return { service: new BusinessesService(prisma as any, { configured: false } as any), prisma };
 }
 
 const dataUrl = (mime: string, bytes: Buffer) => `data:${mime};base64,${bytes.toString("base64")}`;

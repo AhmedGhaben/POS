@@ -74,7 +74,10 @@
     "recentSales": "Vendas recentes",
     "saleDiscount": "Desconto na venda toda",
     "changeSaleDiscount": "Alterar o desconto da venda",
-    "exemptionMissing": "«{{name}}» está isento de IVA sem motivo de isenção e não pode ser vendido. Um gestor tem de corrigir o produto primeiro (Produtos → Produtos a rever)."
+    "exemptionMissing": "«{{name}}» está isento de IVA sem motivo de isenção e não pode ser vendido. Um gestor tem de corrigir o produto primeiro (Produtos → Produtos a rever).",
+    "emailSent": "Recibo enviado por email",
+    "emailFailed": "O email com o recibo não foi enviado: {{error}}",
+    "emailQueued": "O recibo será enviado por email quando a venda for sincronizada"
   },
   "complete": {
     "title": "Venda concluída",
@@ -129,7 +132,9 @@
     "cancelled": "Anulada",
     "waiting": "A aguardar envio",
     "reprint": "Reimprimir talão",
-    "cancel": "Anular venda"
+    "cancel": "Anular venda",
+    "emailSent": "Enviado por email",
+    "emailFailed": "Email falhou"
   },
   "void": {
     "title": "Anular a venda {{number}}?",

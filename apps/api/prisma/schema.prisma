@@ -739,6 +739,10 @@ model Sale {
   paymentMethod      PaymentMethod
   amountTendered     Decimal?      @db.Decimal(14, 2)
   changeDue          Decimal?      @db.Decimal(14, 2)
+  /// The receipt emailed to the customer: PENDING while sending, then SENT or FAILED (null: none asked).
+  receiptEmailStatus String?
+  /// Why the email failed, for the cashier.
+  receiptEmailError  String?
   status             SaleStatus    @default(COMPLETED)
   /// Set when the sale is cancelled (VOIDED). Reason: WRONG_ITEMS,
   /// CUSTOMER_CHANGED_MIND, PAYMENT_PROBLEM, TRAINING or OTHER.

@@ -38,6 +38,29 @@ export interface MailTexts {
     taxIncluded: string;
     thanks: string;
   };
+  /** A sale's fiscal document (Factura-Recibo...) sent to the customer. */
+  document: {
+    subject: (title: string, number: string, store: string) => string;
+    intro: (title: string, number: string) => string;
+    attached: string;
+    date: string;
+    customer: string;
+    taxId: string;
+    code: string;
+    description: string;
+    qty: string;
+    unitPrice: string;
+    iva: string;
+    amount: string;
+    net: string;
+    taxTotal: string;
+    gross: string;
+    discount: string;
+    payments: string;
+    tendered: string;
+    change: string;
+    thanks: string;
+  };
   lowStock: {
     subject: (store: string) => string;
     heading: (store: string) => string;
@@ -94,6 +117,28 @@ const TEXTS: Record<Exclude<Language, "pt-AO">, MailTexts> = {
       taxIncluded: "Tax included",
       thanks: "Thank you for your purchase!",
     },
+    document: {
+      subject: (title, number, store) => `${title} ${number} — ${store}`,
+      intro: (title, number) => `Here is your ${title} ${number}. Keep it as proof of purchase.`,
+      attached: "The document is also attached, to keep or print.",
+      date: "Date",
+      customer: "Customer",
+      taxId: "NIF",
+      code: "Code",
+      description: "Description",
+      qty: "Qty",
+      unitPrice: "Unit price",
+      iva: "IVA",
+      amount: "Amount",
+      net: "Total without IVA",
+      taxTotal: "IVA",
+      gross: "Total",
+      discount: "Discounts",
+      payments: "Paid with",
+      tendered: "Amount handed over",
+      change: "Change",
+      thanks: "Thank you for your purchase!",
+    },
     lowStock: {
       subject: (store) => `Low stock alert — ${store}`,
       heading: (store) => `Low stock at ${store}`,
@@ -148,6 +193,28 @@ const TEXTS: Record<Exclude<Language, "pt-AO">, MailTexts> = {
       taxIncluded: "IVA incluído",
       thanks: "Obrigado pela sua compra!",
     },
+    document: {
+      subject: (title, number, store) => `${title} ${number} — ${store}`,
+      intro: (title, number) => `Segue a sua ${title} ${number}. Guarde-a como comprovativo da compra.`,
+      attached: "O documento segue também em anexo, para guardar ou imprimir.",
+      date: "Data",
+      customer: "Cliente",
+      taxId: "NIF",
+      code: "Código",
+      description: "Descrição",
+      qty: "Qtd.",
+      unitPrice: "Preço unit.",
+      iva: "IVA",
+      amount: "Valor",
+      net: "Total sem IVA",
+      taxTotal: "IVA",
+      gross: "Total",
+      discount: "Descontos",
+      payments: "Pago com",
+      tendered: "Valor entregue",
+      change: "Troco",
+      thanks: "Obrigado pela sua compra!",
+    },
     lowStock: {
       subject: (store) => `Alerta de stock baixo — ${store}`,
       heading: (store) => `Stock baixo em ${store}`,
@@ -200,6 +267,28 @@ const TEXTS: Record<Exclude<Language, "pt-AO">, MailTexts> = {
       discount: "Desconto",
       tax: "Impostos",
       taxIncluded: "Impostos inclusos",
+      thanks: "Obrigado pela sua compra!",
+    },
+    document: {
+      subject: (title, number, store) => `${title} ${number} — ${store}`,
+      intro: (title, number) => `Segue sua ${title} ${number}. Guarde como comprovante da compra.`,
+      attached: "O documento também vai em anexo, para guardar ou imprimir.",
+      date: "Data",
+      customer: "Cliente",
+      taxId: "NIF",
+      code: "Código",
+      description: "Descrição",
+      qty: "Qtd.",
+      unitPrice: "Preço unit.",
+      iva: "IVA",
+      amount: "Valor",
+      net: "Total sem IVA",
+      taxTotal: "IVA",
+      gross: "Total",
+      discount: "Descontos",
+      payments: "Pago com",
+      tendered: "Valor entregue",
+      change: "Troco",
       thanks: "Obrigado pela sua compra!",
     },
     lowStock: {

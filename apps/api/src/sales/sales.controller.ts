@@ -43,6 +43,12 @@ export class SalesController {
     return this.salesService.list(storeId, { from, to, status, cashierId, search: search?.trim() || undefined, ...paging(take, skip) });
   }
 
+  /** Whether the receipt emailed with a sale went: PENDING, SENT or FAILED (with why). */
+  @Get(":id/receipt-email")
+  receiptEmail(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.salesService.receiptEmailStatus(user, id);
+  }
+
   @Post()
   @TillUpload()
   @UseGuards(StoreAccessGuard)

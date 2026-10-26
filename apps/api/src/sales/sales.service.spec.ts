@@ -418,3 +418,69 @@ describe("offlineReceiptNumber", () => {
     expect(offlineReceiptNumber("cmstore0000abcd", "3f2a9c1e-7b4d-4e8f-9a01-23456789abcd")).toBe("OFF-ABCD-3F2A9C1E7B4D");
   });
 });
+
+describe("SalesService#emailReceipt", () => {
+  const document = {
+    documentType: "FR",
+    documentNo: "FR POS001-2026/57",
+    status: "N",
+    invoiceDate: new Date("2026-10-27"),
+    hashExcerpt: "pqf3",
+    seller: { name: "Loja Teste", taxId: "5000123456", country: "AO" },
+    buyerName: "Consumidor final",
+    buyerTaxId: "999999999",
+    currency: "AOA",
+    netTotal: "1535.09",
+    taxPayable: "214.91",
+    grossTotal: "1750.00",
+    discountTotal: "0",
+    payments: [{ method: "CASH", mechanism: "NU", amount: "1250.00" }, { method: "CARD", mechanism: "CD", amount: "500.00" }],
+    lines: [{ productCode: "P1", productDescription: "Coisa", quantity: "1", unit: "un", unitPrice: "1535.09", netAmount: "1535.09", taxes: [{ percentage: "14", exemptionCode: null }] }],
+  };
+  const sale = {
+    id: "sale-1",
+    storeId: "store-1",
+    receiptNumber: "R-1",
+    amountTendered: new Prisma.Decimal(2000),
+    changeDue: new Prisma.Decimal(750),
+    fiscalDocuments: [{ id: "doc-1", documentType: "FR" }],
+  } as any;
+
+  function setup(send: jest.Mock) {
+    const prisma = {
+      store: { findUnique: jest.fn().mockResolvedValue({ name: "Loja Teste", country: "AO", documentLanguage: null, business: { currency: "AOA", language: "pt-AO" } }) },
+      sale: { update: jest.fn().mockResolvedValue({}) },
+    };
+    const mail = { sendDocumentEmail: send, sendReceiptEmail: jest.fn() };
+    const fiscal = { get: jest.fn().mockResolvedValue(document), certificate: jest.fn().mockReturnValue(null) };
+    const service = new SalesService(prisma as any, mail as any, {} as any, {} as any, fiscal as any, {} as any);
+    return { service, prisma, mail, fiscal };
+  }
+
+  it("sends the Factura-Recibo with its number, the seller's NIF, the hash excerpt and the change, and records SENT", async () => {
+    const send = jest.fn().mockResolvedValue({ sent: true });
+    const { service, prisma } = setup(send);
+
+    expect(await service.emailReceipt("biz-1", "cliente@example.com", sale)).toEqual({ sent: true });
+
+    const [to, params] = send.mock.calls[0];
+    expect(to).toBe("cliente@example.com");
+    expect(params.subject).toContain("Factura-Recibo FR POS001-2026/57");
+    expect(params.fileName).toBe("FR_POS001-2026_57.html");
+    expect(params.html).toContain("NIF: 5000123456");
+    expect(params.html).toContain("pqf3-Processado por programa não validado");
+    expect(params.html).toContain("Troco");
+    expect(params.html).toContain("750,00 Kz");
+    expect(prisma.sale.update).toHaveBeenCalledWith({ where: { id: "sale-1" }, data: { receiptEmailStatus: "SENT", receiptEmailError: null } });
+  });
+
+  it("records FAILED with the reason, and never throws", async () => {
+    const { service, prisma } = setup(jest.fn().mockResolvedValue({ sent: false, error: "Email isn't set up on this server" }));
+    expect((await service.emailReceipt("biz-1", "a@b.co", sale)).sent).toBe(false);
+    expect(prisma.sale.update).toHaveBeenCalledWith({ where: { id: "sale-1" }, data: { receiptEmailStatus: "FAILED", receiptEmailError: "Email isn't set up on this server" } });
+
+    const crashing = setup(jest.fn().mockRejectedValue(new Error("boom")));
+    await expect(crashing.service.emailReceipt("biz-1", "a@b.co", sale)).resolves.toEqual({ sent: false, error: "boom" });
+    expect(crashing.prisma.sale.update).toHaveBeenCalledWith({ where: { id: "sale-1" }, data: { receiptEmailStatus: "FAILED", receiptEmailError: "boom" } });
+  });
+});
