@@ -31,6 +31,8 @@ interface AuthState {
   setBusiness: (business: BusinessDto) => void;
   setPermissions: (permissions: PermissionMap) => void;
   updateStore: (store: StoreDto) => void;
+  /** A store just created: it can be picked, staffed and given tills right away. */
+  addStore: (store: StoreDto) => void;
   markEmailVerified: () => void;
   setUserLanguage: (language: string) => void;
   setUserDisplaySize: (displaySize: number | null) => void;
@@ -67,6 +69,7 @@ export const useAuthStore = create<AuthState>()(
       setBusiness: (business) => set({ business, tillCache: { business, stores: get().stores } }),
       setPermissions: (permissions) => set({ permissions }),
       updateStore: (store) => set({ stores: get().stores.map((s) => (s.id === store.id ? store : s)) }),
+      addStore: (store) => set({ stores: [...get().stores.filter((s) => s.id !== store.id), store] }),
       markEmailVerified: () => {
         const user = get().user;
         if (user) set({ user: { ...user, emailVerified: true } });

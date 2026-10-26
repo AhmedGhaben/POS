@@ -104,7 +104,14 @@
     "printingHint": "Printers, paper width and calibration are set on each till (This device). Any print can change copies or printer just for itself.",
     "documentLanguage": "Document language",
     "documentLanguageAuto": "From the country: {{language}}",
-    "documentLanguageHint": "Receipts, invoices, quotes, shift and other reports, their PDF and CSV exports and emails to customers. Each person's screens keep their own language."
+    "documentLanguageHint": "Receipts, invoices, quotes, shift and other reports, their PDF and CSV exports and emails to customers. Each person's screens keep their own language.",
+    "add": "Add store",
+    "created": "Store added",
+    "createdTitle": "{{name}} is ready",
+    "nextSteps": "Next:",
+    "nextStaff": "Give staff access to it (Employees)",
+    "nextTills": "Pair a till with it under Tills, further down this page",
+    "done": "Done"
   },
   "tills": {
     "title": "Tills",

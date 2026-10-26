@@ -95,6 +95,18 @@ export interface UpdateStoreDto {
   documentLanguage?: string | null;
 }
 
+/** POST /stores (owner). What isn't given comes from the business's country. */
+export interface CreateStoreDto {
+  name: string;
+  address?: string | null;
+  city?: string | null;
+  province?: string | null;
+  ivaRegime?: IvaRegime;
+  /** null = the country's. */
+  documentLanguage?: string | null;
+  timezone?: string;
+}
+
 /** What the till prints when a sale completes: the slip or the A4 document. */
 export type SaleDocumentFormat = "RECEIPT" | "A4";
 

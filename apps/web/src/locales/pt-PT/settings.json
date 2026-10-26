@@ -104,7 +104,14 @@
     "printingHint": "As impressoras, a largura do papel e a calibração definem-se em cada caixa (Este dispositivo). Qualquer impressão pode mudar as cópias ou a impressora só para si.",
     "documentLanguage": "Idioma dos documentos",
     "documentLanguageAuto": "O do país: {{language}}",
-    "documentLanguageHint": "Talões, faturas, orçamentos, relatórios de turno e outros, as suas exportações em PDF e CSV e os emails aos clientes. Os ecrãs de cada pessoa mantêm o idioma dela."
+    "documentLanguageHint": "Talões, faturas, orçamentos, relatórios de turno e outros, as suas exportações em PDF e CSV e os emails aos clientes. Os ecrãs de cada pessoa mantêm o idioma dela.",
+    "add": "Adicionar loja",
+    "created": "Loja adicionada",
+    "createdTitle": "{{name}} está pronta",
+    "nextSteps": "A seguir:",
+    "nextStaff": "Dar acesso à equipa (Funcionários)",
+    "nextTills": "Emparelhar uma caixa em Caixas, mais abaixo nesta página",
+    "done": "Concluído"
   },
   "tills": {
     "title": "Caixas",
