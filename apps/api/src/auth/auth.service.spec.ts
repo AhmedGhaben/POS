@@ -217,6 +217,65 @@ describe("AuthService", () => {
         data: { revokedAt: expect.any(Date) },
       });
     });
+    it("gives a token rotated moments ago another new token instead of revoking everything", async () => {
+      const prisma = buildPrismaMock();
+      prisma.refreshToken.findUnique
+        .mockResolvedValueOnce({
+          id: "rt-old",
+          userId: OWNER.id,
+          revokedAt: new Date(Date.now() - 5_000),
+          replacedByTokenId: "rt-next",
+          expiresAt: new Date(Date.now() + 60_000),
+        })
+        .mockResolvedValueOnce({ id: "rt-next", revokedAt: null, replacedByTokenId: null }); // its successor
+      prisma.user.findUnique.mockResolvedValue(OWNER);
+      const { service } = buildService(prisma);
+
+      const result = await service.refresh("raced-token");
+
+      expect(result.accessToken).toBe("signed-jwt");
+      expect(result.refreshToken).toHaveLength(64);
+      expect(prisma.refreshToken.create).toHaveBeenCalledTimes(1);
+      expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
+      // The old token keeps pointing at its first successor.
+      expect(prisma.refreshToken.update).not.toHaveBeenCalled();
+    });
+
+    it("still treats reuse after the grace window as theft", async () => {
+      const prisma = buildPrismaMock();
+      prisma.refreshToken.findUnique.mockResolvedValue({
+        id: "rt-old",
+        userId: OWNER.id,
+        revokedAt: new Date(Date.now() - 61_000),
+        replacedByTokenId: "rt-next",
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+      const { service } = buildService(prisma);
+
+      await expect(service.refresh("late-token")).rejects.toThrow(UnauthorizedException);
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { userId: OWNER.id, revokedAt: null },
+        data: { revokedAt: expect.any(Date) },
+      });
+    });
+
+    it("refuses a just-rotated token once its session has been logged out, without revoking everything", async () => {
+      const prisma = buildPrismaMock();
+      prisma.refreshToken.findUnique
+        .mockResolvedValueOnce({
+          id: "rt-old",
+          userId: OWNER.id,
+          revokedAt: new Date(Date.now() - 5_000),
+          replacedByTokenId: "rt-next",
+          expiresAt: new Date(Date.now() + 60_000),
+        })
+        .mockResolvedValueOnce({ id: "rt-next", revokedAt: new Date(), replacedByTokenId: null });
+      const { service } = buildService(prisma);
+
+      await expect(service.refresh("after-logout")).rejects.toThrow(UnauthorizedException);
+      expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+      expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
+    });
   });
 
   describe("resetPassword", () => {

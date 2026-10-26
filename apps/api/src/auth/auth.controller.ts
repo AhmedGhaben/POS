@@ -96,6 +96,9 @@ export class AuthController {
   }
 
   @Public()
+  // Every tab and till refreshes on its own, often from one shop IP: a
+  // refresh refused by the rate limit used to sign people out.
+  @Throttle({ default: { limit: 600, ttl: 60_000 } })
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {

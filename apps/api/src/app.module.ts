@@ -2,8 +2,9 @@ import { Module } from "@nestjs/common";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
 import { ScheduleModule } from "@nestjs/schedule";
-import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
+import { ThrottlerModule } from "@nestjs/throttler";
 import { PrismaModule } from "./prisma/prisma.module";
+import { TillThrottlerGuard } from "./common/guards/till-throttler.guard";
 import { AuthModule } from "./auth/auth.module";
 import { BusinessesModule } from "./businesses/businesses.module";
 import { StoresModule } from "./stores/stores.module";
@@ -45,7 +46,8 @@ import { AccountingModule } from "./accounting/accounting.module";
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
-    // Global default: 100 req/min per IP. Sensitive auth endpoints (login,
+    // Global default: 100 req/min per IP (registered tills count per till,
+    // see TillThrottlerGuard). Sensitive auth endpoints (login,
     // forgot-password, reset-password) set a stricter per-route limit.
     // Disabled under Jest (NODE_ENV=test by default) so e2e specs calling
     // /auth/login repeatedly don't have to manage a shared request budget.
@@ -90,7 +92,7 @@ import { AccountingModule } from "./accounting/accounting.module";
     // Global order matters: throttle first (reject abusive traffic before
     // doing any auth work), then authenticate, then check @Roles() metadata,
     // then any @RequiresPermission() fine-grained check.
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: TillThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },

@@ -27,6 +27,11 @@ const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 /** Same cost as UsersService and resetPassword. */
 const SALT_ROUNDS = 12;
+/**
+ * How long a just-rotated refresh token still gets a new token (two tabs or
+ * a waking laptop refreshing at once) instead of counting as theft.
+ */
+const REFRESH_GRACE_MS = 60 * 1000;
 /** How long after an offline PIN check the till may pick the session up. */
 const PIN_RESUME_WINDOW_MS = 12 * 60 * 60 * 1000;
 
@@ -269,6 +274,12 @@ export class AuthService {
    * again, that's a signal of token theft (the old token was exfiltrated and
    * used after the legitimate client rotated past it) — every refresh token
    * for that user is revoked as a precaution.
+   *
+   * Except just after a rotation: two tabs, or a laptop waking up, can send
+   * the same token at once, and the second arrives after the first rotated
+   * it. Within REFRESH_GRACE_MS of that rotation the token gets another new
+   * token instead (only hashes are stored, so it can't be the same one),
+   * unless the session was ended since (logout, password change).
    */
   async refresh(rawRefreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
     const tokenHash = hashToken(rawRefreshToken);
@@ -276,7 +287,11 @@ export class AuthService {
     if (!stored) {
       throw new UnauthorizedException("Invalid or expired refresh token");
     }
-    if (stored.revokedAt) {
+    const inGrace = stored.revokedAt ? await this.justRotated(stored) : false;
+    if (stored.revokedAt && inGrace === null) {
+      throw new UnauthorizedException("Invalid or expired refresh token");
+    }
+    if (stored.revokedAt && !inGrace) {
       await this.prisma.refreshToken.updateMany({
         where: { userId: stored.userId, revokedAt: null },
         data: { revokedAt: new Date() },
@@ -295,15 +310,32 @@ export class AuthService {
     // An accountant stays in the client they were in (while it still gives them access).
     const businessId = user.role === Role.ACCOUNTANT ? await this.accountantBusiness(user.id, stored.businessId) : user.businessId;
     const newRawToken = await this.issueRefreshToken(user.id, user.role === Role.ACCOUNTANT ? businessId : null);
-    const newRecord = await this.prisma.refreshToken.findUnique({
-      where: { tokenHash: hashToken(newRawToken) },
-    });
-    await this.prisma.refreshToken.update({
-      where: { id: stored.id },
-      data: { revokedAt: new Date(), replacedByTokenId: newRecord?.id },
-    });
+    if (!inGrace) {
+      const newRecord = await this.prisma.refreshToken.findUnique({
+        where: { tokenHash: hashToken(newRawToken) },
+      });
+      await this.prisma.refreshToken.update({
+        where: { id: stored.id },
+        data: { revokedAt: new Date(), replacedByTokenId: newRecord?.id },
+      });
+    }
 
     return { accessToken: this.signAccessToken(user, businessId), refreshToken: newRawToken };
+  }
+
+  /**
+   * For a revoked token: true when it was rotated less than REFRESH_GRACE_MS
+   * ago and the session it was rotated into is still going (a race, not
+   * theft); null when it was rotated just now but that session has since
+   * ended (refuse, but it's no sign of theft); false otherwise.
+   */
+  private async justRotated(stored: { revokedAt: Date | null; replacedByTokenId: string | null }): Promise<boolean | null> {
+    if (!stored.revokedAt || !stored.replacedByTokenId) return false;
+    if (Date.now() - stored.revokedAt.getTime() > REFRESH_GRACE_MS) return false;
+    const successor = await this.prisma.refreshToken.findUnique({ where: { id: stored.replacedByTokenId } });
+    // Rotated again is still the same session; revoked without a successor means it was ended.
+    if (!successor || (successor.revokedAt && !successor.replacedByTokenId)) return null;
+    return true;
   }
 
   /** Idempotent — always "succeeds" whether or not the token was still valid. */
