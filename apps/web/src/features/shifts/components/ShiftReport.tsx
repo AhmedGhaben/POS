@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import type { PaymentMethod, ShiftSummaryDto, StoreDto } from "@pos/shared";
+import type { PaymentMethod, ShiftProductRowDto, ShiftSummaryDto, StoreDto } from "@pos/shared";
 import { SlipHeader } from "@/features/documents/components/SlipHeader";
 import { useDocumentLanguage } from "@/i18n/use-document-language";
 
@@ -25,6 +25,28 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
       <span>{label}</span>
       <span className="shrink-0">{value}</span>
     </div>
+  );
+}
+
+/** Products with quantity and total, then the amount without IVA and the IVA; with totals. */
+function ProductList({ title, rows, storeId }: { title: string; rows: ShiftProductRowDto[]; storeId: string | undefined }) {
+  const { money, qty, lang } = useDocumentLanguage(undefined, storeId);
+  const { t } = useTranslation(["shifts"], { lng: lang });
+  const sum = (key: "net" | "tax" | "total") => rows.reduce((total, r) => total + Number(r[key]), 0);
+  return (
+    <>
+      <hr className="my-2 border-dashed" />
+      <p className="font-semibold">{title}</p>
+      {rows.map((r) => (
+        <div key={r.productId}>
+          <Row label={`${qty(r.quantity, r.unit)} ${r.name}`} value={money(r.total)} />
+          <p className="pl-2 text-[10px]">{t("report.netAndTax", { net: money(r.net), tax: money(r.tax) })}</p>
+        </div>
+      ))}
+      <Row label={t("report.productsNet")} value={money(sum("net"))} />
+      <Row label={t("report.productsTax")} value={money(sum("tax"))} />
+      <Row label={t("report.productsTotal")} value={money(sum("total"))} strong />
+    </>
   );
 }
 
@@ -114,6 +136,10 @@ export function ShiftReport({
             <Row key={c.id} label={`${c.name} (${c.count})`} value={money(c.total)} />
           ))}
         </>
+      )}
+      {s.products && s.products.length > 0 && <ProductList title={t("report.productsSold")} rows={s.products} storeId={store?.id} />}
+      {s.returnedProducts && s.returnedProducts.length > 0 && (
+        <ProductList title={t("report.productsReturned")} rows={s.returnedProducts} storeId={store?.id} />
       )}
       {withSales && s.sales && s.sales.length > 0 && (
         <>

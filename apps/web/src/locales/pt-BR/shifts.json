@@ -87,7 +87,13 @@
     "onCredit": "Vendido a prazo",
     "receipts_one": "{{count}} recebimento de conta",
     "receipts_other": "{{count}} recebimentos de conta",
-    "cashReceipts": "Dinheiro de recebimentos"
+    "cashReceipts": "Dinheiro de recebimentos",
+    "productsSold": "Produtos vendidos",
+    "productsReturned": "Produtos devolvidos",
+    "netAndTax": "sem IVA {{net}} · IVA {{tax}}",
+    "productsNet": "Total sem IVA",
+    "productsTax": "IVA",
+    "productsTotal": "Total"
   },
   "page": {
     "description": "Cada turno de caixa com a contagem do dinheiro. As diferenças aparecem em vermelho.",

@@ -1274,7 +1274,23 @@ export interface ShiftSummaryDto {
   byCashier: { id: string; name: string; count: number; total: string }[];
   /** Every sale in the shift, oldest first (for the report's optional full list). */
   sales?: ShiftSaleLineDto[];
+  /** Products sold in the shift (completed sales), biggest total first; from the server only. */
+  products?: ShiftProductRowDto[];
+  /** Products returned in the shift, biggest total first; from the server only. */
+  returnedProducts?: ShiftProductRowDto[];
   expectedCash: string;
+}
+
+/** A product's quantity and amounts in a shift: net is without IVA, total = net + tax. */
+export interface ShiftProductRowDto {
+  productId: string;
+  name: string;
+  sku: string;
+  unit: string;
+  quantity: string;
+  net: string;
+  tax: string;
+  total: string;
 }
 
 export interface ShiftDto {

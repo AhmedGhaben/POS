@@ -87,7 +87,13 @@
     "onCredit": "Sold on credit",
     "receipts_one": "{{count}} account payment",
     "receipts_other": "{{count}} account payments",
-    "cashReceipts": "Cash from account payments"
+    "cashReceipts": "Cash from account payments",
+    "productsSold": "Products sold",
+    "productsReturned": "Products returned",
+    "netAndTax": "without IVA {{net}} · IVA {{tax}}",
+    "productsNet": "Total without IVA",
+    "productsTax": "IVA",
+    "productsTotal": "Total"
   },
   "page": {
     "description": "Each till shift with its cash count. Differences are shown in red.",
