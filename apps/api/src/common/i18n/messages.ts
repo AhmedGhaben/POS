@@ -233,6 +233,13 @@ const EXACT: Record<string, Translations> = {
     "pt-BR": "Escolha uma loja para a coluna Estoque",
   },
   "Supplier not found": { "pt-PT": "Fornecedor não encontrado", "pt-BR": "Fornecedor não encontrado" },
+  "Expense not found": { "pt-PT": "Despesa não encontrada", "pt-BR": "Despesa não encontrada" },
+  "This expense was cancelled": { "pt-PT": "Esta despesa foi cancelada", "pt-BR": "Esta despesa foi cancelada" },
+  "This expense was already cancelled": { "pt-PT": "Esta despesa já foi cancelada", "pt-BR": "Esta despesa já foi cancelada" },
+  "This expense is already in the accounts. Cancel it and log it again.": {
+    "pt-PT": "Esta despesa já está na contabilidade. Cancele-a e registe-a novamente.",
+    "pt-BR": "Esta despesa já está na contabilidade. Cancele-a e registre-a novamente.",
+  },
   "This supplier has purchases or payments. Archive it instead.": {
     "pt-PT": "Este fornecedor tem compras ou pagamentos. Arquive-o em vez de o eliminar.",
     "pt-BR": "Este fornecedor tem compras ou pagamentos. Arquive-o em vez de excluí-lo.",

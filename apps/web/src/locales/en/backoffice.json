@@ -54,7 +54,18 @@
       "MARKETING": "Marketing",
       "MAINTENANCE": "Maintenance",
       "OTHER": "Other"
-    }
+    },
+    "edit": "Edit expense",
+    "updated": "Expense updated",
+    "cancel": "Cancel expense",
+    "showCancelled": "Show cancelled expenses",
+    "cancelledBadge": "Cancelled",
+    "cancelTitle": "Cancel this expense of {{amount}}?",
+    "cancelExplain": "It stays in the list as cancelled, with your reason. If the amount was wrong, log the expense again.",
+    "cancelPosted": "It is already in the accounts, so a reversing entry (estorno) will be posted. If the amount was wrong, log the expense again.",
+    "cancelReason": "Why (at least 3 characters)",
+    "cancelConfirm": "Cancel expense",
+    "cancelled": "Expense cancelled"
   },
   "sales": {
     "subtitle": "Every sale at {{store}}: find it, reprint it, print its document.",

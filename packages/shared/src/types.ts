@@ -864,7 +864,15 @@ export interface ExpenseDto {
   amount: string;
   incurredAt: string;
   createdAt: string;
+  /** Set when cancelled (listed only with ?includeCancelled=true). */
+  cancelledAt?: string | null;
+  cancelReason?: string | null;
+  /** Posted to accounting: it can no longer be edited, only cancelled. */
+  posted?: boolean;
 }
+
+/** PATCH /expenses/:id, only while the expense isn't posted to accounting. */
+export type UpdateExpenseDto = Partial<Omit<CreateExpenseDto, "storeId">>;
 
 export interface ReturnLineItemInputDto {
   productId: string;

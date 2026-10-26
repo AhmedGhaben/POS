@@ -54,7 +54,18 @@
       "MARKETING": "Marketing",
       "MAINTENANCE": "Manutenção",
       "OTHER": "Outro"
-    }
+    },
+    "edit": "Editar despesa",
+    "updated": "Despesa atualizada",
+    "cancel": "Cancelar despesa",
+    "showCancelled": "Mostrar despesas canceladas",
+    "cancelledBadge": "Cancelada",
+    "cancelTitle": "Cancelar esta despesa de {{amount}}?",
+    "cancelExplain": "Ela fica na lista como cancelada, com o motivo. Se o valor estava errado, registre a despesa de novo.",
+    "cancelPosted": "Ela já está na contabilidade, então será lançado um estorno. Se o valor estava errado, registre a despesa de novo.",
+    "cancelReason": "Motivo (pelo menos 3 caracteres)",
+    "cancelConfirm": "Cancelar despesa",
+    "cancelled": "Despesa cancelada"
   },
   "sales": {
     "subtitle": "Todas as vendas de {{store}}: encontre, reimprima, imprima o documento.",

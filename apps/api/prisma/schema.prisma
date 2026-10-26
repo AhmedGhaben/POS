@@ -1003,6 +1003,10 @@ model Expense {
   amount      Decimal         @db.Decimal(14, 2)
   incurredAt  DateTime        @default(now())
   createdAt   DateTime        @default(now())
+  /// Cancelled instead of deleted; if it was posted, the accounting entry is reversed.
+  cancelledAt   DateTime?
+  cancelledById String?
+  cancelReason  String?
 
   @@index([storeId, incurredAt])
   @@map("expenses")
@@ -1812,7 +1816,7 @@ model AccountingSourceLink {
   id           String        @id @default(cuid())
   businessId   String
   /// FISCAL_DOCUMENT, FISCAL_DOCUMENT_ANNULMENT, PURCHASE, SUPPLIER_PAYMENT,
-  /// SUPPLIER_PAYMENT_CANCEL, EXPENSE, SHIFT_DIFFERENCE, CASH_MOVEMENT, STOCK_ADJUSTMENT
+  /// SUPPLIER_PAYMENT_CANCEL, EXPENSE, EXPENSE_CANCEL, SHIFT_DIFFERENCE, CASH_MOVEMENT, STOCK_ADJUSTMENT
   sourceType   String
   sourceId     String
   entryId      String?

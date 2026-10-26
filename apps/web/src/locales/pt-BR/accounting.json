@@ -39,6 +39,7 @@
       "SUPPLIER_PAYMENT": "Pagamentos a fornecedores",
       "SUPPLIER_PAYMENT_CANCEL": "Pagamentos cancelados",
       "EXPENSE": "Despesas",
+      "EXPENSE_CANCEL": "Despesas canceladas",
       "SHIFT_DIFFERENCE": "Diferenças de caixa",
       "CASH_MOVEMENT": "Entradas/saídas de caixa",
       "STOCK_ADJUSTMENT": "Acertos de inventário"

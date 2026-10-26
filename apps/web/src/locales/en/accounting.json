@@ -39,6 +39,7 @@
       "SUPPLIER_PAYMENT": "Supplier payments",
       "SUPPLIER_PAYMENT_CANCEL": "Cancelled supplier payments",
       "EXPENSE": "Expenses",
+      "EXPENSE_CANCEL": "Cancelled expenses",
       "SHIFT_DIFFERENCE": "Cash differences at close",
       "CASH_MOVEMENT": "Cash in/out of tills",
       "STOCK_ADJUSTMENT": "Stock counts"

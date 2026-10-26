@@ -76,7 +76,7 @@ if "!seeded!"=="1" (
   echo  [ok] Demo store already set up
 ) else (
   echo  Creating the Angolan demo store...
-  docker compose run --rm --no-deps api node apps/api/dist/prisma/seed.js
+  docker compose run --rm --no-deps -e ALLOW_DEMO_SEED=1 api node apps/api/dist/prisma/seed.js
   if errorlevel 1 goto :fail
 )
 

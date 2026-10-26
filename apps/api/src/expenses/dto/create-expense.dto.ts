@@ -1,5 +1,6 @@
 import { ExpenseCategory } from "@prisma/client";
-import { IsDateString, IsEnum, IsNumber, IsOptional, IsString, Min } from "class-validator";
+import { OmitType, PartialType } from "@nestjs/mapped-types";
+import { IsDateString, IsEnum, IsNumber, IsOptional, IsString, MaxLength, Min, MinLength } from "class-validator";
 
 export class CreateExpenseDto {
   @IsString()
@@ -19,4 +20,14 @@ export class CreateExpenseDto {
   @IsOptional()
   @IsDateString()
   incurredAt?: string;
+}
+
+/** PATCH /expenses/:id, only before the expense is posted to accounting. */
+export class UpdateExpenseDto extends PartialType(OmitType(CreateExpenseDto, ["storeId"] as const)) {}
+
+export class CancelExpenseDto {
+  @IsString()
+  @MinLength(3)
+  @MaxLength(200)
+  reason!: string;
 }
