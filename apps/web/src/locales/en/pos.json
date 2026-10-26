@@ -55,7 +55,12 @@
     "tenderedTooLow": "Tendered amount is less than the total",
     "changeDue": "Change due: {{amount}}",
     "split": "+ Split payment",
-    "method": "Payment method"
+    "method": "Payment method",
+    "splitEvenly": "Split evenly",
+    "payers": "Number of payers",
+    "payersCount_one": "{{count}} payer",
+    "payersCount_other": "{{count}} payers",
+    "nonCashOver": "Only cash can be more than what is due. Lower the other methods."
   },
   "checkout": {
     "title": "Checkout",

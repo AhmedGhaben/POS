@@ -8,6 +8,7 @@ import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useMoney } from "@/features/business/use-money";
 import { Combobox } from "@/components/ui/combobox";
+import { splitEvenly, splitPayments } from "@/features/pos/split-payment";
 
 type SplitRow = PaymentDraft["rows"][number];
 
@@ -60,16 +61,13 @@ export function PaymentPanel({ total, onChange, draft, onDraftChange }: PaymentP
     method === PaymentMethod.CASH && tenderedNum !== null ? tenderedNum - total : null;
   const singleInvalidTender = changeDue !== null && changeDue < 0;
 
-  const rowsTotal = rows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-  const remaining = total - rowsTotal;
-  const splitValid = Math.abs(remaining) < 0.01;
+  // Only cash can be overpaid: cash above what's due is tendered, and gives change.
+  const split = splitPayments(rows, total);
+  const [payers, setPayers] = React.useState(2);
 
   React.useEffect(() => {
     if (isSplit) {
-      const payments: SalePaymentInputDto[] = rows
-        .filter((r) => Number(r.amount) > 0)
-        .map((r) => ({ method: r.method, amount: Number(r.amount) }));
-      onChange(payments, splitValid && payments.length > 0);
+      onChange(split.payments, split.status === "ok" && split.payments.length > 0);
     } else {
       const payments: SalePaymentInputDto[] = [
         {
@@ -111,6 +109,10 @@ export function PaymentPanel({ total, onChange, draft, onDraftChange }: PaymentP
     setRows((prev) => prev.filter((r) => r.id !== id));
   }
 
+  function shareEvenly() {
+    setRows((prev) => splitEvenly(prev, total, payers, newRowId));
+  }
+
   if (isSplit) {
     return (
       <div className="space-y-2">
@@ -141,11 +143,34 @@ export function PaymentPanel({ total, onChange, draft, onDraftChange }: PaymentP
             </Button>
           </div>
         ))}
-        <Button variant="outline" size="sm" className="w-full" onClick={addRow}>
-          {t("payment.addMethod")}
-        </Button>
-        <p className={`text-sm ${splitValid ? "text-muted-foreground" : "text-destructive"}`}>
-          {splitValid ? t("payment.fullyAllocated") : t("payment.remaining", { amount: money(remaining) })}
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="flex-1" onClick={addRow}>
+            {t("payment.addMethod")}
+          </Button>
+          <select
+            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+            aria-label={t("payment.payers")}
+            value={payers}
+            onChange={(e) => setPayers(Number(e.target.value))}
+          >
+            {[2, 3, 4, 5, 6].map((n) => (
+              <option key={n} value={n}>
+                {t("payment.payersCount", { count: n })}
+              </option>
+            ))}
+          </select>
+          <Button variant="outline" size="sm" onClick={shareEvenly}>
+            {t("payment.splitEvenly")}
+          </Button>
+        </div>
+        <p className={`text-sm ${split.status === "ok" ? "text-muted-foreground" : "text-destructive"}`}>
+          {split.status === "nonCashOver"
+            ? t("payment.nonCashOver")
+            : split.status === "short"
+              ? t("payment.remaining", { amount: money(split.remaining) })
+              : split.changeDue > 0
+                ? t("payment.changeDue", { amount: money(split.changeDue) })
+                : t("payment.fullyAllocated")}
         </p>
         <button
           type="button"

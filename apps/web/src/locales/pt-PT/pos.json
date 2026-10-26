@@ -55,7 +55,12 @@
     "tenderedTooLow": "O valor entregue é inferior ao total",
     "changeDue": "Troco: {{amount}}",
     "split": "+ Dividir pagamento",
-    "method": "Meio de pagamento"
+    "method": "Meio de pagamento",
+    "splitEvenly": "Dividir em partes iguais",
+    "payers": "Número de pagadores",
+    "payersCount_one": "{{count}} pagador",
+    "payersCount_other": "{{count}} pagadores",
+    "nonCashOver": "Só o dinheiro pode exceder o valor em dívida. Reduza os outros meios."
   },
   "checkout": {
     "title": "Pagamento",
