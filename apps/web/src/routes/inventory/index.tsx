@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Download, History } from "lucide-react";
+import { Download, History, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDocumentLang } from "@/i18n/use-document-language";
 import { unitDecimals, type InventoryItemDto, type StockAtDateRowDto } from "@pos/shared";
@@ -16,8 +16,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuthStore } from "@/features/auth/store";
 import { useMoney } from "@/features/business/use-money";
 import { adjustStock, fetchInventory, fetchStockAt, fetchStockMovements, lastYearEnd } from "@/features/inventory/api";
+import { filterInventory, isLowStock } from "@/features/inventory/filter";
 import { downloadCsv } from "@/lib/csv";
 import { formatDateTime, formatQuantity } from "@/lib/format";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 export function InventoryPage() {
   const { t } = useTranslation(["stock", "common"]);
@@ -30,6 +32,9 @@ export function InventoryPage() {
   const queryClient = useQueryClient();
   const [edits, setEdits] = React.useState<Record<string, string>>({});
   const [historyFor, setHistoryFor] = React.useState<InventoryItemDto | null>(null);
+  const [search, setSearch] = React.useState("");
+  const [lowOnly, setLowOnly] = React.useState(false);
+  const debouncedSearch = useDebouncedValue(search);
 
   const inventoryQuery = useQuery({
     queryKey: ["inventory", currentStoreId],
@@ -59,6 +64,8 @@ export function InventoryPage() {
   // Costs only come back for people who may see them.
   const showCosts = items.some((i) => i.averageCost !== undefined);
   const bookValue = items.reduce((sum, i) => sum + Math.max(Number(i.quantity), 0) * Number(i.averageCost ?? 0), 0);
+  // The CSV export and book value always cover the full list.
+  const shown = filterInventory(items, debouncedSearch, lowOnly);
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
@@ -97,6 +104,23 @@ export function InventoryPage() {
         </Button>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative w-full max-w-xs">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
+          <Input
+            className="pl-8"
+            placeholder={t("inventory.search")}
+            aria-label={t("inventory.search")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" className="h-4 w-4" checked={lowOnly} onChange={(e) => setLowOnly(e.target.checked)} />
+          {t("inventory.lowOnly")}
+        </label>
+      </div>
+
       <Card>
         <CardContent className="overflow-x-auto p-0">
           <Table>
@@ -110,10 +134,10 @@ export function InventoryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((item) => {
+              {shown.map((item) => {
                 const unit = item.product.unit ?? "un";
                 const editValue = edits[item.productId] ?? String(Number(item.quantity));
-                const low = Number(item.quantity) <= Number(item.reorderLevel);
+                const low = isLowStock(item);
                 return (
                   <TableRow key={item.id}>
                     <TableCell>
@@ -169,10 +193,10 @@ export function InventoryPage() {
                   </TableRow>
                 );
               })}
-              {inventoryQuery.data?.length === 0 && (
+              {inventoryQuery.data && shown.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="p-6 text-center text-muted-foreground">
-                    {t("inventory.empty")}
+                    {items.length === 0 ? t("inventory.empty") : t("inventory.noMatches")}
                   </TableCell>
                 </TableRow>
               )}
