@@ -282,6 +282,17 @@ describe("Angola phase 8: fiscal documents (e2e)", () => {
     });
   });
 
+  describe("printing details", () => {
+    it("a sale's document says who issued it and the cash handed over and change, outside the signed document", async () => {
+      const s = (await sale({ payments: [{ method: "CASH", amount: 20, tendered: 50 }] }).expect(201)).body;
+      const fr = await doc(s.fiscalDocuments[0].id);
+      expect(fr).toMatchObject({ issuedBy: { firstName: "Rita", lastName: "Owner" }, amountTendered: "50", changeDue: "30" });
+      const row = await prisma.fiscalDocument.findUniqueOrThrow({ where: { id: fr.id } });
+      expect(row).not.toHaveProperty("issuedBy");
+      expect(row).not.toHaveProperty("changeDue");
+    });
+  });
+
   describe("proformas and listing", () => {
     it("a proforma is numbered and signed; the sale that invoices it points at it and closes it", async () => {
       const pf = (await http().post("/fiscal-documents/proformas").set(auth(ownerToken)).send({ storeId, lineItems: [{ productId, quantity: 5 }] }).expect(201)).body;

@@ -1425,6 +1425,11 @@ export interface FiscalDocumentDto {
   /** A proforma: valid until this day (YYYY-MM-DD), printed as "Válida até"; null when it doesn't expire. */
   validUntil?: string | null;
   expired?: boolean;
+  /** Who issued it, printed as "Operador" (not part of the signed document). */
+  issuedBy?: { firstName: string; lastName: string } | null;
+  /** The sale's cash handed over and change, printed when there was change. */
+  amountTendered?: string | null;
+  changeDue?: string | null;
 }
 
 export interface FiscalDocumentListItemDto {

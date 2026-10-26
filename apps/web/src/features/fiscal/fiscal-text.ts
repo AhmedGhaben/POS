@@ -56,3 +56,11 @@ export const MECHANISM_NAMES: Record<string, string> = {
   CH: "Cheque",
   OU: "Outros",
 };
+
+/** How the person who issued a document is printed: "Maria S.". */
+export function operatorName(person: { firstName: string; lastName: string } | null | undefined): string | null {
+  if (!person) return null;
+  const first = person.firstName.trim();
+  const initial = person.lastName.trim().charAt(0);
+  return [first, initial && `${initial.toUpperCase()}.`].filter(Boolean).join(" ") || null;
+}

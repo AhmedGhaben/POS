@@ -612,8 +612,17 @@ export class FiscalService {
     });
     if (!document) throw new NotFoundException("Document not found");
     const { customerPayment, _count, proformaTerms, business, ...rest } = document;
+    // For printing only, never part of the signed document: who issued it
+    // ("Operador"), and the cash handed over and change of the sale it's for.
+    const [issuedBy, sale] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: document.sourceId }, select: { firstName: true, lastName: true } }),
+      document.saleId ? this.prisma.sale.findUnique({ where: { id: document.saleId }, select: { amountTendered: true, changeDue: true } }) : null,
+    ]);
     return {
       ...rest,
+      issuedBy,
+      amountTendered: sale?.amountTendered ?? null,
+      changeDue: sale?.changeDue ?? null,
       ...proformaValidity(proformaTerms, businessToday(business)),
       /** Times printed: 0 means the next print is the original. */
       printCount: _count.prints,

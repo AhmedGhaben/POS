@@ -18,7 +18,8 @@
     "cancelled": "CANCELLED",
     "saved": "You saved {{amount}}",
     "perUnit": "@ {{price}}/{{unit}}",
-    "onAccount": "On account"
+    "onAccount": "On account",
+    "operator": "Operator: {{name}}"
   },
   "quote": {
     "slipTitle": "QUOTE",
@@ -104,6 +105,9 @@
     "amountSettled": "Amount paid",
     "received": "Received",
     "paymentReference": "Reference: {{reference}}",
-    "validUntil": "Valid until"
+    "validUntil": "Valid until",
+    "tendered": "Amount handed over: {{amount}}",
+    "change": "Change: {{amount}}",
+    "operator": "Operator: {{name}}"
   }
 }

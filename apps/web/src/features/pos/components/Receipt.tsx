@@ -2,6 +2,7 @@ import { fromCents, lineGrossCents, SaleStatus, type CustomerDto, type SaleDto, 
 import { useAuthStore } from "@/features/auth/store";
 import { SlipHeader } from "@/features/documents/components/SlipHeader";
 import { useDocumentLanguage } from "@/i18n/use-document-language";
+import { operatorName } from "@/features/fiscal/fiscal-text";
 import { discountLabel } from "../discount-label";
 import { ReceiptFiscalBottom, ReceiptFiscalTop } from "@/features/fiscal/components/ReceiptFiscal";
 import { REPRINT_LABEL } from "@/features/fiscal/fiscal-text";
@@ -47,6 +48,7 @@ export function Receipt({ sale, store, customer, copy }: ReceiptProps) {
       <ReceiptFiscalTop sale={sale} customer={customer} />
       <p className="text-center">{dateTime(sale.createdAt)}</p>
       <p className="text-center">{t("receipt.number", { number: sale.receiptNumber })}</p>
+      {operatorName(sale.cashier) && <p className="text-center">{t("receipt.operator", { name: operatorName(sale.cashier) })}</p>}
       {customer && !saleDocument(sale) && <p className="text-center">{customer.name}</p>}
       <hr className="my-2 border-dashed" />
       {sale.lineItems.map((line) => {

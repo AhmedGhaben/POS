@@ -18,7 +18,8 @@
     "cancelled": "CANCELADA",
     "saved": "Você economizou {{amount}}",
     "perUnit": "a {{price}}/{{unit}}",
-    "onAccount": "A prazo"
+    "onAccount": "A prazo",
+    "operator": "Operador: {{name}}"
   },
   "quote": {
     "slipTitle": "ORÇAMENTO",
@@ -104,6 +105,9 @@
     "amountSettled": "Valor pago",
     "received": "Recebido",
     "paymentReference": "Referência: {{reference}}",
-    "validUntil": "Válida até"
+    "validUntil": "Válida até",
+    "tendered": "Valor entregue: {{amount}}",
+    "change": "Troco: {{amount}}",
+    "operator": "Operador: {{name}}"
   }
 }
