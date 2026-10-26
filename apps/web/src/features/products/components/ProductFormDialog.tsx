@@ -165,6 +165,8 @@ export function ProductFormDialog({
   const done = (message: string) => {
     void queryClient.invalidateQueries({ queryKey: ["products"] });
     void queryClient.invalidateQueries({ queryKey: ["categories"] });
+    // A new or restored product shows in the inventory at 0.
+    void queryClient.invalidateQueries({ queryKey: ["inventory"] });
     queryClient.removeQueries({ queryKey: ["barcode-check"] });
     onOpenChange(false);
     toast.success(message);

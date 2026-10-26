@@ -21,13 +21,39 @@ export interface StockAtDateRow {
 export class InventoryService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findByStore(storeId: string) {
+  /**
+   * The store's stock: its inventory rows, plus every active product that
+   * has no row there yet (a new product, or one never bought for this store)
+   * at 0, so its stock can be set. Saving it creates the row (see adjust).
+   */
+  async findByStore(storeId: string) {
+    const store = await this.prisma.store.findUnique({ where: { id: storeId }, select: { businessId: true } });
+    if (!store) {
+      throw new NotFoundException("Store not found");
+    }
     // Services and the like have no stock to show.
-    return this.prisma.inventoryItem.findMany({
-      where: { storeId, product: { trackStock: true } },
-      include: { product: true },
-      orderBy: { product: { name: "asc" } },
-    });
+    const [items, missing] = await Promise.all([
+      this.prisma.inventoryItem.findMany({
+        where: { storeId, product: { trackStock: true } },
+        include: { product: true },
+      }),
+      this.prisma.product.findMany({
+        where: { businessId: store.businessId, trackStock: true, isActive: true, inventoryItems: { none: { storeId } } },
+      }),
+    ]);
+    const zero = new Prisma.Decimal(0);
+    const placeholders = missing.map((product) => ({
+      // No row yet: an id that can't clash with a real one.
+      id: `new:${product.id}`,
+      storeId,
+      productId: product.id,
+      quantity: zero,
+      reorderLevel: zero,
+      averageCost: product.costPrice,
+      updatedAt: product.updatedAt,
+      product,
+    }));
+    return [...items, ...placeholders].sort((a, b) => a.product.name.localeCompare(b.product.name));
   }
 
   /**
