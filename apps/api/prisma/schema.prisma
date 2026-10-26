@@ -844,6 +844,8 @@ model Supplier {
   postalCode  String?
   province    String?
   country     String   @default("AO")
+  /// False once archived: hidden from pickers, kept in reports and SAF-T.
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

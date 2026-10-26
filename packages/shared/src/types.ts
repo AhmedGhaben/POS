@@ -610,6 +610,8 @@ export interface SupplierDto {
   postalCode?: string | null;
   province?: string | null;
   country?: string;
+  /** False when archived (only listed with ?includeArchived=true). */
+  isActive?: boolean;
   /** What is owed to them (GET /suppliers?withBalance=true). */
   balance?: string;
 }
@@ -623,7 +625,8 @@ export interface CreateSupplierDto extends Omit<AddressFields, "address"> {
   address?: string;
 }
 
-export type UpdateSupplierDto = Partial<CreateSupplierDto>;
+/** PATCH /suppliers/:id. `isActive: false` archives, `true` restores. */
+export type UpdateSupplierDto = Partial<CreateSupplierDto> & { isActive?: boolean };
 
 /** A purchase on a supplier's account. */
 export interface AccountPurchaseDto {

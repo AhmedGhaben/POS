@@ -18,7 +18,22 @@
     "taxId": "Tax ID (NIF)",
     "taxIdInvalid": "Use only letters and numbers",
     "city": "City",
-    "province": "Province"
+    "province": "Province",
+    "edit": "Edit supplier",
+    "editFor": "Edit {{name}}",
+    "updated": "Supplier updated",
+    "showArchived": "Show archived suppliers",
+    "archivedBadge": "Archived",
+    "restoreFor": "Restore {{name}}",
+    "removeFor": "Delete or archive {{name}}",
+    "removeTitle": "Remove {{name}}?",
+    "removeExplain": "The supplier will be deleted. This can only be done for a supplier with no purchases or payments.",
+    "hasHistory": "This supplier has purchases or payments, so it can't be deleted. Archive it instead: it no longer appears when recording purchases, but stays in reports and SAF-T, and you can restore it later.",
+    "delete": "Delete",
+    "archive": "Archive",
+    "deleted": "Supplier deleted",
+    "archived": "Supplier archived",
+    "restored": "Supplier restored"
   },
   "expenses": {
     "subtitle": "Store expenses.",

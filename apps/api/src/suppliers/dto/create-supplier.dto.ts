@@ -1,5 +1,5 @@
 import { PartialType } from "@nestjs/mapped-types";
-import { IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from "class-validator";
+import { IsBoolean, IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from "class-validator";
 import { AddressFieldsDto, TAX_ID_PATTERN } from "../../common/dto/address.dto";
 
 export class CreateSupplierDto extends AddressFieldsDto {
@@ -27,4 +27,9 @@ export class CreateSupplierDto extends AddressFieldsDto {
   email?: string;
 }
 
-export class UpdateSupplierDto extends PartialType(CreateSupplierDto) {}
+/** `isActive: false` archives, `true` restores. */
+export class UpdateSupplierDto extends PartialType(CreateSupplierDto) {
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}

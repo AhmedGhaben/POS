@@ -233,6 +233,14 @@ const EXACT: Record<string, Translations> = {
     "pt-BR": "Escolha uma loja para a coluna Estoque",
   },
   "Supplier not found": { "pt-PT": "Fornecedor não encontrado", "pt-BR": "Fornecedor não encontrado" },
+  "This supplier has purchases or payments. Archive it instead.": {
+    "pt-PT": "Este fornecedor tem compras ou pagamentos. Arquive-o em vez de o eliminar.",
+    "pt-BR": "Este fornecedor tem compras ou pagamentos. Arquive-o em vez de excluí-lo.",
+  },
+  "This supplier is archived. Restore it to buy from it again.": {
+    "pt-PT": "Este fornecedor está arquivado. Reponha-o para voltar a comprar-lhe.",
+    "pt-BR": "Este fornecedor está arquivado. Restaure-o para voltar a comprar dele.",
+  },
   "Source and destination stores must be different": {
     "pt-PT": "A loja de origem e a de destino têm de ser diferentes",
     "pt-BR": "A loja de origem e a de destino devem ser diferentes",

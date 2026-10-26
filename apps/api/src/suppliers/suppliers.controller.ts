@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { Roles } from "../common/decorators/roles.decorator";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -11,10 +11,13 @@ import { SuppliersService } from "./suppliers.service";
 export class SuppliersController {
   constructor(private readonly suppliersService: SuppliersService) {}
 
-  /** `withBalance=true` adds what is owed to each (owners and managers see it on the Suppliers page). */
+  /**
+   * `withBalance=true` adds what is owed to each (owners and managers see it
+   * on the Suppliers page); `includeArchived=true` adds archived suppliers.
+   */
   @Get()
-  findAll(@CurrentUser() user: AuthenticatedUser, @Query("withBalance") withBalance?: string) {
-    return this.suppliersService.findAll(user.businessId, withBalance === "true" && user.role !== Role.CASHIER);
+  findAll(@CurrentUser() user: AuthenticatedUser, @Query("withBalance") withBalance?: string, @Query("includeArchived") includeArchived?: string) {
+    return this.suppliersService.findAll(user.businessId, withBalance === "true" && user.role !== Role.CASHIER, includeArchived === "true");
   }
 
   @Post()
@@ -29,5 +32,13 @@ export class SuppliersController {
   @Roles(Role.OWNER, Role.MANAGER)
   update(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() dto: UpdateSupplierDto) {
     return this.suppliersService.update(user.businessId, id, dto);
+  }
+
+  @Delete(":id")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.suppliersService.remove(user.businessId, id);
   }
 }
