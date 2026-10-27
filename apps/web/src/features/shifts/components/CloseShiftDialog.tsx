@@ -17,14 +17,16 @@ import { syncOutbox } from "@/features/pos/sync";
 import { closeShift, fetchShiftByClient } from "../api";
 import { signOut } from "../close-request";
 import { cleanCounts, countTotal, denominationsFor } from "../denominations";
-import { isEmptyShift, isEmptySummary, type LocalShift } from "../ledger";
+import { cashDifference, notInDrawer } from "../cash-check";
+import { isEmptyShift, isEmptySummary, localSummary, type LocalShift } from "../ledger";
 import { reportFromLocal, reportFromServer } from "../report-data";
 import { ShiftReport, type ShiftReportData } from "./ShiftReport";
 
 /**
  * Closing the till: count the cash first, without seeing what's expected
  * (so the count is honest), as a total or note by note; then see the
- * difference, print the report, and the person who closed it is signed
+ * difference, print the report (owners and managers see the expected cash
+ * and the difference as they type; the count stays blind for cashiers), and the person who closed it is signed
  * out. A manager closing someone else's abandoned shift stays signed in.
  * A shift with no sales and no cash in or out closes in one click: the
  * cash should be the opening float ("Contagem = fundo de caixa?"), and
@@ -91,6 +93,9 @@ export function CloseShiftDialog({
   const cleaned = byNote ? cleanCounts(counts) : null;
   const value = byNote ? (cleaned ? countTotal(cleaned) : NaN) : Number(counted.replace(",", "."));
   const valid = byNote ? cleaned !== null : counted.trim() !== "" && Number.isFinite(value) && value >= 0;
+  // Not blind for owners and managers, when this till knows the whole shift.
+  const live = (user?.role === "OWNER" || user?.role === "MANAGER") && !!shift && !shift.adopted ? localSummary(shift) : null;
+  const liveDifference = live && valid ? cashDifference(value, Number(live.expectedCash)) : null;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -127,7 +132,7 @@ export function CloseShiftDialog({
     if (report && !forced) void signOut(navigate);
   }
 
-  const difference = report?.countedCash != null ? report.countedCash - report.expectedCash : 0;
+  const difference = report?.countedCash != null ? cashDifference(report.countedCash, report.expectedCash) : 0;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !busy && (o ? onOpenChange(true) : report ? finish() : onOpenChange(false))}>
@@ -136,7 +141,7 @@ export function CloseShiftDialog({
           <>
             <DialogHeader>
               <DialogTitle>{forced ? t("close.titleFor", { name: shift?.openedBy.name ?? "" }) : t("close.title")}</DialogTitle>
-              <DialogDescription>{forced ? t("close.descriptionForced") : t("close.description")}</DialogDescription>
+              <DialogDescription>{forced ? t("close.descriptionForced") : live ? t("close.descriptionLive") : t("close.description")}</DialogDescription>
             </DialogHeader>
             {checking ? (
               <p className="text-sm text-muted-foreground">{t("close.checking")}</p>
@@ -187,6 +192,32 @@ export function CloseShiftDialog({
                 <div className="space-y-1.5">
                   <Label htmlFor="counted-cash">{t("close.counted")}</Label>
                   <Input id="counted-cash" inputMode="decimal" autoFocus value={counted} onChange={(e) => setCounted(e.target.value)} />
+                </div>
+              )}
+              {live && (
+                <div className="space-y-1 rounded-md border bg-muted/40 p-3 text-sm" data-testid="live-difference">
+                  <p className="flex justify-between gap-2">
+                    <span>{t("report.expected")}</span>
+                    <span className="font-medium">{money(live.expectedCash)}</span>
+                  </p>
+                  {notInDrawer(live) > 0 && (
+                    <p className="flex justify-between gap-2 text-muted-foreground">
+                      <span>{t("report.notInDrawer")}</span>
+                      <span className="shrink-0">{money(notInDrawer(live))}</span>
+                    </p>
+                  )}
+                  {liveDifference !== null && (
+                    <p className={`flex justify-between gap-2 font-semibold ${liveDifference < 0 ? "text-destructive" : ""}`}>
+                      <span>{t("report.difference")}</span>
+                      <span>
+                        {liveDifference === 0
+                          ? t("close.balanced")
+                          : liveDifference > 0
+                            ? t("report.over", { amount: money(liveDifference) })
+                            : t("report.short", { amount: money(-liveDifference) })}
+                      </span>
+                    </p>
+                  )}
                 </div>
               )}
               <div className="space-y-1.5">

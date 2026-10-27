@@ -177,6 +177,22 @@ describe("an Angolan store's documents, printed by someone reading the app in En
     expect(renderToStaticMarkup(<Receipt sale={{ ...sale, fiscalDocuments: [] }} store={store} />)).toContain("MAIN-1792930259132");
   });
 
+  it("the shift report says what isn't in the drawer and the difference in words: 'Sobra 530' (tester #25)", () => {
+    const summary: ShiftSummaryDto = {
+      salesCount: 2, salesTotal: "9870", byMethod: { CASH: "9270", CARD: "600" }, discounts: "0", voided: { count: 0, total: "0" }, returns: { count: 0, total: "0", cash: "0" },
+      cashIn: "0", cashOut: "0", movements: [], byCashier: [], expectedCash: "9270",
+    };
+    const report = (countedCash: number) =>
+      renderToStaticMarkup(
+        <ShiftReport store={store} data={{ openedBy: "Ana", openedAt: "2026-10-17T08:00:00Z", closedBy: "Ana", closedAt: "2026-10-17T17:00:00Z", openingFloat: 0, countedCash, expectedCash: 9270, summary }} />,
+      ).replace(/ |&nbsp;/g, " ");
+    const over = report(9800);
+    expect(over).toContain("Pagamentos que não estão na gaveta (Multicaixa/TPA, transferência…)");
+    expect(over).toMatch(/Sobra 530,00/);
+    expect(report(9200)).toMatch(/Falta 70,00/);
+    expect(report(9270)).not.toMatch(/Sobra|Falta/);
+  });
+
   it("the shift report lists sales by fiscal number, the internal number beside it", () => {
     const summary: ShiftSummaryDto = {
       salesCount: 1, salesTotal: "100", byMethod: { CASH: "100" }, discounts: "0", voided: { count: 0, total: "0" }, returns: { count: 0, total: "0", cash: "0" },
