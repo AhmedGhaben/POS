@@ -185,7 +185,7 @@ describe("an Angolan store's documents, printed by someone reading the app in En
     const report = (countedCash: number) =>
       renderToStaticMarkup(
         <ShiftReport store={store} data={{ openedBy: "Ana", openedAt: "2026-10-17T08:00:00Z", closedBy: "Ana", closedAt: "2026-10-17T17:00:00Z", openingFloat: 0, countedCash, expectedCash: 9270, summary }} />,
-      ).replace(/ |&nbsp;/g, " ");
+      ).replace(/\u00a0|&nbsp;/g, " ");
     const over = report(9800);
     expect(over).toContain("Pagamentos que não estão na gaveta (Multicaixa/TPA, transferência…)");
     expect(over).toMatch(/Sobra 530,00/);
