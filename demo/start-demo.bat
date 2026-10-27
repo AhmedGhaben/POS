@@ -97,6 +97,12 @@ docker compose run --rm --no-deps -e ALLOW_DEMO_SEED=1 api node apps/api/dist/pr
 if errorlevel 1 goto :fail
 echo  [ok] Accountant login ready
 
+rem The books for the accountant: accounting switched on and posted (once:
+rem a demo whose accounting is already set up is left as it is).
+docker compose run --rm --no-deps -e ALLOW_DEMO_SEED=1 -e ACCOUNTING_INTEGRATION_INTERVAL_MS=0 api node apps/api/dist/prisma/demo-books.js
+if errorlevel 1 goto :fail
+echo  [ok] Accounting ready
+
 rem --- 7. API -----------------------------------------------------------------
 echo  Starting the API...
 docker compose up -d api

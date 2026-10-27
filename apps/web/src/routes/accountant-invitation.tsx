@@ -6,7 +6,7 @@ import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { useAuthStore } from "@/features/auth/store";
-import { acceptInvitationLink } from "@/features/accounting/api";
+import { ACCOUNTANT_CLIENTS_KEY, acceptInvitationLink } from "@/features/accounting/api";
 
 type Result = { status: "accepting" } | { status: "success"; email: string; businessName: string } | { status: "error"; message: string | null };
 
@@ -31,7 +31,7 @@ export function AccountantInvitationPage() {
     requested.current = true;
     acceptInvitationLink(token)
       .then(({ email, businessName }) => {
-        void queryClient.invalidateQueries({ queryKey: ["accountant", "clients"] });
+        void queryClient.invalidateQueries({ queryKey: ACCOUNTANT_CLIENTS_KEY });
         setResult({ status: "success", email, businessName });
       })
       .catch((err: Error) => setResult({ status: "error", message: err.message }));

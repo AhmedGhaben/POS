@@ -47,6 +47,9 @@ WHAT IS IN THIS FOLDER
    Accountant (the accountant's view: accounting, reports, SAF-T files):
        email:     accountant@demo-store.test
        password:  AccountantPass123!
+   Accounting is already switched on, with a few demo sales, a supplier
+   invoice and opening balances posted, so the trial balance and the
+   statements have figures in them straight away.
 
    The demo store is "Demo Retail Co." in Angola, with prices in Kwanza
    and IVA at 14%.
