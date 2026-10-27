@@ -4,6 +4,7 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import { ReportsService } from "../reports/reports.service";
 import type { Language } from "../common/i18n/languages";
+import { aiInsightsEnabled } from "./ai-insights-flag";
 import { ANTHROPIC_CLIENT } from "./anthropic-client.provider";
 
 const InsightsSchema = z.object({
@@ -54,6 +55,7 @@ export class InsightsService {
   ) {}
 
   async generate(storeId: string, days: number, language: Language = "en"): Promise<BusinessInsights> {
+    if (!aiInsightsEnabled()) throw new ServiceUnavailableException("AI insights are not available.");
     if (!this.anthropic) {
       throw new ServiceUnavailableException(
         "AI insights are not configured — set ANTHROPIC_API_KEY on the server.",

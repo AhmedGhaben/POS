@@ -192,7 +192,8 @@ export function DashboardPage() {
 
           <LowStockPanel items={lowStockQuery.data ?? []} />
 
-          <InsightsPanel storeId={currentStoreId} days={days} />
+          {/* Off until the server enables AI insights (AI_INSIGHTS_ENABLED). */}
+          {businessQuery.data?.aiInsightsEnabled && <InsightsPanel storeId={currentStoreId} days={days} />}
         </TabsContent>
 
         {canCompareStores && (

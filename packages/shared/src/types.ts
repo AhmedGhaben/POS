@@ -51,6 +51,8 @@ export interface BusinessDto {
   logoUrl: string | null;
   /** The server can send email: without it the till hides "Email receipt". */
   emailEnabled?: boolean;
+  /** The server offers AI insights (AI_INSIGHTS_ENABLED): without it the app hides them. */
+  aiInsightsEnabled?: boolean;
 }
 
 /** Whether the receipt emailed with a sale went (GET /sales/:id/receipt-email). */

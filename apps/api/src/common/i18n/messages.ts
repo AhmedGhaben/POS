@@ -320,6 +320,10 @@ const EXACT: Record<string, Translations> = {
     "pt-PT": "O nome do comprador é obrigatório",
     "pt-BR": "O nome do comprador é obrigatório",
   },
+  "AI insights are not available.": {
+    "pt-PT": "A análise com IA não está disponível.",
+    "pt-BR": "A análise com IA não está disponível.",
+  },
   "AI insights are not configured — set ANTHROPIC_API_KEY on the server.": {
     "pt-PT": "A análise com IA não está configurada no servidor.",
     "pt-BR": "A análise com IA não está configurada no servidor.",
