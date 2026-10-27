@@ -3,7 +3,7 @@
 #   powershell -ExecutionPolicy Bypass -File demo\build-bundle.ps1
 # Requires Docker running and the GitHub CLI (gh) signed in.
 param(
-  [string]$DesktopVersion = "0.2.4",
+  [string]$DesktopVersion = "0.2.6",
   [string]$OutZip = (Join-Path ([Environment]::GetFolderPath("Desktop")) "POS-Demo.zip")
 )
 $ErrorActionPreference = "Stop"
@@ -27,6 +27,10 @@ foreach ($f in "start-demo.bat", "stop-demo.bat", "README-DEMO.txt", "docker-com
   $text = [IO.File]::ReadAllText((Join-Path $PSScriptRoot $f)) -replace "`r?`n", "`r`n"
   [IO.File]::WriteAllText((Join-Path $stage $f), $text, (New-Object Text.UTF8Encoding $false))
 }
+
+# Which server this bundle holds: start-demo.bat loads it again when it changes.
+$commit = (& git -C $repo rev-parse --short HEAD).Trim()
+[IO.File]::WriteAllText((Join-Path $stage "images\VERSION"), "$DesktopVersion-$commit", (New-Object Text.UTF8Encoding $false))
 
 Write-Host "Saving the images..."
 Run docker @("save", "-o", (Join-Path $stage "images\pos-demo-images.tar"), "pos-demo-api:latest", "postgres:16-alpine")

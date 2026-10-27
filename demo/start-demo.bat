@@ -44,16 +44,27 @@ if not exist ".env" (
   echo  [ok] Generated fresh demo secrets
 )
 
-rem --- 3. Load the server images (first run only) ----------------------------
+rem --- 3. Load the server images (first run, and after an update) ------------
+rem images\VERSION says which server this folder holds; .loaded-version, which
+rem one was last loaded into Docker. A new bundle unzipped over the old one
+rem has a new VERSION, so its server is loaded (the demo data is kept).
+set "bundled="
+set "loaded="
+if exist "images\VERSION" set /p bundled=<"images\VERSION"
+if exist ".loaded-version" set /p loaded=<".loaded-version"
+set "needload="
 docker image inspect pos-demo-api:latest >nul 2>&1
-if errorlevel 1 (
+if errorlevel 1 set "needload=1"
+if not "!bundled!"=="!loaded!" set "needload=1"
+if defined needload (
   if not exist "images\pos-demo-images.tar" (
     echo  The file images\pos-demo-images.tar is missing from this folder.
     goto :fail
   )
-  echo  Loading the server images - this takes a minute the first time...
+  echo  Loading the server !bundled! - this takes a minute...
   docker load -i "images\pos-demo-images.tar"
   if errorlevel 1 goto :fail
+  if defined bundled (echo !bundled!)> ".loaded-version"
 )
 echo  [ok] Server images ready
 
