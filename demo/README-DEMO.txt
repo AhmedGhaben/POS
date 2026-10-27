@@ -7,7 +7,7 @@ first install.
 WHAT IS IN THIS FOLDER
   start-demo.bat        starts the POS server
   stop-demo.bat         stops it
-  POS-Setup-0.2.4.exe   the POS app (installer)
+  POS-Setup-0.2.6.exe   the POS app (installer)
   docker-compose.yml    server settings (no need to touch it)
   images\               the server itself (loaded into Docker the first time)
 
@@ -24,7 +24,7 @@ WHAT IS IN THIS FOLDER
      "The POS server is running".
 
 3. INSTALL THE POS APP (once)
-   - Double-click POS-Setup-0.2.4.exe.
+   - Double-click POS-Setup-0.2.6.exe.
    - If Windows says "Windows protected your PC", click "More info",
      then "Run anyway".
 
@@ -54,6 +54,16 @@ EVERY DAY
     run start-demo.bat again.
   - To stop the server: double-click stop-demo.bat. Your demo data is kept.
 
+
+UPDATING TO A NEW VERSION (your demo data is kept)
+  1. Double-click stop-demo.bat in your current POS demo folder.
+  2. Unzip the new POS-Demo.zip OVER that same folder, and choose
+     "Replace the files". Use the same folder: it holds the server's
+     password (.env), and a new folder would not open your data.
+  3. Double-click start-demo.bat. It loads the new server and updates
+     the database. Wait until it says "The POS server is running".
+  4. Install the new POS-Setup exe from the folder (the app updates;
+     its settings are kept).
 
 START OVER WITH A FRESH DEMO STORE
   Open a Command Prompt in this folder and run:   stop-demo.bat reset

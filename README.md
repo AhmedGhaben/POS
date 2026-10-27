@@ -601,7 +601,7 @@ powershell -ExecutionPolicy Bypass -File demo\build-bundle.ps1   # -> Desktop\PO
 ```
 
 The script builds the API image, `docker save`s it with `postgres:16-alpine`
-(so the target laptop needs no internet), and downloads `POS-Setup-0.2.4.exe`
+(so the target laptop needs no internet), and downloads `POS-Setup-0.2.6.exe`
 from the GitHub release (`-DesktopVersion` to change it). On the target
 laptop, `start-demo.bat` does the following. `README-DEMO.txt` is the
 plain-words guide.
