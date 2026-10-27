@@ -135,7 +135,9 @@
     "reprint": "Reimprimir recibo",
     "cancel": "Cancelar venda",
     "emailSent": "Enviado por e-mail",
-    "emailFailed": "Falha no e-mail"
+    "emailFailed": "Falha no e-mail",
+    "search": "Buscar pelo nº do documento ou do cupom",
+    "noMatch": "Nenhuma venda com esse número."
   },
   "void": {
     "title": "Cancelar a venda {{number}}?",

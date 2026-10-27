@@ -135,7 +135,9 @@
     "reprint": "Reimprimir talão",
     "cancel": "Anular venda",
     "emailSent": "Enviado por email",
-    "emailFailed": "Email falhou"
+    "emailFailed": "Email falhou",
+    "search": "Procurar pelo n.º do documento ou do talão",
+    "noMatch": "Nenhuma venda com esse número."
   },
   "void": {
     "title": "Anular a venda {{number}}?",

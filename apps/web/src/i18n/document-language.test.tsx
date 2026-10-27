@@ -1,10 +1,11 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { BusinessDto, FiscalDocumentDto, ShiftSummaryDto, StoreDto, UserDto } from "@pos/shared";
+import type { BusinessDto, FiscalDocumentDto, SaleDto, ShiftSummaryDto, StoreDto, UserDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
 import { A4Document } from "@/features/documents/components/A4Document";
 import { documentLine } from "@/features/documents/lines";
 import { FiscalA4 } from "@/features/fiscal/components/FiscalA4";
+import { Receipt } from "@/features/pos/components/Receipt";
 import { ReportA4 } from "@/features/reports/components/ReportViewer";
 import { useCellFormatters } from "@/features/reports/use-cell-formatters";
 import type { ReportResultDto } from "@/features/reports/tables-api";
@@ -160,5 +161,32 @@ describe("an Angolan store's documents, printed by someone reading the app in En
     );
     expect(html).toContain(ptShifts.report.title);
     expectNoEnglish(html, englishOnly(enShifts.report, ptShifts.report));
+  });
+
+  it("a receipt shows the fiscal number, not the internal Talão n.º; a sale without a document still shows it (tester #26)", () => {
+    const sale = {
+      id: "x", storeId: "s1", receiptNumber: "MAIN-1792930259132", createdAt: "2026-10-17T09:00:00Z", status: "COMPLETED", cashier: null, lineItems: [],
+      subtotal: "100", discountTotal: "0", saleDiscountAmount: "0", taxTotal: "12.28", total: "100", pricesIncludeTax: true, creditAmount: "0",
+      payments: [{ id: "p", method: "CASH", amount: "100", tendered: null, change: null }], paymentMethod: "CASH", amountTendered: null, changeDue: null,
+      fiscalDocuments: [{ id: "d", documentType: "FR", documentNo: "FR POS001-2026/57", status: "N", hashExcerpt: "aBcD", hashControl: "0", seller: null }],
+    } as unknown as SaleDto;
+    const fiscal = renderToStaticMarkup(<Receipt sale={sale} store={store} />);
+    expect(fiscal).toContain("FR POS001-2026/57");
+    expect(fiscal).not.toContain("MAIN-1792930259132");
+    expect(fiscal).not.toContain("Talão");
+    expect(renderToStaticMarkup(<Receipt sale={{ ...sale, fiscalDocuments: [] }} store={store} />)).toContain("MAIN-1792930259132");
+  });
+
+  it("the shift report lists sales by fiscal number, the internal number beside it", () => {
+    const summary: ShiftSummaryDto = {
+      salesCount: 1, salesTotal: "100", byMethod: { CASH: "100" }, discounts: "0", voided: { count: 0, total: "0" }, returns: { count: 0, total: "0", cash: "0" },
+      cashIn: "0", cashOut: "0", movements: [], byCashier: [], expectedCash: "100",
+      sales: [{ receiptNumber: "MAIN-1792930259132", documentNo: "FR POS001-2026/57", at: "2026-10-17T09:00:00Z", total: "100", method: "CASH" as never, voided: false, cashier: "Ana" }],
+    };
+    const html = renderToStaticMarkup(
+      <ShiftReport store={store} withSales data={{ openedBy: "Ana", openedAt: "2026-10-17T08:00:00Z", closedBy: "Ana", closedAt: "2026-10-17T17:00:00Z", openingFloat: 0, countedCash: 100, expectedCash: 100, summary }} />,
+    );
+    expect(html.indexOf("FR POS001-2026/57")).toBeGreaterThan(-1);
+    expect(html.indexOf("FR POS001-2026/57")).toBeLessThan(html.indexOf("MAIN-1792930259132"));
   });
 });

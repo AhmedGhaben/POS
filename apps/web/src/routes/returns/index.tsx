@@ -22,6 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createReturn, fetchReturns } from "@/features/returns/api";
 import { FiscalDocumentDialog } from "@/features/fiscal/components/FiscalDocumentDialog";
+import { saleNumber } from "@/features/fiscal/sale-document";
 import { useCurrentShift } from "@/features/shifts/shift-store";
 import { useHasPermission } from "@/features/auth/use-permission";
 import { approvalHeaders, requestApproval, type Approval } from "@/features/overrides/approval";
@@ -172,8 +173,9 @@ export function ReturnsPage() {
                         placeholder={t("returns.selectSale")}
                         options={(salesQuery.data ?? []).map((sale) => ({
                           value: sale.id,
-                          label: sale.receiptNumber,
+                          label: saleNumber(sale),
                           description: money(sale.total),
+                          keywords: [sale.receiptNumber],
                         }))}
                         onChange={(v) => {
                           if (v === null) return;

@@ -48,7 +48,14 @@ export class CustomersService {
         where: { customerId: id },
         orderBy: { createdAt: "desc" },
         take: 5,
-        select: { id: true, receiptNumber: true, createdAt: true, total: true, status: true },
+        select: {
+          id: true,
+          receiptNumber: true,
+          createdAt: true,
+          total: true,
+          status: true,
+          fiscalDocuments: { where: { documentType: { in: ["FR", "FT"] } }, select: { documentNo: true }, take: 1 },
+        },
       }),
       this.accounts.balances(businessId, [id]),
     ]);
@@ -60,7 +67,7 @@ export class CustomersService {
         total: (totals._sum.total ?? new Prisma.Decimal(0)).toFixed(2),
         lastAt: totals._max.createdAt,
       },
-      recent: recent.map((s) => ({ ...s, total: s.total.toFixed(2) })),
+      recent: recent.map(({ fiscalDocuments, ...s }) => ({ ...s, documentNo: fiscalDocuments[0]?.documentNo ?? null, total: s.total.toFixed(2) })),
       account: {
         creditLimit: customer.creditLimit?.toFixed(2) ?? null,
         balance: balance.toFixed(2),

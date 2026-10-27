@@ -135,7 +135,9 @@
     "reprint": "Reprint receipt",
     "cancel": "Cancel sale",
     "emailSent": "Emailed",
-    "emailFailed": "Email failed"
+    "emailFailed": "Email failed",
+    "search": "Search by document or receipt number",
+    "noMatch": "No sale matches that number."
   },
   "void": {
     "title": "Cancel sale {{number}}?",

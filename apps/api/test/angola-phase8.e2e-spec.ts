@@ -341,6 +341,19 @@ describe("Angola phase 8: fiscal documents (e2e)", () => {
       await http().get(`/fiscal-documents/${list.items[0].id}`).set(auth(cashierToken)).expect(200);
     });
   });
+  describe("sales are listed by their fiscal number", () => {
+    it("the shift report and the customer card give each sale's FR number beside the internal one", async () => {
+      const customer = (await http().post("/customers").set(auth(ownerToken)).send({ name: "Cliente Número", taxId: "5417000999" }).expect(201)).body;
+      const s = (await sale({ customerId: customer.id }).expect(201)).body;
+      const documentNo = s.fiscalDocuments[0].documentNo;
+      expect(documentNo).toMatch(/^FR /);
+      const shift = (await http().get(`/shifts/client/${shiftClientId}?storeId=${storeId}`).set(auth(ownerToken)).expect(200)).body;
+      expect(shift.summary.sales).toContainEqual(expect.objectContaining({ receiptNumber: s.receiptNumber, documentNo }));
+      const card = (await http().get(`/customers/${customer.id}/card`).set(auth(ownerToken)).expect(200)).body;
+      expect(card.recent[0]).toMatchObject({ receiptNumber: s.receiptNumber, documentNo });
+    });
+  });
+
   describe("bank accounts on documents", () => {
     it("proformas and invoices keep the accounts shown when they were issued; later settings don't change them", async () => {
       const account = (

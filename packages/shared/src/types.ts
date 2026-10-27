@@ -413,7 +413,7 @@ export interface CustomerCreditDto {
 export interface CustomerCardDto {
   customer: CustomerDto;
   purchases: { count: number; total: string; lastAt: string | null };
-  recent: { id: string; receiptNumber: string; createdAt: string; total: string; status: SaleStatus }[];
+  recent: { id: string; receiptNumber: string; documentNo: string | null; createdAt: string; total: string; status: SaleStatus }[];
   account?: CustomerCreditDto;
 }
 
@@ -1249,6 +1249,8 @@ export interface CloseShiftDto {
 
 export interface ShiftSaleLineDto {
   receiptNumber: string;
+  /** The sale's fiscal document (FR/FT), the number customers and AGT know; absent on older records. */
+  documentNo?: string | null;
   at: string;
   total: string;
   /** The payment method, "SPLIT" when paid several ways, "CREDIT" when all on credit. */

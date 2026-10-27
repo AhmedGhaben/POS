@@ -89,7 +89,7 @@ export function CustomerCardDialog({ customer, onClose }: { customer: CustomerDt
                   {card.data.recent.map((s) => (
                     <li key={s.id} className={`flex justify-between gap-2 px-3 py-1.5 ${s.status === SaleStatus.VOIDED ? "text-muted-foreground line-through" : ""}`}>
                       <span>
-                        {s.receiptNumber} <span className="text-xs text-muted-foreground">{formatDateTime(s.createdAt)}</span>
+                        {s.documentNo ?? s.receiptNumber} <span className="text-xs text-muted-foreground">{formatDateTime(s.createdAt)}</span>
                       </span>
                       <span>{money(s.total)}</span>
                     </li>

@@ -147,8 +147,9 @@ export function ShiftReport({
           <p className="font-semibold">{t("report.allSales")}</p>
           {s.sales.map((sale) => (
             <div key={sale.receiptNumber} className={sale.voided ? "line-through" : undefined}>
-              <Row label={sale.receiptNumber} value={money(sale.total)} />
+              <Row label={sale.documentNo ?? sale.receiptNumber} value={money(sale.total)} />
               <p className="pl-2 text-[10px]">
+                {sale.documentNo ? `${sale.receiptNumber} · ` : ""}
                 {dateTime(sale.at)} · {sale.method === "SPLIT" ? t("report.split") : sale.method === "CREDIT" ? t("report.credit") : t(`common:paymentMethods.${sale.method}`)}
                 {sale.voided ? ` · ${t("report.cancelled")}` : ""}
               </p>

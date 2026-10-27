@@ -120,7 +120,7 @@ export interface ShiftSummary {
   movements: { id: string; type: "IN" | "OUT"; amount: string; reason: string; note: string | null; occurredAt: Date; user: string }[];
   byCashier: { id: string; name: string; count: number; total: string }[];
   /** Every sale, oldest first, for the report's optional full list. */
-  sales: { receiptNumber: string; at: Date; total: string; method: PaymentMethod | "SPLIT" | "CREDIT"; voided: boolean; cashier: string }[];
+  sales: { receiptNumber: string; documentNo: string | null; at: Date; total: string; method: PaymentMethod | "SPLIT" | "CREDIT"; voided: boolean; cashier: string }[];
   /** What was sold in the shift (completed sales), per product, biggest total first. */
   products: ShiftProductRow[];
   /** What came back in the shift's returns, per product, biggest total first. */
@@ -362,6 +362,7 @@ export class ShiftsService {
           creditAmount: true,
           cashier: PERSON,
           payments: { select: { method: true, amount: true } },
+          fiscalDocuments: { where: { documentType: { in: ["FR", "FT"] } }, select: { documentNo: true }, take: 1 },
         },
       }),
       this.prisma.return.findMany({ where: { shiftId: shift.id }, select: { totalRefund: true, refundMethod: true, accountCredit: true } }),
@@ -455,6 +456,7 @@ export class ShiftsService {
       byCashier: [...byCashier.values()].map((r) => ({ ...r, total: r.total.toFixed(2) })),
       sales: sales.map((s) => ({
         receiptNumber: s.receiptNumber,
+        documentNo: s.fiscalDocuments[0]?.documentNo ?? null,
         at: s.createdAt,
         total: s.total.toFixed(2),
         method: s.payments.length === 0 ? "CREDIT" : s.payments.length === 1 && s.creditAmount.isZero() ? s.payments[0].method : "SPLIT",

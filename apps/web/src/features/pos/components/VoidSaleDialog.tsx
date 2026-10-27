@@ -2,7 +2,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { ANNUL_REASONS, DrawerOpenReason, PaymentMethod, Permission, VOID_REASONS, type SaleDto, type StoreDto, type VoidReason } from "@pos/shared";
-import { saleDocument } from "@/features/fiscal/sale-document";
+import { saleDocument, saleNumber } from "@/features/fiscal/sale-document";
 import { useHasPermission } from "@/features/auth/use-permission";
 import { requestApproval, type Approval } from "@/features/overrides/approval";
 import { Button } from "@/components/ui/button";
@@ -67,7 +67,7 @@ export function VoidSaleDialog({ sale, store, onClose, onVoided }: VoidSaleDialo
       approval = await requestApproval({
         permission: Permission.VOID_SALE,
         action: "sale.void",
-        description: t("void.approval", { receipt: sale.receiptNumber, total: money(sale.total) }),
+        description: t("void.approval", { receipt: saleNumber(sale), total: money(sale.total) }),
         details: { saleId: sale.id, receiptNumber: sale.receiptNumber, reason },
       });
       if (!approval) return;
@@ -96,7 +96,7 @@ export function VoidSaleDialog({ sale, store, onClose, onVoided }: VoidSaleDialo
         {sale && !voided && (
           <>
             <DialogHeader>
-              <DialogTitle>{t("void.title", { number: sale.receiptNumber })}</DialogTitle>
+              <DialogTitle>{t("void.title", { number: saleNumber(sale) })}</DialogTitle>
               <DialogDescription>{t("void.description", { amount: money(sale.total) })}</DialogDescription>
             </DialogHeader>
             <form className="space-y-4" onSubmit={submit}>
