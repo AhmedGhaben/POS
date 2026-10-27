@@ -44,6 +44,8 @@ export interface LedgerAccountDto {
 export const ACCOUNTING_KEY = ["accounting"] as const;
 export const STATUS_KEY = [...ACCOUNTING_KEY, "status"] as const;
 export const ACCOUNTS_KEY = [...ACCOUNTING_KEY, "accounts"] as const;
+/** Under ACCOUNTING_KEY, so whatever changes a company's books (switching accounting on, posting, closing a period) refreshes the accountant's list too. */
+export const ACCOUNTANT_CLIENTS_KEY = [...ACCOUNTING_KEY, "clients"] as const;
 export const YEARS_KEY = [...ACCOUNTING_KEY, "years"] as const;
 export const JOURNALS_KEY = [...ACCOUNTING_KEY, "journals"] as const;
 export const ENTRIES_KEY = [...ACCOUNTING_KEY, "entries"] as const;

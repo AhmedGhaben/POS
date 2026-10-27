@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuthStore } from "@/features/auth/store";
 import { ApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format";
-import { acceptInvitation, declineInvitation, fetchClients, saveProfile, switchBusiness } from "../api";
+import { ACCOUNTANT_CLIENTS_KEY, acceptInvitation, declineInvitation, fetchClients, saveProfile, switchBusiness } from "../api";
 
 /**
  * An accountant's clients: what needs doing in each (records not posted,
@@ -25,7 +25,7 @@ export function AccountantClients() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const setSession = useAuthStore((s) => s.setSession);
-  const clients = useQuery({ queryKey: ["accountant", "clients"], queryFn: fetchClients });
+  const clients = useQuery({ queryKey: ACCOUNTANT_CLIENTS_KEY, queryFn: fetchClients });
   const [ocpca, setOcpca] = React.useState("");
   const fail = (error: unknown) => toast.error(error instanceof ApiError ? error.message : t("failed"));
   const switchTo = useMutation({
@@ -44,7 +44,7 @@ export function AccountantClients() {
       else await declineInvitation(businessId);
     },
     onSuccess: (_r, v) => {
-      void queryClient.invalidateQueries({ queryKey: ["accountant", "clients"] });
+      void queryClient.invalidateQueries({ queryKey: ACCOUNTANT_CLIENTS_KEY });
       toast.success(t(v.accept ? "accountant.accepted" : "accountant.declined", { name: v.name }));
     },
     onError: fail,
