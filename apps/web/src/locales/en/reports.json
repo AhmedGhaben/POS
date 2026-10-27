@@ -28,7 +28,11 @@
     "failed": "Couldn't generate the file. Try again.",
     "accountantTitle": "Export for the accountant",
     "accountantDescription": "Excel workbook: sales documents with base and IVA per rate, purchases, money received and paid.",
-    "tab": "Files for AGT and the accountant"
+    "tab": "Files for AGT and the accountant",
+    "periodCount_one": "{{count}} document from {{start}} to {{end}}.",
+    "periodCount_other": "{{count}} documents from {{start}} to {{end}}.",
+    "periodBreakdown": "Invoices and credit notes: {{sales}} · proformas: {{working}} · receipts: {{payments}}.",
+    "emptyPeriod": "There are no documents from {{start}} to {{end}}. The file would hold only the company's details. Check the period: each month's sales are in that month's file."
   },
   "deadlines": {
     "saftInvoicing": "SAF-T invoicing file for {{covers}}: due by {{due}}.",

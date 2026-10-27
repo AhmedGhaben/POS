@@ -130,6 +130,9 @@ describe("Angola phase 8b: SAF-T and accountant exports (e2e)", () => {
       expect(invoiceNos(xml)).toContain(oct1);
       expect(invoiceNos(xml)).not.toContain(sep30);
       expect(xml).toMatch(new RegExp(`<InvoiceNo>${oct1}</InvoiceNo>[\\s\\S]*?<InvoiceDate>2026-10-01</InvoiceDate>[\\s\\S]*?<SystemEntryDate>2026-10-01T00:30:00</SystemEntryDate>`));
+      // With its customer and product, not only the company's data (tester #27).
+      expect(xml).toMatch(/<Customer>[\s\S]*<CustomerID>CONSUMIDOR-FINAL<\/CustomerID>/);
+      expect(xml).toContain(`<ProductCode>P8B-${RUN}</ProductCode>`);
       expect(await saftSchemaErrors(xml)).toEqual([]);
     });
 
@@ -138,6 +141,23 @@ describe("Angola phase 8b: SAF-T and accountant exports (e2e)", () => {
       expect(xml).toContain("<EndDate>2026-09-30</EndDate>");
       expect(invoiceNos(xml)).toEqual([sep30]);
       expect(await saftSchemaErrors(xml)).toEqual([]);
+    });
+  });
+
+  describe("before generating: how many documents a period holds (tester #27)", () => {
+    const summary = (query: string, token = ownerToken) => http().get(`/fiscal-documents/saft/facturacao/summary?${query}`).set(auth(token));
+
+    it("counts the period's documents as the file has them; an empty month says 0", async () => {
+      // So far October has the one sale at 00:30 on the 1st (see "month end").
+      const oct = (await summary("startDate=2026-10-01&endDate=2026-10-31").expect(200)).body;
+      expect(oct).toEqual({ startDate: "2026-10-01", endDate: "2026-10-31", salesInvoices: 1, workingDocuments: 0, payments: 0, total: 1 });
+
+      const august = (await summary("startDate=2026-08-01&endDate=2026-08-31").expect(200)).body;
+      expect(august).toMatchObject({ salesInvoices: 0, workingDocuments: 0, payments: 0, total: 0 });
+    });
+
+    it("is for owners and managers, like the file", async () => {
+      await summary("startDate=2026-10-01&endDate=2026-10-31", cashierToken).expect(403);
     });
   });
 

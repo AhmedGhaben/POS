@@ -28,7 +28,11 @@
     "failed": "Não foi possível gerar o ficheiro. Tente novamente.",
     "accountantTitle": "Exportar para o contabilista",
     "accountantDescription": "Livro Excel: documentos de venda com base e IVA por taxa, compras, recebimentos e pagamentos.",
-    "tab": "Ficheiros para a AGT e o contabilista"
+    "tab": "Ficheiros para a AGT e o contabilista",
+    "periodCount_one": "{{count}} documento de {{start}} a {{end}}.",
+    "periodCount_other": "{{count}} documentos de {{start}} a {{end}}.",
+    "periodBreakdown": "Faturas e notas de crédito: {{sales}} · pró-formas: {{working}} · recibos: {{payments}}.",
+    "emptyPeriod": "Não há documentos de {{start}} a {{end}}. O ficheiro teria só os dados da empresa. Confirme o período: as vendas de cada mês estão no ficheiro desse mês."
   },
   "deadlines": {
     "saftInvoicing": "Ficheiro SAF-T de faturação de {{covers}}: entregar até {{due}}.",

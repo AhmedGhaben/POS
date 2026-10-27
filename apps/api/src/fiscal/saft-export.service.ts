@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
+import type { SaftFacturacaoSummaryDto } from "@pos/shared";
 import { createHash } from "crypto";
 import { buildXlsx } from "../common/xlsx";
 import { CustomerAccountsService } from "../accounts/customer-accounts.service";
@@ -90,6 +91,21 @@ export class SaftExportService {
       mimeType: "application/xml; charset=utf-8",
       body: xml,
     };
+  }
+
+  /**
+   * How many documents the invoicing file for a period would hold, before
+   * generating it: the same period, store and documents as facturacao().
+   */
+  async facturacaoSummary(businessId: string, query: ExportQuery, now = new Date()): Promise<SaftFacturacaoSummaryDto> {
+    const ctx = await this.context(businessId, query.storeId);
+    const period = this.period(query, ctx.timeZone, now, true);
+    const byType = await this.prisma.fiscalDocument.groupBy({ by: ["documentType"], where: this.documentsWhere(ctx, period), _count: true });
+    const count = (types: (t: string) => boolean) => byType.filter((r) => types(r.documentType)).reduce((n, r) => n + r._count, 0);
+    const workingDocuments = count((t) => WORKING_TYPES.includes(t));
+    const payments = count((t) => PAYMENT_TYPES.includes(t));
+    const salesInvoices = count((t) => !WORKING_TYPES.includes(t) && !PAYMENT_TYPES.includes(t));
+    return { startDate: period.startDate, endDate: period.endDate, salesInvoices, workingDocuments, payments, total: salesInvoices + workingDocuments + payments };
   }
 
   /**
@@ -192,11 +208,7 @@ export class SaftExportService {
   ) {
     const businessId = ctx.business.id;
     const documents = opts.purchasesOnly ? [] : await this.prisma.fiscalDocument.findMany({
-      where: {
-        businessId,
-        ...(ctx.store ? { storeId: ctx.store.id } : {}),
-        invoiceDate: { gte: dateColumnValue(period.startDate), lte: dateColumnValue(period.endDate) },
-      },
+      where: this.documentsWhere(ctx, period),
       include: { lines: { include: { taxes: true }, orderBy: { lineNumber: "asc" } }, series: { select: { code: true } } },
     });
     documents.sort(
@@ -595,6 +607,15 @@ export class SaftExportService {
       fileName: `Contabilidade_${period.startDate}_${period.endDate}${ctx.store ? `_${this.fileSafe(ctx.store.name)}` : ""}.xlsx`,
       mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       body,
+    };
+  }
+
+  /** The period's documents for the invoicing file: by document date, for one store or the whole business. */
+  private documentsWhere(ctx: Awaited<ReturnType<SaftExportService["context"]>>, period: ExportPeriod): Prisma.FiscalDocumentWhereInput {
+    return {
+      businessId: ctx.business.id,
+      ...(ctx.store ? { storeId: ctx.store.id } : {}),
+      invoiceDate: { gte: dateColumnValue(period.startDate), lte: dateColumnValue(period.endDate) },
     };
   }
 

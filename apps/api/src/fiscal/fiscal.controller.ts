@@ -108,6 +108,19 @@ export class FiscalController {
     return sendFile(res, await this.saftExport.facturacao(user.businessId, user.userId, { storeId, startDate, endDate }));
   }
 
+  /** How many documents the invoicing file for a period holds (same dates; neither = last month), to check before generating it. */
+  @Get("saft/facturacao/summary")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  saftFacturacaoSummary(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query("storeId") storeId?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    return this.saftExport.facturacaoSummary(user.businessId, { storeId, startDate, endDate });
+  }
+
   /** SAF-T (AO) Aquisição de Bens e Serviços for a period (same dates as the invoicing file; neither = last month). */
   @Get("saft/aquisicao")
   @UseGuards(RolesGuard)

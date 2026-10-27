@@ -1404,6 +1404,19 @@ export interface FiscalSellerDto {
   bankAccounts?: FiscalBankDetailsDto[];
 }
 
+/** What the SAF-T invoicing file for a period would hold, shown before generating it. */
+export interface SaftFacturacaoSummaryDto {
+  startDate: string;
+  endDate: string;
+  /** FR, FT, NC... (SalesInvoices). */
+  salesInvoices: number;
+  /** Proformas (WorkingDocuments). */
+  workingDocuments: number;
+  /** Receipts (Payments). */
+  payments: number;
+  total: number;
+}
+
 /** A bank account as printed on a document: "Coordenadas bancárias". */
 export interface FiscalBankDetailsDto {
   bankName: string;
