@@ -1,5 +1,6 @@
 import { amountInWords, countryConfig, type FiscalDocumentDto } from "@pos/shared";
 import { logoSrc } from "@/features/business/api";
+import { BankDetails } from "@/features/documents/components/BankDetails";
 import { useDocumentLanguage } from "@/i18n/use-document-language";
 import { AgtQr } from "./AgtQr";
 import { ANNULLED_STAMP, certificationLine, documentQrValue, documentTitle, MECHANISM_NAMES, NOT_VALID_WATERMARK, operatorName } from "../fiscal-text";
@@ -232,6 +233,7 @@ export function FiscalA4({ doc, copyLabel }: { doc: FiscalDocumentDto; /** Origi
             </div>
           )}
           {operatorName(doc.issuedBy) && <p className="text-[8.5pt]">{t("fiscal.operator", { name: operatorName(doc.issuedBy) })}</p>}
+          <BankDetails accounts={s.bankAccounts} storeId={doc.storeId} />
         </div>
         <table className="w-[75mm]">
           <tbody>

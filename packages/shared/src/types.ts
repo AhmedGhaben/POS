@@ -1396,6 +1396,15 @@ export interface FiscalSellerDto {
   ivaRegime: IvaRegime;
   /** The software's AGT certificate when issued; null: "sem validade fiscal". */
   certificate: string | null;
+  /** Bank accounts printed on the document (proformas and invoices issued since they were added). */
+  bankAccounts?: FiscalBankDetailsDto[];
+}
+
+/** A bank account as printed on a document: "Coordenadas bancárias". */
+export interface FiscalBankDetailsDto {
+  bankName: string;
+  accountHolder: string;
+  iban: string;
 }
 
 export interface FiscalDocumentDto {

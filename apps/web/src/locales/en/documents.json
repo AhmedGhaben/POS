@@ -109,5 +109,10 @@
     "tendered": "Amount handed over: {{amount}}",
     "change": "Change: {{amount}}",
     "operator": "Operator: {{name}}"
+  },
+  "bank": {
+    "heading": "Bank details",
+    "bank": "Bank",
+    "holder": "Account holder"
   }
 }

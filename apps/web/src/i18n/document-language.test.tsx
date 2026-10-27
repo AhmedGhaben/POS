@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { BusinessDto, FiscalDocumentDto, ShiftSummaryDto, StoreDto, UserDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
+import { A4Document } from "@/features/documents/components/A4Document";
 import { FiscalA4 } from "@/features/fiscal/components/FiscalA4";
 import { ReportA4 } from "@/features/reports/components/ReportViewer";
 import { useCellFormatters } from "@/features/reports/use-cell-formatters";
@@ -99,6 +100,19 @@ describe("an Angolan store's documents, printed by someone reading the app in En
     expect(html).toContain("17/10/2026");
     expect(html).not.toContain("2026-10-17");
     expectNoEnglish(html, englishOnly(en.fiscal, ptDocuments.fiscal));
+  });
+
+  it("bank accounts frozen on the document print as Coordenadas bancárias, IBAN in fours; older documents print none", () => {
+    const bankAccounts = [{ bankName: "Banco BAI", accountHolder: "Demo Lda", iban: "AO03000600000012345678901" }];
+    const html = renderToStaticMarkup(<FiscalA4 doc={{ ...doc, seller: { ...doc.seller, bankAccounts } }} />);
+    expect(html).toContain("Coordenadas bancárias");
+    expect(html).toContain("Demo Lda");
+    expect(html).toContain("AO03 0006 0000 0012 3456 7890 1");
+    expect(renderToStaticMarkup(<FiscalA4 doc={doc} />)).not.toContain("Coordenadas bancárias");
+
+    const quote = renderToStaticMarkup(<A4Document title="ORÇAMENTO" meta={[]} store={store} lines={[]} bankAccounts={bankAccounts} />);
+    expect(quote).toContain("Coordenadas bancárias");
+    expect(quote).toContain("AO03 0006 0000 0012 3456 7890 1");
   });
 
   it("a report on A4 (and its PDF) is in Portuguese", () => {

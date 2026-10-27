@@ -1,7 +1,8 @@
 import * as React from "react";
-import type { BusinessDto, StoreDto } from "@pos/shared";
+import type { BusinessDto, FiscalBankDetailsDto, StoreDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
 import { logoSrc } from "@/features/business/api";
+import { BankDetails } from "@/features/documents/components/BankDetails";
 import { documentTotals, type DocumentLine } from "@/features/documents/lines";
 import { useDocumentLanguage } from "@/i18n/use-document-language";
 
@@ -39,13 +40,15 @@ interface A4DocumentProps {
   billTo?: BillTo | null;
   /** Shown under the totals, e.g. payment details or a disclaimer. */
   notes?: React.ReactNode;
+  /** "Coordenadas bancárias": the accounts the business shows on quotes. */
+  bankAccounts?: FiscalBankDetailsDto[];
 }
 
 /**
  * A4 quotation/invoice. Sized in mm with 15 mm padding for the on-screen
  * preview; in print the padding moves to the @page margin (globals.css).
  */
-export function A4Document({ title, meta, store, lines, seller, billTo, notes }: A4DocumentProps) {
+export function A4Document({ title, meta, store, lines, seller, billTo, notes, bankAccounts }: A4DocumentProps) {
   const liveBusiness = useAuthStore((s) => s.business);
   const from = seller ?? liveBusiness;
   const { t, money, qty } = useDocumentLanguage(from?.currency, store?.id);
@@ -159,6 +162,12 @@ export function A4Document({ title, meta, store, lines, seller, billTo, notes }:
           </tbody>
         </table>
       </section>
+
+      {bankAccounts && bankAccounts.length > 0 && (
+        <section className="mt-[10mm]">
+          <BankDetails accounts={bankAccounts} storeId={store?.id} />
+        </section>
+      )}
 
       {notes && <section className="mt-[10mm] break-inside-avoid">{notes}</section>}
 

@@ -109,5 +109,10 @@
     "tendered": "Valor entregue: {{amount}}",
     "change": "Troco: {{amount}}",
     "operator": "Operador: {{name}}"
+  },
+  "bank": {
+    "heading": "Coordenadas bancárias",
+    "bank": "Banco",
+    "holder": "Titular"
   }
 }

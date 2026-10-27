@@ -1,9 +1,10 @@
 import * as React from "react";
 import { FileCheck, Printer } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { countryConfig, type CustomerDto, type DiscountInput, type StoreDto } from "@pos/shared";
+import { BANK_ACCOUNTS_QUERY_KEY, fetchBankAccounts } from "@/features/business/api";
 import { createProforma } from "@/features/fiscal/api";
 import { isWorkingOffline } from "@/features/pos/offline-store";
 import { Button } from "@/components/ui/button";
@@ -75,6 +76,9 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = nul
     },
     onError: (error) => toast.error((error as Error).message),
   });
+  // A quote isn't stored: it shows the bank accounts as they're set now.
+  const bankAccounts = useQuery({ queryKey: BANK_ACCOUNTS_QUERY_KEY, queryFn: fetchBankAccounts, enabled: open, staleTime: 5 * 60_000 });
+  const quoteAccounts = (bankAccounts.data ?? []).filter((a) => a.showOnQuotes);
   const reference = quoteReference(store?.id ?? "0000", issuedAt);
   const name = forName.trim() || undefined;
   const date = doc.date(issuedAt);
@@ -89,6 +93,7 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = nul
       ]}
       store={store}
       lines={docLines}
+      bankAccounts={quoteAccounts}
       billTo={name ? { name, email: customer?.name === name ? customer.email : null } : null}
       notes={
         <p className="text-[9pt] text-neutral-700">
