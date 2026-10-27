@@ -91,6 +91,12 @@ if "!seeded!"=="1" (
   if errorlevel 1 goto :fail
 )
 
+rem The accountant's login (every start: it only adds what's missing, so a
+rem demo set up with an older bundle gets it too).
+docker compose run --rm --no-deps -e ALLOW_DEMO_SEED=1 api node apps/api/dist/prisma/demo-accountant.js >nul
+if errorlevel 1 goto :fail
+echo  [ok] Accountant login ready
+
 rem --- 7. API -----------------------------------------------------------------
 echo  Starting the API...
 docker compose up -d api
@@ -119,6 +125,7 @@ echo       http://localhost:4000
 echo.
 echo   Owner:    owner@demo-store.test    / OwnerPass123!    (till PIN 8642)
 echo   Cashier:  cashier@demo-store.test  / CashierPass123!  (till PIN 2468)
+echo   Accountant: accountant@demo-store.test / AccountantPass123!
 echo.
 echo   It keeps running in the background (also after a restart,
 echo   once Docker Desktop is open). Use stop-demo.bat to stop it.

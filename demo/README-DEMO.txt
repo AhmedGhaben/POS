@@ -44,6 +44,10 @@ WHAT IS IN THIS FOLDER
        password:  CashierPass123!
        till PIN:  2468
 
+   Accountant (the accountant's view: accounting, reports, SAF-T files):
+       email:     accountant@demo-store.test
+       password:  AccountantPass123!
+
    The demo store is "Demo Retail Co." in Angola, with prices in Kwanza
    and IVA at 14%.
 
