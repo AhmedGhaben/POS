@@ -75,7 +75,9 @@ test.describe.serial("Part A: terminal, outbox and sync", () => {
     proxy.setMode("bad-gateway");
     const receipt = await sellFirstProduct(page);
     expect(receipt).toContain("Saved offline");
-    expect(receipt).toMatch(/OFF-[A-Z0-9]{4}-[A-Z0-9]{12}/);
+    // The till numbers it in its own series; the internal OFF-… number isn't printed (tester #26).
+    expect(receipt).toMatch(/FR POS\d+-\d{4}\/\d+/);
+    expect(receipt).not.toMatch(/OFF-[A-Z0-9]{4}-[A-Z0-9]{12}|Talão/);
     await expect(status()).toContainText("Working offline — 1 sale waiting to sync");
   });
 
