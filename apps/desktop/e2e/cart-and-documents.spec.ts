@@ -18,11 +18,17 @@ test.describe.serial("POS cart kept, Back to POS, documents in the store's langu
   const tendered = () => page.getByPlaceholder("Tendered amount (optional)");
   const email = () => page.getByPlaceholder("Email receipt (optional)");
   const products = () => page.locator("div.grid > button.text-left");
+  /**
+   * The till only offers "Email receipt" when the server can send email
+   * (RESEND_API_KEY set on the API). Without it, the email steps are skipped.
+   */
+  let emailConfigured = false;
+  const EMAIL_SKIPPED = "email not configured (RESEND_API_KEY isn't set on the API): the email-receipt steps are skipped";
 
   /** What the sale looks like: the total on Charge, the cash typed, the email. */
   async function snapshot() {
     await charge().waitFor();
-    return { charge: await charge().textContent(), tendered: await tendered().inputValue(), email: await email().inputValue() };
+    return { charge: await charge().textContent(), tendered: await tendered().inputValue(), email: emailConfigured ? await email().inputValue() : null };
   }
 
   test.beforeAll(async () => {
@@ -31,6 +37,12 @@ test.describe.serial("POS cart kept, Back to POS, documents in the store's langu
     await connect(page, proxy.url);
     await login(page);
     await restock(page);
+    emailConfigured = await page.evaluate(async () => {
+      const auth = JSON.parse(localStorage.getItem("pos-auth")!).state;
+      const res = await fetch("/api/businesses/me", { headers: { Authorization: `Bearer ${auth.accessToken}` } });
+      return !!(await res.json()).emailEnabled;
+    });
+    if (!emailConfigured) console.log(`[cart-and-documents] ${EMAIL_SKIPPED}`);
   });
 
   test.afterAll(async () => {
@@ -45,7 +57,8 @@ test.describe.serial("POS cart kept, Back to POS, documents in the store's langu
     await products().nth(0).click();
     await products().nth(0).click();
     await products().nth(1).click();
-    await email().fill("cliente@example.com");
+    if (emailConfigured) await email().fill("cliente@example.com");
+    else test.info().annotations.push({ type: "skipped step", description: EMAIL_SKIPPED });
     await tendered().fill("99999");
     before = await snapshot();
     expect(before.tendered).toBe("99999");
@@ -102,7 +115,7 @@ test.describe.serial("POS cart kept, Back to POS, documents in the store's langu
     await login(page, "cashier@demo-store.test", "CashierPass123!");
     await openPosWithProducts(page);
     await expect(page.getByText("Cart is empty — scan or search a product to begin.")).toBeVisible();
-    await expect(email()).toHaveValue("");
+    if (emailConfigured) await expect(email()).toHaveValue("");
     // The parked sale is with the held orders, for whoever serves that customer.
     await page.getByRole("button", { name: /^Held orders/ }).click();
     await expect(page.getByRole("dialog")).not.toContainText("No orders on hold.");
