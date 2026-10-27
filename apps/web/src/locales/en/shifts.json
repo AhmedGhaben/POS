@@ -56,7 +56,8 @@
     "quickHint": "If it is, close in one click. If not, type what's in the drawer.",
     "quickConfirm": "Yes, close with {{amount}}",
     "quickOther": "Enter a different amount",
-    "checking": "One moment…"
+    "checking": "One moment…",
+    "descriptionLive": "Count the cash in the drawer. The difference from what's expected shows as you type."
   },
   "report": {
     "title": "END OF SHIFT",
@@ -93,7 +94,10 @@
     "netAndTax": "without IVA {{net}} · IVA {{tax}}",
     "productsNet": "Total without IVA",
     "productsTax": "IVA",
-    "productsTotal": "Total"
+    "productsTotal": "Total",
+    "notInDrawer": "Payments not in the drawer (card, transfer…)",
+    "over": "Over by {{amount}}",
+    "short": "Short by {{amount}}"
   },
   "page": {
     "description": "Each till shift with its cash count. Differences are shown in red.",

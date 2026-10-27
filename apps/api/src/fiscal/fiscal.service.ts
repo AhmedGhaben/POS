@@ -29,9 +29,17 @@ export interface IssuerContext {
   currency: string;
   /** Frozen on the document. */
   seller: Prisma.InputJsonObject;
+  /** The bank accounts the business shows on proformas (quotes) and on invoices; copied onto the seller when issued. */
+  bankAccounts: { quotes: BankDetails[]; invoices: BankDetails[] };
   finalConsumerTaxId: string;
   /** Documents also go to AGT (phase 9: the feature flag and the business's e-invoicing setting). */
   eInvoicing: boolean;
+}
+
+export interface BankDetails {
+  bankName: string;
+  accountHolder: string;
+  iban: string;
 }
 
 export interface Buyer {
@@ -107,6 +115,8 @@ export class FiscalService {
     if (!store) throw new NotFoundException("Store not found");
     const b = store.business;
     const config = countryConfig(store.country);
+    const accounts = await this.prisma.bankAccount.findMany({ where: { businessId }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] });
+    const details = (a: (typeof accounts)[number]): BankDetails => ({ bankName: a.bankName, accountHolder: a.accountHolder, iban: a.iban });
     return {
       businessId,
       storeId,
@@ -136,6 +146,10 @@ export class FiscalService {
         store: { id: store.id, name: store.name, address: store.address, city: store.city, province: store.province, phone: store.phone },
         ivaRegime: store.ivaRegime,
         certificate: this.certificate(),
+      },
+      bankAccounts: {
+        quotes: accounts.filter((a) => a.showOnQuotes).map(details),
+        invoices: accounts.filter((a) => a.showOnInvoices).map(details),
       },
     };
   }
@@ -446,7 +460,7 @@ export class FiscalService {
         hashExcerpt: hashExcerpt(hash),
         signedBy: requested?.hash ? "TILL" : "SERVER",
         chainVerified,
-        seller: issuer.seller,
+        seller: sellerFor(issuer, input.documentType),
         customerId: buyer?.id ?? null,
         buyerName: buyer?.name ?? "Consumidor Final",
         buyerTaxId: buyer?.taxId?.trim() || issuer.finalConsumerTaxId,
@@ -715,6 +729,12 @@ export class FiscalService {
     }
     return { valid: previous === series.lastHash, checked: documents.length };
   }
+}
+
+/** The seller to freeze on a document: with the bank accounts it shows (proformas: "show on quotes"; FR/FT: "show on invoices"). */
+function sellerFor(issuer: IssuerContext, documentType: string): Prisma.InputJsonObject {
+  const bankAccounts = documentType === "PF" ? issuer.bankAccounts.quotes : documentType === "FR" || documentType === "FT" ? issuer.bankAccounts.invoices : [];
+  return bankAccounts.length ? { ...issuer.seller, bankAccounts: bankAccounts as unknown as Prisma.InputJsonArray } : issuer.seller;
 }
 
 function sourceLine(li: SaleForDocument["lineItems"][number], issuer: IssuerContext): SourceLine {

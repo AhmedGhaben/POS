@@ -20,7 +20,7 @@ import { useMoney } from "@/features/business/use-money";
 import { printDocument } from "@/features/desktop/printing";
 import { FiscalDocumentDialog } from "@/features/fiscal/components/FiscalDocumentDialog";
 import { logSlipPrint } from "@/features/fiscal/print-log";
-import { saleDocument } from "@/features/fiscal/sale-document";
+import { saleDocument, saleNumber } from "@/features/fiscal/sale-document";
 import { IssueInvoiceDialog } from "@/features/invoices/components/IssueInvoiceDialog";
 import { Receipt } from "@/features/pos/components/Receipt";
 import { todayIn } from "@/features/reports/export-periods";
@@ -65,7 +65,6 @@ export function SalesPage() {
   });
   const total = sales.data?.total ?? 0;
 
-  const docNo = (s: SaleDto) => saleDocument(s)?.documentNo ?? s.receiptNumber;
   const paidWith = (s: SaleDto, tr: typeof t = t) =>
     [...s.payments.map((p) => tr(`common:paymentMethods.${p.method}`)), ...(Number(s.creditAmount ?? 0) > 0 ? [tr("sales.onAccount")] : [])].join(" + ");
 
@@ -76,7 +75,7 @@ export function SalesPage() {
       for (let skip = 0; skip < Math.min(total, 5000); skip += 200) rows.push(...(await fetchSalesHistory({ ...filter, take: 200, skip })).items);
       downloadCsv(`${docT("sales.file")}-${from || "start"}-${to || today}.csv`, [
         { header: docT("sales.date"), value: (s: SaleDto) => formatDateTime(s.createdAt) },
-        { header: docT("sales.document"), value: docNo },
+        { header: docT("sales.document"), value: saleNumber },
         { header: docT("sales.customer"), value: (s: SaleDto) => s.customer?.name ?? "" },
         { header: "NIF", value: (s: SaleDto) => s.customer?.taxId ?? "" },
         { header: docT("sales.cashier"), value: (s: SaleDto) => (s.cashier ? `${s.cashier.firstName} ${s.cashier.lastName}` : "") },
@@ -148,7 +147,7 @@ export function SalesPage() {
               {sales.data?.items.map((s) => (
                 <TableRow key={s.id} className={`cursor-pointer ${s.status === SaleStatus.VOIDED ? "text-muted-foreground line-through" : ""}`} onClick={() => setOpen(s)}>
                   <TableCell className="whitespace-nowrap">{formatDateTime(s.createdAt)}</TableCell>
-                  <TableCell className="font-mono text-xs">{docNo(s)}</TableCell>
+                  <TableCell className="font-mono text-xs">{saleNumber(s)}</TableCell>
                   <TableCell>{s.customer && !s.customer.isFinalConsumer ? s.customer.name : "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{s.cashier ? `${s.cashier.firstName} ${s.cashier.lastName}` : ""}</TableCell>
                   <TableCell className="text-muted-foreground">{paidWith(s)}</TableCell>
@@ -184,7 +183,7 @@ export function SalesPage() {
       <Dialog open={!!open} onOpenChange={(o) => !o && setOpen(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{open ? docNo(open) : ""}</DialogTitle>
+            <DialogTitle>{open ? saleNumber(open) : ""}</DialogTitle>
           </DialogHeader>
           {open && (
             <>

@@ -92,6 +92,25 @@
   display: none;
 }
 
+/* Touch mode (This device): bigger tap targets on touchscreen tills. */
+html.touch button,
+html.touch [role="button"],
+html.touch [role="radio"],
+html.touch [role="combobox"] {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+html.touch input:not([type="checkbox"]):not([type="radio"]),
+html.touch select {
+  min-height: 3rem;
+  font-size: 1.125rem;
+}
+html.touch input[type="checkbox"],
+html.touch input[type="radio"] {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
 @media print {
   /* A person's display size (root font size) never changes what prints. */
   html {

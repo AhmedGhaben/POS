@@ -60,7 +60,8 @@
     "payers": "Número de pagantes",
     "payersCount_one": "{{count}} pagante",
     "payersCount_other": "{{count}} pagantes",
-    "nonCashOver": "Só o dinheiro pode passar do valor devido. Reduza as outras formas."
+    "nonCashOver": "Só o dinheiro pode passar do valor devido. Reduza as outras formas.",
+    "amount": "Valor"
   },
   "checkout": {
     "title": "Pagamento",
@@ -135,7 +136,9 @@
     "reprint": "Reimprimir recibo",
     "cancel": "Cancelar venda",
     "emailSent": "Enviado por e-mail",
-    "emailFailed": "Falha no e-mail"
+    "emailFailed": "Falha no e-mail",
+    "search": "Buscar pelo nº do documento ou do cupom",
+    "noMatch": "Nenhuma venda com esse número."
   },
   "void": {
     "title": "Cancelar a venda {{number}}?",

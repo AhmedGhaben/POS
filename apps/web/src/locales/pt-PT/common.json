@@ -139,5 +139,11 @@
     "month": "MM",
     "year": "AAAA",
     "pick": "Escolher uma data"
+  },
+  "keypad": {
+    "backspace": "Apagar o último algarismo",
+    "clear": "Limpar",
+    "comma": "Vírgula decimal",
+    "ok": "OK"
   }
 }

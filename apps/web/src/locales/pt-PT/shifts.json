@@ -56,7 +56,8 @@
     "quickHint": "Se sim, feche com um clique. Se não, indique o que está na gaveta.",
     "quickConfirm": "Sim, fechar com {{amount}}",
     "quickOther": "Indicar outro valor",
-    "checking": "Um momento…"
+    "checking": "Um momento…",
+    "descriptionLive": "Conte o dinheiro da gaveta. A diferença para o esperado aparece enquanto escreve."
   },
   "report": {
     "title": "FECHO DE CAIXA",
@@ -93,7 +94,10 @@
     "netAndTax": "sem IVA {{net}} · IVA {{tax}}",
     "productsNet": "Total sem IVA",
     "productsTax": "IVA",
-    "productsTotal": "Total"
+    "productsTotal": "Total",
+    "notInDrawer": "Pagamentos que não estão na gaveta (Multibanco/TPA, transferência…)",
+    "over": "Sobra {{amount}}",
+    "short": "Falta {{amount}}"
   },
   "page": {
     "description": "Cada turno de caixa com a contagem do dinheiro. As diferenças aparecem a vermelho.",

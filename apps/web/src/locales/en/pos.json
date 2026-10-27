@@ -60,7 +60,8 @@
     "payers": "Number of payers",
     "payersCount_one": "{{count}} payer",
     "payersCount_other": "{{count}} payers",
-    "nonCashOver": "Only cash can be more than what is due. Lower the other methods."
+    "nonCashOver": "Only cash can be more than what is due. Lower the other methods.",
+    "amount": "Amount"
   },
   "checkout": {
     "title": "Checkout",
@@ -135,7 +136,9 @@
     "reprint": "Reprint receipt",
     "cancel": "Cancel sale",
     "emailSent": "Emailed",
-    "emailFailed": "Email failed"
+    "emailFailed": "Email failed",
+    "search": "Search by document or receipt number",
+    "noMatch": "No sale matches that number."
   },
   "void": {
     "title": "Cancel sale {{number}}?",

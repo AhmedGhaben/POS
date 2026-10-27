@@ -341,4 +341,41 @@ describe("Angola phase 8: fiscal documents (e2e)", () => {
       await http().get(`/fiscal-documents/${list.items[0].id}`).set(auth(cashierToken)).expect(200);
     });
   });
+  describe("sales are listed by their fiscal number", () => {
+    it("the shift report and the customer card give each sale's FR number beside the internal one", async () => {
+      const customer = (await http().post("/customers").set(auth(ownerToken)).send({ name: "Cliente Número", taxId: "5417000999" }).expect(201)).body;
+      const s = (await sale({ customerId: customer.id }).expect(201)).body;
+      const documentNo = s.fiscalDocuments[0].documentNo;
+      expect(documentNo).toMatch(/^FR /);
+      const shift = (await http().get(`/shifts/client/${shiftClientId}?storeId=${storeId}`).set(auth(ownerToken)).expect(200)).body;
+      expect(shift.summary.sales).toContainEqual(expect.objectContaining({ receiptNumber: s.receiptNumber, documentNo }));
+      const card = (await http().get(`/customers/${customer.id}/card`).set(auth(ownerToken)).expect(200)).body;
+      expect(card.recent[0]).toMatchObject({ receiptNumber: s.receiptNumber, documentNo });
+    });
+  });
+
+  describe("bank accounts on documents", () => {
+    it("proformas and invoices keep the accounts shown when they were issued; later settings don't change them", async () => {
+      const account = (
+        await http()
+          .post("/bank-accounts")
+          .set(auth(ownerToken))
+          .send({ bankCode: "BAI", accountHolder: "E2E Facturas, Lda", iban: "AO03000600000012345678901", showOnQuotes: true, showOnInvoices: true })
+          .expect(201)
+      ).body;
+      const printed = [{ bankName: account.bankName, accountHolder: "E2E Facturas, Lda", iban: "AO03000600000012345678901" }];
+      const pf = (await http().post("/fiscal-documents/proformas").set(auth(ownerToken)).send({ storeId, lineItems: [{ productId, quantity: 1 }] }).expect(201)).body;
+      expect((await doc(pf.id)).seller.bankAccounts).toEqual(printed);
+      const before = (await sale().expect(201)).body;
+      expect((await doc(before.fiscalDocuments[0].id)).seller.bankAccounts).toEqual(printed);
+
+      await http().patch(`/bank-accounts/${account.id}`).set(auth(ownerToken)).send({ showOnInvoices: false }).expect(200);
+      const after = (await sale().expect(201)).body;
+      expect((await doc(after.fiscalDocuments[0].id)).seller.bankAccounts).toBeUndefined();
+      expect((await doc(before.fiscalDocuments[0].id)).seller.bankAccounts).toEqual(printed);
+      expect((await doc((await http().post("/fiscal-documents/proformas").set(auth(ownerToken)).send({ storeId, lineItems: [{ productId, quantity: 1 }] }).expect(201)).body.id)).seller.bankAccounts).toEqual(printed);
+
+      await http().delete(`/bank-accounts/${account.id}`).set(auth(ownerToken)).expect(200);
+    });
+  });
 });

@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import type { PaymentMethod, ShiftProductRowDto, ShiftSummaryDto, StoreDto } from "@pos/shared";
 import { SlipHeader } from "@/features/documents/components/SlipHeader";
 import { useDocumentLanguage } from "@/i18n/use-document-language";
+import { cashDifference, notInDrawer } from "../cash-check";
 
 /** What the report shows, from the server's shift or the till's own record. */
 export interface ShiftReportData {
@@ -68,7 +69,8 @@ export function ShiftReport({
   const { money, dateTime, lang } = useDocumentLanguage(undefined, store?.id);
   const { t } = useTranslation(["shifts", "common"], { lng: lang });
   const s = data.summary;
-  const difference = data.countedCash != null ? data.countedCash - data.expectedCash : null;
+  const difference = data.countedCash != null ? cashDifference(data.countedCash, data.expectedCash) : null;
+  const elsewhere = notInDrawer(s);
 
   return (
     <div className="receipt-slip mx-auto w-[300px] font-mono text-xs">
@@ -114,6 +116,7 @@ export function ShiftReport({
         />
       ))}
       <Row label={t("report.expected")} value={money(data.expectedCash)} strong />
+      {elsewhere > 0 && <Row label={t("report.notInDrawer")} value={money(elsewhere)} />}
       {data.tillExpectedCash != null && Math.abs(data.tillExpectedCash - data.expectedCash) >= 0.005 && (
         <Row label={t("report.tillExpected")} value={money(data.tillExpectedCash)} />
       )}
@@ -125,6 +128,11 @@ export function ShiftReport({
             value={`${difference! > 0 ? "+" : ""}${money(difference!)}`}
             strong
           />
+          {difference !== 0 && (
+            <p className="text-right font-semibold">
+              {difference! > 0 ? t("report.over", { amount: money(difference!) }) : t("report.short", { amount: money(-difference!) })}
+            </p>
+          )}
         </>
       )}
       {data.note && <p className="mt-1 whitespace-pre-line">{data.note}</p>}
@@ -147,8 +155,9 @@ export function ShiftReport({
           <p className="font-semibold">{t("report.allSales")}</p>
           {s.sales.map((sale) => (
             <div key={sale.receiptNumber} className={sale.voided ? "line-through" : undefined}>
-              <Row label={sale.receiptNumber} value={money(sale.total)} />
+              <Row label={sale.documentNo ?? sale.receiptNumber} value={money(sale.total)} />
               <p className="pl-2 text-[10px]">
+                {sale.documentNo ? `${sale.receiptNumber} · ` : ""}
                 {dateTime(sale.at)} · {sale.method === "SPLIT" ? t("report.split") : sale.method === "CREDIT" ? t("report.credit") : t(`common:paymentMethods.${sale.method}`)}
                 {sale.voided ? ` · ${t("report.cancelled")}` : ""}
               </p>

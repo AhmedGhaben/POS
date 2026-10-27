@@ -5,6 +5,7 @@ import { Ban, Printer } from "lucide-react";
 import { SaleStatus, type SaleDto, type StoreDto } from "@pos/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { PrintArea } from "@/components/print/PrintArea";
@@ -13,6 +14,7 @@ import { useMoney } from "@/features/business/use-money";
 import { printDocument } from "@/features/desktop/printing";
 import { PrintButton } from "@/components/print/PrintButton";
 import { logSlipPrint } from "@/features/fiscal/print-log";
+import { saleDocument } from "@/features/fiscal/sale-document";
 import { listOutbox } from "@/lib/offline-db";
 import { formatDateTime } from "@/lib/format";
 import { fetchRecentSales } from "../api";
@@ -42,6 +44,7 @@ export function RecentSalesSheet({ open, onOpenChange, storeId, store }: RecentS
   const offline = useOfflineStore((s) => isWorkingOffline(s));
   const [reprint, setReprint] = React.useState<SaleDto | null>(null);
   const [toVoid, setToVoid] = React.useState<SaleDto | null>(null);
+  const [search, setSearch] = React.useState("");
 
   const server = useQuery({
     queryKey: ["recent-sales", storeId],
@@ -58,6 +61,11 @@ export function RecentSalesSheet({ open, onOpenChange, storeId, store }: RecentS
     () => mergeRecentSales(server.data ?? [], outbox.data ?? []).filter((s) => s.storeId === storeId),
     [server.data, outbox.data, storeId],
   );
+  // By the fiscal number (FR POS001-2026/57, or just 57) or the internal receipt number.
+  const query = search.trim().toLowerCase();
+  const shown = query
+    ? sales.filter((s) => [saleDocument(s)?.documentNo, s.receiptNumber].some((n) => n?.toLowerCase().includes(query)))
+    : sales;
 
   function refresh() {
     void queryClient.invalidateQueries({ queryKey: ["recent-sales", storeId] });
@@ -78,13 +86,15 @@ export function RecentSalesSheet({ open, onOpenChange, storeId, store }: RecentS
           {(offline || server.isError) && (
             <p className="rounded-md bg-secondary px-3 py-2 text-sm text-secondary-foreground">{t("recent.localOnly")}</p>
           )}
+          <Input type="search" placeholder={t("recent.search")} aria-label={t("recent.search")} value={search} onChange={(e) => setSearch(e.target.value)} />
           <ul className="-mx-1 flex-1 divide-y overflow-y-auto">
-            {sales.length === 0 && !server.isLoading && (
-              <li className="px-1 py-6 text-center text-sm text-muted-foreground">{t("recent.empty")}</li>
+            {shown.length === 0 && !server.isLoading && (
+              <li className="px-1 py-6 text-center text-sm text-muted-foreground">{query ? t("recent.noMatch") : t("recent.empty")}</li>
             )}
-            {sales.map((sale) => {
+            {shown.map((sale) => {
               const voided = sale.status === SaleStatus.VOIDED;
               const who = cashierName(sale);
+              const documentNo = saleDocument(sale)?.documentNo;
               return (
                 <li key={sale.clientId ?? sale.id} className="flex items-center gap-3 px-1 py-3" data-testid="recent-sale">
                   <div className="min-w-0 flex-1">
@@ -105,9 +115,10 @@ export function RecentSalesSheet({ open, onOpenChange, storeId, store }: RecentS
                       )}
                     </div>
                     <p className="truncate text-xs text-muted-foreground">
-                      {formatDateTime(sale.createdAt)} · {sale.receiptNumber}
+                      {formatDateTime(sale.createdAt)} · {documentNo ? <span className="font-medium text-foreground">{documentNo}</span> : sale.receiptNumber}
                       {who && ` · ${who}`}
                     </p>
+                    {documentNo && <p className="truncate text-[11px] text-muted-foreground/80">{sale.receiptNumber}</p>}
                   </div>
                   <Button size="icon" variant="ghost" aria-label={t("recent.reprint")} title={t("recent.reprint")} onClick={() => setReprint(sale)}>
                     <Printer className="h-4 w-4" />

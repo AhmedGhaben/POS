@@ -37,6 +37,18 @@ describe("BusinessesService", () => {
     it("returns a null logoUrl without a logo", () => {
       expect(toBusinessSettings({ ...BUSINESS, logo: null, logoUpdatedAt: null }).logoUrl).toBeNull();
     });
+
+    it("tells the app whether AI insights are on: off unless AI_INSIGHTS_ENABLED is true", () => {
+      const flag = process.env.AI_INSIGHTS_ENABLED;
+      delete process.env.AI_INSIGHTS_ENABLED;
+      expect(toBusinessSettings(BUSINESS).aiInsightsEnabled).toBe(false);
+      process.env.AI_INSIGHTS_ENABLED = "false";
+      expect(toBusinessSettings(BUSINESS).aiInsightsEnabled).toBe(false);
+      process.env.AI_INSIGHTS_ENABLED = "true";
+      expect(toBusinessSettings(BUSINESS).aiInsightsEnabled).toBe(true);
+      if (flag === undefined) delete process.env.AI_INSIGHTS_ENABLED;
+      else process.env.AI_INSIGHTS_ENABLED = flag;
+    });
   });
 
   describe("setLogo", () => {

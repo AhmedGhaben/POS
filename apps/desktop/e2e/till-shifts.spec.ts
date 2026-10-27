@@ -111,11 +111,15 @@ test.describe.serial("Till: shifts", () => {
       .toBe(0);
   });
 
-  test("closing: a blind count, then the difference and the report", async () => {
+  test("closing: the owner sees the expected cash as they count (cashiers count blind), then the report", async () => {
     await page.getByRole("button", { name: "Close the till" }).click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog).not.toContainText("Expected");
+    const live = dialog.getByTestId("live-difference");
+    await expect(live).toContainText("Expected cash");
+    // The card sale is in the sales but not in the drawer.
+    await expect(live).toContainText("Payments not in the drawer");
     await page.getByLabel("Cash counted").fill("0");
+    await expect(live).toContainText("Short by");
     await dialog.getByRole("button", { name: "Close the till" }).click();
     await expect(dialog).toContainText("Till closed");
     await expect(dialog).toContainText(/short/);

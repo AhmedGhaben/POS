@@ -1,8 +1,11 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { BusinessDto, FiscalDocumentDto, ShiftSummaryDto, StoreDto, UserDto } from "@pos/shared";
+import type { BusinessDto, FiscalDocumentDto, SaleDto, ShiftSummaryDto, StoreDto, UserDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
+import { A4Document } from "@/features/documents/components/A4Document";
+import { documentLine } from "@/features/documents/lines";
 import { FiscalA4 } from "@/features/fiscal/components/FiscalA4";
+import { Receipt } from "@/features/pos/components/Receipt";
 import { ReportA4 } from "@/features/reports/components/ReportViewer";
 import { useCellFormatters } from "@/features/reports/use-cell-formatters";
 import type { ReportResultDto } from "@/features/reports/tables-api";
@@ -101,6 +104,34 @@ describe("an Angolan store's documents, printed by someone reading the app in En
     expectNoEnglish(html, englishOnly(en.fiscal, ptDocuments.fiscal));
   });
 
+  it("bank accounts frozen on the document print as Coordenadas bancárias, IBAN in fours; older documents print none", () => {
+    const bankAccounts = [{ bankName: "Banco BAI", accountHolder: "Demo Lda", iban: "AO03000600000012345678901" }];
+    const html = renderToStaticMarkup(<FiscalA4 doc={{ ...doc, seller: { ...doc.seller, bankAccounts } }} />);
+    expect(html).toContain("Coordenadas bancárias");
+    expect(html).toContain("Demo Lda");
+    expect(html).toContain("AO03 0006 0000 0012 3456 7890 1");
+    expect(renderToStaticMarkup(<FiscalA4 doc={doc} />)).not.toContain("Coordenadas bancárias");
+
+    const quote = renderToStaticMarkup(<A4Document title="ORÇAMENTO" meta={[]} store={store} lines={[]} bankAccounts={bankAccounts} />);
+    expect(quote).toContain("Coordenadas bancárias");
+    expect(quote).toContain("AO03 0006 0000 0012 3456 7890 1");
+  });
+
+  it("a quote says its prices are without IVA, and shows the shelf price when prices include IVA (tester #22)", () => {
+    // 150 and 100 Kz on the shelf, IVA 14% included: what the pricing gives.
+    const row = (key: string, price: number, tax: number) =>
+      documentLine({ key, name: key, sku: null, quantity: 1, unit: "un", taxRate: 14, exemptionCode: null, unitPrice: price, gross: price, lineDiscount: 0, discount: 0, net: price - tax, tax, total: price }, true);
+    const lines = [row("Sumo", 150, 18.43), row("Pão", 100, 12.29)];
+    const html = renderToStaticMarkup(<A4Document title="ORÇAMENTO" meta={[]} store={store} lines={lines} pricesIncludeTax />);
+    expect(html).toContain("Preço unit. s/ IVA");
+    expect(html).toContain("Valor s/ IVA");
+    expect(html).toContain("Preço c/ IVA");
+    expect(html).toMatch(/150,00/);
+    expect(html).toMatch(/131,57/);
+    expect(html).toMatch(/250,00/);
+    expect(renderToStaticMarkup(<A4Document title="ORÇAMENTO" meta={[]} store={store} lines={lines} />)).not.toContain("Preço c/ IVA");
+  });
+
   it("a report on A4 (and its PDF) is in Portuguese", () => {
     const data: ReportResultDto = {
       report: "salesByDay", startDate: "2026-10-01", endDate: "2026-10-31", storeId: "s1",
@@ -130,5 +161,48 @@ describe("an Angolan store's documents, printed by someone reading the app in En
     );
     expect(html).toContain(ptShifts.report.title);
     expectNoEnglish(html, englishOnly(enShifts.report, ptShifts.report));
+  });
+
+  it("a receipt shows the fiscal number, not the internal Talão n.º; a sale without a document still shows it (tester #26)", () => {
+    const sale = {
+      id: "x", storeId: "s1", receiptNumber: "MAIN-1792930259132", createdAt: "2026-10-17T09:00:00Z", status: "COMPLETED", cashier: null, lineItems: [],
+      subtotal: "100", discountTotal: "0", saleDiscountAmount: "0", taxTotal: "12.28", total: "100", pricesIncludeTax: true, creditAmount: "0",
+      payments: [{ id: "p", method: "CASH", amount: "100", tendered: null, change: null }], paymentMethod: "CASH", amountTendered: null, changeDue: null,
+      fiscalDocuments: [{ id: "d", documentType: "FR", documentNo: "FR POS001-2026/57", status: "N", hashExcerpt: "aBcD", hashControl: "0", seller: null }],
+    } as unknown as SaleDto;
+    const fiscal = renderToStaticMarkup(<Receipt sale={sale} store={store} />);
+    expect(fiscal).toContain("FR POS001-2026/57");
+    expect(fiscal).not.toContain("MAIN-1792930259132");
+    expect(fiscal).not.toContain("Talão");
+    expect(renderToStaticMarkup(<Receipt sale={{ ...sale, fiscalDocuments: [] }} store={store} />)).toContain("MAIN-1792930259132");
+  });
+
+  it("the shift report says what isn't in the drawer and the difference in words: 'Sobra 530' (tester #25)", () => {
+    const summary: ShiftSummaryDto = {
+      salesCount: 2, salesTotal: "9870", byMethod: { CASH: "9270", CARD: "600" }, discounts: "0", voided: { count: 0, total: "0" }, returns: { count: 0, total: "0", cash: "0" },
+      cashIn: "0", cashOut: "0", movements: [], byCashier: [], expectedCash: "9270",
+    };
+    const report = (countedCash: number) =>
+      renderToStaticMarkup(
+        <ShiftReport store={store} data={{ openedBy: "Ana", openedAt: "2026-10-17T08:00:00Z", closedBy: "Ana", closedAt: "2026-10-17T17:00:00Z", openingFloat: 0, countedCash, expectedCash: 9270, summary }} />,
+      ).replace(/\u00a0|&nbsp;/g, " ");
+    const over = report(9800);
+    expect(over).toContain("Pagamentos que não estão na gaveta (Multicaixa/TPA, transferência…)");
+    expect(over).toMatch(/Sobra 530,00/);
+    expect(report(9200)).toMatch(/Falta 70,00/);
+    expect(report(9270)).not.toMatch(/Sobra|Falta/);
+  });
+
+  it("the shift report lists sales by fiscal number, the internal number beside it", () => {
+    const summary: ShiftSummaryDto = {
+      salesCount: 1, salesTotal: "100", byMethod: { CASH: "100" }, discounts: "0", voided: { count: 0, total: "0" }, returns: { count: 0, total: "0", cash: "0" },
+      cashIn: "0", cashOut: "0", movements: [], byCashier: [], expectedCash: "100",
+      sales: [{ receiptNumber: "MAIN-1792930259132", documentNo: "FR POS001-2026/57", at: "2026-10-17T09:00:00Z", total: "100", method: "CASH" as never, voided: false, cashier: "Ana" }],
+    };
+    const html = renderToStaticMarkup(
+      <ShiftReport store={store} withSales data={{ openedBy: "Ana", openedAt: "2026-10-17T08:00:00Z", closedBy: "Ana", closedAt: "2026-10-17T17:00:00Z", openingFloat: 0, countedCash: 100, expectedCash: 100, summary }} />,
+    );
+    expect(html.indexOf("FR POS001-2026/57")).toBeGreaterThan(-1);
+    expect(html.indexOf("FR POS001-2026/57")).toBeLessThan(html.indexOf("MAIN-1792930259132"));
   });
 });

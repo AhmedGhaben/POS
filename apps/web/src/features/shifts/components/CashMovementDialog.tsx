@@ -6,13 +6,13 @@ import { useHasPermission } from "@/features/auth/use-permission";
 import { requestApproval, type Approval } from "@/features/overrides/approval";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useMoney } from "@/features/business/use-money";
 import { openCashDrawer, useHasDrawer } from "@/features/desktop/drawer";
 import { addCashMovement } from "../api";
 import type { LocalShift } from "../ledger";
+import { NumericField } from "@/components/ui/numeric-field";
 
 const REASONS: Record<"IN" | "OUT", CashMovementReason[]> = {
   IN: ["CHANGE_TOPUP", "OTHER"],
@@ -103,7 +103,7 @@ export function CashMovementDialog({ shift, open, onOpenChange }: { shift: Local
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="movement-amount">{t("movement.amount")}</Label>
-            <Input id="movement-amount" inputMode="decimal" autoFocus value={amount} onChange={(e) => setAmount(e.target.value)} />
+            <NumericField id="movement-amount" autoFocus value={amount} onValueChange={setAmount} />
           </div>
           <fieldset className="space-y-2">
             <legend className="mb-1 text-sm font-medium">{t("movement.reason")}</legend>

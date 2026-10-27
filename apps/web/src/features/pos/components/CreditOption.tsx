@@ -2,13 +2,13 @@ import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Permission, type CustomerCardDto, type CustomerDto } from "@pos/shared";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useHasPermission } from "@/features/auth/use-permission";
 import { useMoney } from "@/features/business/use-money";
 import { requestApproval, type Approval } from "@/features/overrides/approval";
 import { apiClient } from "@/lib/api-client";
 import { creditSplit, type CreditChoice } from "../credit";
+import { NumericField } from "@/components/ui/numeric-field";
 
 /**
  * "Put on the customer's account" at the till (docs/plans/ANGOLA.md, phase
@@ -82,15 +82,12 @@ export function CreditOption({
           )}
           <div className="space-y-1">
             <Label htmlFor="credit-paid-now">{t("credit.paidNow")}</Label>
-            <Input
+            <NumericField
               id="credit-paid-now"
-              type="number"
-              step="0.01"
-              min="0"
-              max={total}
+              keypad="popover"
               placeholder="0"
               value={value.paidNow}
-              onChange={(e) => onChange({ ...value, paidNow: e.target.value })}
+              onValueChange={(paidNow) => onChange({ ...value, paidNow })}
             />
           </div>
           <p className="text-sm font-semibold">{t("credit.onAccount", { amount: money(onAccount) })}</p>

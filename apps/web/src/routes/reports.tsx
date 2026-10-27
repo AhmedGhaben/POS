@@ -1,6 +1,7 @@
 import * as React from "react";
-import { countryConfig } from "@pos/shared";
-import { Download, FileCode2, FileSpreadsheet } from "lucide-react";
+import { countryConfig, type SaftFacturacaoSummaryDto } from "@pos/shared";
+import { useQuery } from "@tanstack/react-query";
+import { Download, FileCode2, FileSpreadsheet, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { PeriodFields } from "@/features/reports/components/PeriodFields";
 import { ReportViewer } from "@/features/reports/components/ReportViewer";
 import { SaftDeadlines } from "@/features/reports/components/SaftDeadlines";
 import { ApiError, apiClient, saveFile } from "@/lib/api-client";
+import { formatCalendarDate } from "@/lib/dates";
 
 type SaftType = "FACTURACAO" | "AQUISICAO" | "INVENTARIO";
 
@@ -44,6 +46,15 @@ export function ReportsPage() {
   const [busy, setBusy] = React.useState<"saft" | "accountant" | null>(null);
 
   const storeOptions = stores.map((s) => ({ value: s.id, label: s.name }));
+
+  // What the invoicing file for the chosen period holds, before generating it: an empty month says so.
+  const saftParams = new URLSearchParams(Object.entries({ ...periodDates(saftPeriod), storeId: saftStore }).filter((e): e is [string, string] => !!e[1]));
+  const saftSummary = useQuery({
+    queryKey: ["saft-summary", saftParams.toString()],
+    queryFn: () => apiClient.get<SaftFacturacaoSummaryDto>(`/fiscal-documents/saft/facturacao/summary?${saftParams}`),
+    enabled: saftType === "FACTURACAO",
+    retry: false,
+  });
 
   async function download(kind: "saft" | "accountant", path: string, params: Record<string, string | null>) {
     const query = new URLSearchParams(Object.entries(params).filter((e): e is [string, string] => !!e[1]));
@@ -110,7 +121,10 @@ export function ReportsPage() {
               />
             </div>
             {saftType !== "INVENTARIO" ? (
-              <PeriodFields id="saft" value={saftPeriod} onChange={setSaftPeriod} />
+              <>
+                <PeriodFields id="saft" value={saftPeriod} onChange={setSaftPeriod} />
+                {saftType === "FACTURACAO" && saftSummary.data && <SaftPeriodCount summary={saftSummary.data} />}
+              </>
             ) : (
               <div className="space-y-2">
                 <Label htmlFor="inventory-date">{t("exports.stockDate")}</Label>
@@ -150,6 +164,26 @@ export function ReportsPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+/** "12 documents in this period: ...", or plainly that the period has none (the file would hold only the company's data). */
+function SaftPeriodCount({ summary }: { summary: SaftFacturacaoSummaryDto }) {
+  const { t } = useTranslation("reports");
+  const period = { start: formatCalendarDate(summary.startDate), end: formatCalendarDate(summary.endDate) };
+  if (summary.total === 0) {
+    return (
+      <p role="status" className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
+        <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        {t("exports.emptyPeriod", period)}
+      </p>
+    );
+  }
+  return (
+    <p role="status" className="text-sm text-muted-foreground">
+      {t("exports.periodCount", { count: summary.total, ...period })}{" "}
+      {t("exports.periodBreakdown", { sales: summary.salesInvoices, working: summary.workingDocuments, payments: summary.payments })}
+    </p>
   );
 }
 

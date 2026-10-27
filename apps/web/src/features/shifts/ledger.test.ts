@@ -15,6 +15,21 @@ const shift = (extra: Partial<LocalShift> = {}): LocalShift => ({
 });
 
 describe("localSummary", () => {
+  it("lists each sale by its fiscal number, with the internal receipt number kept (tester #26)", () => {
+    const s = localSummary(
+      shift({
+        sales: [
+          { key: "a", total: 10, discount: 0, cashierId: "u1", cashier: "Ana", payments: [{ method: PaymentMethod.CASH, amount: 10 }], voided: false, receiptNumber: "OFF-MAIN-0a1b2c3d4e5f", documentNo: "FR POS001-2026/57", at: "2026-10-11T09:00:00Z" },
+          { key: "b", total: 5, discount: 0, cashierId: "u1", cashier: "Ana", payments: [{ method: PaymentMethod.CASH, amount: 5 }], voided: false, receiptNumber: "MAIN-1792930259132", at: "2026-10-11T09:05:00Z" },
+        ],
+      }),
+    );
+    expect(s.sales).toMatchObject([
+      { receiptNumber: "OFF-MAIN-0a1b2c3d4e5f", documentNo: "FR POS001-2026/57" },
+      { receiptNumber: "MAIN-1792930259132", documentNo: null },
+    ]);
+  });
+
   it("expected cash = float + cash taken + cash in - cash out, without cancelled sales", () => {
     const s = localSummary(
       shift({

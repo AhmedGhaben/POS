@@ -51,6 +51,8 @@ export interface BusinessDto {
   logoUrl: string | null;
   /** The server can send email: without it the till hides "Email receipt". */
   emailEnabled?: boolean;
+  /** The server offers AI insights (AI_INSIGHTS_ENABLED): without it the app hides them. */
+  aiInsightsEnabled?: boolean;
 }
 
 /** Whether the receipt emailed with a sale went (GET /sales/:id/receipt-email). */
@@ -413,7 +415,7 @@ export interface CustomerCreditDto {
 export interface CustomerCardDto {
   customer: CustomerDto;
   purchases: { count: number; total: string; lastAt: string | null };
-  recent: { id: string; receiptNumber: string; createdAt: string; total: string; status: SaleStatus }[];
+  recent: { id: string; receiptNumber: string; documentNo: string | null; createdAt: string; total: string; status: SaleStatus }[];
   account?: CustomerCreditDto;
 }
 
@@ -1249,6 +1251,8 @@ export interface CloseShiftDto {
 
 export interface ShiftSaleLineDto {
   receiptNumber: string;
+  /** The sale's fiscal document (FR/FT), the number customers and AGT know; absent on older records. */
+  documentNo?: string | null;
   at: string;
   total: string;
   /** The payment method, "SPLIT" when paid several ways, "CREDIT" when all on credit. */
@@ -1396,6 +1400,28 @@ export interface FiscalSellerDto {
   ivaRegime: IvaRegime;
   /** The software's AGT certificate when issued; null: "sem validade fiscal". */
   certificate: string | null;
+  /** Bank accounts printed on the document (proformas and invoices issued since they were added). */
+  bankAccounts?: FiscalBankDetailsDto[];
+}
+
+/** What the SAF-T invoicing file for a period would hold, shown before generating it. */
+export interface SaftFacturacaoSummaryDto {
+  startDate: string;
+  endDate: string;
+  /** FR, FT, NC... (SalesInvoices). */
+  salesInvoices: number;
+  /** Proformas (WorkingDocuments). */
+  workingDocuments: number;
+  /** Receipts (Payments). */
+  payments: number;
+  total: number;
+}
+
+/** A bank account as printed on a document: "Coordenadas bancárias". */
+export interface FiscalBankDetailsDto {
+  bankName: string;
+  accountHolder: string;
+  iban: string;
 }
 
 export interface FiscalDocumentDto {

@@ -233,5 +233,10 @@
     "closeShiftFirst": "Há um turno aberto neste dispositivo: feche-o primeiro.",
     "managersOnly": "Só o proprietário ou um gerente pode alterar isto.",
     "notChosen": "ainda por escolher (perguntado na primeira vez que se abre o POS aqui)"
+  },
+  "touch": {
+    "title": "Modo tátil",
+    "description": "Para caixas com ecrã tátil e sem teclado: os campos de números (quantidade, preço, desconto, dinheiro, fundo, contagens, PIN) abrem um teclado no ecrã e os botões ficam maiores. Um teclado continua a funcionar.",
+    "toggle": "Usar o modo tátil neste dispositivo"
   }
 }

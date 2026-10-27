@@ -4,6 +4,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { UpdateBusinessDto } from "./dto/update-business.dto";
 import { countryConfig } from "../countries";
+import { aiInsightsEnabled } from "../insights/ai-insights-flag";
 
 const MAX_LOGO_BYTES = 300 * 1024;
 
@@ -19,6 +20,8 @@ export type BusinessSettings = Omit<Business, "logo" | "logoMimeType" | "logoUpd
   logoUrl: string | null;
   /** This server can send email (receipts to customers); without it the till hides "Email receipt". */
   emailEnabled: boolean;
+  /** AI insights are switched on for this server (AI_INSIGHTS_ENABLED); without it the app hides them. */
+  aiInsightsEnabled: boolean;
 };
 
 /** Strips the logo bytes; the logo is fetched separately so it can be cached. */
@@ -28,6 +31,7 @@ export function toBusinessSettings(business: Business, emailEnabled = false): Bu
     ...rest,
     logoUrl: logoUpdatedAt ? `/businesses/${business.id}/logo?v=${logoUpdatedAt.getTime()}` : null,
     emailEnabled,
+    aiInsightsEnabled: aiInsightsEnabled(),
   };
 }
 

@@ -19,6 +19,28 @@ function buildReportsMock() {
 }
 
 describe("InsightsService#generate", () => {
+  const flag = process.env.AI_INSIGHTS_ENABLED;
+  beforeEach(() => {
+    process.env.AI_INSIGHTS_ENABLED = "true";
+  });
+  afterAll(() => {
+    if (flag === undefined) delete process.env.AI_INSIGHTS_ENABLED;
+    else process.env.AI_INSIGHTS_ENABLED = flag;
+  });
+
+  it("is not available while AI_INSIGHTS_ENABLED is off, and never calls the AI", async () => {
+    for (const value of [undefined, "false", "0", ""]) {
+      if (value === undefined) delete process.env.AI_INSIGHTS_ENABLED;
+      else process.env.AI_INSIGHTS_ENABLED = value;
+      const reports = buildReportsMock();
+      const parse = jest.fn();
+      const service = new InsightsService(reports as any, { messages: { parse } } as any);
+      await expect(service.generate("store-1", 30)).rejects.toThrow("AI insights are not available.");
+      expect(parse).not.toHaveBeenCalled();
+      expect(reports.summary).not.toHaveBeenCalled();
+    }
+  });
+
   it("throws ServiceUnavailableException when no Anthropic client is configured", async () => {
     const service = new InsightsService(buildReportsMock() as any, null);
 

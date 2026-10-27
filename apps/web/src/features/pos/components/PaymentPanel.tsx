@@ -3,12 +3,12 @@ import { PAYMENT_METHOD_ORDER, PaymentMethod } from "@pos/shared";
 import type { SalePaymentInputDto } from "@pos/shared";
 import type { PaymentDraft } from "@/features/pos/cart-store";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useMoney } from "@/features/business/use-money";
 import { Combobox } from "@/components/ui/combobox";
 import { splitEvenly, splitPayments } from "@/features/pos/split-payment";
+import { NumericField } from "@/components/ui/numeric-field";
 
 type SplitRow = PaymentDraft["rows"][number];
 
@@ -56,7 +56,7 @@ export function PaymentPanel({ total, onChange, draft, onDraftChange }: PaymentP
   const setRows = (change: SplitRow[] | ((prev: SplitRow[]) => SplitRow[])) =>
     patch((prev) => ({ rows: typeof change === "function" ? change(prev.rows) : change }));
 
-  const tenderedNum = tendered.trim() === "" ? null : Number(tendered);
+  const tenderedNum = tendered.trim() === "" ? null : Number(tendered.replace(",", "."));
   const changeDue =
     method === PaymentMethod.CASH && tenderedNum !== null ? tenderedNum - total : null;
   const singleInvalidTender = changeDue !== null && changeDue < 0;
@@ -125,12 +125,11 @@ export function PaymentPanel({ total, onChange, draft, onDraftChange }: PaymentP
               aria-label={t("payment.method")}
               options={paymentMethodOptions}
             />
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
+            <NumericField
+              keypad="popover"
+              aria-label={t("payment.amount")}
               value={row.amount}
-              onChange={(e) => updateRow(row.id, { amount: e.target.value })}
+              onValueChange={(amount) => updateRow(row.id, { amount })}
               className="flex-1"
             />
             <Button
@@ -194,13 +193,12 @@ export function PaymentPanel({ total, onChange, draft, onDraftChange }: PaymentP
 
       {method === PaymentMethod.CASH && (
         <div className="space-y-1">
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
+          <NumericField
+            keypad="popover"
             placeholder={t("payment.tendered")}
+            aria-label={t("payment.tendered")}
             value={tendered}
-            onChange={(e) => setTendered(e.target.value)}
+            onValueChange={setTendered}
           />
           {changeDue !== null && (
             <p

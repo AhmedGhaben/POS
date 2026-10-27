@@ -11,6 +11,11 @@ export const PT_AO_OVERRIDES: Record<string, Record<string, unknown>> = {
       MOBILE_MONEY: "Multicaixa Express / Unitel Money",
     },
   },
+  shifts: {
+    report: {
+      notInDrawer: "Pagamentos que não estão na gaveta (Multicaixa/TPA, transferência…)",
+    },
+  },
   // The words Angolan invoices use for the totals.
   documents: {
     fiscal: {

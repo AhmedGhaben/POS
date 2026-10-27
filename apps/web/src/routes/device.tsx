@@ -26,6 +26,7 @@ import { ApiError } from "@/lib/api-client";
 import { LanguagePicker } from "@/components/layout/LanguagePicker";
 import { formatDateTime } from "@/lib/format";
 import { TillSignInSection } from "@/features/till/components/TillSignInSection";
+import { TouchModeSection } from "@/features/touch/TouchModeSection";
 
 function formatTime(iso: string | null | undefined, t: TFunction<"device">) {
   if (!iso) return t("never");
@@ -356,6 +357,7 @@ export function DevicePage() {
         </CardContent>
       </Card>
       <DeviceRoleSection />
+      <TouchModeSection />
       {isDesktop && <TerminalSection />}
       {isDesktop && <TillSignInSection />}
       <SyncSection />

@@ -1,4 +1,5 @@
 import { PaymentMethod, SaleStatus, type CashMovementReason, type SaleDto, type ShiftSummaryDto } from "@pos/shared";
+import { saleDocument } from "@/features/fiscal/sale-document";
 
 /**
  * The till's own record of its open shift, so it can work out the expected
@@ -16,6 +17,8 @@ export interface LedgerSale {
   voided: boolean;
   /** For the report's full list (absent on records from before it existed). */
   receiptNumber?: string;
+  /** The sale's fiscal document number (absent on records from before it was kept). */
+  documentNo?: string | null;
   at?: string;
   /** Left on the customer's account (a sale on credit). */
   credit?: number;
@@ -87,6 +90,7 @@ export function ledgerSale(sale: SaleDto, cashierName: string): LedgerSale {
     payments: sale.payments.map((p) => ({ method: p.method, amount: Number(p.amount) })),
     voided: sale.status === SaleStatus.VOIDED,
     receiptNumber: sale.receiptNumber,
+    documentNo: saleDocument(sale)?.documentNo ?? null,
     at: sale.createdAt,
     credit: Number(sale.creditAmount ?? 0),
   };
@@ -144,6 +148,7 @@ export function localSummary(shift: LocalShift): ShiftSummaryDto {
     byCashier: [...byCashier.values()].map((r) => ({ ...r, total: money(r.total) })),
     sales: shift.sales.map((s) => ({
       receiptNumber: s.receiptNumber ?? s.key,
+      documentNo: s.documentNo ?? null,
       at: s.at ?? shift.openedAt,
       total: s.total.toFixed(2),
       method: s.payments.length === 0 ? "CREDIT" : s.payments.length === 1 && !s.credit ? s.payments[0].method : "SPLIT",

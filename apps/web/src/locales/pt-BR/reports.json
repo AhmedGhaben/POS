@@ -28,7 +28,11 @@
     "failed": "Não foi possível gerar o arquivo. Tente novamente.",
     "accountantTitle": "Exportar para o contador",
     "accountantDescription": "Planilha Excel: documentos de venda com base e IVA por alíquota, compras, recebimentos e pagamentos.",
-    "tab": "Arquivos para a AGT e o contador"
+    "tab": "Arquivos para a AGT e o contador",
+    "periodCount_one": "{{count}} documento de {{start}} a {{end}}.",
+    "periodCount_other": "{{count}} documentos de {{start}} a {{end}}.",
+    "periodBreakdown": "Notas fiscais e notas de crédito: {{sales}} · pró-formas: {{working}} · recibos: {{payments}}.",
+    "emptyPeriod": "Não há documentos de {{start}} a {{end}}. O arquivo teria só os dados da empresa. Confira o período: as vendas de cada mês estão no arquivo desse mês."
   },
   "deadlines": {
     "saftInvoicing": "Arquivo SAF-T de faturamento de {{covers}}: entregar até {{due}}.",

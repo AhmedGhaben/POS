@@ -60,7 +60,8 @@
     "payers": "Número de pagadores",
     "payersCount_one": "{{count}} pagador",
     "payersCount_other": "{{count}} pagadores",
-    "nonCashOver": "Só o dinheiro pode exceder o valor em dívida. Reduza os outros meios."
+    "nonCashOver": "Só o dinheiro pode exceder o valor em dívida. Reduza os outros meios.",
+    "amount": "Valor"
   },
   "checkout": {
     "title": "Pagamento",
@@ -135,7 +136,9 @@
     "reprint": "Reimprimir talão",
     "cancel": "Anular venda",
     "emailSent": "Enviado por email",
-    "emailFailed": "Email falhou"
+    "emailFailed": "Email falhou",
+    "search": "Procurar pelo n.º do documento ou do talão",
+    "noMatch": "Nenhuma venda com esse número."
   },
   "void": {
     "title": "Anular a venda {{number}}?",

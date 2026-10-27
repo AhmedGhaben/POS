@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useDeviceStore } from "@/features/desktop/bridge";
 import { clearUserPin, setMyPin, setUserPin } from "@/features/users/api";
 import { ApiError } from "@/lib/api-client";
+import { NumericField } from "@/components/ui/numeric-field";
 
 const PIN = /^\d{4,6}$/;
 
@@ -76,11 +77,11 @@ export function SetPinDialog({ open, onOpenChange, user, onSaved }: SetPinDialog
           )}
           <div className="space-y-1.5">
             <Label htmlFor="pin-new">{t("pin.newPin")}</Label>
-            <Input id="pin-new" type="password" inputMode="numeric" autoComplete="off" maxLength={6} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} />
+            <NumericField id="pin-new" type="password" keypad="popover" decimals={0} maxLength={6} value={pin} onValueChange={(v) => setPin(v.replace(/\D/g, ""))} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="pin-again">{t("pin.again")}</Label>
-            <Input id="pin-again" type="password" inputMode="numeric" autoComplete="off" maxLength={6} value={again} onChange={(e) => setAgain(e.target.value.replace(/\D/g, ""))} />
+            <NumericField id="pin-again" type="password" keypad="popover" decimals={0} maxLength={6} value={again} onValueChange={(v) => setAgain(v.replace(/\D/g, ""))} />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" className="w-full" disabled={busy}>

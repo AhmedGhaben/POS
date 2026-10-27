@@ -47,7 +47,8 @@ export function Receipt({ sale, store, customer, copy }: ReceiptProps) {
       {copy && <p className="text-center font-bold">{saleDocument(sale) ? REPRINT_LABEL : t("receipt.copy")}</p>}
       <ReceiptFiscalTop sale={sale} customer={customer} />
       <p className="text-center">{dateTime(sale.createdAt)}</p>
-      <p className="text-center">{t("receipt.number", { number: sale.receiptNumber })}</p>
+      {/* The fiscal number above is what the customer and AGT know; the internal number only for sales without one. */}
+      {!saleDocument(sale) && <p className="text-center">{t("receipt.number", { number: sale.receiptNumber })}</p>}
       {operatorName(sale.cashier) && <p className="text-center">{t("receipt.operator", { name: operatorName(sale.cashier) })}</p>}
       {customer && !saleDocument(sale) && <p className="text-center">{customer.name}</p>}
       <hr className="my-2 border-dashed" />
