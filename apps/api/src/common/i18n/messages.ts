@@ -222,6 +222,10 @@ const EXACT: Record<string, Translations> = {
     "pt-BR": "Nenhum produto com esse código de barras",
   },
   "SKU already exists": { "pt-PT": "Essa referência já existe", "pt-BR": "Esse código já existe" },
+  "This product has sales, purchases or stock history. Archive it instead.": {
+    "pt-PT": "Este produto tem vendas, compras ou movimentos de stock. Arquive-o em vez de o eliminar.",
+    "pt-BR": "Este produto tem vendas, compras ou movimentos de estoque. Arquive-o em vez de excluí-lo.",
+  },
   "Category not found": { "pt-PT": "Categoria não encontrada", "pt-BR": "Categoria não encontrada" },
   "Category already exists": { "pt-PT": "Essa categoria já existe", "pt-BR": "Essa categoria já existe" },
   "One or more products were not found": {
@@ -233,6 +237,25 @@ const EXACT: Record<string, Translations> = {
     "pt-BR": "Escolha uma loja para a coluna Estoque",
   },
   "Supplier not found": { "pt-PT": "Fornecedor não encontrado", "pt-BR": "Fornecedor não encontrado" },
+  "That proforma has expired. Issue a new one.": {
+    "pt-PT": "Esta factura pró-forma expirou. Emita uma nova.",
+    "pt-BR": "Esta fatura pró-forma expirou. Emita uma nova.",
+  },
+  "Expense not found": { "pt-PT": "Despesa não encontrada", "pt-BR": "Despesa não encontrada" },
+  "This expense was cancelled": { "pt-PT": "Esta despesa foi cancelada", "pt-BR": "Esta despesa foi cancelada" },
+  "This expense was already cancelled": { "pt-PT": "Esta despesa já foi cancelada", "pt-BR": "Esta despesa já foi cancelada" },
+  "This expense is already in the accounts. Cancel it and log it again.": {
+    "pt-PT": "Esta despesa já está na contabilidade. Cancele-a e registe-a novamente.",
+    "pt-BR": "Esta despesa já está na contabilidade. Cancele-a e registre-a novamente.",
+  },
+  "This supplier has purchases or payments. Archive it instead.": {
+    "pt-PT": "Este fornecedor tem compras ou pagamentos. Arquive-o em vez de o eliminar.",
+    "pt-BR": "Este fornecedor tem compras ou pagamentos. Arquive-o em vez de excluí-lo.",
+  },
+  "This supplier is archived. Restore it to buy from it again.": {
+    "pt-PT": "Este fornecedor está arquivado. Reponha-o para voltar a comprar-lhe.",
+    "pt-BR": "Este fornecedor está arquivado. Restaure-o para voltar a comprar dele.",
+  },
   "Source and destination stores must be different": {
     "pt-PT": "A loja de origem e a de destino têm de ser diferentes",
     "pt-BR": "A loja de origem e a de destino devem ser diferentes",

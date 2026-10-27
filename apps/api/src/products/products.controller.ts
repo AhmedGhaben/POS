@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Put, Query, UseGuards } from "@nestjs/common";
 import { Permission, Role } from "@prisma/client";
 import { Roles } from "../common/decorators/roles.decorator";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -87,6 +87,15 @@ export class ProductsController {
   async removePhoto(@CurrentUser() user: AuthenticatedUser, @Param("productId") productId: string) {
     const product = await this.productsService.removePhoto(user.businessId, productId);
     return { id: product.id, photoId: product.photoId };
+  }
+
+  /** Only a product with no history; otherwise 409 and it should be archived. */
+  @Delete(":productId")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@CurrentUser() user: AuthenticatedUser, @Param("productId") productId: string) {
+    return this.productsService.remove(user.businessId, productId);
   }
 
   @Patch(":productId")

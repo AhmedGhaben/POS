@@ -739,6 +739,10 @@ model Sale {
   paymentMethod      PaymentMethod
   amountTendered     Decimal?      @db.Decimal(14, 2)
   changeDue          Decimal?      @db.Decimal(14, 2)
+  /// The receipt emailed to the customer: PENDING while sending, then SENT or FAILED (null: none asked).
+  receiptEmailStatus String?
+  /// Why the email failed, for the cashier.
+  receiptEmailError  String?
   status             SaleStatus    @default(COMPLETED)
   /// Set when the sale is cancelled (VOIDED). Reason: WRONG_ITEMS,
   /// CUSTOMER_CHANGED_MIND, PAYMENT_PROBLEM, TRAINING or OTHER.
@@ -844,6 +848,8 @@ model Supplier {
   postalCode  String?
   province    String?
   country     String   @default("AO")
+  /// False once archived: hidden from pickers, kept in reports and SAF-T.
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -1001,6 +1007,10 @@ model Expense {
   amount      Decimal         @db.Decimal(14, 2)
   incurredAt  DateTime        @default(now())
   createdAt   DateTime        @default(now())
+  /// Cancelled instead of deleted; if it was posted, the accounting entry is reversed.
+  cancelledAt   DateTime?
+  cancelledById String?
+  cancelReason  String?
 
   @@index([storeId, incurredAt])
   @@map("expenses")
@@ -1357,12 +1367,27 @@ model FiscalDocument {
   prints          DocumentPrint[]
   /// Its submission to AGT, where the business has e-invoicing on.
   agtSubmission   AgtSubmission?
+  /// A proforma's validity (kept apart: the document row itself is never changed).
+  proformaTerms   ProformaTerms?
 
   @@unique([seriesId, number])
   @@unique([businessId, documentNo])
   @@index([businessId, invoiceDate])
   @@index([saleId])
   @@map("fiscal_documents")
+}
+
+/// How long a proforma (PF) is valid. Its own table so the issued document
+/// (numbered, signed, immutable) is untouched; not part of the hash.
+/// Proformas issued before this have none and don't expire.
+model ProformaTerms {
+  id         String         @id @default(cuid())
+  documentId String         @unique
+  document   FiscalDocument @relation(fields: [documentId], references: [id])
+  validUntil DateTime       @db.Date
+  createdAt  DateTime       @default(now())
+
+  @@map("proforma_terms")
 }
 
 model FiscalDocumentLine {
@@ -1810,7 +1835,7 @@ model AccountingSourceLink {
   id           String        @id @default(cuid())
   businessId   String
   /// FISCAL_DOCUMENT, FISCAL_DOCUMENT_ANNULMENT, PURCHASE, SUPPLIER_PAYMENT,
-  /// SUPPLIER_PAYMENT_CANCEL, EXPENSE, SHIFT_DIFFERENCE, CASH_MOVEMENT, STOCK_ADJUSTMENT
+  /// SUPPLIER_PAYMENT_CANCEL, EXPENSE, EXPENSE_CANCEL, SHIFT_DIFFERENCE, CASH_MOVEMENT, STOCK_ADJUSTMENT
   sourceType   String
   sourceId     String
   entryId      String?

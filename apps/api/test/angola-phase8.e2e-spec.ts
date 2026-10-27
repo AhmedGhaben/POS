@@ -282,6 +282,17 @@ describe("Angola phase 8: fiscal documents (e2e)", () => {
     });
   });
 
+  describe("printing details", () => {
+    it("a sale's document says who issued it and the cash handed over and change, outside the signed document", async () => {
+      const s = (await sale({ payments: [{ method: "CASH", amount: 20, tendered: 50 }] }).expect(201)).body;
+      const fr = await doc(s.fiscalDocuments[0].id);
+      expect(fr).toMatchObject({ issuedBy: { firstName: "Rita", lastName: "Owner" }, amountTendered: "50", changeDue: "30" });
+      const row = await prisma.fiscalDocument.findUniqueOrThrow({ where: { id: fr.id } });
+      expect(row).not.toHaveProperty("issuedBy");
+      expect(row).not.toHaveProperty("changeDue");
+    });
+  });
+
   describe("proformas and listing", () => {
     it("a proforma is numbered and signed; the sale that invoices it points at it and closes it", async () => {
       const pf = (await http().post("/fiscal-documents/proformas").set(auth(ownerToken)).send({ storeId, lineItems: [{ productId, quantity: 5 }] }).expect(201)).body;
@@ -291,6 +302,35 @@ describe("Angola phase 8: fiscal documents (e2e)", () => {
       expect(fr.referencedDocument).toMatchObject({ id: pf.id, documentType: "PF" });
       expect((await doc(pf.id)).status).toBe("F");
       await sale({ proformaId: pf.id }).expect(400);
+    });
+
+    it("a proforma is valid 30 days unless told otherwise; once expired it's hidden from the list and can't be sold", async () => {
+      const create = (body: object = {}) =>
+        http().post("/fiscal-documents/proformas").set(auth(ownerToken)).send({ storeId, lineItems: [{ productId, quantity: 1 }], ...body });
+      const plusDays = (date: string, days: number) => new Date(Date.parse(`${date.slice(0, 10)}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+
+      const pf = (await create().expect(201)).body;
+      expect(pf.validUntil).toBe(plusDays(pf.invoiceDate, 30));
+      expect(pf.expired).toBe(false);
+      const short = (await create({ validDays: 7 }).expect(201)).body;
+      expect(short.validUntil).toBe(plusDays(short.invoiceDate, 7));
+      await create({ validDays: 0 }).expect(400);
+      expect(await doc(short.id)).toMatchObject({ validUntil: short.validUntil, expired: false });
+
+      // A week later: expired. The signed document itself doesn't change.
+      const signed = await prisma.fiscalDocument.findUniqueOrThrow({ where: { id: short.id } });
+      await prisma.proformaTerms.update({ where: { documentId: short.id }, data: { validUntil: new Date(Date.now() - 2 * 86_400_000) } });
+      expect(await doc(short.id)).toMatchObject({ expired: true, status: "N" });
+      expect(await prisma.fiscalDocument.findUniqueOrThrow({ where: { id: short.id } })).toEqual(signed);
+
+      const listed = async (query = "") => ((await http().get(`/fiscal-documents?type=PF${query}`).set(auth(ownerToken)).expect(200)).body.items as { id: string; expired: boolean }[]);
+      expect((await listed()).map((d) => d.id)).not.toContain(short.id);
+      expect((await listed()).map((d) => d.id)).toContain(pf.id);
+      expect((await listed("&includeExpired=true")).find((d) => d.id === short.id)?.expired).toBe(true);
+
+      const refused = await sale({ proformaId: short.id, lineItems: [{ productId, quantity: 1 }], payments: [{ method: "CASH", amount: 10 }] }).expect(400);
+      expect(refused.body.message).toBe("That proforma has expired. Issue a new one.");
+      expect((await doc(short.id)).status).toBe("N");
     });
 
     it("owners list documents by type; cashiers can open one but not list them", async () => {

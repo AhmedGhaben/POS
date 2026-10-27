@@ -39,7 +39,8 @@
     "setMyPin": "Definir meu PIN",
     "backToPos": "Voltar ao PDV",
     "cartItems_one": "{{count}} item no carrinho",
-    "cartItems_other": "{{count}} itens no carrinho"
+    "cartItems_other": "{{count}} itens no carrinho",
+    "sessionRetry": "Não foi possível renovar a sessão agora. Você continua conectado; tente de novo em instantes."
   },
   "language": {
     "label": "Idioma"

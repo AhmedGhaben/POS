@@ -14,6 +14,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import {
   createProduct,
+  deleteProduct,
   findProductByBarcode,
   productPhotoSrc,
   removeProductPhoto,
@@ -21,6 +22,7 @@ import {
   uploadProductPhoto,
 } from "@/features/products/api";
 import { fetchCategories } from "@/features/categories/api";
+import { ApiError } from "@/lib/api-client";
 import { fetchTaxRates, TAX_RATES_QUERY_KEY } from "@/features/business/api";
 import { resizePhoto } from "@/features/business/resize-logo";
 import { useAuthStore } from "@/features/auth/store";
@@ -142,6 +144,11 @@ export function ProductFormDialog({
   React.useEffect(() => {
     if (open) setPhoto(null);
   }, [open]);
+  // Deleting for good: asked to confirm first; refused when the product has history.
+  const [deleteStep, setDeleteStep] = React.useState<"idle" | "confirm" | "hasHistory">("idle");
+  React.useEffect(() => {
+    if (open) setDeleteStep("idle");
+  }, [open]);
   const fileRef = React.useRef<HTMLInputElement>(null);
 
   // Barcodes are unique among active products: warn while typing (the server checks too).
@@ -165,6 +172,8 @@ export function ProductFormDialog({
   const done = (message: string) => {
     void queryClient.invalidateQueries({ queryKey: ["products"] });
     void queryClient.invalidateQueries({ queryKey: ["categories"] });
+    // A new or restored product shows in the inventory at 0.
+    void queryClient.invalidateQueries({ queryKey: ["inventory"] });
     queryClient.removeQueries({ queryKey: ["barcode-check"] });
     onOpenChange(false);
     toast.success(message);
@@ -214,7 +223,16 @@ export function ProductFormDialog({
     }
   }
 
-  const busy = saveMutation.isPending || archiveMutation.isPending;
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteProduct(product!.id),
+    onSuccess: () => done(t("form.deleted")),
+    onError: (error) => {
+      if (error instanceof ApiError && error.status === 409) setDeleteStep("hasHistory");
+      else onError(error);
+    },
+  });
+
+  const busy = saveMutation.isPending || archiveMutation.isPending || deleteMutation.isPending;
   const photoSrc = photo === "remove" ? null : photo ? photo.dataUrl : product ? productPhotoSrc(product) : null;
   const taxOptions = [
     ...rates.map((r) => ({
@@ -527,6 +545,29 @@ export function ProductFormDialog({
             {editing && product.isActive && (
               <p className="text-center text-xs text-muted-foreground">
                 {t("form.archiveNote")}
+              </p>
+            )}
+            {editing && deleteStep === "idle" && (
+              <Button type="button" variant="ghost" size="sm" className="w-full gap-2 text-destructive" disabled={busy} onClick={() => setDeleteStep("confirm")}>
+                <Trash2 className="h-4 w-4" /> {t("form.delete")}
+              </Button>
+            )}
+            {editing && deleteStep === "confirm" && (
+              <div className="space-y-2 rounded-md border border-destructive/40 p-3 text-sm">
+                <p>{t("form.deleteConfirm", { name: product.name })}</p>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setDeleteStep("idle")}>
+                    {t("common:actions.cancel")}
+                  </Button>
+                  <Button type="button" variant="destructive" size="sm" disabled={busy} onClick={() => deleteMutation.mutate()}>
+                    {t("form.deleteForGood")}
+                  </Button>
+                </div>
+              </div>
+            )}
+            {editing && deleteStep === "hasHistory" && (
+              <p className="rounded-md border p-3 text-sm text-muted-foreground">
+                {product.isActive ? t("form.hasHistory") : t("form.hasHistoryArchived")}
               </p>
             )}
           </form>

@@ -1,4 +1,4 @@
-import type { BankAccountDto, BusinessDto, SaveBankAccountDto, StoreDto, TaxRateDto, UpdateBusinessDto, UpdateStoreDto } from "@pos/shared";
+import type { BankAccountDto, BusinessDto, CreateStoreDto, SaveBankAccountDto, StoreDto, TaxRateDto, UpdateBusinessDto, UpdateStoreDto } from "@pos/shared";
 import { apiClient } from "@/lib/api-client";
 
 export const BUSINESS_QUERY_KEY = ["business", "me"] as const;
@@ -17,6 +17,10 @@ export function uploadLogo(dataUrl: string) {
 
 export function removeLogo() {
   return apiClient.delete<BusinessDto>("/businesses/me/logo");
+}
+
+export function createStore(dto: CreateStoreDto) {
+  return apiClient.post<StoreDto>("/stores", dto);
 }
 
 export function updateStore(storeId: string, dto: UpdateStoreDto) {

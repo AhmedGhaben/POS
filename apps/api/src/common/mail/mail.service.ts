@@ -5,6 +5,18 @@ import { formatMoney } from "../utils/currency";
 import type { Language } from "../i18n/languages";
 import { MAIL_TEXTS } from "./mail-texts";
 
+/** Whether an email went; `error` says why not. */
+export interface MailResult {
+  sent: boolean;
+  error?: string;
+}
+
+/** An attached file, its content in base64. */
+interface MailAttachment {
+  filename: string;
+  content: string;
+}
+
 export interface ReceiptEmailItem {
   name: string;
   /** Up to 3 decimals, with its unit when it isn't "un" (e.g. "1.25 kg"). */
@@ -69,15 +81,38 @@ export class MailService {
     this.appUrl = (this.config.get<string>("APP_URL") ?? "http://localhost:5173").replace(/\/+$/, "");
   }
 
-  private async send(to: string, subject: string, html: string): Promise<void> {
+  /** False without RESEND_API_KEY: emails are only logged ("stub"), nobody receives them. */
+  get configured(): boolean {
+    return this.resend !== null;
+  }
+
+  /** Sends one email and says whether it went, and why not. Never throws. */
+  private async send(to: string, subject: string, html: string, attachments?: MailAttachment[]): Promise<MailResult> {
     if (!this.resend) {
       this.logger.log(`[stub email] To: ${to} | Subject: ${subject}\n${html}`);
-      return;
+      return { sent: false, error: "Email isn't set up on this server" };
     }
-    const { error } = await this.resend.emails.send({ from: this.from, to, subject, html });
-    if (error) {
-      this.logger.error(`Failed to send email to ${to}: ${error.message}`);
+    try {
+      const { error } = await this.resend.emails.send({ from: this.from, to, subject, html, attachments });
+      if (error) {
+        this.logger.error(`Failed to send email to ${to}: ${error.message}`);
+        return { sent: false, error: error.message };
+      }
+      return { sent: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed to send email to ${to}: ${message}`);
+      return { sent: false, error: message };
     }
+  }
+
+  /**
+   * A sale's fiscal document to the customer: the document itself as the
+   * body, and attached as an HTML file to keep or print.
+   */
+  sendDocumentEmail(to: string, params: { subject: string; intro: string; attached: string; html: string; fileName: string }): Promise<MailResult> {
+    const body = params.html.replace(/<body([^>]*)>/, `<body$1><p>${escapeHtml(params.intro)}<br/><small>${escapeHtml(params.attached)}</small></p><hr/>`);
+    return this.send(to, params.subject, body, [{ filename: params.fileName, content: Buffer.from(params.html, "utf-8").toString("base64") }]);
   }
 
   async sendPasswordResetEmail(to: string, resetToken: string, lang: Language = "en"): Promise<void> {
@@ -151,7 +186,7 @@ export class MailService {
   }
 
   /** In the store's document language: it goes to the shop's customer. */
-  async sendReceiptEmail(to: string, params: ReceiptEmailParams, lang: Language = "en"): Promise<void> {
+  async sendReceiptEmail(to: string, params: ReceiptEmailParams, lang: Language = "en"): Promise<MailResult> {
     const t = MAIL_TEXTS[lang].receipt;
     const money = (value: string) => escapeHtml(formatMoney(value, params.currency, lang));
     const rows = params.items
@@ -161,7 +196,7 @@ export class MailService {
       )
       .join("");
     const storeName = escapeHtml(params.storeName);
-    await this.send(
+    return this.send(
       to,
       t.subject(storeName, params.receiptNumber),
       `<h2>${storeName}</h2>

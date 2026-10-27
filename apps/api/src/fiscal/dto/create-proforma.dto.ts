@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { ArrayMinSize, IsNumber, IsOptional, IsString, Max, Min, ValidateNested } from "class-validator";
+import { ArrayMinSize, IsInt, IsNumber, IsOptional, IsString, Max, Min, ValidateNested } from "class-validator";
 import { DiscountDto } from "../../sales/dto/create-sale.dto";
 
 export class ProformaLineDto {
@@ -35,6 +35,13 @@ export class CreateProformaDto {
   @Type(() => ProformaLineDto)
   @ArrayMinSize(1)
   lineItems!: ProformaLineDto[];
+
+  /** Days the quote is valid from its date ("Válida até"); 30 when not given. */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(365)
+  validDays?: number;
 
   @IsOptional()
   @ValidateNested()

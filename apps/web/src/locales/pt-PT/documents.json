@@ -18,7 +18,8 @@
     "cancelled": "ANULADA",
     "saved": "Poupou {{amount}}",
     "perUnit": "a {{price}}/{{unit}}",
-    "onAccount": "A crédito"
+    "onAccount": "A crédito",
+    "operator": "Operador: {{name}}"
   },
   "quote": {
     "slipTitle": "ORÇAMENTO",
@@ -103,6 +104,10 @@
     "documentTotal": "Total do documento",
     "amountSettled": "Valor pago",
     "received": "Recebido",
-    "paymentReference": "Referência: {{reference}}"
+    "paymentReference": "Referência: {{reference}}",
+    "validUntil": "Válida até",
+    "tendered": "Valor entregue: {{amount}}",
+    "change": "Troco: {{amount}}",
+    "operator": "Operador: {{name}}"
   }
 }

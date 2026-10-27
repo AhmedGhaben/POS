@@ -66,6 +66,9 @@ export class PurchasesService {
     if (!supplier || supplier.businessId !== businessId) {
       throw new NotFoundException("Supplier not found");
     }
+    if (!supplier.isActive) {
+      throw new BadRequestException("This supplier is archived. Restore it to buy from it again.");
+    }
 
     const productIds = dto.lineItems.map((li) => li.productId);
     const products = await this.prisma.product.findMany({

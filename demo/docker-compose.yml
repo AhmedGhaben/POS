@@ -1,0 +1,51 @@
+# POS demo server: the API and its database on one Windows laptop.
+# Run start-demo.bat rather than this file directly — it creates the .env
+# (fresh random secrets), loads the images, applies migrations and seeds.
+name: pos-demo
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    pull_policy: missing
+    restart: unless-stopped
+    # Postgres "fast shutdown", with time to finish before Docker kills it.
+    stop_signal: SIGINT
+    stop_grace_period: 30s
+    environment:
+      POSTGRES_USER: pos
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run start-demo.bat first}
+      POSTGRES_DB: pos
+    volumes:
+      - pos_demo_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pos -d pos"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  api:
+    image: pos-demo-api:latest
+    pull_policy: never
+    restart: unless-stopped
+    # Forwards stop signals to node, so stop-demo.bat shuts it down cleanly.
+    init: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://pos:${POSTGRES_PASSWORD}@postgres:5432/pos?schema=public"
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?run start-demo.bat first}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?run start-demo.bat first}
+      JWT_ACCESS_TTL: "30m"
+      JWT_REFRESH_TTL: "30d"
+      PORT: "4000"
+      CORS_ORIGIN: "http://localhost:4000"
+      APP_URL: "http://localhost:4000"
+      NPM_CONFIG_UPDATE_NOTIFIER: "false"
+    # Migrations are applied by start-demo.bat before the API starts.
+    command: ["node", "apps/api/dist/src/main.js"]
+    ports:
+      - "4000:4000"
+
+volumes:
+  pos_demo_data:

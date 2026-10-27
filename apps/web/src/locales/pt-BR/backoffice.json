@@ -18,7 +18,22 @@
     "taxId": "NIF / CNPJ",
     "taxIdInvalid": "Use só letras e números",
     "city": "Cidade",
-    "province": "Estado / Província"
+    "province": "Estado / Província",
+    "edit": "Editar fornecedor",
+    "editFor": "Editar {{name}}",
+    "updated": "Fornecedor atualizado",
+    "showArchived": "Mostrar fornecedores arquivados",
+    "archivedBadge": "Arquivado",
+    "restoreFor": "Restaurar {{name}}",
+    "removeFor": "Excluir ou arquivar {{name}}",
+    "removeTitle": "Remover {{name}}?",
+    "removeExplain": "O fornecedor será excluído. Isso só é possível para um fornecedor sem compras nem pagamentos.",
+    "hasHistory": "Este fornecedor tem compras ou pagamentos, então não pode ser excluído. Arquive-o: ele deixa de aparecer ao registrar compras, mas continua nos relatórios e no SAF-T, e você pode restaurá-lo depois.",
+    "delete": "Excluir",
+    "archive": "Arquivar",
+    "deleted": "Fornecedor excluído",
+    "archived": "Fornecedor arquivado",
+    "restored": "Fornecedor restaurado"
   },
   "expenses": {
     "subtitle": "Despesas da loja.",
@@ -39,7 +54,18 @@
       "MARKETING": "Marketing",
       "MAINTENANCE": "Manutenção",
       "OTHER": "Outro"
-    }
+    },
+    "edit": "Editar despesa",
+    "updated": "Despesa atualizada",
+    "cancel": "Cancelar despesa",
+    "showCancelled": "Mostrar despesas canceladas",
+    "cancelledBadge": "Cancelada",
+    "cancelTitle": "Cancelar esta despesa de {{amount}}?",
+    "cancelExplain": "Ela fica na lista como cancelada, com o motivo. Se o valor estava errado, registre a despesa de novo.",
+    "cancelPosted": "Ela já está na contabilidade, então será lançado um estorno. Se o valor estava errado, registre a despesa de novo.",
+    "cancelReason": "Motivo (pelo menos 3 caracteres)",
+    "cancelConfirm": "Cancelar despesa",
+    "cancelled": "Despesa cancelada"
   },
   "sales": {
     "subtitle": "Todas as vendas de {{store}}: encontre, reimprima, imprima o documento.",

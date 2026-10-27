@@ -1,5 +1,5 @@
 import { countryConfig, SaleStatus } from "@pos/shared";
-import type { CreateCustomerDto, CreateSaleDto, CustomerDto, FiscalNumberDto, ProductDto, SaleDto, VoidReason, VoidSaleDto } from "@pos/shared";
+import type { CreateCustomerDto, CreateSaleDto, CustomerDto, FiscalNumberDto, ProductDto, SaleDto, VoidReason, VoidSaleDto, ReceiptEmailStatus } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
 import { desktop, useDeviceStore } from "@/features/desktop/bridge";
 import { useShiftStore } from "@/features/shifts/shift-store";
@@ -250,4 +250,30 @@ export function searchCustomers(search: string) {
 
 export function createCustomer(dto: CreateCustomerDto) {
   return apiClient.post<CustomerDto>("/customers", dto);
+}
+
+/** Whether the receipt emailed with a sale went yet. */
+export function fetchReceiptEmailStatus(saleId: string) {
+  return apiClient.get<{ status: ReceiptEmailStatus | null; error: string | null }>(`/sales/${saleId}/receipt-email`);
+}
+
+/**
+ * Tells the cashier whether the emailed receipt went: asks every 2 seconds
+ * for up to 30 seconds after the sale (sending never holds the sale up).
+ * A sale queued offline is emailed when it syncs.
+ */
+export async function followReceiptEmail(sale: SaleDto, notify: (outcome: "sent" | "failed" | "queued" | "unknown", error?: string | null) => void) {
+  if (!sale.receiptEmailStatus && !sale.queued) return;
+  if (sale.queued) return notify("queued");
+  for (let i = 0; i < 15; i++) {
+    await new Promise((r) => setTimeout(r, 2_000));
+    try {
+      const { status, error } = await fetchReceiptEmailStatus(sale.id);
+      if (status === "SENT") return notify("sent");
+      if (status === "FAILED") return notify("failed", error);
+    } catch {
+      // Not reachable just now: try again.
+    }
+  }
+  notify("unknown");
 }

@@ -589,3 +589,31 @@ secrets manager) before deploying anywhere real.
 
 Cloud deploy config isn't included yet. Hosting, backups and a verified
 email domain are item #4 in `docs/plans/LAUNCH_READINESS.md`.
+
+### Demo bundle (one Windows laptop, no hosting)
+
+`demo/` holds a self-contained demo: the API and Postgres in Docker plus the
+desktop installer, with no source code. Build it with Docker running and `gh`
+signed in:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File demo\build-bundle.ps1   # -> Desktop\POS-Demo.zip
+```
+
+The script builds the API image, `docker save`s it with `postgres:16-alpine`
+(so the target laptop needs no internet), and downloads `POS-Setup-0.2.4.exe`
+from the GitHub release (`-DesktopVersion` to change it). On the target
+laptop, `start-demo.bat` does the following. `README-DEMO.txt` is the
+plain-words guide.
+
+- Starts Docker Desktop if needed.
+- Writes a `.env` with fresh random DB/JWT secrets on first run. Nothing is
+  taken from `apps/api/.env`.
+- Loads the images.
+- Applies migrations.
+- Seeds the Angolan demo store once.
+- Starts the API on http://localhost:4000.
+
+`stop-demo.bat` stops it and keeps the data. `stop-demo.bat reset` wipes it.
+The demo runs as compose project `pos-demo`, but it also uses port 4000, so
+stop the dev `api` container first when you try it on a dev machine.

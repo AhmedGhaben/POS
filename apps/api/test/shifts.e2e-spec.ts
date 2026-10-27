@@ -196,6 +196,11 @@ describe("Shifts (e2e)", () => {
       cashOut: "30.00",
     });
     expect(current.body.shift.summary.byCashier.map((c: { name: string; count: number }) => [c.name, c.count])).toEqual([["Cleo Cash", 4]]);
+    // Products sold (completed sales only; the cancelled one isn't there) and returned.
+    const { products, returnedProducts } = current.body.shift.summary;
+    expect(products).toEqual([expect.objectContaining({ productId, quantity: "4", total: "38.00" })]);
+    expect(Number(products[0].net) + Number(products[0].tax)).toBeCloseTo(38, 2);
+    expect(returnedProducts).toEqual([expect.objectContaining({ productId, quantity: "1", total: "10.00" })]);
   });
 
   it("closing records the count, the expected cash and the difference", async () => {

@@ -2,6 +2,7 @@ import { Prisma, PrismaClient, Role } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import { countryConfig } from "../src/countries";
 import { hashPin } from "../src/common/utils/pin";
+import { assertDemoDataAllowed } from "./demo-guard";
 
 const prisma = new PrismaClient();
 
@@ -125,6 +126,7 @@ function toBarcode(index: number): string {
 }
 
 async function main() {
+  assertDemoDataAllowed("seed");
   // An Angolan demo store, as sign-up makes one for Angola: AOA, pt-AO
   // documents, Africa/Luanda, Regime Geral.
   const ao = countryConfig("AO")!;

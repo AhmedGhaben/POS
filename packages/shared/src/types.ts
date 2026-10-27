@@ -49,7 +49,12 @@ export interface BusinessDto {
   invoiceFooter: string | null;
   /** Relative to the API root (prefix with /api in the web app); null without a logo. */
   logoUrl: string | null;
+  /** The server can send email: without it the till hides "Email receipt". */
+  emailEnabled?: boolean;
 }
+
+/** Whether the receipt emailed with a sale went (GET /sales/:id/receipt-email). */
+export type ReceiptEmailStatus = "PENDING" | "SENT" | "FAILED";
 
 export type UpdateBusinessDto = Partial<
   Pick<
@@ -93,6 +98,18 @@ export interface UpdateStoreDto {
   documentCopies?: number;
   /** "Idioma dos documentos"; null = the country's. */
   documentLanguage?: string | null;
+}
+
+/** POST /stores (owner). What isn't given comes from the business's country. */
+export interface CreateStoreDto {
+  name: string;
+  address?: string | null;
+  city?: string | null;
+  province?: string | null;
+  ivaRegime?: IvaRegime;
+  /** null = the country's. */
+  documentLanguage?: string | null;
+  timezone?: string;
 }
 
 /** What the till prints when a sale completes: the slip or the A4 document. */
@@ -610,6 +627,8 @@ export interface SupplierDto {
   postalCode?: string | null;
   province?: string | null;
   country?: string;
+  /** False when archived (only listed with ?includeArchived=true). */
+  isActive?: boolean;
   /** What is owed to them (GET /suppliers?withBalance=true). */
   balance?: string;
 }
@@ -623,7 +642,8 @@ export interface CreateSupplierDto extends Omit<AddressFields, "address"> {
   address?: string;
 }
 
-export type UpdateSupplierDto = Partial<CreateSupplierDto>;
+/** PATCH /suppliers/:id. `isActive: false` archives, `true` restores. */
+export type UpdateSupplierDto = Partial<CreateSupplierDto> & { isActive?: boolean };
 
 /** A purchase on a supplier's account. */
 export interface AccountPurchaseDto {
@@ -861,7 +881,15 @@ export interface ExpenseDto {
   amount: string;
   incurredAt: string;
   createdAt: string;
+  /** Set when cancelled (listed only with ?includeCancelled=true). */
+  cancelledAt?: string | null;
+  cancelReason?: string | null;
+  /** Posted to accounting: it can no longer be edited, only cancelled. */
+  posted?: boolean;
 }
+
+/** PATCH /expenses/:id, only while the expense isn't posted to accounting. */
+export type UpdateExpenseDto = Partial<Omit<CreateExpenseDto, "storeId">>;
 
 export interface ReturnLineItemInputDto {
   productId: string;
@@ -990,6 +1018,9 @@ export interface SaleDto {
   /** The till's idempotency key for this sale. */
   clientId?: string | null;
   /** Client-only: a receipt built on the till for a sale still waiting in the outbox. */
+  /** The receipt emailed to the customer; null when none was asked for. */
+  receiptEmailStatus?: ReceiptEmailStatus | null;
+  receiptEmailError?: string | null;
   queued?: boolean;
   lineItems: SaleLineItemDto[];
   /** Its Factura-Recibo (where sales are fiscal documents; absent on older sales). */
@@ -1243,7 +1274,23 @@ export interface ShiftSummaryDto {
   byCashier: { id: string; name: string; count: number; total: string }[];
   /** Every sale in the shift, oldest first (for the report's optional full list). */
   sales?: ShiftSaleLineDto[];
+  /** Products sold in the shift (completed sales), biggest total first; from the server only. */
+  products?: ShiftProductRowDto[];
+  /** Products returned in the shift, biggest total first; from the server only. */
+  returnedProducts?: ShiftProductRowDto[];
   expectedCash: string;
+}
+
+/** A product's quantity and amounts in a shift: net is without IVA, total = net + tax. */
+export interface ShiftProductRowDto {
+  productId: string;
+  name: string;
+  sku: string;
+  unit: string;
+  quantity: string;
+  net: string;
+  tax: string;
+  total: string;
 }
 
 export interface ShiftDto {
@@ -1391,6 +1438,14 @@ export interface FiscalDocumentDto {
   /** A receipt (RC): the invoices it settled, and the transfer/cheque reference. */
   settled?: { documentNo: string; invoiceDate: string; grossTotal: string; amount: string }[] | null;
   paymentReference?: string | null;
+  /** A proforma: valid until this day (YYYY-MM-DD), printed as "Válida até"; null when it doesn't expire. */
+  validUntil?: string | null;
+  expired?: boolean;
+  /** Who issued it, printed as "Operador" (not part of the signed document). */
+  issuedBy?: { firstName: string; lastName: string } | null;
+  /** The sale's cash handed over and change, printed when there was change. */
+  amountTendered?: string | null;
+  changeDue?: string | null;
 }
 
 export interface FiscalDocumentListItemDto {
@@ -1406,6 +1461,10 @@ export interface FiscalDocumentListItemDto {
   taxPayable: string;
   storeId: string;
   saleId: string | null;
+  /** A proforma: valid until this day (YYYY-MM-DD); null for others and older proformas. */
+  validUntil?: string | null;
+  /** A proforma past its validity: it can't be sold, only issued again. */
+  expired?: boolean;
 }
 
 /** GET /fiscal-documents/series/till/:terminalId */
@@ -1421,6 +1480,8 @@ export interface CreateProformaDto {
   customerId?: string;
   lineItems: { productId: string; quantity: number; unitPrice?: number; discount?: DiscountInput | null }[];
   discount?: DiscountInput | null;
+  /** Days it's valid from its date; 30 when not given. */
+  validDays?: number;
 }
 
 /** A break in a series' hash chain, for managers (GET /fiscal-documents/alerts). */

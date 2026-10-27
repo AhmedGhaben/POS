@@ -214,4 +214,30 @@ describe("Product editing (e2e)", () => {
     const back = await http().get("/products").set(auth(cashierToken)).expect(200);
     expect(back.body.map((p: { id: string }) => p.id)).toContain(teaId);
   });
+
+  it("deletes a product with no history; one sold, bought or only quoted must be archived instead", async () => {
+    const create = async (sku: string) =>
+      (await http().post("/products").set(auth(ownerToken)).send({ sku, name: sku, costPrice: 1, sellPrice: 2, exemptionCode: "M10" }).expect(201)).body.id as string;
+
+    // Never used: gone, with its (empty) stock row.
+    const typo = await create("TYPO-1");
+    await http().put(`/stores/${storeId}/inventory/${typo}`).set(auth(ownerToken)).send({ quantity: 0 }).expect(200);
+    await http().delete(`/products/${typo}`).set(auth(cashierToken)).expect(403);
+    await http().delete(`/products/${typo}`).set(auth(managerToken)).expect(204);
+    expect(await prisma.product.findUnique({ where: { id: typo } })).toBeNull();
+    expect(await prisma.inventoryItem.count({ where: { productId: typo } })).toBe(0);
+
+    // Sold (tea): refused.
+    const sold = await http().delete(`/products/${teaId}`).set(auth(ownerToken)).expect(409);
+    expect(sold.body.message).toBe("This product has sales, purchases or stock history. Archive it instead.");
+
+    // Only on a proforma (a fiscal document line, which has no foreign key): refused too.
+    const quoted = await create("QUOTED-1");
+    await http().post("/fiscal-documents/proformas").set(auth(ownerToken)).send({ storeId, lineItems: [{ productId: quoted, quantity: 1 }] }).expect(201);
+    await http().delete(`/products/${quoted}`).set(auth(ownerToken)).expect(409);
+    expect(await prisma.product.findUnique({ where: { id: quoted } })).not.toBeNull();
+
+    const other = await prisma.product.findFirst({ where: { businessId: { not: businessId } } });
+    if (other) await http().delete(`/products/${other.id}`).set(auth(ownerToken)).expect(404);
+  });
 });

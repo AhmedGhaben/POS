@@ -44,7 +44,7 @@ import type { Approval } from "@/features/overrides/approval";
 import { discountLabel } from "@/features/pos/discount-label";
 import { CustomerSearchCombobox } from "@/features/pos/components/CustomerSearchCombobox";
 import { linePrice, productTax, taxContextFor, useCart, type CartLine } from "@/features/pos/hooks/useCart";
-import { createSale } from "@/features/pos/api";
+import { createSale, followReceiptEmail } from "@/features/pos/api";
 import { useAuthStore } from "@/features/auth/store";
 import { ApiError, apiClient } from "@/lib/api-client";
 import { printDocument } from "@/features/desktop/printing";
@@ -125,6 +125,8 @@ export function PosPage() {
   const setCustomer = React.useCallback((c: CustomerDto | null) => updateCart({ customer: c, credit: NO_CREDIT, payment: null }), [updateCart]);
   const online = useOfflineStore((s) => !isWorkingOffline(s));
   const receiptEmail = draft.receiptEmail;
+  // Hidden when the server can't send email (no mail account set up).
+  const emailEnabled = useAuthStore((s) => s.business?.emailEnabled ?? false);
   const setReceiptEmail = (email: string) => updateCart({ receiptEmail: email });
   const [completedSale, setCompletedSale] = React.useState<SaleDto | null>(null);
   const [completedCustomer, setCompletedCustomer] = React.useState<CustomerDto | null>(null);
@@ -240,6 +242,10 @@ export function PosPage() {
           toast.error(t("proforma.notOpen", { number: doc.documentNo }));
           return;
         }
+        if (doc.expired) {
+          toast.error(t("proforma.expired", { number: doc.documentNo }));
+          return;
+        }
         const products = new Map((await posFetchProducts()).map((p) => [p.id, p]));
         const restored: CartLine[] = doc.lines.flatMap((l) => {
           const product = l.productId ? products.get(l.productId) : undefined;
@@ -301,7 +307,8 @@ export function PosPage() {
         {
           storeId: currentStoreId!,
           customerId: customer?.id ?? null,
-          receiptEmail: receiptEmail.trim() || undefined,
+          // Only when this server can send email (it says so with the business).
+          receiptEmail: (emailEnabled && receiptEmail.trim()) || undefined,
           payments: split.paidNow > 0 ? payments : [],
           lineItems: lines.map((l) => ({ productId: l.product.id, quantity: l.quantity, discount: l.discount ?? undefined })),
           discount: saleDiscount ?? undefined,
@@ -329,6 +336,11 @@ export function PosPage() {
       queryClient.invalidateQueries({ queryKey: ["inventory", currentStoreId] });
       // What the customer has bought and owes changed.
       if (sale.customerId) queryClient.invalidateQueries({ queryKey: ["customer-card", sale.customerId] });
+      void followReceiptEmail(sale, (outcome, error) => {
+        if (outcome === "sent") toast.success(t("checkout.emailSent"));
+        else if (outcome === "failed") toast.error(t("checkout.emailFailed", { error: error ?? "" }));
+        else if (outcome === "queued") toast.info(t("checkout.emailQueued"));
+      });
     },
   });
 
@@ -386,12 +398,14 @@ export function PosPage() {
         ) : (
         <>
         <CustomerSearchCombobox selected={customer} onSelect={setCustomer} />
-        <Input
-          type="email"
-          placeholder={t("checkout.emailReceipt")}
-          value={receiptEmail}
-          onChange={(e) => setReceiptEmail(e.target.value)}
-        />
+        {emailEnabled && (
+          <Input
+            type="email"
+            placeholder={t("checkout.emailReceipt")}
+            value={receiptEmail}
+            onChange={(e) => setReceiptEmail(e.target.value)}
+          />
+        )}
         {creditOffered && (
           <CreditOption
             customer={customer}

@@ -32,7 +32,10 @@ export const ACCOUNTING_EXACT: Record<string, Translations> = {
   "Choose an account": { "pt-PT": "Escolha uma conta", "pt-BR": "Escolha uma conta" },
   "Periods go from 0 to 15, the first before the last": { "pt-PT": "Os períodos vão de 0 a 15, o primeiro antes do último", "pt-BR": "Os períodos vão de 0 a 15, o primeiro antes do último" },
   "Work out the results first: classes 6 and 7 still have balances": { "pt-PT": "Apure primeiro os resultados: as classes 6 e 7 ainda têm saldo", "pt-BR": "Apure primeiro os resultados: as classes 6 e 7 ainda têm saldo" },
-  "That email belongs to someone who isn't an accountant": { "pt-PT": "Esse email pertence a alguém que não é contabilista", "pt-BR": "Esse e-mail pertence a alguém que não é contador" },
+  "That email is already a staff login here. An accountant needs their own email address.": {
+    "pt-PT": "Esse email já é um acesso da equipa. O contabilista precisa de um endereço de email próprio.",
+    "pt-BR": "Esse e-mail já é um acesso da equipe. O contador precisa de um endereço de e-mail próprio.",
+  },
   "This accountant already has access": { "pt-PT": "Este contabilista já tem acesso", "pt-BR": "Este contador já tem acesso" },
   "Accountant not found": { "pt-PT": "Contabilista não encontrado", "pt-BR": "Contador não encontrado" },
   "Only accountants have a professional number here": { "pt-PT": "Só os contabilistas têm aqui número profissional", "pt-BR": "Só os contadores têm aqui número profissional" },

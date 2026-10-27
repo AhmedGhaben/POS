@@ -1,5 +1,6 @@
 import { PrismaClient, Role } from "@prisma/client";
 import * as bcrypt from "bcrypt";
+import { assertDemoDataAllowed } from "./demo-guard";
 
 /**
  * Local demo only: an accountant login with access to the seed business,
@@ -7,6 +8,7 @@ import * as bcrypt from "bcrypt";
  * npx ts-node prisma/demo-accountant.ts
  */
 async function main() {
+  assertDemoDataAllowed("demo-accountant");
   const prisma = new PrismaClient();
   const business = await prisma.business.findUnique({ where: { id: "seed-business" } });
   if (!business) throw new Error("Run the seed first: the demo business is missing");

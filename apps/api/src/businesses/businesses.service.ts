@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Business } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
+import { MailService } from "../common/mail/mail.service";
 import { UpdateBusinessDto } from "./dto/update-business.dto";
 import { countryConfig } from "../countries";
 
@@ -16,20 +17,26 @@ const LOGO_SIGNATURES: Record<string, (b: Buffer) => boolean> = {
 export type BusinessSettings = Omit<Business, "logo" | "logoMimeType" | "logoUpdatedAt"> & {
   /** Relative to the API root; null when no logo is set. */
   logoUrl: string | null;
+  /** This server can send email (receipts to customers); without it the till hides "Email receipt". */
+  emailEnabled: boolean;
 };
 
 /** Strips the logo bytes; the logo is fetched separately so it can be cached. */
-export function toBusinessSettings(business: Business): BusinessSettings {
+export function toBusinessSettings(business: Business, emailEnabled = false): BusinessSettings {
   const { logo: _logo, logoMimeType: _mime, logoUpdatedAt, ...rest } = business;
   return {
     ...rest,
     logoUrl: logoUpdatedAt ? `/businesses/${business.id}/logo?v=${logoUpdatedAt.getTime()}` : null,
+    emailEnabled,
   };
 }
 
 @Injectable()
 export class BusinessesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mail: MailService,
+  ) {}
 
   private async get(businessId: string): Promise<Business> {
     const business = await this.prisma.business.findUnique({ where: { id: businessId } });
@@ -40,7 +47,7 @@ export class BusinessesService {
   }
 
   async findOwn(businessId: string): Promise<BusinessSettings> {
-    return toBusinessSettings(await this.get(businessId));
+    return toBusinessSettings(await this.get(businessId), this.mail.configured);
   }
 
   async update(businessId: string, dto: UpdateBusinessDto): Promise<BusinessSettings> {
@@ -56,7 +63,7 @@ export class BusinessesService {
       }
     }
     const business = await this.prisma.business.update({ where: { id: businessId }, data: dto });
-    return toBusinessSettings(business);
+    return toBusinessSettings(business, this.mail.configured);
   }
 
   async setLogo(businessId: string, dataUrl: string): Promise<BusinessSettings> {
@@ -78,7 +85,7 @@ export class BusinessesService {
       where: { id: businessId },
       data: { logo: bytes, logoMimeType: mimeType, logoUpdatedAt: new Date() },
     });
-    return toBusinessSettings(business);
+    return toBusinessSettings(business, this.mail.configured);
   }
 
   async removeLogo(businessId: string): Promise<BusinessSettings> {
@@ -87,7 +94,7 @@ export class BusinessesService {
       where: { id: businessId },
       data: { logo: null, logoMimeType: null, logoUpdatedAt: null },
     });
-    return toBusinessSettings(business);
+    return toBusinessSettings(business, this.mail.configured);
   }
 
   async getLogo(businessId: string): Promise<{ bytes: Buffer; mimeType: string }> {

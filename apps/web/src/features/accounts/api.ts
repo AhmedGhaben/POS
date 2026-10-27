@@ -43,8 +43,8 @@ export function annulPayment(id: string, reason: string) {
   return apiClient.post<CustomerPaymentDto>(`/customer-payments/${id}/annul`, { reason });
 }
 
-export function fetchSuppliersWithBalance() {
-  return apiClient.get<SupplierDto[]>("/suppliers?withBalance=true");
+export function fetchSuppliersWithBalance(includeArchived = false) {
+  return apiClient.get<SupplierDto[]>(`/suppliers?withBalance=true${includeArchived ? "&includeArchived=true" : ""}`);
 }
 
 export function updateSupplier(id: string, dto: UpdateSupplierDto) {

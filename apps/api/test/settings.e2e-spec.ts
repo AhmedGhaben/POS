@@ -169,4 +169,21 @@ describe("Business settings (e2e)", () => {
 
     await http().patch("/stores/seed-store-main").set(auth(ownerToken)).send({ name: "Nope" }).expect(404);
   });
+
+  it("the owner adds a store: chosen details kept, the rest from the country", async () => {
+    const full = await http()
+      .post("/stores")
+      .set(auth(ownerToken))
+      .send({ name: "E2E Loja Huambo", address: "Rua 1", city: "Huambo", province: "HO", ivaRegime: "SIMPLIFICADO", documentLanguage: "pt-PT", timezone: "Africa/Luanda" })
+      .expect(201);
+    expect(full.body).toMatchObject({ name: "E2E Loja Huambo", city: "Huambo", province: "HO", ivaRegime: "SIMPLIFICADO", documentLanguage: "pt-PT", timezone: "Africa/Luanda" });
+
+    const business = await prisma.business.findUniqueOrThrow({ where: { id: businessId! } });
+    const plain = await http().post("/stores").set(auth(ownerToken)).send({ name: "E2E Loja Simples", city: "" }).expect(201);
+    expect(plain.body).toMatchObject({ city: null, documentLanguage: null, country: business.country });
+    if (business.country === "AO") expect(plain.body).toMatchObject({ timezone: "Africa/Luanda", ivaRegime: "GERAL" });
+
+    await http().post("/stores").set(auth(ownerToken)).send({ name: "Bad", province: "XX" }).expect(400);
+    await http().post("/stores").set(auth(cashierToken)).send({ name: "Not mine" }).expect(403);
+  });
 });

@@ -1,12 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateStoreDto } from "./dto/create-store.dto";
 import { UpdateStoreDto } from "./dto/update-store.dto";
 import { countryConfig } from "../countries";
+import { planLimits } from "../common/plan-limits";
 
 @Injectable()
 export class StoresService {
+  private readonly logger = new Logger(StoresService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async findAccessible(businessId: string, userId: string, role: Role) {
@@ -23,18 +26,37 @@ export class StoresService {
     });
   }
 
-  /** A new store takes the business's country: its time zone and default IVA regime. */
+  /**
+   * A new store in the business's country: the time zone and IVA regime
+   * default to the country's, and the document language stays the
+   * country's unless one is chosen.
+   */
   async create(businessId: string, dto: CreateStoreDto) {
-    const business = await this.prisma.business.findUnique({ where: { id: businessId }, select: { country: true } });
-    const country = countryConfig(business?.country);
+    const business = await this.prisma.business.findUnique({ where: { id: businessId }, select: { country: true, plan: true } });
+    if (!business) throw new NotFoundException("Business not found");
+    const country = countryConfig(business.country);
+    if (country && dto.province && !country.provinces.some((p) => p.code === dto.province)) {
+      throw new BadRequestException("Unknown province");
+    }
+
+    // The plan's limit isn't enforced yet; note it so going over shows in the logs.
+    const { maxStores } = planLimits(business.plan);
+    const stores = await this.prisma.store.count({ where: { businessId, isActive: true } });
+    if (maxStores !== null && stores >= maxStores) {
+      this.logger.warn(`Business ${businessId} on plan ${business.plan} adds store ${stores + 1} (plan includes ${maxStores})`);
+    }
+
     return this.prisma.store.create({
       data: {
         businessId,
-        name: dto.name,
-        address: dto.address,
+        name: dto.name.trim(),
+        address: dto.address ?? null,
+        city: dto.city ?? null,
+        province: dto.province ?? null,
         timezone: dto.timezone ?? country?.timeZone ?? "UTC",
-        country: country?.code ?? business?.country ?? "AO",
-        ivaRegime: country?.defaultIvaRegime ?? "GERAL",
+        country: country?.code ?? business.country ?? "AO",
+        ivaRegime: dto.ivaRegime ?? country?.defaultIvaRegime ?? "GERAL",
+        documentLanguage: dto.documentLanguage ?? null,
       },
     });
   }

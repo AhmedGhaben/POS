@@ -26,7 +26,10 @@
     "averageCost": "Custo médio",
     "value": "Valor",
     "countFor": "Quantidade contada de {{name}}",
-    "historyFor": "Histórico de stock de {{name}}"
+    "historyFor": "Histórico de stock de {{name}}",
+    "search": "Pesquisar por nome, SKU ou código de barras",
+    "lowOnly": "Só stock baixo",
+    "noMatches": "Nenhum produto corresponde."
   },
   "transfers": {
     "title": "Transferências de stock",

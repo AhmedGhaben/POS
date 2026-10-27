@@ -39,7 +39,8 @@
     "setMyPin": "Definir o meu PIN",
     "backToPos": "Voltar ao POS",
     "cartItems_one": "{{count}} artigo no carrinho",
-    "cartItems_other": "{{count}} artigos no carrinho"
+    "cartItems_other": "{{count}} artigos no carrinho",
+    "sessionRetry": "Não foi possível renovar a sessão agora. Continua com sessão iniciada; tente novamente dentro de momentos."
   },
   "language": {
     "label": "Idioma"

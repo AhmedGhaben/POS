@@ -74,6 +74,36 @@ export function isFlagged(difference: Prisma.Decimal, threshold: Prisma.Decimal 
   return threshold !== null && difference.abs().gt(threshold);
 }
 
+/** A product's quantity and amounts in a shift; net is without IVA, total = net + tax. */
+export interface ShiftProductRow {
+  productId: string;
+  name: string;
+  sku: string;
+  unit: string;
+  quantity: string;
+  net: string;
+  tax: string;
+  total: string;
+}
+
+type ProductSums = { productId: string; name: string; sku: string; unit: string; quantity: Prisma.Decimal; net: Prisma.Decimal; tax: Prisma.Decimal };
+
+function productRows(rows: ProductSums[]): ShiftProductRow[] {
+  return rows
+    .map((r) => ({ ...r, total: r.net.add(r.tax) }))
+    .sort((a, b) => b.total.comparedTo(a.total) || a.name.localeCompare(b.name))
+    .map((r) => ({
+      productId: r.productId,
+      name: r.name,
+      sku: r.sku,
+      unit: r.unit,
+      quantity: r.quantity.toString(),
+      net: r.net.toFixed(2),
+      tax: r.tax.toFixed(2),
+      total: r.total.toFixed(2),
+    }));
+}
+
 export interface ShiftSummary {
   salesCount: number;
   salesTotal: string;
@@ -91,6 +121,10 @@ export interface ShiftSummary {
   byCashier: { id: string; name: string; count: number; total: string }[];
   /** Every sale, oldest first, for the report's optional full list. */
   sales: { receiptNumber: string; at: Date; total: string; method: PaymentMethod | "SPLIT" | "CREDIT"; voided: boolean; cashier: string }[];
+  /** What was sold in the shift (completed sales), per product, biggest total first. */
+  products: ShiftProductRow[];
+  /** What came back in the shift's returns, per product, biggest total first. */
+  returnedProducts: ShiftProductRow[];
   /** Opening float + cash taken (sales and receipts) - cash refunds + cash in - cash out. */
   expectedCash: string;
 }
@@ -315,7 +349,7 @@ export class ShiftsService {
 
   /** The end-of-shift report: sales, payments, discounts, cancels, returns, cash. */
   async summarize(shift: { id: string; openingFloat: Prisma.Decimal }): Promise<ShiftSummary> {
-    const [sales, returns, movements, receipts] = await Promise.all([
+    const [sales, returns, movements, receipts, sold, returned] = await Promise.all([
       this.prisma.sale.findMany({
         where: { shiftId: shift.id },
         orderBy: { createdAt: "asc" },
@@ -341,6 +375,29 @@ export class ShiftsService {
         where: { shiftId: shift.id, saleId: null, document: { status: "N" } },
         select: { method: true, amount: true },
       }),
+      // Sold, under the name and SKU each line was sold with.
+      this.prisma.$queryRaw<ProductSums[]>`
+        SELECT sli."productId", MAX(sli."productName") AS name, MAX(sli."productSku") AS sku, MAX(sli.unit) AS unit,
+               SUM(sli.quantity) AS quantity, SUM(sli."lineTotal" - sli."taxAmount") AS net, SUM(sli."taxAmount") AS tax
+        FROM sale_line_items sli JOIN sales s ON s.id = sli."saleId"
+        WHERE s."shiftId" = ${shift.id} AND s.status = 'COMPLETED'
+        GROUP BY sli."productId"`,
+      // Returned: each line's IVA in the same share as on the sale line it came from.
+      this.prisma.$queryRaw<ProductSums[]>`
+        WITH sale_product AS (
+          SELECT sli."saleId" AS sale_id, sli."productId" AS product_id,
+                 SUM(sli."lineTotal" - sli."taxAmount") / NULLIF(SUM(sli."lineTotal"), 0) AS net_ratio
+          FROM sale_line_items sli GROUP BY sli."saleId", sli."productId"
+        )
+        SELECT rli."productId", p.name, p.sku, p.unit, SUM(rli.quantity) AS quantity,
+               ROUND(SUM(rli."lineTotal" * COALESCE(sp.net_ratio, 1)), 2) AS net,
+               SUM(rli."lineTotal") - ROUND(SUM(rli."lineTotal" * COALESCE(sp.net_ratio, 1)), 2) AS tax
+        FROM return_line_items rli
+        JOIN returns r ON r.id = rli."returnId"
+        JOIN products p ON p.id = rli."productId"
+        LEFT JOIN sale_product sp ON sp.sale_id = r."saleId" AND sp.product_id = rli."productId"
+        WHERE r."shiftId" = ${shift.id}
+        GROUP BY rli."productId", p.name, p.sku, p.unit`,
     ]);
 
     const completed = sales.filter((s) => s.status === SaleStatus.COMPLETED);
@@ -404,6 +461,8 @@ export class ShiftsService {
         voided: s.status === SaleStatus.VOIDED,
         cashier: `${s.cashier.firstName} ${s.cashier.lastName}`,
       })),
+      products: productRows(sold),
+      returnedProducts: productRows(returned),
       expectedCash: computeExpectedCash({ openingFloat: shift.openingFloat, cashSales, cashReceipts, cashRefunds, cashIn, cashOut }).toFixed(2),
     };
   }

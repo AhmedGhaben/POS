@@ -1,5 +1,6 @@
 import { useAuthStore } from "@/features/auth/store";
-import { currentLanguage } from "@/i18n";
+import i18n, { currentLanguage } from "@/i18n";
+import { desktopLog } from "@/features/desktop/bridge";
 
 const BASE_URL = "/api";
 
@@ -46,7 +47,14 @@ function reportServerStatus(reachable: boolean) {
   for (const listener of serverStatusListeners) listener(reachable);
 }
 
-let refreshPromise: Promise<string | null> | null = null;
+/** A new access token; null when the server ended the session; undefined when it couldn't be asked. */
+type RefreshResult = string | null | undefined;
+let refreshPromise: Promise<RefreshResult> | null = null;
+
+/** Waits between tries when renewing the session fails for a passing reason. */
+const REFRESH_RETRY_DELAYS_MS = [1_000, 3_000, 10_000];
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 type OfflineSessionResume = () => Promise<"resumed" | "unreachable" | "rejected">;
 let resumeOfflineSession: OfflineSessionResume | null = null;
@@ -60,21 +68,48 @@ export function setOfflineSessionResume(fn: OfflineSessionResume) {
   resumeOfflineSession = fn;
 }
 
-async function refreshAccessToken(): Promise<string | null> {
+/** One try at renewing the session: the token, "ended" (401/403), or why it failed. */
+async function refreshOnce(): Promise<{ token: string } | { ended: string } | { failed: string }> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}/auth/refresh`, { method: "POST", credentials: "include" });
+  } catch (err) {
+    return { failed: `network error (${(err as Error).message})` };
+  }
+  if (res.status === 401 || res.status === 403) return { ended: `HTTP ${res.status}` };
+  if (!res.ok) return { failed: `HTTP ${res.status}` };
+  try {
+    const data = await res.json();
+    return { token: data.accessToken as string };
+  } catch {
+    return { failed: "unreadable answer" };
+  }
+}
+
+/**
+ * Renews the access token. Only the server saying no (401/403) ends the
+ * session; a network blip, a rate limit (429) or a server error is tried
+ * again after 1, 3 and 10 seconds, and if it still fails the session and
+ * cart are kept for the next request. Shared by concurrent requests.
+ */
+export function refreshAccessToken(): Promise<RefreshResult> {
   if (!refreshPromise) {
-    refreshPromise = fetch(`${BASE_URL}/auth/refresh`, {
-      method: "POST",
-      credentials: "include",
-    })
-      .then(async (res) => {
-        if (!res.ok) return null;
-        const data = await res.json();
-        return data.accessToken as string;
-      })
-      .catch(() => null)
-      .finally(() => {
-        refreshPromise = null;
-      });
+    refreshPromise = (async () => {
+      for (let attempt = 0; ; attempt++) {
+        const outcome = await refreshOnce();
+        if ("token" in outcome) return outcome.token;
+        if ("ended" in outcome) {
+          desktopLog("warn", `Session refresh refused (${outcome.ended}): signing out`);
+          return null;
+        }
+        const delay = REFRESH_RETRY_DELAYS_MS[attempt];
+        desktopLog("warn", `Session refresh failed (${outcome.failed}); ${delay ? `retrying in ${delay / 1000} s` : "keeping the session"}`);
+        if (delay === undefined) return undefined;
+        await sleep(delay);
+      }
+    })().finally(() => {
+      refreshPromise = null;
+    });
   }
   return refreshPromise;
 }
@@ -132,7 +167,13 @@ async function request<T>(path: string, options: RequestOptions = {}, isRetry = 
       useAuthStore.getState().setAccessToken(newToken);
       return request<T>(path, options, true);
     }
-    useAuthStore.getState().clearSession();
+    if (newToken === null) {
+      useAuthStore.getState().clearSession();
+    } else {
+      // Couldn't reach the refresh just now: keep the session and fail this
+      // request as "server unavailable", so it's retried or queued like one.
+      throw new ApiError(503, i18n.t("common:shell.sessionRetry"));
+    }
   }
 
   if (!res.ok) {

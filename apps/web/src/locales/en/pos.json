@@ -55,7 +55,12 @@
     "tenderedTooLow": "Tendered amount is less than the total",
     "changeDue": "Change due: {{amount}}",
     "split": "+ Split payment",
-    "method": "Payment method"
+    "method": "Payment method",
+    "splitEvenly": "Split evenly",
+    "payers": "Number of payers",
+    "payersCount_one": "{{count}} payer",
+    "payersCount_other": "{{count}} payers",
+    "nonCashOver": "Only cash can be more than what is due. Lower the other methods."
   },
   "checkout": {
     "title": "Checkout",
@@ -69,7 +74,10 @@
     "recentSales": "Recent sales",
     "saleDiscount": "Discount on the whole sale",
     "changeSaleDiscount": "Change the sale discount",
-    "exemptionMissing": "\"{{name}}\" is exempt from IVA without a reason, so it can't be sold. A manager must fix the product first (Products → Products to review)."
+    "exemptionMissing": "\"{{name}}\" is exempt from IVA without a reason, so it can't be sold. A manager must fix the product first (Products → Products to review).",
+    "emailSent": "Receipt emailed",
+    "emailFailed": "The receipt email didn't go: {{error}}",
+    "emailQueued": "The receipt will be emailed when the sale syncs"
   },
   "complete": {
     "title": "Sale complete",
@@ -86,7 +94,8 @@
     "forPlaceholder": "Customer or company name",
     "printSlip": "Print quote",
     "printA4": "Print A4 quotation",
-    "saveProforma": "Save as proforma"
+    "saveProforma": "Save as proforma",
+    "validDays": "Valid for (days)"
   },
   "drawer": {
     "title": "Open cash drawer",
@@ -124,7 +133,9 @@
     "cancelled": "Cancelled",
     "waiting": "Waiting to upload",
     "reprint": "Reprint receipt",
-    "cancel": "Cancel sale"
+    "cancel": "Cancel sale",
+    "emailSent": "Emailed",
+    "emailFailed": "Email failed"
   },
   "void": {
     "title": "Cancel sale {{number}}?",
@@ -212,7 +223,8 @@
   "proforma": {
     "selling": "Selling proforma {{number}}: this sale invoices it.",
     "detach": "Sell without it",
-    "notOpen": "Proforma {{number}} isn't open any more."
+    "notOpen": "Proforma {{number}} isn't open any more.",
+    "expired": "Proforma {{number}} has expired. Issue a new one."
   },
   "fiscal": {
     "cantIssueOffline": "This sale can't be completed offline: invoices must be signed when they're issued, and this till has no signing key yet. Connect to the server (or register the till) and try again."

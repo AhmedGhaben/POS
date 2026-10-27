@@ -26,7 +26,10 @@
     "averageCost": "Average cost",
     "value": "Value",
     "countFor": "Counted quantity of {{name}}",
-    "historyFor": "Stock history of {{name}}"
+    "historyFor": "Stock history of {{name}}",
+    "search": "Search by name, SKU or barcode",
+    "lowOnly": "Low stock only",
+    "noMatches": "No products match."
   },
   "transfers": {
     "title": "Stock transfers",

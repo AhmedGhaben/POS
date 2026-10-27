@@ -81,5 +81,8 @@
       "SELL_ON_CREDIT": "Sell on credit (pay later)",
       "CASH_OUT": "Take cash out of the drawer"
     }
+  },
+  "accounting": {
+    "give": "Give accounting access"
   }
 }

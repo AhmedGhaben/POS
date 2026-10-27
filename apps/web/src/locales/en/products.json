@@ -53,7 +53,13 @@
     "inventoryTypeDraft": "Provisional list until AGT publishes Angola's.",
     "addPhoto": "Add a photo",
     "changePhoto": "Change the photo",
-    "removePhoto": "Remove"
+    "removePhoto": "Remove",
+    "delete": "Delete product for good",
+    "deleteConfirm": "Delete \"{{name}}\" for good? This can't be undone.",
+    "deleteForGood": "Delete",
+    "deleted": "Product deleted",
+    "hasHistory": "This product has sales, purchases, stock movements or documents, so it can't be deleted: they must keep pointing at it. Archive it instead: it leaves the till and this list, and reports keep it.",
+    "hasHistoryArchived": "This product has sales, purchases, stock movements or documents, so it can't be deleted: they must keep pointing at it. It stays archived."
   },
   "import": {
     "title": "Import products from CSV",

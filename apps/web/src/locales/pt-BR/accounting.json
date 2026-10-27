@@ -39,6 +39,7 @@
       "SUPPLIER_PAYMENT": "Pagamentos a fornecedores",
       "SUPPLIER_PAYMENT_CANCEL": "Pagamentos cancelados",
       "EXPENSE": "Despesas",
+      "EXPENSE_CANCEL": "Despesas canceladas",
       "SHIFT_DIFFERENCE": "Diferenças de caixa",
       "CASH_MOVEMENT": "Entradas/saídas de caixa",
       "STOCK_ADJUSTMENT": "Acertos de inventário"
@@ -319,7 +320,11 @@
       "firstName": "Nome",
       "lastName": "Sobrenome",
       "ocpcaNumber": "N.º OCPCA (opcional)"
-    }
+    },
+    "staffTitle": "Acesso à contabilidade para {{name}}",
+    "staffExplain": "O contador entra com um endereço de e-mail próprio, diferente do acesso da equipe (um acesso, uma função). Enviamos um convite para este endereço; o acesso da equipe continua como está.",
+    "staffSameEmail": "Use um e-mail diferente do acesso da equipe.",
+    "close": "Fechar"
   },
   "attachments": {
     "title": "Anexos",

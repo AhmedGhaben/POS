@@ -4,7 +4,9 @@ import { OverridesService } from "../overrides/overrides.service";
 import { finalConsumerData } from "../customers/final-consumer";
 import { PermissionsService } from "../common/permissions/permissions.service";
 import { PrismaService } from "../prisma/prisma.service";
-import { MailService } from "../common/mail/mail.service";
+import { AuthenticatedUser } from "../common/types/authenticated-user";
+import { MailService, type MailResult } from "../common/mail/mail.service";
+import { MAIL_TEXTS } from "../common/mail/mail-texts";
 import { emailLanguage } from "../common/i18n/languages";
 import { CreateSaleDto } from "./dto/create-sale.dto";
 import { VoidSaleDto } from "./dto/void-sale.dto";
@@ -14,6 +16,7 @@ import { missingExemptionMessage } from "../fiscal/document-lines";
 import { recordMovement } from "../stock/stock";
 import { storeDateRange } from "../common/store-period";
 import { annulmentCode, buyerOf, DOCUMENT_SUMMARY, FiscalService } from "../fiscal/fiscal.service";
+import { documentTitle, fiscalDocumentHtml } from "../fiscal/fiscal-email.template";
 import { CustomerAccountsService } from "../accounts/customer-accounts.service";
 
 /** How far an offline sale's clock may run ahead of the server's. */
@@ -437,10 +440,14 @@ export class SalesService {
       }
     }
 
-    // Best-effort — a mail failure shouldn't fail an already-completed sale.
-    this.emailReceiptIfRequested(dto, sale).catch((error) => {
-      this.logger.error(`Failed to email receipt for sale ${sale.id}: ${error}`);
-    });
+    // Emailed after the sale is saved, never holding it up: the sale says
+    // PENDING now, then SENT or FAILED (offline sales: when they sync).
+    const receiptEmail = await this.receiptEmailFor(dto);
+    if (receiptEmail) {
+      sale = await this.prisma.sale.update({ where: { id: sale.id }, data: { receiptEmailStatus: "PENDING", receiptEmailError: null }, include: SALE_INCLUDE });
+      const emailed = sale;
+      void this.emailReceipt(businessId, receiptEmail, emailed);
+    }
 
     return withSoldNames(sale);
   }
@@ -627,43 +634,98 @@ export class SalesService {
     return terminal ?? null;
   }
 
-  private async emailReceiptIfRequested(
-    dto: CreateSaleDto,
-    sale: Prisma.SaleGetPayload<{ include: typeof SALE_INCLUDE }>,
-  ): Promise<void> {
-    let email = dto.receiptEmail;
-    if (!email && dto.customerId) {
-      const customer = await this.prisma.customer.findUnique({ where: { id: dto.customerId } });
-      email = customer?.email ?? undefined;
+  /** Whether a sale's emailed receipt went, for the till that rang it up. */
+  async receiptEmailStatus(user: AuthenticatedUser, id: string) {
+    const sale = await this.prisma.sale.findFirst({
+      where: { id, store: { businessId: user.businessId } },
+      select: { storeId: true, receiptEmailStatus: true, receiptEmailError: true },
+    });
+    if (!sale) throw new NotFoundException("Sale not found");
+    if (user.role !== Role.OWNER) {
+      const access = await this.prisma.storeUser.findUnique({ where: { userId_storeId: { userId: user.userId, storeId: sale.storeId } } });
+      if (!access) throw new NotFoundException("Sale not found");
     }
-    if (!email) {
-      return;
-    }
+    return { status: sale.receiptEmailStatus, error: sale.receiptEmailError };
+  }
 
+  /** Where the receipt goes: the address typed at the till, else the customer's. */
+  private async receiptEmailFor(dto: CreateSaleDto): Promise<string | null> {
+    if (dto.receiptEmail) return dto.receiptEmail;
+    if (!dto.customerId) return null;
+    const customer = await this.prisma.customer.findUnique({ where: { id: dto.customerId }, select: { email: true } });
+    return customer?.email ?? null;
+  }
+
+  /**
+   * Emails the sale's fiscal document (Factura-Recibo, with its number, the
+   * seller's NIF and the hash excerpt) and records whether it went. Never
+   * throws: the sale is already saved.
+   */
+  async emailReceipt(businessId: string, email: string, sale: Prisma.SaleGetPayload<{ include: typeof SALE_INCLUDE }>): Promise<MailResult> {
+    let result: MailResult;
+    try {
+      result = await this.sendReceipt(businessId, email, sale);
+    } catch (error) {
+      result = { sent: false, error: error instanceof Error ? error.message : String(error) };
+    }
+    if (!result.sent) this.logger.warn(`Receipt email for sale ${sale.id} not sent: ${result.error}`);
+    await this.prisma.sale
+      .update({ where: { id: sale.id }, data: { receiptEmailStatus: result.sent ? "SENT" : "FAILED", receiptEmailError: result.sent ? null : (result.error ?? null) } })
+      .catch((error) => this.logger.error(`Couldn't record the receipt email of sale ${sale.id}: ${error}`));
+    return result;
+  }
+
+  private async sendReceipt(businessId: string, email: string, sale: Prisma.SaleGetPayload<{ include: typeof SALE_INCLUDE }>): Promise<MailResult> {
     const store = await this.prisma.store.findUnique({
-      where: { id: dto.storeId },
+      where: { id: sale.storeId },
       include: { business: { select: { currency: true, language: true } } },
     });
-    await this.mail.sendReceiptEmail(
+    // For the shop's customer: the store's document language (AO → pt-AO).
+    const lang = emailLanguage(null, documentLanguageFor(store, store?.business.language));
+    const documentId = sale.fiscalDocuments.find((d) => d.documentType === "FR" || d.documentType === "FT")?.id;
+
+    if (documentId) {
+      const document = await this.fiscal.get(businessId, documentId);
+      const texts = MAIL_TEXTS[lang].document;
+      const seller = (document.seller ?? {}) as { country?: string };
+      const title = documentTitle(document.documentType, seller.country);
+      const html = fiscalDocumentHtml(document, {
+        texts,
+        locale: lang,
+        certificate: this.fiscal.certificate(),
+        tendered: sale.amountTendered,
+        change: sale.changeDue,
+        storeName: store?.name ?? "",
+      });
+      return this.mail.sendDocumentEmail(email, {
+        subject: texts.subject(title, document.documentNo, store?.name ?? ""),
+        intro: texts.intro(title, document.documentNo),
+        attached: texts.attached,
+        html,
+        fileName: `${document.documentNo.replace(/[^A-Za-z0-9-]+/g, "_")}.html`,
+      });
+    }
+
+    // No fiscal document (a country without them): the plain receipt.
+    return this.mail.sendReceiptEmail(
       email,
       {
-      storeName: store?.name ?? "Store",
-      currency: store?.business.currency ?? "USD",
-      receiptNumber: sale.receiptNumber,
-      items: sale.lineItems.map((li) => ({
-        name: li.productName,
-        quantity: li.unit === "un" ? li.quantity.toNumber() : `${li.quantity.toNumber()} ${li.unit}`,
-        unitPrice: li.unitPrice.toString(),
-        lineTotal: li.lineTotal.toString(),
-      })),
-      subtotal: sale.subtotal.toString(),
-      discountTotal: sale.discountTotal.toString(),
-      taxTotal: sale.taxTotal.toString(),
-      total: sale.total.toString(),
-      taxIncluded: sale.pricesIncludeTax,
+        storeName: store?.name ?? "Store",
+        currency: store?.business.currency ?? "USD",
+        receiptNumber: sale.receiptNumber,
+        items: sale.lineItems.map((li) => ({
+          name: li.productName,
+          quantity: li.unit === "un" ? li.quantity.toNumber() : `${li.quantity.toNumber()} ${li.unit}`,
+          unitPrice: li.unitPrice.toString(),
+          lineTotal: li.lineTotal.toString(),
+        })),
+        subtotal: sale.subtotal.toString(),
+        discountTotal: sale.discountTotal.toString(),
+        taxTotal: sale.taxTotal.toString(),
+        total: sale.total.toString(),
+        taxIncluded: sale.pricesIncludeTax,
       },
-      // For the shop's customer: the store's document language (AO → pt-AO).
-      emailLanguage(null, documentLanguageFor(store, store?.business.language)),
+      lang,
     );
   }
 }

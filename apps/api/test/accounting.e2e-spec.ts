@@ -464,6 +464,40 @@ describe("Accounting (e2e)", () => {
       expect(count.lines.find((l) => l.account.code === "78.3.1")).toBeTruthy();
     });
 
+    it("an expense is edited until it is posted; cancelled before posting it is never posted, after posting it is reversed", async () => {
+      const expense = (body: object) => http().post("/expenses").set(auth(ownerToken)).send({ storeId, category: "UTILITIES", ...body }).expect(201);
+      const list = async (query = "") => (await http().get(`/expenses/store/${storeId}${query}`).set(auth(ownerToken)).expect(200)).body as { id: string; amount: string; posted: boolean }[];
+
+      // Corrected before it is posted.
+      const water = (await expense({ description: "Água", amount: 300 })).body;
+      expect((await http().patch(`/expenses/${water.id}`).set(auth(managerToken)).send({ amount: 350 }).expect(200)).body).toMatchObject({ amount: "350", posted: false });
+      await http().patch(`/expenses/${water.id}`).set(auth(cashierToken)).send({ amount: 1 }).expect(403);
+
+      // Cancelled before it is posted: never posted.
+      const typo = (await expense({ description: "Engano", amount: 999 })).body;
+      await http().post(`/expenses/${typo.id}/cancel`).set(auth(ownerToken)).send({ reason: "x" }).expect(400);
+      const cancelledTypo = (await http().post(`/expenses/${typo.id}/cancel`).set(auth(ownerToken)).send({ reason: "Registada duas vezes" }).expect(200)).body;
+      expect(cancelledTypo).toMatchObject({ cancelReason: "Registada duas vezes", posted: false });
+      expect(cancelledTypo.cancelledAt).toBeTruthy();
+      expect((await list()).map((e) => e.id)).not.toContain(typo.id);
+      expect((await list("?includeCancelled=true")).map((e) => e.id)).toContain(typo.id);
+
+      expect((await run()).failed).toBe(0);
+      expect(await prisma.accountingSourceLink.findFirst({ where: { sourceType: "EXPENSE", sourceId: typo.id } })).toMatchObject({ skipped: true, entryId: null });
+      const posted = await prisma.accountingSourceLink.findFirstOrThrow({ where: { sourceType: "EXPENSE", sourceId: water.id } });
+      expect((await list()).find((e) => e.id === water.id)?.posted).toBe(true);
+
+      // Once posted it can't be edited, only cancelled: the entry is reversed (estorno).
+      const refused = await http().patch(`/expenses/${water.id}`).set(auth(ownerToken)).send({ amount: 400 }).expect(400);
+      expect(refused.body.message).toBe("This expense is already in the accounts. Cancel it and log it again.");
+      await http().post(`/expenses/${water.id}/cancel`).set(auth(ownerToken)).send({ reason: "Valor errado" }).expect(200);
+      await http().post(`/expenses/${water.id}/cancel`).set(auth(ownerToken)).send({ reason: "Outra vez" }).expect(400);
+      expect((await run()).failed).toBe(0);
+      const reversal = await prisma.accountingSourceLink.findFirstOrThrow({ where: { sourceType: "EXPENSE_CANCEL", sourceId: water.id }, include: { entry: { include: { lines: true } } } });
+      expect(reversal.entry!.reversesEntryId).toBe(posted.entryId);
+      expect(reversal.entry!.description).toBe("Despesa cancelada: Valor errado");
+    });
+
     it("nothing is posted twice: running again posts nothing, and the database refuses a second link", async () => {
       expect(await run()).toEqual({ posted: 0, skipped: 0, failed: 0 });
       const link = await prisma.accountingSourceLink.findFirstOrThrow({ where: { businessId, sourceType: "FISCAL_DOCUMENT", skipped: false } });

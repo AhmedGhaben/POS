@@ -4,25 +4,21 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Archive, ArchiveRestore, Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Combobox } from "@/components/ui/combobox";
 import { useAuthStore } from "@/features/auth/store";
 import { countryConfig, type SupplierDto } from "@pos/shared";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { createSupplier } from "@/features/suppliers/api";
-import { fetchSuppliersWithBalance, SUPPLIERS_KEY } from "@/features/accounts/api";
+import { createSupplier, deleteSupplier } from "@/features/suppliers/api";
+import { fetchSuppliersWithBalance, SUPPLIERS_KEY, updateSupplier } from "@/features/accounts/api";
+import { ApiError } from "@/lib/api-client";
 import { SupplierAccountSheet } from "@/features/accounts/components/SupplierAccountSheet";
 import { useMoney } from "@/features/business/use-money";
 
@@ -48,24 +44,61 @@ const defaultValues = {
   address: "",
 };
 
+type SupplierValues = z.infer<typeof supplierSchema>;
+
 export function SuppliersPage() {
   const { t } = useTranslation(["backoffice", "common", "accounts"]);
   const money = useMoney();
-  const [dialogOpen, setDialogOpen] = React.useState(false);
+  // The supplier being edited, "new" for a new one, null when the form is closed.
+  const [editing, setEditing] = React.useState<SupplierDto | "new" | null>(null);
+  const [removing, setRemoving] = React.useState<SupplierDto | null>(null);
+  const [showArchived, setShowArchived] = React.useState(false);
   const [account, setAccount] = React.useState<SupplierDto | null>(null);
   const business = useAuthStore((s) => s.business);
   const queryClient = useQueryClient();
   // With what is owed to each (docs/plans/ANGOLA.md, phase 4).
-  const suppliersQuery = useQuery({ queryKey: SUPPLIERS_KEY, queryFn: fetchSuppliersWithBalance });
+  const suppliersQuery = useQuery({ queryKey: [...SUPPLIERS_KEY, showArchived], queryFn: () => fetchSuppliersWithBalance(showArchived) });
 
-  const form = useForm<z.infer<typeof supplierSchema>>({
+  const form = useForm<SupplierValues>({
     resolver: zodResolver(supplierSchema),
     defaultValues,
   });
 
-  const createMutation = useMutation({
-    mutationFn: (values: z.infer<typeof supplierSchema>) =>
-      createSupplier({
+  React.useEffect(() => {
+    if (editing === null) return;
+    form.reset(
+      editing === "new"
+        ? defaultValues
+        : {
+            name: editing.name,
+            contactName: editing.contactName ?? "",
+            taxId: editing.taxId ?? "",
+            city: editing.city ?? "",
+            province: editing.province ?? "",
+            phone: editing.phone ?? "",
+            email: editing.email ?? "",
+            address: editing.address ?? "",
+          },
+    );
+  }, [editing, form]);
+
+  const saveMutation = useMutation({
+    mutationFn: (values: SupplierValues) => {
+      if (editing && editing !== "new") {
+        // Emptied fields are cleared.
+        const clear = (v: string | undefined) => (v ? v : null) as string | undefined;
+        return updateSupplier(editing.id, {
+          name: values.name,
+          contactName: clear(values.contactName),
+          taxId: clear(values.taxId),
+          city: clear(values.city),
+          province: clear(values.province),
+          phone: clear(values.phone),
+          email: clear(values.email),
+          address: clear(values.address),
+        });
+      }
+      return createSupplier({
         name: values.name,
         contactName: values.contactName || undefined,
         taxId: values.taxId || undefined,
@@ -74,16 +107,26 @@ export function SuppliersPage() {
         phone: values.phone || undefined,
         email: values.email || undefined,
         address: values.address || undefined,
-      }),
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
-      setDialogOpen(false);
-      form.reset(defaultValues);
-      toast.success(t("suppliers.created"));
+      toast.success(editing === "new" ? t("suppliers.created") : t("suppliers.updated"));
+      setEditing(null);
     },
     onError: (error) => {
       toast.error((error as Error).message);
     },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => updateSupplier(id, { isActive }),
+    onSuccess: (_data, { isActive }) => {
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      toast.success(isActive ? t("suppliers.restored") : t("suppliers.archived"));
+      setRemoving(null);
+    },
+    onError: (error) => toast.error((error as Error).message),
   });
 
   return (
@@ -93,20 +136,18 @@ export function SuppliersPage() {
           <h1 className="text-2xl font-semibold">{t("common:nav.suppliers")}</h1>
           <p className="text-sm text-muted-foreground">{t("suppliers.subtitle")}</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> {t("suppliers.new")}
-            </Button>
-          </DialogTrigger>
+        <Button onClick={() => setEditing("new")}>
+          <Plus className="mr-2 h-4 w-4" /> {t("suppliers.new")}
+        </Button>
+        <Dialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{t("suppliers.new")}</DialogTitle>
+              <DialogTitle>{editing === "new" ? t("suppliers.new") : t("suppliers.edit")}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form
                 className="space-y-3"
-                onSubmit={form.handleSubmit((values) => createMutation.mutate(values))}
+                onSubmit={form.handleSubmit((values) => saveMutation.mutate(values))}
               >
                 <FormField
                   control={form.control}
@@ -222,14 +263,19 @@ export function SuppliersPage() {
                     )}
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? t("common:actions.saving") : t("suppliers.save")}
+                <Button type="submit" className="w-full" disabled={saveMutation.isPending}>
+                  {saveMutation.isPending ? t("common:actions.saving") : t("suppliers.save")}
                 </Button>
               </form>
             </Form>
           </DialogContent>
         </Dialog>
       </div>
+
+      <label className="mb-3 flex items-center gap-2 text-sm">
+        <input type="checkbox" className="h-4 w-4" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+        {t("suppliers.showArchived")}
+      </label>
 
       <Card>
         <CardContent className="overflow-x-auto p-0">
@@ -248,16 +294,41 @@ export function SuppliersPage() {
             <TableBody>
               {suppliersQuery.data?.map((supplier) => (
                 <TableRow key={supplier.id}>
-                  <TableCell>{supplier.name}</TableCell>
+                  <TableCell>
+                    {supplier.name}
+                    {supplier.isActive === false && (
+                      <Badge variant="secondary" className="ml-2">
+                        {t("suppliers.archivedBadge")}
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{supplier.taxId ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{supplier.contactName ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{supplier.phone ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{supplier.email ?? "—"}</TableCell>
                   <TableCell className={`text-right ${Number(supplier.balance) > 0 ? "font-semibold" : "text-muted-foreground"}`}>{money(supplier.balance ?? 0)}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="whitespace-nowrap text-right">
                     <Button size="sm" variant="ghost" onClick={() => setAccount(supplier)}>
                       {t("accounts:customers.account")}
                     </Button>
+                    <Button size="icon" variant="ghost" aria-label={t("suppliers.editFor", { name: supplier.name })} onClick={() => setEditing(supplier)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    {supplier.isActive === false ? (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label={t("suppliers.restoreFor", { name: supplier.name })}
+                        disabled={archiveMutation.isPending}
+                        onClick={() => archiveMutation.mutate({ id: supplier.id, isActive: true })}
+                      >
+                        <ArchiveRestore className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button size="icon" variant="ghost" aria-label={t("suppliers.removeFor", { name: supplier.name })} onClick={() => setRemoving(supplier)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -273,6 +344,71 @@ export function SuppliersPage() {
         </CardContent>
       </Card>
       <SupplierAccountSheet supplier={account} onClose={() => setAccount(null)} />
+      <RemoveSupplierDialog
+        supplier={removing}
+        onClose={() => setRemoving(null)}
+        onArchive={(id) => archiveMutation.mutate({ id, isActive: false })}
+        archiving={archiveMutation.isPending}
+      />
     </div>
+  );
+}
+
+/**
+ * Deletes a supplier with no purchases or payments. One with history can't
+ * be deleted (reports and SAF-T need it): the dialog then offers to archive it.
+ */
+function RemoveSupplierDialog({
+  supplier,
+  onClose,
+  onArchive,
+  archiving,
+}: {
+  supplier: SupplierDto | null;
+  onClose: () => void;
+  onArchive: (id: string) => void;
+  archiving: boolean;
+}) {
+  const { t } = useTranslation(["backoffice", "common"]);
+  const queryClient = useQueryClient();
+  const [hasHistory, setHasHistory] = React.useState(false);
+  React.useEffect(() => setHasHistory(false), [supplier]);
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteSupplier(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      toast.success(t("suppliers.deleted"));
+      onClose();
+    },
+    onError: (error) => {
+      if (error instanceof ApiError && error.status === 409) setHasHistory(true);
+      else toast.error((error as Error).message);
+    },
+  });
+
+  return (
+    <Dialog open={supplier !== null} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("suppliers.removeTitle", { name: supplier?.name ?? "" })}</DialogTitle>
+          <DialogDescription>{hasHistory ? t("suppliers.hasHistory") : t("suppliers.removeExplain")}</DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose}>
+            {t("common:actions.cancel")}
+          </Button>
+          {hasHistory ? (
+            <Button disabled={archiving} onClick={() => supplier && onArchive(supplier.id)}>
+              <Archive className="mr-2 h-4 w-4" /> {t("suppliers.archive")}
+            </Button>
+          ) : (
+            <Button variant="destructive" disabled={deleteMutation.isPending} onClick={() => supplier && deleteMutation.mutate(supplier.id)}>
+              <Trash2 className="mr-2 h-4 w-4" /> {t("suppliers.delete")}
+            </Button>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

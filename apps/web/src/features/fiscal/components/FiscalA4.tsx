@@ -2,7 +2,7 @@ import { amountInWords, countryConfig, type FiscalDocumentDto } from "@pos/share
 import { logoSrc } from "@/features/business/api";
 import { useDocumentLanguage } from "@/i18n/use-document-language";
 import { AgtQr } from "./AgtQr";
-import { ANNULLED_STAMP, certificationLine, documentQrValue, documentTitle, MECHANISM_NAMES, NOT_VALID_WATERMARK } from "../fiscal-text";
+import { ANNULLED_STAMP, certificationLine, documentQrValue, documentTitle, MECHANISM_NAMES, NOT_VALID_WATERMARK, operatorName } from "../fiscal-text";
 
 /**
  * A fiscal document on A4 (Factura-Recibo, Nota de Crédito, Factura
@@ -75,6 +75,12 @@ export function FiscalA4({ doc, copyLabel }: { doc: FiscalDocumentDto; /** Origi
                 <td className="pr-3 text-neutral-600">{t("fiscal.recordedAt")}</td>
                 <td className="font-medium">{dateTime(doc.systemEntryDate)}</td>
               </tr>
+              {doc.documentType === "PF" && doc.validUntil && (
+                <tr>
+                  <td className="pr-3 text-neutral-600">{t("fiscal.validUntil")}</td>
+                  <td className="font-medium">{date(doc.validUntil)}</td>
+                </tr>
+              )}
             </tbody>
           </table>
           {doc.status === "A" && (
@@ -216,8 +222,16 @@ export function FiscalA4({ doc, copyLabel }: { doc: FiscalDocumentDto; /** Origi
                 </p>
               ))}
               {doc.paymentReference && <p>{t("fiscal.paymentReference", { reference: doc.paymentReference })}</p>}
+              {/* Cash handed over and change, as on the slip (printing only, not in the signed document). */}
+              {doc.amountTendered && Number(doc.changeDue ?? 0) > 0 && (
+                <>
+                  <p>{t("fiscal.tendered", { amount: money(doc.amountTendered) })}</p>
+                  <p>{t("fiscal.change", { amount: money(doc.changeDue!) })}</p>
+                </>
+              )}
             </div>
           )}
+          {operatorName(doc.issuedBy) && <p className="text-[8.5pt]">{t("fiscal.operator", { name: operatorName(doc.issuedBy) })}</p>}
         </div>
         <table className="w-[75mm]">
           <tbody>

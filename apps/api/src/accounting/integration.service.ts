@@ -31,6 +31,7 @@ export const SOURCE_TYPES = [
   "SUPPLIER_PAYMENT",
   "SUPPLIER_PAYMENT_CANCEL",
   "EXPENSE",
+  "EXPENSE_CANCEL",
   "SHIFT_DIFFERENCE",
   "CASH_MOVEMENT",
   "STOCK_ADJUSTMENT",
@@ -424,14 +425,29 @@ export class IntegrationService implements OnModuleInit, OnModuleDestroy {
         SELECT e.id FROM "expenses" e JOIN "stores" s ON s.id = e."storeId"
         WHERE s."businessId" = ${ctx.businessId} AND e."incurredAt" >= ${ctx.startInstant}`, cursor);
       cursor = ids[ids.length - 1] ?? cursor;
-      if (!ids.length) return;
+      if (!ids.length) break;
       const expenses = await this.prisma.expense.findMany({ where: { id: { in: ids } }, orderBy: { incurredAt: "asc" } });
       for (const e of expenses) {
         const date = localDateTime(e.incurredAt, ctx.zoneOf(e.storeId)).date;
         const ref: SourceRef = { type: "EXPENSE", id: e.id, documentNo: null, date };
+        if (e.cancelledAt) {
+          await this.skip(ctx, ref);
+          continue;
+        }
         await this.postPlan(ctx, [ref], () => expensePlan({ category: e.category, categoryName: EXPENSE_NAMES[e.category] ?? e.category, description: e.description, date, amount: e.amount }, ctx.resolver), e.createdById);
       }
-      if (ids.length < BATCH) return;
+      if (ids.length < BATCH) break;
+    }
+    // Expenses cancelled after they were posted: reversed on the day they were cancelled.
+    const cancelled = await this.prisma.$queryRaw<{ id: string; entryId: string }[]>`
+      SELECT l."sourceId" AS id, l."entryId" FROM "accounting_source_links" l JOIN "expenses" e ON e.id = l."sourceId"
+      WHERE l."businessId" = ${ctx.businessId} AND l."sourceType" = 'EXPENSE' AND l.skipped = false AND e."cancelledAt" IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM "accounting_source_links" a WHERE a."businessId" = l."businessId" AND a."sourceType" = 'EXPENSE_CANCEL' AND a."sourceId" = l."sourceId")`;
+    for (const c of cancelled) {
+      const e = await this.prisma.expense.findUniqueOrThrow({ where: { id: c.id } });
+      const date = localDateTime(e.cancelledAt!, ctx.zoneOf(e.storeId)).date;
+      const ref: SourceRef = { type: "EXPENSE_CANCEL", id: c.id, documentNo: null, date };
+      await this.withLinks(ctx, [ref], (tx) => this.entries.reverse(ctx.businessId, e.cancelledById ?? ctx.userId, c.entryId, { date, description: `Despesa cancelada: ${e.cancelReason ?? ""}`.trim() }, tx));
     }
   }
 
@@ -628,7 +644,7 @@ export class IntegrationService implements OnModuleInit, OnModuleDestroy {
           AND NOT EXISTS (SELECT 1 FROM "accounting_source_links" a WHERE a."businessId" = l."businessId" AND a."sourceType" = 'FISCAL_DOCUMENT_ANNULMENT' AND a."sourceId" = l."sourceId")`),
       PURCHASE: await count(Prisma.sql`SELECT count(*) AS n FROM "purchases" p JOIN "stores" s ON s.id = p."storeId" WHERE s."businessId" = ${businessId} AND p.status <> 'CANCELLED' AND p."createdAt" >= ${fromInstant} AND p."createdAt" < ${toInstant} AND ${notLinked("PURCHASE", "p")}`),
       SUPPLIER_PAYMENT: await count(Prisma.sql`SELECT count(*) AS n FROM "supplier_payments" p WHERE p."businessId" = ${businessId} AND p."paidOn" BETWEEN ${dateValue(from)} AND ${dateValue(to)} AND ${notLinked("SUPPLIER_PAYMENT", "p")}`),
-      EXPENSE: await count(Prisma.sql`SELECT count(*) AS n FROM "expenses" e JOIN "stores" s ON s.id = e."storeId" WHERE s."businessId" = ${businessId} AND e."incurredAt" >= ${fromInstant} AND e."incurredAt" < ${toInstant} AND ${notLinked("EXPENSE", "e")}`),
+      EXPENSE: await count(Prisma.sql`SELECT count(*) AS n FROM "expenses" e JOIN "stores" s ON s.id = e."storeId" WHERE s."businessId" = ${businessId} AND e."incurredAt" >= ${fromInstant} AND e."incurredAt" < ${toInstant} AND e."cancelledAt" IS NULL AND ${notLinked("EXPENSE", "e")}`),
       SHIFT_DIFFERENCE: await count(Prisma.sql`SELECT count(*) AS n FROM "shifts" s WHERE s."businessId" = ${businessId} AND s.status = 'CLOSED' AND s.difference <> 0 AND s."closedAt" >= ${fromInstant} AND s."closedAt" < ${toInstant} AND ${notLinked("SHIFT_DIFFERENCE", "s")}`),
       CASH_MOVEMENT: await count(Prisma.sql`SELECT count(*) AS n FROM "cash_movements" m JOIN "shifts" s ON s.id = m."shiftId" WHERE s."businessId" = ${businessId} AND m."occurredAt" >= ${fromInstant} AND m."occurredAt" < ${toInstant} AND ${notLinked("CASH_MOVEMENT", "m")}`),
       STOCK_ADJUSTMENT: await count(Prisma.sql`SELECT count(*) AS n FROM "stock_movements" m JOIN "stores" s ON s.id = m."storeId" WHERE s."businessId" = ${businessId} AND m.type = 'ADJUSTMENT' AND m."occurredAt" >= ${fromInstant} AND m."occurredAt" < ${toInstant} AND ${notLinked("STOCK_ADJUSTMENT", "m")}`),

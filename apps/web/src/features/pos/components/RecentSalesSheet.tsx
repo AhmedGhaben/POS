@@ -97,6 +97,12 @@ export function RecentSalesSheet({ open, onOpenChange, storeId, store }: RecentS
                       </span>
                       {voided && <Badge variant="destructive">{t("recent.cancelled")}</Badge>}
                       {sale.queued && <Badge variant="secondary">{t("recent.waiting")}</Badge>}
+                      {sale.receiptEmailStatus === "SENT" && <Badge variant="secondary">{t("recent.emailSent")}</Badge>}
+                      {sale.receiptEmailStatus === "FAILED" && (
+                        <Badge variant="destructive" title={sale.receiptEmailError ?? undefined}>
+                          {t("recent.emailFailed")}
+                        </Badge>
+                      )}
                     </div>
                     <p className="truncate text-xs text-muted-foreground">
                       {formatDateTime(sale.createdAt)} · {sale.receiptNumber}

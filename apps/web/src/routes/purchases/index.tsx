@@ -129,7 +129,8 @@ export function PurchasesPage() {
       { header: docT("purchases.payment"), value: (p: PurchaseDto) => (p.paymentStatus ? docT(`purchases.paymentStatus.${p.paymentStatus}`) : "") },
     ], rows);
   }
-  const suppliersQuery = useQuery({ queryKey: ["suppliers"], queryFn: fetchSuppliers });
+  // Archived suppliers too, for filtering past purchases; new purchases only offer active ones.
+  const suppliersQuery = useQuery({ queryKey: ["suppliers", "with-archived"], queryFn: () => fetchSuppliers(true) });
   const productsQuery = useQuery({ queryKey: ["products"], queryFn: () => fetchProducts() });
   const ratesQuery = useQuery({ queryKey: TAX_RATES_QUERY_KEY, queryFn: fetchTaxRates });
 
@@ -212,7 +213,9 @@ export function PurchasesPage() {
                           value={field.value}
                           onChange={(v) => field.onChange(v ?? "")}
                           placeholder={t("purchases.selectSupplier")}
-                          options={(suppliersQuery.data ?? []).map((s) => ({ value: s.id, label: s.name, description: s.phone ?? undefined }))}
+                          options={(suppliersQuery.data ?? [])
+                            .filter((s) => s.isActive !== false)
+                            .map((s) => ({ value: s.id, label: s.name, description: s.phone ?? undefined }))}
                         />
                       </FormControl>
                       <FormMessage />

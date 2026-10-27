@@ -27,12 +27,13 @@ export function FiscalDocumentsList() {
   const [from, setFrom] = React.useState("");
   const [to, setTo] = React.useState("");
   const [search, setSearch] = React.useState("");
+  const [includeExpired, setIncludeExpired] = React.useState(false);
   const [page, setPage] = React.useState(1);
   const [viewing, setViewing] = React.useState<string | null>(null);
   const navigate = useNavigate();
   const query = useQuery({
-    queryKey: ["fiscal-documents", "list", type, from, to, search, page],
-    queryFn: () => fetchFiscalDocuments({ type: type ?? undefined, from, to, search: search.trim(), page, pageSize: PAGE_SIZE }),
+    queryKey: ["fiscal-documents", "list", type, from, to, search, includeExpired, page],
+    queryFn: () => fetchFiscalDocuments({ type: type ?? undefined, from, to, search: search.trim(), includeExpired, page, pageSize: PAGE_SIZE }),
   });
   const data = query.data;
   const pageCount = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
@@ -57,6 +58,10 @@ export function FiscalDocumentsList() {
         <DateInput className="w-40" aria-label={t("fiscal.from")} value={from} onChange={(v) => (setFrom(v), reset())} />
         <DateInput className="w-40" aria-label={t("fiscal.to")} value={to} onChange={(v) => (setTo(v), reset())} />
         <Input className="max-w-xs" placeholder={t("fiscal.searchPlaceholder")} value={search} onChange={(e) => (setSearch(e.target.value), reset())} />
+        <label className="flex h-9 items-center gap-2 text-sm">
+          <input type="checkbox" className="h-4 w-4" checked={includeExpired} onChange={(e) => (setIncludeExpired(e.target.checked), reset())} />
+          {t("fiscal.showExpired")}
+        </label>
       </div>
 
       <Card>
@@ -87,6 +92,11 @@ export function FiscalDocumentsList() {
                         {t("fiscal.invoiced")}
                       </Badge>
                     )}
+                    {d.documentType === "PF" && d.status === "N" && d.expired && (
+                      <Badge variant="outline" className="ml-2" title={d.validUntil ? t("fiscal.validUntil", { date: formatCalendarDate(d.validUntil) }) : undefined}>
+                        {t("fiscal.expired")}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{formatCalendarDate(d.invoiceDate)}</TableCell>
                   <TableCell>
@@ -99,7 +109,7 @@ export function FiscalDocumentsList() {
                     <Button variant="outline" size="sm" onClick={() => setViewing(d.id)}>
                       {t("page.viewPrint")}
                     </Button>
-                    {d.documentType === "PF" && d.status === "N" && (
+                    {d.documentType === "PF" && d.status === "N" && !d.expired && (
                       <Button size="sm" className="ml-2" onClick={() => navigate(`/pos?proforma=${d.id}`)}>
                         {t("fiscal.sellProforma")}
                       </Button>

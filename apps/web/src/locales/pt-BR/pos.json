@@ -55,7 +55,12 @@
     "tenderedTooLow": "O valor recebido é menor que o total",
     "changeDue": "Troco: {{amount}}",
     "split": "+ Dividir pagamento",
-    "method": "Forma de pagamento"
+    "method": "Forma de pagamento",
+    "splitEvenly": "Dividir igualmente",
+    "payers": "Número de pagantes",
+    "payersCount_one": "{{count}} pagante",
+    "payersCount_other": "{{count}} pagantes",
+    "nonCashOver": "Só o dinheiro pode passar do valor devido. Reduza as outras formas."
   },
   "checkout": {
     "title": "Pagamento",
@@ -69,7 +74,10 @@
     "recentSales": "Vendas recentes",
     "saleDiscount": "Desconto na venda toda",
     "changeSaleDiscount": "Alterar o desconto da venda",
-    "exemptionMissing": "\"{{name}}\" está isento de IVA sem motivo de isenção e não pode ser vendido. Um gerente precisa corrigir o produto antes (Produtos → Produtos a revisar)."
+    "exemptionMissing": "\"{{name}}\" está isento de IVA sem motivo de isenção e não pode ser vendido. Um gerente precisa corrigir o produto antes (Produtos → Produtos a revisar).",
+    "emailSent": "Recibo enviado por e-mail",
+    "emailFailed": "O e-mail com o recibo não foi enviado: {{error}}",
+    "emailQueued": "O recibo será enviado por e-mail quando a venda for sincronizada"
   },
   "complete": {
     "title": "Venda concluída",
@@ -86,7 +94,8 @@
     "forPlaceholder": "Nome do cliente ou da empresa",
     "printSlip": "Imprimir orçamento",
     "printA4": "Imprimir orçamento A4",
-    "saveProforma": "Salvar como pró-forma"
+    "saveProforma": "Salvar como pró-forma",
+    "validDays": "Validade (dias)"
   },
   "drawer": {
     "title": "Abrir gaveta de dinheiro",
@@ -124,7 +133,9 @@
     "cancelled": "Cancelada",
     "waiting": "Aguardando envio",
     "reprint": "Reimprimir recibo",
-    "cancel": "Cancelar venda"
+    "cancel": "Cancelar venda",
+    "emailSent": "Enviado por e-mail",
+    "emailFailed": "Falha no e-mail"
   },
   "void": {
     "title": "Cancelar a venda {{number}}?",
@@ -212,7 +223,8 @@
   "proforma": {
     "selling": "Vendendo a pró-forma {{number}}: esta venda a fatura.",
     "detach": "Vender sem ela",
-    "notOpen": "A pró-forma {{number}} não está mais em aberto."
+    "notOpen": "A pró-forma {{number}} não está mais em aberto.",
+    "expired": "A pró-forma {{number}} expirou. Emita uma nova."
   },
   "fiscal": {
     "cantIssueOffline": "Esta venda não pode ser concluída sem conexão: as faturas têm de ser assinadas quando são emitidas e este caixa ainda não tem chave de assinatura. Conecte-se ao servidor (ou registre o caixa) e tente de novo."

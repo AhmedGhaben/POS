@@ -53,7 +53,13 @@
     "inventoryTypeDraft": "Lista provisória até a AGT publicar a de Angola.",
     "addPhoto": "Adicionar foto",
     "changePhoto": "Trocar a foto",
-    "removePhoto": "Remover"
+    "removePhoto": "Remover",
+    "delete": "Excluir produto definitivamente",
+    "deleteConfirm": "Excluir \"{{name}}\" definitivamente? Não dá para desfazer.",
+    "deleteForGood": "Excluir",
+    "deleted": "Produto excluído",
+    "hasHistory": "Este produto tem vendas, compras, movimentos de estoque ou documentos, então não pode ser excluído: eles precisam continuar apontando para ele. Arquive-o: ele sai do caixa e desta lista, e os relatórios o mantêm.",
+    "hasHistoryArchived": "Este produto tem vendas, compras, movimentos de estoque ou documentos, então não pode ser excluído: eles precisam continuar apontando para ele. Ele continua arquivado."
   },
   "import": {
     "title": "Importar produtos de CSV",
