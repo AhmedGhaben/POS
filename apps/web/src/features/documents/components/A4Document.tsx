@@ -40,6 +40,8 @@ interface A4DocumentProps {
   billTo?: BillTo | null;
   /** Shown under the totals, e.g. payment details or a disclaimer. */
   notes?: React.ReactNode;
+  /** The store's prices include IVA: also show each line's shelf price ("Preço c/ IVA"), as the customer knows it. */
+  pricesIncludeTax?: boolean;
   /** "Coordenadas bancárias": the accounts the business shows on quotes. */
   bankAccounts?: FiscalBankDetailsDto[];
 }
@@ -48,7 +50,7 @@ interface A4DocumentProps {
  * A4 quotation/invoice. Sized in mm with 15 mm padding for the on-screen
  * preview; in print the padding moves to the @page margin (globals.css).
  */
-export function A4Document({ title, meta, store, lines, seller, billTo, notes, bankAccounts }: A4DocumentProps) {
+export function A4Document({ title, meta, store, lines, seller, billTo, notes, pricesIncludeTax, bankAccounts }: A4DocumentProps) {
   const liveBusiness = useAuthStore((s) => s.business);
   const from = seller ?? liveBusiness;
   const { t, money, qty } = useDocumentLanguage(from?.currency, store?.id);
@@ -103,6 +105,7 @@ export function A4Document({ title, meta, store, lines, seller, billTo, notes, b
           <tr className="border-b-2 border-black text-left text-[9pt]">
             <th className="py-1.5 pr-2 font-semibold">{t("a4.item")}</th>
             <th className="py-1.5 pr-2 text-right font-semibold">{t("a4.qty")}</th>
+            {pricesIncludeTax && <th className="py-1.5 pr-2 text-right font-semibold">{t("a4.shelfPrice")}</th>}
             <th className="py-1.5 pr-2 text-right font-semibold">{t("a4.unitPrice")}</th>
             {anyDiscount && <th className="py-1.5 pr-2 text-right font-semibold">{t("a4.discount")}</th>}
             <th className="py-1.5 pr-2 text-right font-semibold">{t("totals.tax")}</th>
@@ -117,6 +120,7 @@ export function A4Document({ title, meta, store, lines, seller, billTo, notes, b
                 {line.sku && <span className="block text-[8pt] text-neutral-600">{line.sku}</span>}
               </td>
               <td className="py-1.5 pr-2 text-right">{qty(line.quantity, line.unit)}</td>
+              {pricesIncludeTax && <td className="py-1.5 pr-2 text-right">{money(line.shelfPrice)}</td>}
               <td className="py-1.5 pr-2 text-right">{money(line.unitPrice)}</td>
               {anyDiscount && (
                 <td className="py-1.5 pr-2 text-right">{line.discount > 0 ? `-${money(line.discount)}` : ""}</td>

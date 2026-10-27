@@ -93,6 +93,7 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = nul
       ]}
       store={store}
       lines={docLines}
+      pricesIncludeTax={store?.pricesIncludeTax}
       bankAccounts={quoteAccounts}
       billTo={name ? { name, email: customer?.name === name ? customer.email : null } : null}
       notes={

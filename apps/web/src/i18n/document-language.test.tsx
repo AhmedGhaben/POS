@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { BusinessDto, FiscalDocumentDto, ShiftSummaryDto, StoreDto, UserDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
 import { A4Document } from "@/features/documents/components/A4Document";
+import { documentLine } from "@/features/documents/lines";
 import { FiscalA4 } from "@/features/fiscal/components/FiscalA4";
 import { ReportA4 } from "@/features/reports/components/ReportViewer";
 import { useCellFormatters } from "@/features/reports/use-cell-formatters";
@@ -113,6 +114,21 @@ describe("an Angolan store's documents, printed by someone reading the app in En
     const quote = renderToStaticMarkup(<A4Document title="ORÇAMENTO" meta={[]} store={store} lines={[]} bankAccounts={bankAccounts} />);
     expect(quote).toContain("Coordenadas bancárias");
     expect(quote).toContain("AO03 0006 0000 0012 3456 7890 1");
+  });
+
+  it("a quote says its prices are without IVA, and shows the shelf price when prices include IVA (tester #22)", () => {
+    // 150 and 100 Kz on the shelf, IVA 14% included: what the pricing gives.
+    const row = (key: string, price: number, tax: number) =>
+      documentLine({ key, name: key, sku: null, quantity: 1, unit: "un", taxRate: 14, exemptionCode: null, unitPrice: price, gross: price, lineDiscount: 0, discount: 0, net: price - tax, tax, total: price }, true);
+    const lines = [row("Sumo", 150, 18.43), row("Pão", 100, 12.29)];
+    const html = renderToStaticMarkup(<A4Document title="ORÇAMENTO" meta={[]} store={store} lines={lines} pricesIncludeTax />);
+    expect(html).toContain("Preço unit. s/ IVA");
+    expect(html).toContain("Valor s/ IVA");
+    expect(html).toContain("Preço c/ IVA");
+    expect(html).toMatch(/150,00/);
+    expect(html).toMatch(/131,57/);
+    expect(html).toMatch(/250,00/);
+    expect(renderToStaticMarkup(<A4Document title="ORÇAMENTO" meta={[]} store={store} lines={lines} />)).not.toContain("Preço c/ IVA");
   });
 
   it("a report on A4 (and its PDF) is in Portuguese", () => {

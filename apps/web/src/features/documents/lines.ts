@@ -15,6 +15,8 @@ export interface DocumentLine {
   unit: string;
   /** Per unit, without tax. */
   unitPrice: number;
+  /** Per unit as priced on the shelf: with tax when the store's prices include it. */
+  shelfPrice: number;
   /** Percent, e.g. 14. */
   taxRate: number;
   /** Why it's exempt (M10...) when the rate is 0. */
@@ -72,7 +74,7 @@ interface PricedRow {
  * the columns add up to the base the tax was charged on.
  */
 export function documentLine(row: PricedRow, taxIncluded: boolean): DocumentLine {
-  const common = { key: row.key, name: row.name, sku: row.sku, quantity: row.quantity, unit: row.unit, taxRate: row.taxRate, exemptionCode: row.exemptionCode };
+  const common = { key: row.key, name: row.name, sku: row.sku, quantity: row.quantity, unit: row.unit, taxRate: row.taxRate, exemptionCode: row.exemptionCode, shelfPrice: row.unitPrice };
   if (!taxIncluded) {
     return { ...common, unitPrice: row.unitPrice, lineGross: row.gross, lineDiscount: row.lineDiscount, discount: row.discount, net: row.net, tax: row.tax, gross: row.total };
   }
