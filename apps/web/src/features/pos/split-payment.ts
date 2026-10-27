@@ -19,7 +19,7 @@ export interface SplitResult {
   changeDue: number;
 }
 
-const cents = (value: string) => Math.round((Number(value) || 0) * 100);
+const cents = (value: string) => Math.round((Number(value.replace(",", ".")) || 0) * 100);
 
 /**
  * The payments a split sale sends. Only cash can be overpaid: when the cash

@@ -233,5 +233,10 @@
     "closeShiftFirst": "A shift is open on this device: close it first.",
     "managersOnly": "Only an owner or manager can change this.",
     "notChosen": "not chosen yet (asked the first time the POS screen is opened here)"
+  },
+  "touch": {
+    "title": "Touch mode",
+    "description": "For touchscreen tills without a keyboard: number fields (quantity, price, discount, cash, float, counts, PIN) open an on-screen keypad, and buttons get bigger. A keyboard still works.",
+    "toggle": "Use touch mode on this device"
   }
 }

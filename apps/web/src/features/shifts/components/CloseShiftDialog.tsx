@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { DrawerOpenReason, type StoreDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PrintArea } from "@/components/print/PrintArea";
@@ -21,6 +20,7 @@ import { cashDifference, notInDrawer } from "../cash-check";
 import { isEmptyShift, isEmptySummary, localSummary, type LocalShift } from "../ledger";
 import { reportFromLocal, reportFromServer } from "../report-data";
 import { ShiftReport, type ShiftReportData } from "./ShiftReport";
+import { NumericField } from "@/components/ui/numeric-field";
 
 /**
  * Closing the till: count the cash first, without seeing what's expected
@@ -173,13 +173,14 @@ export function CloseShiftDialog({
                           {money(d)}
                         </Label>
                         <span className="text-muted-foreground">×</span>
-                        <Input
+                        <NumericField
                           id={`count-${d}`}
                           aria-label={t("close.countOf", { value: money(d) })}
-                          inputMode="numeric"
+                          keypad="popover"
+                          decimals={0}
                           className="h-8"
                           value={counts[String(d)] ?? ""}
-                          onChange={(e) => setCounts((c) => ({ ...c, [String(d)]: e.target.value }))}
+                          onValueChange={(v) => setCounts((c) => ({ ...c, [String(d)]: v }))}
                         />
                       </div>
                     ))}
@@ -191,7 +192,7 @@ export function CloseShiftDialog({
               ) : (
                 <div className="space-y-1.5">
                   <Label htmlFor="counted-cash">{t("close.counted")}</Label>
-                  <Input id="counted-cash" inputMode="decimal" autoFocus value={counted} onChange={(e) => setCounted(e.target.value)} />
+                  <NumericField id="counted-cash" autoFocus value={counted} onValueChange={setCounted} />
                 </div>
               )}
               {live && (

@@ -60,7 +60,8 @@
     "payers": "Número de pagadores",
     "payersCount_one": "{{count}} pagador",
     "payersCount_other": "{{count}} pagadores",
-    "nonCashOver": "Só o dinheiro pode exceder o valor em dívida. Reduza os outros meios."
+    "nonCashOver": "Só o dinheiro pode exceder o valor em dívida. Reduza os outros meios.",
+    "amount": "Valor"
   },
   "checkout": {
     "title": "Pagamento",

@@ -10,6 +10,7 @@ import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { useAuthStore } from "@/features/auth/store";
 import { useLanguageSync } from "@/i18n/use-language";
 import { useDisplaySizeSync } from "@/features/display/display-size";
+import { useTouchModeSync } from "@/features/touch/touch-mode";
 import { LoginPage } from "@/routes/login";
 import { SignupPage } from "@/routes/signup";
 import { ForgotPasswordPage } from "@/routes/forgot-password";
@@ -49,6 +50,7 @@ function DefaultLanding() {
 export function App() {
   useLanguageSync();
   useDisplaySizeSync();
+  useTouchModeSync();
   return (
     <>
       <Toaster position="top-right" />

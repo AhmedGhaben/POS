@@ -139,5 +139,11 @@
     "month": "MM",
     "year": "YYYY",
     "pick": "Pick a date"
+  },
+  "keypad": {
+    "backspace": "Delete the last digit",
+    "clear": "Clear",
+    "comma": "Decimal comma",
+    "ok": "OK"
   }
 }

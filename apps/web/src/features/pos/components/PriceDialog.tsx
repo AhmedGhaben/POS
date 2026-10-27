@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 import { Permission } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useHasPermission } from "@/features/auth/use-permission";
 import { useMoney } from "@/features/business/use-money";
 import { requestApproval, type Approval } from "@/features/overrides/approval";
 import { linePrice, type CartLine } from "../hooks/useCart";
+import { NumericField } from "@/components/ui/numeric-field";
 
 /**
  * Changes one item's price for this sale (e.g. a damaged box). Needs
@@ -71,7 +71,7 @@ export function PriceDialog({
         <form className="space-y-4" onSubmit={apply}>
           <div className="space-y-1.5">
             <Label htmlFor="line-price">{t("price.label")}</Label>
-            <Input id="line-price" inputMode="decimal" autoFocus value={value} onChange={(e) => setValue(e.target.value)} />
+            <NumericField id="line-price" autoFocus value={value} onValueChange={setValue} />
           </div>
           {changed && !canChange && <p className="text-sm text-amber-700 dark:text-amber-400">{t("price.needsApproval")}</p>}
           <div className="grid grid-cols-2 gap-2">

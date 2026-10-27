@@ -2,10 +2,10 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { DrawerOpenReason } from "@pos/shared";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { openCashDrawer, useHasDrawer } from "@/features/desktop/drawer";
 import { openShift } from "../api";
+import { NumericField } from "@/components/ui/numeric-field";
 
 /** Before the first sale: how much cash is in the drawer to start with. */
 export function OpenShiftPanel({ storeId }: { storeId: string }) {
@@ -33,7 +33,7 @@ export function OpenShiftPanel({ storeId }: { storeId: string }) {
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="opening-float">{t("open.float")}</Label>
-        <Input id="opening-float" inputMode="decimal" autoFocus value={float} onChange={(e) => setFloat(e.target.value)} />
+        <NumericField id="opening-float" autoFocus value={float} onValueChange={setFloat} />
       </div>
       <Button type="submit" className="w-full" disabled={!valid || busy}>
         {t("open.submit")}

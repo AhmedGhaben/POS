@@ -233,5 +233,10 @@
     "closeShiftFirst": "Há um turno aberto neste dispositivo: feche-o primeiro.",
     "managersOnly": "Só o proprietário ou um gerente pode alterar isto.",
     "notChosen": "ainda não escolhido (perguntado na primeira vez que o PDV é aberto aqui)"
+  },
+  "touch": {
+    "title": "Modo touch",
+    "description": "Para caixas com tela touch e sem teclado: os campos de números (quantidade, preço, desconto, dinheiro, fundo, contagens, PIN) abrem um teclado na tela e os botões ficam maiores. Um teclado continua funcionando.",
+    "toggle": "Usar o modo touch neste dispositivo"
   }
 }

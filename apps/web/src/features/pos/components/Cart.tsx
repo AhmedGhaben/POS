@@ -7,6 +7,7 @@ import { linePrice, type CartLine } from "@/features/pos/hooks/useCart";
 import { useMoney } from "@/features/business/use-money";
 import { discountLabel } from "../discount-label";
 import { parseQuantity } from "../quantity";
+import { NumericField } from "@/components/ui/numeric-field";
 
 interface CartProps {
   lines: CartLine[];
@@ -37,14 +38,15 @@ function QuantityField({ value, unit, label, onCommit }: { value: number; unit: 
   }
 
   return (
-    <input
+    <NumericField
       data-keep-focus
-      inputMode={decimals > 0 ? "decimal" : "numeric"}
+      keypad="popover"
+      decimals={decimals}
       aria-label={label}
-      className={`h-7 ${decimals > 0 ? "w-16" : "w-12"} rounded-md border border-input bg-background text-center text-sm focus:outline-none focus:ring-2 focus:ring-ring`}
+      className={`h-7 ${decimals > 0 ? "w-16" : "w-12"} px-1 text-center`}
       value={text}
       onFocus={(e) => e.target.select()}
-      onChange={(e) => setText(e.target.value)}
+      onValueChange={setText}
       onBlur={commit}
       onKeyDown={(e) => {
         if (e.key === "Enter") e.currentTarget.blur();

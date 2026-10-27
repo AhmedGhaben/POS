@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 import { discountCents, Permission, toCents, type DiscountInput, type DiscountType } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/features/auth/store";
 import { useMoney } from "@/features/business/use-money";
 import { useHasPermission } from "@/features/auth/use-permission";
 import { requestApproval, type Approval } from "@/features/overrides/approval";
+import { NumericField } from "@/components/ui/numeric-field";
 
 const QUICK_PERCENTS = [5, 10, 15, 20];
 
@@ -103,13 +103,7 @@ export function DiscountDialog({ open, onOpenChange, title, base, current, onApp
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="discount-value">{type === "PERCENT" ? t("discount.percentLabel") : t("discount.amountLabel")}</Label>
-            <Input
-              id="discount-value"
-              inputMode="decimal"
-              autoFocus
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-            />
+            <NumericField id="discount-value" autoFocus value={value} onValueChange={setValue} />
           </div>
           {type === "PERCENT" && (
             <div className="flex flex-wrap gap-2">
