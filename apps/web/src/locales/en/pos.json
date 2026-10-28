@@ -99,7 +99,10 @@
     "printSlip": "Print quote",
     "printA4": "Print A4 quotation",
     "saveProforma": "Save as proforma",
-    "validDays": "Valid for (days)"
+    "validDays": "Valid for (days)",
+    "taxIdLabel": "Tax ID (optional)",
+    "addressLabel": "Address (optional)",
+    "taxIdInvalid": "Use only letters and numbers"
   },
   "drawer": {
     "title": "Open cash drawer",

@@ -43,7 +43,8 @@ export interface BankDetails {
 }
 
 export interface Buyer {
-  id: string;
+  /** null: a one-off buyer typed at the till, not a saved customer. */
+  id: string | null;
   name: string;
   taxId: string | null;
   address: string | null;
@@ -557,8 +558,10 @@ export class FiscalService {
     });
     const customer = dto.customerId ? await this.prisma.customer.findFirst({ where: { id: dto.customerId, businessId } }) : null;
     if (dto.customerId && !customer) throw new NotFoundException("Customer not found");
+    // A saved customer, or a buyer typed for this quote only (tester #38).
+    const buyer = customer && !customer.isFinalConsumer ? buyerOf(customer) : oneOffBuyer(dto, issuer.config?.code ?? "AO");
     return this.prisma.$transaction((tx) =>
-      this.issueProforma(tx, { issuer, userId, buyer: customer && !customer.isFinalConsumer ? buyerOf(customer) : null, pricesIncludeTax: store.pricesIncludeTax, lines, validDays: dto.validDays }),
+      this.issueProforma(tx, { issuer, userId, buyer, pricesIncludeTax: store.pricesIncludeTax, lines, validDays: dto.validDays }),
     );
   }
 
@@ -756,6 +759,14 @@ function sourceLine(li: SaleForDocument["lineItems"][number], issuer: IssuerCont
 
 function payments(sale: SaleForDocument, config: CountryConfig | null): Prisma.InputJsonValue {
   return sale.payments.map((p) => ({ method: p.method, mechanism: config?.paymentMechanisms[p.method] ?? "OU", amount: fixed2(p.amount) }));
+}
+
+/** The name and NIF typed for a one-off quote; null when neither was given. */
+export function oneOffBuyer(dto: { buyerName?: string; buyerTaxId?: string; buyerAddress?: string }, country: string): Buyer | null {
+  const name = dto.buyerName?.trim();
+  const taxId = dto.buyerTaxId?.trim();
+  if (!name && !taxId) return null;
+  return { id: null, name: name || "Consumidor Final", taxId: taxId || null, address: dto.buyerAddress?.trim() || null, city: null, postalCode: null, province: null, country };
 }
 
 export function buyerOf(c: { id: string; name: string; taxId: string | null; address: string | null; city: string | null; postalCode: string | null; province: string | null; country: string }): Buyer {

@@ -9,10 +9,11 @@ interface QuoteSlipProps {
   reference: string;
   issuedAt: Date;
   forName?: string;
+  forTaxId?: string;
 }
 
 /** 80 mm quote. Deliberately different from a receipt: no payment section, a clear disclaimer. */
-export function QuoteSlip({ store, lines, reference, issuedAt, forName }: QuoteSlipProps) {
+export function QuoteSlip({ store, lines, reference, issuedAt, forName, forTaxId }: QuoteSlipProps) {
   const { t, money, qty, dateTime, date } = useDocumentLanguage(undefined, store?.id);
   const totals = documentTotals(lines);
 
@@ -24,6 +25,7 @@ export function QuoteSlip({ store, lines, reference, issuedAt, forName }: QuoteS
       <p className="text-center">{dateTime(issuedAt)}</p>
       <p className="text-center">{t("quote.ref", { reference })}</p>
       {forName && <p className="text-center">{t("quote.for", { name: forName })}</p>}
+      {forTaxId && <p className="text-center">{t("taxId", { id: forTaxId })}</p>}
       <hr className="my-2 border-dashed" />
       {lines.map((line) => (
         <div key={line.key}>

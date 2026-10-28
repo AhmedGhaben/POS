@@ -99,7 +99,10 @@
     "printSlip": "Imprimir orçamento",
     "printA4": "Imprimir orçamento A4",
     "saveProforma": "Salvar como pró-forma",
-    "validDays": "Validade (dias)"
+    "validDays": "Validade (dias)",
+    "taxIdLabel": "CNPJ/CPF (opcional)",
+    "addressLabel": "Endereço (opcional)",
+    "taxIdInvalid": "Use só letras e números"
   },
   "drawer": {
     "title": "Abrir gaveta de dinheiro",

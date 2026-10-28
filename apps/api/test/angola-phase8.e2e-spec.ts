@@ -304,6 +304,21 @@ describe("Angola phase 8: fiscal documents (e2e)", () => {
       await sale({ proformaId: pf.id }).expect(400);
     });
 
+    it("a quote for a buyer typed at the till carries their name, NIF and address (tester #38)", async () => {
+      const create = (body: object) =>
+        http().post("/fiscal-documents/proformas").set(auth(ownerToken)).send({ storeId, lineItems: [{ productId, quantity: 1 }], ...body });
+      const pf = (await create({ buyerName: "Kianda Lda", buyerTaxId: "5417123456", buyerAddress: "Rua da Missão 12, Luanda" }).expect(201)).body;
+      const row = await prisma.fiscalDocument.findUniqueOrThrow({ where: { id: pf.id } });
+      expect(row).toMatchObject({ customerId: null, buyerName: "Kianda Lda", buyerTaxId: "5417123456", buyerAddress: expect.objectContaining({ address: "Rua da Missão 12, Luanda" }) });
+      // Only a NIF: the name is the final consumer's.
+      const nifOnly = (await create({ buyerTaxId: "5417999999" }).expect(201)).body;
+      expect(await prisma.fiscalDocument.findUniqueOrThrow({ where: { id: nifOnly.id } })).toMatchObject({ buyerName: "Consumidor Final", buyerTaxId: "5417999999" });
+      await create({ buyerTaxId: "541/7" }).expect(400);
+      // Nothing typed: the final consumer, as before.
+      const none = (await create({}).expect(201)).body;
+      expect(await prisma.fiscalDocument.findUniqueOrThrow({ where: { id: none.id } })).toMatchObject({ buyerName: "Consumidor Final", buyerTaxId: "999999999" });
+    });
+
     it("a proforma is valid 30 days unless told otherwise; once expired it's hidden from the list and can't be sold", async () => {
       const create = (body: object = {}) =>
         http().post("/fiscal-documents/proformas").set(auth(ownerToken)).send({ storeId, lineItems: [{ productId, quantity: 1 }], ...body });

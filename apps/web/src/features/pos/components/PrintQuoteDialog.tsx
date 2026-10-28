@@ -19,6 +19,10 @@ import { linesFromCart, quoteReference } from "@/features/documents/lines";
 import { printDocument } from "@/features/desktop/printing";
 import type { CartLine } from "@/features/pos/hooks/useCart";
 import { useDocumentLanguage } from "@/i18n/use-document-language";
+import { customerAddress } from "@/features/documents/customer-address";
+
+/** Letters and numbers, like a customer's NIF (the server checks too). */
+const TAX_ID = /^[A-Za-z0-9][A-Za-z0-9 .-]*$/;
 
 interface PrintQuoteDialogProps {
   open: boolean;
@@ -44,15 +48,21 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = nul
   const doc = useDocumentLanguage();
   const [format, setFormat] = React.useState<PrintFormat>("receipt");
   const [forName, setForName] = React.useState("");
+  // Name, NIF and address like the A4 invoice (tester #38): the chosen customer's, or typed for this quote.
+  const [taxId, setTaxId] = React.useState("");
+  const [address, setAddress] = React.useState("");
   const [issuedAt, setIssuedAt] = React.useState(() => new Date());
+  const saved = customer && !customer.isFinalConsumer ? customer : null;
 
   // A fresh timestamp and reference every time the dialog opens.
   React.useEffect(() => {
     if (!open) return;
     setIssuedAt(new Date());
-    setForName(customer?.name ?? "");
+    setForName(saved?.name ?? "");
+    setTaxId(saved?.taxId ?? "");
+    setAddress(saved ? customerAddress(saved) : "");
     setValidDays("30");
-  }, [open, customer]);
+  }, [open, saved]);
 
   // How many days a saved proforma is valid ("Válida até" on it).
   const [validDays, setValidDays] = React.useState("30");
@@ -61,11 +71,17 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = nul
   // Where sales are fiscal documents a quote can be kept as a Factura Pró-forma
   // (numbered and signed on the server), and sold from later.
   const fiscal = !!countryConfig(store?.country ?? null) && !isWorkingOffline();
+  const name = forName.trim() || undefined;
+  const nif = taxId.trim() || undefined;
+  const billAddress = address.trim() || undefined;
+  const taxIdOk = !nif || TAX_ID.test(nif);
+  // The saved customer as is; anything typed or changed goes on this quote only.
+  const asSaved = !!saved && name === saved.name && (nif ?? "") === (saved.taxId ?? "") && (billAddress ?? "") === customerAddress(saved);
   const proformaMutation = useMutation({
     mutationFn: () =>
       createProforma({
         storeId: store!.id,
-        customerId: customer && !customer.isFinalConsumer ? customer.id : undefined,
+        ...(asSaved ? { customerId: saved!.id } : { buyerName: name, buyerTaxId: nif, buyerAddress: billAddress }),
         lineItems: lines.map((l) => ({ productId: l.product.id, quantity: l.quantity, unitPrice: l.unitPrice ?? undefined, discount: l.discount ?? null })),
         discount: saleDiscount,
         validDays: Number(validDays) || 30,
@@ -80,10 +96,9 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = nul
   const bankAccounts = useQuery({ queryKey: BANK_ACCOUNTS_QUERY_KEY, queryFn: fetchBankAccounts, enabled: open, staleTime: 5 * 60_000 });
   const quoteAccounts = (bankAccounts.data ?? []).filter((a) => a.showOnQuotes);
   const reference = quoteReference(store?.id ?? "0000", issuedAt);
-  const name = forName.trim() || undefined;
   const date = doc.date(issuedAt);
 
-  const slip = <QuoteSlip store={store} lines={docLines} reference={reference} issuedAt={issuedAt} forName={name} />;
+  const slip = <QuoteSlip store={store} lines={docLines} reference={reference} issuedAt={issuedAt} forName={name} forTaxId={taxIdOk ? nif : undefined} />;
   const a4 = (
     <A4Document
       title={doc.t("quote.a4Title")}
@@ -95,7 +110,7 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = nul
       lines={docLines}
       pricesIncludeTax={store?.pricesIncludeTax}
       bankAccounts={quoteAccounts}
-      billTo={name ? { name, email: customer?.name === name ? customer.email : null } : null}
+      billTo={name || nif ? { name: name ?? "", taxId: taxIdOk ? nif : null, address: billAddress, email: saved?.name === name ? saved?.email : null } : null}
       notes={
         <p className="text-[9pt] text-neutral-700">
           {doc.t("quote.a4Notes", { date })}
@@ -129,6 +144,17 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = nul
             />
           </div>
         </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1">
+            <Label htmlFor="quote-tax-id">{t("quote.taxIdLabel")}</Label>
+            <Input id="quote-tax-id" value={taxId} onChange={(e) => setTaxId(e.target.value)} aria-invalid={!taxIdOk} />
+            {!taxIdOk && <p className="text-xs text-destructive">{t("quote.taxIdInvalid")}</p>}
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="quote-address">{t("quote.addressLabel")}</Label>
+            <Input id="quote-address" value={address.replace(/\n/g, ", ")} onChange={(e) => setAddress(e.target.value)} />
+          </div>
+        </div>
 
         <div className="max-h-[50vh] overflow-auto rounded-md border bg-muted/40 p-3">
           {format === "receipt" ? (
@@ -154,7 +180,7 @@ export function PrintQuoteDialog({ open, onOpenChange, lines, saleDiscount = nul
             <Button
               variant="outline"
               className="flex-1"
-              disabled={lines.length === 0 || proformaMutation.isPending || !validDaysOk}
+              disabled={lines.length === 0 || proformaMutation.isPending || !validDaysOk || !taxIdOk}
               onClick={() => proformaMutation.mutate()}
             >
               <FileCheck className="mr-2 h-4 w-4" /> {t("quote.saveProforma")}

@@ -1507,6 +1507,10 @@ export interface TillSeriesDto {
 export interface CreateProformaDto {
   storeId: string;
   customerId?: string;
+  /** A buyer for this quote only (no saved customer): name, NIF, address. */
+  buyerName?: string;
+  buyerTaxId?: string;
+  buyerAddress?: string;
   lineItems: { productId: string; quantity: number; unitPrice?: number; discount?: DiscountInput | null }[];
   discount?: DiscountInput | null;
   /** Days it's valid from its date; 30 when not given. */

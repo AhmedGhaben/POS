@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
-import { ArrayMinSize, IsInt, IsNumber, IsOptional, IsString, Max, Min, ValidateNested } from "class-validator";
+import { ArrayMinSize, IsInt, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateNested } from "class-validator";
+import { TAX_ID_PATTERN } from "../../common/dto/address.dto";
 import { DiscountDto } from "../../sales/dto/create-sale.dto";
 
 export class ProformaLineDto {
@@ -30,6 +31,23 @@ export class CreateProformaDto {
   @IsOptional()
   @IsString()
   customerId?: string;
+
+  /** A buyer for this quote only, typed at the till (no saved customer): name, NIF and address. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  buyerName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  @Matches(TAX_ID_PATTERN, { message: "Use only letters and numbers" })
+  buyerTaxId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  buyerAddress?: string;
 
   @ValidateNested({ each: true })
   @Type(() => ProformaLineDto)
