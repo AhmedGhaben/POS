@@ -84,7 +84,10 @@
     "title": "Venda concluída",
     "savedOffline": "Salva sem internet — esta venda será sincronizada automaticamente quando a conexão voltar.",
     "printReceipt": "Imprimir recibo",
-    "a4Invoice": "Fatura A4"
+    "a4Invoice": "Fatura A4",
+    "format": "Imprimir como",
+    "receiptFormat": "Cupom",
+    "a4Format": "A4"
   },
   "quote": {
     "title": "Imprimir orçamento",

@@ -84,7 +84,10 @@
     "title": "Venda concluída",
     "savedOffline": "Guardada sem internet — esta venda é sincronizada automaticamente quando voltar a ter ligação.",
     "printReceipt": "Imprimir talão",
-    "a4Invoice": "Fatura A4"
+    "a4Invoice": "Fatura A4",
+    "format": "Imprimir como",
+    "receiptFormat": "Talão",
+    "a4Format": "A4"
   },
   "quote": {
     "title": "Imprimir orçamento",

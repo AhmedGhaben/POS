@@ -84,7 +84,10 @@
     "title": "Sale complete",
     "savedOffline": "Saved offline — this sale will sync automatically once you're back online.",
     "printReceipt": "Print receipt",
-    "a4Invoice": "A4 invoice"
+    "a4Invoice": "A4 invoice",
+    "format": "Print as",
+    "receiptFormat": "Receipt",
+    "a4Format": "A4"
   },
   "quote": {
     "title": "Print quote",

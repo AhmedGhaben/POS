@@ -32,6 +32,8 @@ import { PrintArea } from "@/components/print/PrintArea";
 import { PrintQuoteDialog } from "@/features/pos/components/PrintQuoteDialog";
 import { IssueInvoiceDialog } from "@/features/invoices/components/IssueInvoiceDialog";
 import { FiscalDocumentDialog } from "@/features/fiscal/components/FiscalDocumentDialog";
+import { SalePrintToggle } from "@/features/pos/components/SalePrintToggle";
+import { usePrintFormatStore, useSalePrintFormat } from "@/features/pos/print-format";
 import { saleDocument } from "@/features/fiscal/sale-document";
 import { PaymentPanel } from "@/features/pos/components/PaymentPanel";
 import { RecentSalesSheet } from "@/features/pos/components/RecentSalesSheet";
@@ -227,6 +229,8 @@ export function PosPage() {
   const [viewingDocument, setViewingDocument] = React.useState<string | null>(null);
   // Opened right after a sale in a store that prints A4: print the original at once.
   const [autoPrintDocument, setAutoPrintDocument] = React.useState(false);
+  // The sale whose A4 is open from the till, so the Receipt toggle can go back to its receipt.
+  const [documentSale, setDocumentSale] = React.useState<SaleDto | null>(null);
   // A Factura Pró-forma being sold (opened from Invoices): the sale invoices it.
   const proforma = draft.proforma;
   const setProforma = React.useCallback((p: CartDraft["proforma"]) => updateCart({ proforma: p }), [updateCart]);
@@ -275,19 +279,38 @@ export function PosPage() {
 
   // Customer display (pole or second screen): cart, then paid/change.
   useCustomerDisplay(lines, totals.total, completedSale);
-  // The store prints A4 documents after a sale (Settings → Stores), when the sale has one on the server.
-  const a4Document = completedSale && currentStore?.saleDocumentFormat === "A4" ? (saleDocument(completedSale)?.id ?? null) : null;
+  // Receipt or A4 after a sale: this till's choice, else the store's (Settings → Stores). A4 needs the sale's document on the server.
+  const printFormat = useSalePrintFormat(currentStore?.id, currentStore?.saleDocumentFormat);
+  const setPrintFormat = usePrintFormatStore((s) => s.setFormat);
+  const a4Document = completedSale && printFormat === "a4" ? (saleDocument(completedSale)?.id ?? null) : null;
+  const completedDocument = completedSale ? saleDocument(completedSale) : null;
+  function showA4(sale: SaleDto, documentId: string) {
+    setDocumentSale(sale);
+    setViewingDocument(documentId);
+    setCompletedSale(null);
+  }
+  function showReceipt() {
+    setCompletedSale(documentSale);
+    setDocumentSale(null);
+    setViewingDocument(null);
+    setAutoPrintDocument(false);
+  }
+  function choosePrintFormat(format: "receipt" | "a4") {
+    if (currentStore) setPrintFormat(currentStore.id, format);
+    if (format === "a4" && completedSale && completedDocument?.id) showA4(completedSale, completedDocument.id);
+    if (format === "receipt" && documentSale) showReceipt();
+  }
   React.useEffect(() => {
-    if (!completedSale || !autoPrint || autoPrintedFor.current === completedSale.id) return;
+    // A till set to A4 opens the sale's A4 straight away (printed too with auto-print on).
+    if (!completedSale || (!autoPrint && !a4Document) || autoPrintedFor.current === completedSale.id) return;
     const saleId = completedSale.id;
     // Marked inside the frame, so a cancelled frame (StrictMode remount)
     // doesn't count as printed.
     const frame = requestAnimationFrame(() => {
       autoPrintedFor.current = saleId;
       if (a4Document) {
-        setAutoPrintDocument(true);
-        setViewingDocument(a4Document);
-        setCompletedSale(null);
+        setAutoPrintDocument(autoPrint);
+        showA4(completedSale, a4Document);
         return;
       }
       logSlipPrint(completedSale);
@@ -591,9 +614,11 @@ export function PosPage() {
       <FiscalDocumentDialog
         documentId={viewingDocument}
         autoPrint={autoPrintDocument}
+        formatToggle={documentSale ? <SalePrintToggle value="a4" onChange={choosePrintFormat} /> : undefined}
         onClose={() => {
           setViewingDocument(null);
           setAutoPrintDocument(false);
+          setDocumentSale(null);
         }}
       />
 
@@ -710,6 +735,10 @@ export function PosPage() {
               {t("complete.savedOffline")}
             </p>
           )}
+          {completedDocument && (
+            // A sale still queued offline has no document on the server yet: no A4 until it syncs.
+            <SalePrintToggle value="receipt" onChange={choosePrintFormat} a4Disabled={!completedDocument.id} />
+          )}
           {completedSale && (
             <>
               <Receipt sale={completedSale} store={currentStore} customer={completedCustomer} />
@@ -718,7 +747,7 @@ export function PosPage() {
               </PrintArea>
             </>
           )}
-          <div className="grid grid-cols-2 gap-2">
+          <div className={completedDocument ? "grid gap-2" : "grid grid-cols-2 gap-2"}>
             <PrintButton
               label={t("complete.printReceipt")}
               onPrint={({ copies, deviceName }) => {
@@ -726,20 +755,18 @@ export function PosPage() {
                 return printDocument({ copies, deviceName });
               }}
             />
-            <Button
-              variant={a4Document ? "default" : "outline"}
-              // A sale still queued offline has no document on the server yet.
-              disabled={!!completedSale && !!saleDocument(completedSale) && !saleDocument(completedSale)!.id}
-              onClick={() => {
-                const document = completedSale ? saleDocument(completedSale) : null;
-                // Where sales are fiscal documents, the A4 is the sale's own Factura-Recibo.
-                if (document) setViewingDocument(document.id);
-                else setInvoiceFor({ sale: completedSale!, customer: completedCustomer });
-                setCompletedSale(null);
-              }}
-            >
-              <FileText className="mr-2 h-4 w-4" /> {t("complete.a4Invoice")}
-            </Button>
+            {/* Where sales are fiscal documents, the toggle above opens the sale's own Factura-Recibo on A4. */}
+            {!completedDocument && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setInvoiceFor({ sale: completedSale!, customer: completedCustomer });
+                  setCompletedSale(null);
+                }}
+              >
+                <FileText className="mr-2 h-4 w-4" /> {t("complete.a4Invoice")}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

@@ -11,15 +11,24 @@ const SIZES = [
 ];
 
 async function resize(app: ElectronApplication, page: Page, size: { width: number; height: number }) {
-  await app.evaluate(({ BrowserWindow }, { width, height }) => {
-    const win = BrowserWindow.getAllWindows().find((w) => w.isVisible())!;
+  // Windows sometimes drops a resize while the window is busy: set it again until it shows.
+  await expect
+    .poll(async () => {
+      await setSize(app, size);
+      return page.evaluate(() => window.innerWidth);
+    })
+    .toBe(size.width);
+}
+
+function setSize(app: ElectronApplication, size: { width: number; height: number }) {
+  return app.evaluate(({ BrowserWindow }, { width, height }) => {
+    const win = BrowserWindow.getAllWindows().find((w) => /^app:\/\/pos\/(?!customer-display)/.test(w.webContents.getURL()))!;
     win.setKiosk(false);
     win.setFullScreen(false);
     if (win.isMaximized()) win.unmaximize();
     win.setMinimumSize(800, 600);
     win.setContentSize(width, height);
   }, size);
-  await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(size.width);
 }
 
 /** Every element inside `area` that is cut off or sticks out of it. */
@@ -86,7 +95,7 @@ test.describe.serial("Small screens", () => {
   ]) {
     test(`back office menu at ${width}×${height}, zoom ${zoom}, text ${font || "normal"}`, async () => {
       await resize(app, page, { width, height });
-      await app.evaluate(({ BrowserWindow }, z) => BrowserWindow.getAllWindows().find((w) => w.isVisible())!.webContents.setZoomFactor(z), zoom);
+      await app.evaluate(({ BrowserWindow }, z) => BrowserWindow.getAllWindows().find((w) => /^app:\/\/pos\/(?!customer-display)/.test(w.webContents.getURL()))!.webContents.setZoomFactor(z), zoom);
       for (const path of ["products", "inventory", "sales", "shifts"]) {
         await page.goto(`app://pos/${path}`);
         await page.evaluate((f) => (document.documentElement.style.fontSize = f), font);
@@ -107,8 +116,45 @@ test.describe.serial("Small screens", () => {
           await expect(page.getByRole("button", { name: /navigation|navegação/i })).toBeVisible();
         }
       }
-      await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.isVisible())!.webContents.setZoomFactor(1));
+      await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => /^app:\/\/pos\/(?!customer-display)/.test(w.webContents.getURL()))!.webContents.setZoomFactor(1));
       await page.evaluate(() => (document.documentElement.style.fontSize = ""));
     });
   }
+
+  // Tester #35: from A4 there was no way back to the receipt. The toggle works
+  // both ways and the till remembers it, also after a restart.
+  test("Receipt / A4 toggle after a sale, remembered on this till", async () => {
+    await resize(app, page, SIZES[0]);
+    const sell = async () => {
+      await openPosWithProducts(page);
+      await page.locator("div.grid > button.text-left").first().click();
+      await page.getByRole("button", { name: /^(Charge|Cobrar)/ }).click();
+    };
+    const complete = page.getByRole("dialog").filter({ hasText: /Sale complete|Venda concluída/ });
+    const a4 = page.getByRole("dialog").filter({ has: page.getByRole("button", { name: /^(Print|Imprimir)/ }) }).filter({ hasNotText: /Sale complete|Venda concluída/ });
+    const tab = (dialog: Locator, name: RegExp) => dialog.getByRole("tab", { name });
+
+    await sell();
+    await expect(tab(complete, /^(Receipt|Talão)$/)).toHaveAttribute("aria-selected", "true");
+    await tab(complete, /^A4$/).click();
+    await expect(complete).toBeHidden();
+    await expect(tab(a4, /^A4$/)).toHaveAttribute("aria-selected", "true");
+    // And back.
+    await tab(a4, /^(Receipt|Talão)$/).click();
+    await expect(complete).toBeVisible();
+    await tab(complete, /^A4$/).click();
+    await page.keyboard.press("Escape");
+    await expect(a4).toBeHidden();
+
+    // The next sale opens on A4 by itself, also after a restart.
+    await page.reload();
+    await sell();
+    await expect(tab(a4, /^A4$/)).toHaveAttribute("aria-selected", "true");
+    await tab(a4, /^(Receipt|Talão)$/).click();
+    await expect(complete).toBeVisible();
+    await page.keyboard.press("Escape");
+    await sell();
+    await expect(tab(complete, /^(Receipt|Talão)$/)).toHaveAttribute("aria-selected", "true");
+    await page.keyboard.press("Escape");
+  });
 });

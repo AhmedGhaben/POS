@@ -15,8 +15,19 @@ import { FiscalA4 } from "./FiscalA4";
  * Opens a fiscal document as stored and prints it on A4. The first print is
  * the original (in the store's number of copies: Original, Duplicado...);
  * every later print says "2ª Via". Each print is logged on the server.
+ * Opened for a sale just made, the till passes its Receipt / A4 toggle.
  */
-export function FiscalDocumentDialog({ documentId, onClose, autoPrint = false }: { documentId: string | null; onClose: () => void; autoPrint?: boolean }) {
+export function FiscalDocumentDialog({
+  documentId,
+  onClose,
+  autoPrint = false,
+  formatToggle,
+}: {
+  documentId: string | null;
+  onClose: () => void;
+  autoPrint?: boolean;
+  formatToggle?: React.ReactNode;
+}) {
   const { t } = useTranslation(["invoices", "common"]);
   const queryClient = useQueryClient();
   const stores = useAuthStore((s) => s.stores);
@@ -74,6 +85,7 @@ export function FiscalDocumentDialog({ documentId, onClose, autoPrint = false }:
           <DialogTitle>{doc ? `${documentTitle(doc.documentType, doc.seller.country)} ${doc.documentNo}` : t("fiscal.document")}</DialogTitle>
           <DialogDescription>{printed ? t("fiscal.reprintNote") : t("fiscal.firstPrintNote")}</DialogDescription>
         </DialogHeader>
+        {formatToggle}
         {!doc ? (
           <p className="text-sm text-muted-foreground">{query.isError ? t("page.loadFailed") : t("common:actions.loading")}</p>
         ) : (
