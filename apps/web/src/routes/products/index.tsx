@@ -99,6 +99,7 @@ export function ProductsPage() {
                   // Blank when the user can't see costs, so re-importing leaves them unchanged.
                   { header: fieldHeader("costPrice"), value: (p: ProductDto) => ("costPrice" in p ? p.costPrice : "") },
                   { header: fieldHeader("sellPrice"), value: (p: ProductDto) => p.sellPrice },
+                  { header: fieldHeader("free"), value: (p: ProductDto) => (p.isFree ? t("import.yes") : "") },
                   { header: fieldHeader("taxRate"), value: (p: ProductDto) => p.taxRate },
                   { header: fieldHeader("exemptionCode"), value: (p: ProductDto) => p.exemptionCode ?? "" },
                 ],

@@ -18,7 +18,8 @@
     "taxRate": "Imposto %",
     "exemptionCode": "Motivo de isenção",
     "stock": "Estoque",
-    "tax": "Imposto"
+    "tax": "Imposto",
+    "free": "Gratuito"
   },
   "form": {
     "editTitle": "Editar produto",
@@ -63,7 +64,10 @@
     "archiveHasStock": "\"{{name}}\" ainda tem estoque. Arquivar mesmo assim? Ele sai do caixa; o estoque fica nos registros até você ajustá-lo.",
     "archiveAnyway": "Arquivar mesmo assim",
     "deleteHasStock": "\"{{name}}\" tem estoque, então não pode ser excluído. Arquive-o, ou zere o estoque antes.",
-    "stockQuantity": "{{quantity}} em estoque"
+    "stockQuantity": "{{quantity}} em estoque",
+    "isFree": "Item gratuito",
+    "isFreeHint": "Dado de graça: o preço é 0. Qualquer outro produto precisa ser vendido por mais de 0.",
+    "zeroPriceNotFree": "Informe um preço acima de 0, ou marque \"Item gratuito\""
   },
   "import": {
     "title": "Importar produtos de CSV",
@@ -115,8 +119,12 @@
       "over100": "{{field}} é maior que 100",
       "stock": "{{field}} \"{{value}}\" deve ser um número inteiro, 0 ou mais",
       "exemptionMissing": "{{field}} é 0%: informe o motivo de isenção (código M, por exemplo M10) na coluna {{column}}",
-      "exemptionUnknown": "Motivo de isenção desconhecido \"{{value}}\""
-    }
+      "exemptionUnknown": "Motivo de isenção desconhecido \"{{value}}\"",
+      "zeroNotFree": "{{field}} é 0: coloque \"sim\" na coluna {{column}} para um item gratuito",
+      "freeNotZero": "Um item gratuito tem {{field}} 0",
+      "notYesNo": "{{field}} \"{{value}}\" deve ser sim ou não"
+    },
+    "yes": "sim"
   },
   "exemptCode": "Isento ({{code}})",
   "exemptNoReason": "Isento, sem motivo informado",

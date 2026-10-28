@@ -95,3 +95,25 @@ describe("buildPreview", () => {
     expect(buildPreview([["Rice", "RICE-1", "900", "0", ""]], withReason, new Set())[0].status).toBe("new");
   });
 });
+
+describe("free items in the import (tester #39)", () => {
+  const { columns } = mapColumns(["Name", "SKU", "Sell price", "Free"]);
+
+  it("a sell price of 0 needs the Free column; a free item's price is 0", () => {
+    const rows = buildPreview(
+      [
+        ["Sample", "S-1", "0", "yes"],
+        ["Bag", "B-1", "0", ""],
+        ["Gift", "G-1", "5", "sim"],
+        ["Odd", "O-1", "2", "maybe"],
+        ["Tea", "T-1", "-1", ""],
+      ],
+      columns,
+      new Set(),
+    );
+    expect(rows[0]).toMatchObject({ status: "new", payload: { sellPrice: 0, isFree: true } });
+    expect(rows.slice(1).map((r) => r.status)).toEqual(["error", "error", "error", "error"]);
+    expect(rows[1].errors[0]).toMatch(/is 0/);
+    expect(rows[4].errors[0]).toMatch(/negative/);
+  });
+});

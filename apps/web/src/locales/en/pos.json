@@ -205,7 +205,9 @@
     "needsApproval": "A manager needs to approve this price change.",
     "approval": "Change {{name}} from {{from}} to {{to}}",
     "reset": "Normal price",
-    "apply": "Use this price"
+    "apply": "Use this price",
+    "makeFree": "Give this item away (price 0)?",
+    "makeFreeConfirm": "Yes, give it free"
   },
   "view": {
     "label": "Show products as",

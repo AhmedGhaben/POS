@@ -15,6 +15,22 @@ type TaxFields = Pick<Prisma.ProductUncheckedCreateInput, "taxRate" | "taxRateId
 /** SAF-T and AGT need the M-code on every exempt line, so an exempt product needs one. */
 export const EXEMPTION_REQUIRED = "A product exempt from IVA (0%) needs an exemption reason (M-code)";
 
+/**
+ * Prices are never negative, and a sell price of 0 only for a product marked
+ * free (tester #39). Cost can be 0 (a gift, a service with no cost).
+ */
+export function sellPriceProblem(sellPrice: number, isFree: boolean): string | null {
+  if (sellPrice < 0) return "Prices can't be negative";
+  if (isFree && sellPrice !== 0) return "A free item's sell price is 0";
+  if (!isFree && sellPrice === 0) return "A sell price of 0 is only for a free item";
+  return null;
+}
+
+function assertSellPrice(sellPrice: number, isFree: boolean) {
+  const problem = sellPriceProblem(sellPrice, isFree);
+  if (problem) throw new BadRequestException(problem);
+}
+
 @Injectable()
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -59,6 +75,7 @@ export class ProductsService {
       throw new ConflictException("SKU already exists");
     }
     if (dto.categoryId) await this.assertCategory(businessId, dto.categoryId);
+    assertSellPrice(dto.sellPrice, dto.isFree ?? false);
     const barcode = dto.barcode?.trim() || null;
     await this.assertBarcodeFree(businessId, barcode);
     const config = await this.country(businessId);
@@ -75,6 +92,7 @@ export class ProductsService {
         description: dto.description,
         costPrice: dto.costPrice,
         sellPrice: dto.sellPrice,
+        isFree: dto.isFree ?? false,
         ...tax,
         unit: dto.unit ?? "un",
         productType: dto.productType ?? (trackStock ? "P" : "S"),
@@ -103,6 +121,9 @@ export class ProductsService {
       if (clash) throw new ConflictException("SKU already exists");
     }
     if (dto.categoryId) await this.assertCategory(businessId, dto.categoryId);
+    if (dto.sellPrice !== undefined || dto.isFree !== undefined) {
+      assertSellPrice(dto.sellPrice ?? Number(product.sellPrice), dto.isFree ?? product.isFree);
+    }
     const barcode = dto.barcode === undefined ? undefined : dto.barcode?.trim() || null;
     if (barcode && barcode !== product.barcode) await this.assertBarcodeFree(businessId, barcode, productId);
     // Restoring an archived product whose barcode another product took since.
@@ -121,6 +142,7 @@ export class ProductsService {
       description: dto.description,
       costPrice: canEditCostPrice ? dto.costPrice : undefined,
       sellPrice: dto.sellPrice,
+      isFree: dto.isFree,
       ...(tax ?? {}),
       unit: dto.unit,
       productType: dto.productType,

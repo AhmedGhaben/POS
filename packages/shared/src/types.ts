@@ -284,6 +284,8 @@ export interface ProductDto {
   photoId?: string | null;
   /** False for services etc.: always sellable, never moves stock (absent on older cached catalogs = true). */
   trackStock?: boolean;
+  /** Given away: sell price 0. Any other product sells for more than 0. */
+  isFree?: boolean;
   isActive: boolean;
 }
 
@@ -305,6 +307,8 @@ export interface CreateProductDto {
   inventoryType?: string | null;
   /** False for services etc.; defaults to true. */
   trackStock?: boolean;
+  /** A free item: sell price 0 (required for a price of 0). */
+  isFree?: boolean;
 }
 
 /** PATCH /products/:id. `isActive: false` archives, `true` restores. */

@@ -205,7 +205,9 @@
     "needsApproval": "Um gerente tem de autorizar esta alteração de preço.",
     "approval": "Alterar {{name}} de {{from}} para {{to}}",
     "reset": "Preço normal",
-    "apply": "Usar este preço"
+    "apply": "Usar este preço",
+    "makeFree": "Oferecer este artigo (preço 0)?",
+    "makeFreeConfirm": "Sim, oferecer"
   },
   "view": {
     "label": "Mostrar produtos como",

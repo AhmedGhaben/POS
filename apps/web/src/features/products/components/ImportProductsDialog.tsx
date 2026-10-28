@@ -41,6 +41,8 @@ function downloadTemplate() {
     category: i18n.t("products:import.exampleCategory"),
     costPrice: "2.10",
     sellPrice: "4.50",
+    // "yes" for a product given away (sell price 0).
+    free: "",
     taxRate: "14",
     // For a 0% product: its exemption reason (M10, bens alimentares…).
     exemptionCode: "",

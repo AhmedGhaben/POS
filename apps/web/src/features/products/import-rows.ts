@@ -1,10 +1,10 @@
 import i18n from "@/i18n";
 import { parseLooseNumber } from "@/lib/csv-parse";
 
-export type ImportField = "name" | "sku" | "barcode" | "category" | "costPrice" | "sellPrice" | "taxRate" | "exemptionCode" | "stock";
+export type ImportField = "name" | "sku" | "barcode" | "category" | "costPrice" | "sellPrice" | "free" | "taxRate" | "exemptionCode" | "stock";
 
 /** Column order of the template (and of the export, minus Stock). */
-export const IMPORT_FIELDS: ImportField[] = ["name", "sku", "barcode", "category", "costPrice", "sellPrice", "taxRate", "exemptionCode", "stock"];
+export const IMPORT_FIELDS: ImportField[] = ["name", "sku", "barcode", "category", "costPrice", "sellPrice", "free", "taxRate", "exemptionCode", "stock"];
 
 /** A column's header in the language on screen ("Sell price", "Preço de venda"). */
 export function fieldHeader(field: ImportField): string {
@@ -22,6 +22,7 @@ const HEADER_ALIASES: Record<ImportField, string[]> = {
   category: ["category", "categoryname", "group", "categoria", "familia", "grupo"],
   costPrice: ["costprice", "cost", "purchaseprice", "buyprice", "precodecusto", "custo", "precocusto", "precodecompra"],
   sellPrice: ["sellprice", "price", "sellingprice", "saleprice", "retailprice", "unitprice", "precodevenda", "preco", "pvp", "precovenda"],
+  free: ["free", "freeitem", "gratuito", "gratis", "oferta", "artigogratuito", "itemgratuito"],
   taxRate: ["tax", "taxrate", "vat", "vatrate", "iva", "taxa", "imposto", "taxadeiva"],
   exemptionCode: ["exemption", "exemptioncode", "exemptionreason", "isencao", "motivodeisencao", "codigodeisencao", "isento"],
   stock: ["stock", "quantity", "qty", "onhand", "stockquantity", "estoque", "quantidade", "qtd", "existencias"],
@@ -63,10 +64,15 @@ export interface ImportRowPayload {
   category?: string;
   costPrice?: number;
   sellPrice: number;
+  /** A free item: sell price 0 (tester #39). */
+  isFree?: boolean;
   taxRate?: number;
   exemptionCode?: string;
   stock?: number;
 }
+
+const YES = new Set(["yes", "y", "sim", "s", "true", "1", "x"]);
+const NO = new Set(["", "no", "n", "nao", "não", "false", "0"]);
 
 export interface PreviewRow {
   line: number;
@@ -131,6 +137,12 @@ export function buildPreview(dataRows: string[][], columns: ColumnMap, existingS
     };
     const sellPrice = amount("sellPrice", true);
     const costPrice = amount("costPrice", false);
+    // A sell price of 0 only for a row marked free (tester #39).
+    const freeRaw = cell(row, "free");
+    const free = YES.has(freeRaw.toLowerCase());
+    if (!free && !NO.has(freeRaw.toLowerCase())) e("notYesNo", { field: fieldHeader("free"), value: freeRaw });
+    else if (sellPrice === 0 && !free) e("zeroNotFree", { field: fieldHeader("sellPrice"), column: fieldHeader("free") });
+    else if (free && sellPrice !== undefined && sellPrice > 0) e("freeNotZero", { field: fieldHeader("sellPrice") });
     const taxRate = amount("taxRate", false);
     if (taxRate !== undefined && taxRate > 100) e("over100", { field: fieldHeader("taxRate") });
     // A reason alone means 0%; with a rate above 0 it's ignored.
@@ -169,6 +181,7 @@ export function buildPreview(dataRows: string[][], columns: ColumnMap, existingS
         sku,
         name,
         sellPrice: sellPrice!,
+        ...(free ? { isFree: true } : {}),
         ...(barcode ? { barcode } : {}),
         ...(category ? { category } : {}),
         ...(costPrice !== undefined ? { costPrice } : {}),

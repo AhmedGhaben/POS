@@ -612,6 +612,9 @@ model Product {
   /// False for services and other things with no stock: always sellable,
   /// never move stock, never in low-stock alerts.
   trackStock    Boolean         @default(true)
+  /// Given away (sell price 0), confirmed when it was set: any other product
+  /// must sell for more than 0 (tester #39).
+  isFree        Boolean         @default(false)
   isActive      Boolean         @default(true)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt

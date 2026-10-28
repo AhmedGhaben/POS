@@ -32,6 +32,11 @@ export class CreateProductDto {
   @Min(0)
   sellPrice!: number;
 
+  /** A free item: its sell price is 0. Any other product sells for more than 0. */
+  @IsOptional()
+  @IsBoolean()
+  isFree?: boolean;
+
   /**
    * The tax, picked by name: a tax rate of the business (`taxRateId`), or
    * exempt with a reason (`exemptionCode`, rate 0). A bare `taxRate` still

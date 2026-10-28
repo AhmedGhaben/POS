@@ -241,6 +241,30 @@ describe("Product editing (e2e)", () => {
     if (other) await http().delete(`/products/${other.id}`).set(auth(ownerToken)).expect(404);
   });
 
+  it("no negative prices, and a sell price of 0 only for a free item (tester #39)", async () => {
+    const create = (body: object) =>
+      http().post("/products").set(auth(ownerToken)).send({ name: "Price check", costPrice: 1, sellPrice: 2, exemptionCode: "M10", ...body });
+    expect((await create({ sku: "NEG-1", sellPrice: -1 }).expect(400)).body.message).toEqual(expect.anything());
+    await create({ sku: "NEG-2", costPrice: -1 }).expect(400);
+    expect((await create({ sku: "ZERO-1", sellPrice: 0 }).expect(400)).body.message).toBe("A sell price of 0 is only for a free item");
+    const free = (await create({ sku: "FREE-1", sellPrice: 0, costPrice: 0, isFree: true }).expect(201)).body;
+    expect(free).toMatchObject({ isFree: true, sellPrice: "0" });
+    await create({ sku: "FREE-2", sellPrice: 5, isFree: true }).expect(400);
+
+    // Editing: a price of 0 on a product that isn't free is refused; marking it free is fine.
+    await patch(ownerToken, coffeeId, { sellPrice: 0 }).expect(400);
+    await patch(ownerToken, free.id, { name: "Free sample" }).expect(200);
+    await patch(ownerToken, free.id, { sellPrice: 3, isFree: false }).expect(200);
+
+    // Import: the row is skipped, the rest goes in.
+    const imported = await http()
+      .post("/products/import")
+      .set(auth(ownerToken))
+      .send({ updateExisting: false, createCategories: true, rows: [{ line: 2, sku: "IMP-0", name: "Zero", sellPrice: 0, exemptionCode: "M10" }, { line: 3, sku: "IMP-F", name: "Gift", sellPrice: 0, isFree: true, exemptionCode: "M10" }] })
+      .expect(201);
+    expect(imported.body).toMatchObject({ created: 1, skipped: [{ line: 2, sku: "IMP-0", reason: "A sell price of 0 is only for a free item" }] });
+  });
+
   it("shows the stock before archiving, and never deletes stock that has no movement behind it (tester #36)", async () => {
     const id = (await http().post("/products").set(auth(ownerToken)).send({ sku: "SHELF-1", name: "Shelf", costPrice: 1, sellPrice: 2, exemptionCode: "M10" }).expect(201)).body.id as string;
     // Stock written straight in, as the old demo seed did: no movement.

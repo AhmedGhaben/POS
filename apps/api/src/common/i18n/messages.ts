@@ -226,6 +226,12 @@ const EXACT: Record<string, Translations> = {
     "pt-PT": "Este produto tem vendas, compras ou movimentos de stock. Arquive-o em vez de o eliminar.",
     "pt-BR": "Este produto tem vendas, compras ou movimentos de estoque. Arquive-o em vez de excluí-lo.",
   },
+  "Prices can't be negative": { "pt-PT": "Os preços não podem ser negativos", "pt-BR": "Os preços não podem ser negativos" },
+  "A free item's sell price is 0": { "pt-PT": "Um artigo gratuito tem preço de venda 0", "pt-BR": "Um item gratuito tem preço de venda 0" },
+  "A sell price of 0 is only for a free item": {
+    "pt-PT": "Preço de venda 0 só para um artigo gratuito",
+    "pt-BR": "Preço de venda 0 só para um item gratuito",
+  },
   "This product has stock on hand. Archive it instead.": {
     "pt-PT": "Este produto tem stock. Arquive-o em vez de o eliminar.",
     "pt-BR": "Este produto tem estoque. Arquive-o em vez de excluí-lo.",

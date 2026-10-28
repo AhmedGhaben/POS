@@ -18,7 +18,8 @@
     "taxRate": "Tax %",
     "exemptionCode": "Exemption",
     "stock": "Stock",
-    "tax": "Tax"
+    "tax": "Tax",
+    "free": "Free"
   },
   "form": {
     "editTitle": "Edit product",
@@ -63,7 +64,10 @@
     "archiveHasStock": "\"{{name}}\" still has stock. Archive it anyway? It leaves the till; the stock stays in the books until you adjust it.",
     "archiveAnyway": "Archive anyway",
     "deleteHasStock": "\"{{name}}\" has stock on hand, so it can't be deleted. Archive it instead, or bring its stock to 0 first.",
-    "stockQuantity": "{{quantity}} in stock"
+    "stockQuantity": "{{quantity}} in stock",
+    "isFree": "Free item",
+    "isFreeHint": "Given away: its price is 0. Any other product must sell for more than 0.",
+    "zeroPriceNotFree": "Enter a price above 0, or tick \"Free item\""
   },
   "import": {
     "title": "Import products from CSV",
@@ -115,8 +119,12 @@
       "over100": "{{field}} is over 100",
       "stock": "{{field}} \"{{value}}\" must be a whole number, 0 or more",
       "exemptionMissing": "{{field}} is 0%: put the exemption reason (M-code, e.g. M10) in the {{column}} column",
-      "exemptionUnknown": "Unknown exemption reason \"{{value}}\""
-    }
+      "exemptionUnknown": "Unknown exemption reason \"{{value}}\"",
+      "zeroNotFree": "{{field}} is 0: put \"yes\" in the {{column}} column for a free item",
+      "freeNotZero": "A free item's {{field}} is 0",
+      "notYesNo": "{{field}} \"{{value}}\" should be yes or no"
+    },
+    "yes": "yes"
   },
   "exemptCode": "Exempt ({{code}})",
   "exemptNoReason": "Exempt, no reason given",

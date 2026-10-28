@@ -45,6 +45,10 @@ export class ImportProductRowDto {
   @IsNumber({ maxDecimalPlaces: 2 }) @Min(0)
   sellPrice!: number;
 
+  /** A free item (sell price 0). */
+  @IsOptional() @IsBoolean()
+  isFree?: boolean;
+
   @IsOptional() @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) @Max(100)
   taxRate?: number;
 

@@ -41,6 +41,8 @@ const productSchema = z
     categoryId: z.string().optional(),
     costPrice: z.coerce.number().min(0, "validation.nonNegative"),
     sellPrice: z.coerce.number().min(0, "validation.nonNegative"),
+    /** Given away: the price is 0. Any other product sells for more than 0 (tester #39). */
+    isFree: z.boolean(),
     /** A tax rate id, EXEMPT or LEGACY. */
     tax: z.string().min(1, "validation.required"),
     exemptionCode: z.string().optional(),
@@ -50,7 +52,8 @@ const productSchema = z
     trackStock: z.boolean(),
   })
   // Exempt needs the reason that goes on the documents.
-  .refine((v) => v.tax !== EXEMPT || !!v.exemptionCode, { message: "products:form.exemptionReasonRequired", path: ["exemptionCode"] });
+  .refine((v) => v.tax !== EXEMPT || !!v.exemptionCode, { message: "products:form.exemptionReasonRequired", path: ["exemptionCode"] })
+  .refine((v) => v.isFree || v.sellPrice > 0, { message: "products:form.zeroPriceNotFree", path: ["sellPrice"] });
 type FormInput = z.input<typeof productSchema>;
 type FormOutput = z.output<typeof productSchema>;
 
@@ -69,6 +72,7 @@ function valuesFor(product: ProductDto | null, tax: TaxChoice | null): FormInput
       productType: "P",
       inventoryType: "M",
       trackStock: true,
+      isFree: false,
     };
   }
   return {
@@ -85,6 +89,7 @@ function valuesFor(product: ProductDto | null, tax: TaxChoice | null): FormInput
     productType: product.productType ?? (product.trackStock === false ? "S" : "P"),
     inventoryType: product.inventoryType ?? "",
     trackStock: product.trackStock ?? true,
+    isFree: !!product.isFree,
   };
 }
 
@@ -129,6 +134,7 @@ export function ProductFormDialog({
     resolver: zodResolver(productSchema),
     defaultValues: valuesFor(product, initialTax),
   });
+  const isFree = form.watch("isFree");
   // Fresh values each time the dialog opens; the tax rates may arrive a
   // moment later, so their default fills an empty tax field without
   // touching anything already typed.
@@ -203,7 +209,8 @@ export function ProductFormDialog({
         sku: values.sku,
         barcode: values.barcode?.trim() ?? "",
         categoryId: values.categoryId && values.categoryId !== NO_CATEGORY ? values.categoryId : null,
-        sellPrice: values.sellPrice,
+        sellPrice: values.isFree ? 0 : values.sellPrice,
+        isFree: values.isFree,
         ...taxPayload(choice, values.exemptionCode || null),
         unit: values.unit,
         productType: values.productType as SaftProductType,
@@ -418,7 +425,7 @@ export function ProductFormDialog({
                       {unit !== "un" ? t("form.pricePer", { unit }) : t("columns.sellPrice")}
                     </FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} value={field.value as string} />
+                      <Input type="number" step="0.01" min="0" disabled={isFree} {...field} value={isFree ? "0" : (field.value as string)} />
                     </FormControl>
                     <FormDescription>{pricesIncludeTax ? t("form.priceWithTax") : t("form.priceWithoutTax")}</FormDescription>
                     <FormMessage />
@@ -426,6 +433,31 @@ export function ProductFormDialog({
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="isFree"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-start gap-3">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4"
+                        checked={field.value}
+                        onChange={(e) => {
+                          field.onChange(e.target.checked);
+                          if (e.target.checked) form.setValue("sellPrice", "0");
+                        }}
+                      />
+                    </FormControl>
+                    <div>
+                      <FormLabel>{t("form.isFree")}</FormLabel>
+                      <FormDescription>{t("form.isFreeHint")}</FormDescription>
+                    </div>
+                  </div>
+                </FormItem>
+              )}
+            />
             <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}

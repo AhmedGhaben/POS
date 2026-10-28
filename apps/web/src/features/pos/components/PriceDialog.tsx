@@ -9,6 +9,7 @@ import { useMoney } from "@/features/business/use-money";
 import { requestApproval, type Approval } from "@/features/overrides/approval";
 import { linePrice, type CartLine } from "../hooks/useCart";
 import { NumericField } from "@/components/ui/numeric-field";
+import { parseLinePrice } from "../line-price";
 
 /**
  * Changes one item's price for this sale (e.g. a damaged box). Needs
@@ -29,19 +30,22 @@ export function PriceDialog({
   const money = useMoney();
   const canChange = useHasPermission(Permission.CHANGE_PRICE);
   const [value, setValue] = React.useState("");
+  // A price of 0 gives the item away: asked first (tester #39).
+  const [freeConfirmed, setFreeConfirmed] = React.useState(false);
 
   React.useEffect(() => {
     if (line) setValue(String(linePrice(line)));
+    setFreeConfirmed(false);
   }, [line]);
 
-  const price = Number(value.replace(",", "."));
-  const valid = value.trim() !== "" && Number.isFinite(price) && price >= 0 && /^\d+([.,]\d{1,2})?$/.test(value.trim());
+  const { price, valid } = parseLinePrice(value);
   const original = line ? Number(line.product.sellPrice) : 0;
   const changed = valid && Math.abs(price - original) >= 0.005;
+  const needsFreeConfirm = changed && price === 0 && !freeConfirmed;
 
   async function apply(e: React.FormEvent) {
     e.preventDefault();
-    if (!line || !valid) return;
+    if (!line || !valid || needsFreeConfirm) return;
     if (!changed) {
       onApply(null, null);
       onOpenChange(false);
@@ -73,6 +77,14 @@ export function PriceDialog({
             <Label htmlFor="line-price">{t("price.label")}</Label>
             <NumericField id="line-price" autoFocus value={value} onValueChange={setValue} />
           </div>
+          {changed && price === 0 && (
+            <label className="flex items-start gap-2 rounded-md border border-amber-400/60 p-3 text-sm">
+              <input type="checkbox" className="mt-0.5 h-4 w-4" checked={freeConfirmed} onChange={(e) => setFreeConfirmed(e.target.checked)} />
+              <span>
+                {t("price.makeFree")} <span className="font-medium">{t("price.makeFreeConfirm")}</span>
+              </span>
+            </label>
+          )}
           {changed && !canChange && <p className="text-sm text-amber-700 dark:text-amber-400">{t("price.needsApproval")}</p>}
           <div className="grid grid-cols-2 gap-2">
             <Button
@@ -86,7 +98,7 @@ export function PriceDialog({
             >
               {t("price.reset")}
             </Button>
-            <Button type="submit" disabled={!valid}>
+            <Button type="submit" disabled={!valid || needsFreeConfirm}>
               {changed && !canChange ? t("discount.askApproval") : t("price.apply")}
             </Button>
           </div>

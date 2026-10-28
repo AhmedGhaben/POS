@@ -3,7 +3,7 @@ import { Prisma, Role } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { ImportProductsDto } from "./dto/import-products.dto";
-import { EXEMPTION_REQUIRED } from "./products.service";
+import { EXEMPTION_REQUIRED, sellPriceProblem } from "./products.service";
 import { recordMovement } from "../stock/stock";
 import { activeExemptions, countryConfig } from "../countries";
 
@@ -111,6 +111,13 @@ export class ProductsImportService {
           }
           if (barcode) barcodeOwner.set(barcode, { sku, name: row.name.trim() });
 
+          const isFree = row.isFree ?? false;
+          const priceProblem = sellPriceProblem(row.sellPrice, isFree);
+          if (priceProblem) {
+            skip(priceProblem);
+            continue;
+          }
+
           // An exemption reason alone means 0%.
           const rowRate = row.taxRate ?? (row.exemptionCode ? 0 : undefined);
           const tax = rowRate !== undefined ? taxFields(rowRate, row.exemptionCode) : undefined;
@@ -126,6 +133,7 @@ export class ProductsImportService {
           const fields = {
             name: row.name.trim(),
             sellPrice: row.sellPrice,
+            isFree,
             ...(barcode ? { barcode } : {}),
             ...(categoryId ? { categoryId } : {}),
             ...(row.costPrice !== undefined ? { costPrice: row.costPrice } : {}),
