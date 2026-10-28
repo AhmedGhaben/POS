@@ -117,7 +117,7 @@ export function PaymentPanel({ total, onChange, draft, onDraftChange }: PaymentP
     return (
       <div className="space-y-2">
         {rows.map((row) => (
-          <div key={row.id} className="flex items-center gap-2">
+          <div key={row.id} className="flex min-w-0 items-center gap-2">
             <Combobox
               value={row.method}
               onChange={(v) => v !== null && updateRow(row.id, { method: v as PaymentMethod })}
@@ -130,7 +130,7 @@ export function PaymentPanel({ total, onChange, draft, onDraftChange }: PaymentP
               aria-label={t("payment.amount")}
               value={row.amount}
               onValueChange={(amount) => updateRow(row.id, { amount })}
-              className="flex-1"
+              className="min-w-0 flex-1"
             />
             <Button
               variant="ghost"
@@ -142,12 +142,13 @@ export function PaymentPanel({ total, onChange, draft, onDraftChange }: PaymentP
             </Button>
           </div>
         ))}
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex-1" onClick={addRow}>
-            {t("payment.addMethod")}
-          </Button>
+        <Button variant="outline" size="sm" className="h-auto min-h-8 w-full whitespace-normal" onClick={addRow}>
+          {t("payment.addMethod")}
+        </Button>
+        {/* Payers and "split evenly" get their own line: on one line with "add" they ran off the panel in Portuguese. */}
+        <div className="flex flex-wrap gap-2" data-testid="split-evenly-row">
           <select
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+            className="h-8 shrink-0 rounded-md border border-input bg-background px-2 text-sm"
             aria-label={t("payment.payers")}
             value={payers}
             onChange={(e) => setPayers(Number(e.target.value))}
@@ -158,7 +159,7 @@ export function PaymentPanel({ total, onChange, draft, onDraftChange }: PaymentP
               </option>
             ))}
           </select>
-          <Button variant="outline" size="sm" onClick={shareEvenly}>
+          <Button variant="outline" size="sm" className="h-auto min-h-8 min-w-0 flex-1 whitespace-normal" onClick={shareEvenly}>
             {t("payment.splitEvenly")}
           </Button>
         </div>

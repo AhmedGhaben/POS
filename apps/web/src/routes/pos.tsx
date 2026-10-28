@@ -558,7 +558,7 @@ export function PosPage() {
         />
       </div>
 
-      <div className="hidden w-96 flex-col p-4 lg:flex">{checkoutPanel}</div>
+      <div className="hidden w-96 flex-col p-4 lg:flex" data-testid="checkout-panel">{checkoutPanel}</div>
 
       <Sheet open={cartSheetOpen} onOpenChange={setCartSheetOpen}>
         <SheetTrigger asChild>
