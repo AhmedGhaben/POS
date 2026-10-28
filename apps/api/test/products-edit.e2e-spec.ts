@@ -265,6 +265,34 @@ describe("Product editing (e2e)", () => {
     expect(imported.body).toMatchObject({ created: 1, skipped: [{ line: 2, sku: "IMP-0", reason: "A sell price of 0 is only for a free item" }] });
   });
 
+  it("suggests the SKU from the category's prefix; two people adding at once get different numbers (tester #40)", async () => {
+    const category = (await http().post("/categories").set(auth(ownerToken)).send({ name: "Electrónica", skuPrefix: "ele" }).expect(201)).body;
+    expect(category.skuPrefix).toBe("ELE");
+    await http().post("/categories").set(auth(ownerToken)).send({ name: "Electro 2", skuPrefix: "ELE" }).expect(409);
+    await http().post("/categories").set(auth(ownerToken)).send({ name: "Bad", skuPrefix: "E-1" }).expect(400);
+
+    const product = (body: object) =>
+      http().post("/products").set(auth(ownerToken)).send({ name: "Cable", costPrice: 1, sellPrice: 2, exemptionCode: "M10", categoryId: category.id, ...body });
+    // One already typed by hand: the numbers start above it.
+    await product({ sku: "ELE-027" }).expect(201);
+    const next = async () => (await http().get(`/categories/${category.id}/next-sku`).set(auth(managerToken)).expect(200)).body.sku;
+    expect(await next()).toBe("ELE-028");
+    await http().get(`/categories/${category.id}/next-sku`).set(auth(cashierToken)).expect(403);
+
+    // Both forms showed ELE-028.
+    const [a, b] = await Promise.all([product({ sku: "ELE-028", skuAuto: true }), product({ sku: "ELE-028", skuAuto: true })]);
+    expect([a.status, b.status]).toEqual([201, 201]);
+    expect([a.body.sku, b.body.sku].sort()).toEqual(["ELE-028", "ELE-029"]);
+    expect(await next()).toBe("ELE-030");
+
+    // Overwritten by the user: kept as typed. Existing SKUs never change.
+    expect((await product({ sku: "CABO-X" }).expect(201)).body.sku).toBe("CABO-X");
+    // A new prefix counts afresh.
+    await http().patch(`/categories/${category.id}`).set(auth(ownerToken)).send({ name: "Electrónica", skuPrefix: "ELC" }).expect(200);
+    expect(await next()).toBe("ELC-001");
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: a.body.id } })).sku).toBe(a.body.sku);
+  });
+
   it("shows the stock before archiving, and never deletes stock that has no movement behind it (tester #36)", async () => {
     const id = (await http().post("/products").set(auth(ownerToken)).send({ sku: "SHELF-1", name: "Shelf", costPrice: 1, sellPrice: 2, exemptionCode: "M10" }).expect(201)).body.id as string;
     // Stock written straight in, as the old demo seed did: no movement.

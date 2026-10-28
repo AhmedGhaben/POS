@@ -67,7 +67,8 @@
     "stockQuantity": "{{quantity}} in stock",
     "isFree": "Free item",
     "isFreeHint": "Given away: its price is 0. Any other product must sell for more than 0.",
-    "zeroPriceNotFree": "Enter a price above 0, or tick \"Free item\""
+    "zeroPriceNotFree": "Enter a price above 0, or tick \"Free item\"",
+    "skuSuggested": "Suggested from the category; you can change it."
   },
   "import": {
     "title": "Import products from CSV",
@@ -158,7 +159,11 @@
     "moveTo_other": "Move its {{count}} products to",
     "moveToLabel": "Move products to",
     "leaveUncategorized": "Leave them uncategorized",
-    "confirmDelete": "Delete category"
+    "confirmDelete": "Delete category",
+    "prefix": "SKU prefix",
+    "prefixOf": "SKU prefix of {{name}}",
+    "prefixPlaceholder": "e.g. ELE",
+    "prefixHint": "Optional SKU prefix (2-6 letters or digits): new products in the category get the next SKU suggested, e.g. ELE-028. Existing SKUs don't change."
   },
   "units": {
     "un": "Unit",

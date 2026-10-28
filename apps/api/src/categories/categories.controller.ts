@@ -16,6 +16,14 @@ export class CategoriesController {
     return this.categoriesService.findAll(user.businessId);
   }
 
+  /** The SKU suggested for a new product in the category ({ sku: null } without a prefix). */
+  @Get(":id/next-sku")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  nextSku(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.categoriesService.nextSku(user.businessId, id);
+  }
+
   @Post()
   @UseGuards(RolesGuard)
   @Roles(Role.OWNER, Role.MANAGER)

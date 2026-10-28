@@ -245,6 +245,8 @@ export interface CategoryDto {
   id: string;
   businessId: string;
   name: string;
+  /** New products in it get "ELE-028" suggested as their SKU; null without. */
+  skuPrefix?: string | null;
   /** How many products it has (archived ones included). */
   _count?: { products: number };
 }
@@ -309,6 +311,8 @@ export interface CreateProductDto {
   trackStock?: boolean;
   /** A free item: sell price 0 (required for a price of 0). */
   isFree?: boolean;
+  /** `sku` is the category's suggestion, untouched: the server takes the next number when saving. */
+  skuAuto?: boolean;
 }
 
 /** PATCH /products/:id. `isActive: false` archives, `true` restores. */

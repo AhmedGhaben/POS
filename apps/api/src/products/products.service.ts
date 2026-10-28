@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
+import { takeCategorySku } from "../categories/sku-counter";
 import { activeExemptions, countryConfig } from "../countries";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
@@ -68,11 +69,14 @@ export class ProductsService {
   }
 
   async create(businessId: string, dto: CreateProductDto) {
-    const existing = await this.prisma.product.findUnique({
-      where: { businessId_sku: { businessId, sku: dto.sku } },
-    });
-    if (existing) {
-      throw new ConflictException("SKU already exists");
+    const autoSku = !!dto.skuAuto && !!dto.categoryId;
+    if (!autoSku) {
+      const existing = await this.prisma.product.findUnique({
+        where: { businessId_sku: { businessId, sku: dto.sku } },
+      });
+      if (existing) {
+        throw new ConflictException("SKU already exists");
+      }
     }
     if (dto.categoryId) await this.assertCategory(businessId, dto.categoryId);
     assertSellPrice(dto.sellPrice, dto.isFree ?? false);
@@ -82,24 +86,37 @@ export class ProductsService {
     this.assertInventoryType(config, dto.inventoryType);
     const tax = (await this.resolveTax(businessId, config, dto)) ?? (await this.defaultTax(businessId, config));
     const trackStock = dto.trackStock ?? true;
-    return this.prisma.product.create({
-      data: {
-        businessId,
-        categoryId: dto.categoryId,
-        sku: dto.sku,
-        barcode,
-        name: dto.name,
-        description: dto.description,
-        costPrice: dto.costPrice,
-        sellPrice: dto.sellPrice,
-        isFree: dto.isFree ?? false,
-        ...tax,
-        unit: dto.unit ?? "un",
-        productType: dto.productType ?? (trackStock ? "P" : "S"),
-        inventoryType: dto.inventoryType !== undefined ? dto.inventoryType || null : trackStock ? "M" : null,
-        trackStock,
-      },
-    });
+    const data = {
+      businessId,
+      categoryId: dto.categoryId,
+      sku: dto.sku,
+      barcode,
+      name: dto.name,
+      description: dto.description,
+      costPrice: dto.costPrice,
+      sellPrice: dto.sellPrice,
+      isFree: dto.isFree ?? false,
+      ...tax,
+      unit: dto.unit ?? "un",
+      productType: dto.productType ?? (trackStock ? "P" : "S"),
+      inventoryType: dto.inventoryType !== undefined ? dto.inventoryType || null : trackStock ? "M" : null,
+      trackStock,
+    };
+    if (!autoSku) return this.prisma.product.create({ data });
+    // The category's next SKU, taken and used in one transaction (tester #40).
+    // A SKU someone typed by hand meanwhile: take the next one.
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await this.prisma.$transaction(async (tx) => {
+          const sku = (await takeCategorySku(tx, businessId, dto.categoryId!)) ?? dto.sku;
+          return tx.product.create({ data: { ...data, sku } });
+        });
+      } catch (err) {
+        if (attempt < 3 && err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") continue;
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") throw new ConflictException("SKU already exists");
+        throw err;
+      }
+    }
   }
 
   /**

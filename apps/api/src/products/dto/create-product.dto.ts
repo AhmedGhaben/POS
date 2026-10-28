@@ -11,6 +11,15 @@ export class CreateProductDto {
   @MinLength(1)
   sku!: string;
 
+  /**
+   * The SKU is the category's suggestion, untouched: the server takes the
+   * category's next number when saving (it may differ from the one shown if
+   * someone else added a product meanwhile).
+   */
+  @IsOptional()
+  @IsBoolean()
+  skuAuto?: boolean;
+
   @IsOptional()
   @IsString()
   @MaxLength(64)

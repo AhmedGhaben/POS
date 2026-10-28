@@ -67,7 +67,8 @@
     "stockQuantity": "{{quantity}} em stock",
     "isFree": "Artigo gratuito",
     "isFreeHint": "Oferecido: o preço é 0. Qualquer outro produto tem de ser vendido por mais de 0.",
-    "zeroPriceNotFree": "Indique um preço acima de 0, ou marque \"Artigo gratuito\""
+    "zeroPriceNotFree": "Indique um preço acima de 0, ou marque \"Artigo gratuito\"",
+    "skuSuggested": "Sugerida pela categoria; pode alterá-la."
   },
   "import": {
     "title": "Importar produtos de CSV",
@@ -158,7 +159,11 @@
     "moveTo_other": "Passar os seus {{count}} produtos para",
     "moveToLabel": "Passar os produtos para",
     "leaveUncategorized": "Deixá-los sem categoria",
-    "confirmDelete": "Apagar categoria"
+    "confirmDelete": "Apagar categoria",
+    "prefix": "Prefixo da referência",
+    "prefixOf": "Prefixo da referência de {{name}}",
+    "prefixPlaceholder": "ex. ELE",
+    "prefixHint": "Prefixo opcional da referência (2 a 6 letras ou algarismos): os novos produtos da categoria recebem a referência seguinte sugerida, ex. ELE-028. As referências existentes não mudam."
   },
   "units": {
     "un": "Unidade",

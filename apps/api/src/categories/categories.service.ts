@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateCategoryDto } from "./dto/create-category.dto";
+import { peekCategorySku } from "./sku-counter";
 
 @Injectable()
 export class CategoriesService {
@@ -18,14 +19,27 @@ export class CategoriesService {
   async create(businessId: string, dto: CreateCategoryDto) {
     const name = dto.name.trim();
     await this.assertNameFree(businessId, name);
-    return this.prisma.category.create({ data: { businessId, name } });
+    if (dto.skuPrefix) await this.assertPrefixFree(businessId, dto.skuPrefix);
+    return this.prisma.category.create({ data: { businessId, name, skuPrefix: dto.skuPrefix ?? null } });
   }
 
   async rename(businessId: string, id: string, dto: CreateCategoryDto) {
     const category = await this.findOwned(businessId, id);
     const name = dto.name.trim();
     if (name.toLowerCase() !== category.name.toLowerCase()) await this.assertNameFree(businessId, name);
-    return this.prisma.category.update({ where: { id }, data: { name } });
+    const prefixChanged = dto.skuPrefix !== undefined && dto.skuPrefix !== category.skuPrefix;
+    if (prefixChanged && dto.skuPrefix) await this.assertPrefixFree(businessId, dto.skuPrefix, id);
+    return this.prisma.$transaction(async (tx) => {
+      // A new prefix counts afresh (from the highest SKU already using it).
+      if (prefixChanged) await tx.categorySkuCounter.deleteMany({ where: { categoryId: id } });
+      return tx.category.update({ where: { id }, data: { name, ...(dto.skuPrefix !== undefined ? { skuPrefix: dto.skuPrefix } : {}) } });
+    });
+  }
+
+  /** The SKU a new product in the category would get (not taken until it's saved). */
+  async nextSku(businessId: string, id: string) {
+    await this.findOwned(businessId, id);
+    return { sku: await peekCategorySku(this.prisma, businessId, id) };
   }
 
   /**
@@ -47,6 +61,11 @@ export class CategoriesService {
     const category = await this.prisma.category.findFirst({ where: { id, businessId } });
     if (!category) throw new NotFoundException("Category not found");
     return category;
+  }
+
+  private async assertPrefixFree(businessId: string, skuPrefix: string, exceptId?: string) {
+    const existing = await this.prisma.category.findFirst({ where: { businessId, skuPrefix, ...(exceptId ? { id: { not: exceptId } } : {}) } });
+    if (existing) throw new ConflictException("Another category already uses that SKU prefix");
   }
 
   /** Names are unique regardless of case ("Bebidas" and "bebidas" are the same). */

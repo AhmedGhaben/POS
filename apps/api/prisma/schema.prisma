@@ -572,12 +572,29 @@ model Category {
   businessId String
   business   Business @relation(fields: [businessId], references: [id])
   name       String
+  /// New products in the category get a suggested SKU: prefix + next number
+  /// ("ELE-028"). Optional; unique in the business (tester #40).
+  skuPrefix  String?
   createdAt  DateTime @default(now())
 
-  products Product[]
+  products   Product[]
+  skuCounter CategorySkuCounter?
 
   @@unique([businessId, name])
+  @@unique([businessId, skuPrefix])
   @@map("categories")
+}
+
+/// The last number handed out for a category's SKU prefix. Taken with an
+/// upsert-and-increment, so two people adding products at once get
+/// different numbers (see categories/sku-counter.ts).
+model CategorySkuCounter {
+  categoryId String   @id
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  businessId String
+  last       Int
+
+  @@map("category_sku_counters")
 }
 
 model Product {

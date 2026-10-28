@@ -23,7 +23,7 @@ import {
   uploadProductPhoto,
   type ProductStockDto,
 } from "@/features/products/api";
-import { fetchCategories } from "@/features/categories/api";
+import { fetchCategories, fetchNextSku } from "@/features/categories/api";
 import { ApiError } from "@/lib/api-client";
 import { fetchTaxRates, TAX_RATES_QUERY_KEY } from "@/features/business/api";
 import { resizePhoto } from "@/features/business/resize-logo";
@@ -135,6 +135,36 @@ export function ProductFormDialog({
     defaultValues: valuesFor(product, initialTax),
   });
   const isFree = form.watch("isFree");
+
+  // A new product in a category with a SKU prefix gets its next SKU filled
+  // in ("ELE-028", tester #40). Left as suggested, the server takes the real
+  // next number when saving; typed over, it's kept as typed.
+  const suggestedSku = React.useRef<string | null>(null);
+  const categoryId = form.watch("categoryId");
+  const categories = categoriesQuery.data;
+  React.useEffect(() => {
+    if (open) suggestedSku.current = null;
+  }, [open]);
+  React.useEffect(() => {
+    if (!open || editing || !categoryId || categoryId === NO_CATEGORY) return;
+    if (!categories?.find((c) => c.id === categoryId)?.skuPrefix) return;
+    const untouched = () => {
+      const sku = form.getValues("sku");
+      return !sku || sku === suggestedSku.current;
+    };
+    if (!untouched()) return;
+    let cancelled = false;
+    fetchNextSku(categoryId)
+      .then(({ sku }) => {
+        if (cancelled || !sku || !untouched()) return;
+        suggestedSku.current = sku;
+        form.setValue("sku", sku, { shouldValidate: true });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [open, editing, categoryId, categories, form]);
   // Fresh values each time the dialog opens; the tax rates may arrive a
   // moment later, so their default fills an empty tax field without
   // touching anything already typed.
@@ -220,7 +250,12 @@ export function ProductFormDialog({
       };
       const saved = editing
         ? await updateProduct(product.id, body)
-        : await createProduct({ ...body, barcode: body.barcode || undefined, costPrice: values.costPrice });
+        : await createProduct({
+            ...body,
+            barcode: body.barcode || undefined,
+            costPrice: values.costPrice,
+            skuAuto: !!suggestedSku.current && values.sku === suggestedSku.current,
+          });
       if (photo === "remove") await removeProductPhoto(saved.id);
       else if (photo) await uploadProductPhoto(saved.id, photo.dataUrl);
       return saved;
@@ -328,6 +363,9 @@ export function ProductFormDialog({
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
+                    {!editing && suggestedSku.current && field.value === suggestedSku.current && (
+                      <FormDescription>{t("form.skuSuggested")}</FormDescription>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

@@ -236,6 +236,14 @@ const EXACT: Record<string, Translations> = {
     "pt-PT": "Este produto tem stock. Arquive-o em vez de o eliminar.",
     "pt-BR": "Este produto tem estoque. Arquive-o em vez de excluí-lo.",
   },
+  "Another category already uses that SKU prefix": {
+    "pt-PT": "Outra categoria já usa esse prefixo de referência",
+    "pt-BR": "Outra categoria já usa esse prefixo de código",
+  },
+  "The SKU prefix is 2 to 6 letters or digits": {
+    "pt-PT": "O prefixo da referência tem 2 a 6 letras ou algarismos",
+    "pt-BR": "O prefixo do código tem 2 a 6 letras ou números",
+  },
   "Category not found": { "pt-PT": "Categoria não encontrada", "pt-BR": "Categoria não encontrada" },
   "Category already exists": { "pt-PT": "Essa categoria já existe", "pt-BR": "Essa categoria já existe" },
   "One or more products were not found": {
