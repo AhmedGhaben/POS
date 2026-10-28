@@ -119,7 +119,9 @@
     "threshold": "Flag cash differences above",
     "noThreshold": "Never flag",
     "thresholdHint": "Shifts whose counted cash is off by more than this (short or over) are flagged for managers on the Shifts page.",
-    "thresholdRange": "Enter an amount of 0 or more, or leave it empty"
+    "thresholdRange": "Enter an amount of 0 or more, or leave it empty",
+    "allowSellingWithoutStock": "Allow selling without stock",
+    "allowSellingWithoutStockHint": "Off: a till that is online refuses to sell more than the stock on hand, and warns as soon as an item is added. On: it only warns. A till that is offline always sells (the sale is flagged)."
   },
   "tillsList": {
     "title": "Tills",

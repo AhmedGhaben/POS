@@ -35,6 +35,15 @@ export class InventoryController {
     return (await this.canSeeCosts(user)) ? items : items.map(withoutCosts);
   }
 
+  /**
+   * What the till needs to warn before checkout (tester #32): each stock
+   * product's quantity here, 0 where it has none yet. Any role that sells.
+   */
+  @Get("levels")
+  levels(@Param("storeId") storeId: string) {
+    return this.inventoryService.levels(storeId);
+  }
+
   /** Stock and book value at the end of a day (?date=YYYY-MM-DD). */
   @Get("at")
   @UseGuards(RolesGuard)

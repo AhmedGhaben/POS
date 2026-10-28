@@ -17,7 +17,7 @@ import { CreditOption } from "@/features/pos/components/CreditOption";
 import { creditSplit, NO_CREDIT, type CreditChoice } from "@/features/pos/credit";
 import { useTranslation } from "react-i18next";
 import { countryConfig, DrawerOpenReason, fromCents, lacksExemptionReason, lineGrossCents, PaymentMethod } from "@pos/shared";
-import type { CustomerCardDto, CustomerDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
+import type { CustomerCardDto, CustomerDto, ProductDto, SaleDto, SalePaymentInputDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,8 @@ import { PrintArea } from "@/components/print/PrintArea";
 import { PrintQuoteDialog } from "@/features/pos/components/PrintQuoteDialog";
 import { IssueInvoiceDialog } from "@/features/invoices/components/IssueInvoiceDialog";
 import { FiscalDocumentDialog } from "@/features/fiscal/components/FiscalDocumentDialog";
+import { checkStock } from "@/features/pos/stock-check";
+import { useStockLevels } from "@/features/pos/stock-levels";
 import { SalePrintToggle } from "@/features/pos/components/SalePrintToggle";
 import { usePrintFormatStore, useSalePrintFormat } from "@/features/pos/print-format";
 import { saleDocument } from "@/features/fiscal/sale-document";
@@ -86,6 +88,43 @@ export function PosPage() {
     restore,
     totals,
   } = useCart();
+
+  // Stock the till knows about (tester #32): warn before checkout, or refuse
+  // when the figures are current and the business doesn't sell without stock.
+  const allowSellingWithoutStock = useAuthStore((s) => !!s.business?.allowSellingWithoutStock);
+  const stockQuery = useStockLevels(currentStoreId);
+  const stockLevels = stockQuery.data
+    ? { ...stockQuery.data, current: stockQuery.data.current && Date.now() - stockQuery.dataUpdatedAt < 5 * 60_000 }
+    : null;
+  const stockFor = (product: ProductDto, wanted: number) => checkStock(product, wanted, stockLevels, allowSellingWithoutStock);
+  /** False when the till refuses the quantity; warns (and allows) when it only might be short. */
+  function stockAllows(product: ProductDto, wanted: number): boolean {
+    const check = stockFor(product, wanted);
+    if (check.status === "ok") return true;
+    const message = t("stock.onlyLeft", { name: product.name, count: Math.max(check.available, 0) });
+    if (check.status === "block") {
+      toast.error(message, { description: t("stock.blocked") });
+      return false;
+    }
+    toast.warning(message);
+    return true;
+  }
+  function addProductChecked(product: ProductDto, quantity = 1) {
+    const inCart = lines.find((l) => l.product.id === product.id)?.quantity ?? 0;
+    if (stockAllows(product, inCart + quantity)) addProduct(product, quantity);
+  }
+  function setQuantityChecked(productId: string, quantity: number) {
+    const line = lines.find((l) => l.product.id === productId);
+    if (line && quantity > line.quantity && !stockAllows(line.product, quantity)) return;
+    setQuantity(productId, quantity);
+  }
+  const stockNotes = Object.fromEntries(
+    lines.flatMap((l) => {
+      const check = stockFor(l.product, l.quantity);
+      return check.status === "ok" ? [] : [[l.product.id, t("stock.inStock", { count: Math.max(check.available, 0) })]];
+    }),
+  );
+  const overStock = lines.find((l) => stockFor(l.product, l.quantity).status === "block");
   // Everything about the sale in progress is in the till's saved cart
   // (cart-store.ts): it's still there after another page or a restart, and
   // someone else signing in here gets their own.
@@ -458,6 +497,12 @@ export function PosPage() {
           </p>
         )}
 
+        {overStock && (
+          <p role="alert" className="text-sm text-destructive">
+            {t("stock.overInCart", { name: overStock.product.name })}
+          </p>
+        )}
+
         {saleMutation.isError && (
           <p className="text-sm text-destructive">
             {saleMutation.error instanceof ApiError
@@ -469,7 +514,7 @@ export function PosPage() {
         <Button
           size="lg"
           className="w-full"
-          disabled={lines.length === 0 || !!unreasoned || (split.paidNow > 0 && !paymentsValid) || !creditValid || saleMutation.isPending}
+          disabled={lines.length === 0 || !!unreasoned || !!overStock || (split.paidNow > 0 && !paymentsValid) || !creditValid || saleMutation.isPending}
           onClick={() => saleMutation.mutate()}
         >
           {saleMutation.isPending ? t("checkout.processing") : t("checkout.charge", { amount: money(totals.total) })}
@@ -560,9 +605,9 @@ export function PosPage() {
   return (
     <div className="flex h-[calc(100vh-3.5rem)] flex-col lg:flex-row">
       <div className="flex flex-1 flex-col overflow-y-auto border-r p-4 lg:overflow-visible">
-        <ProductSearchInput onSelect={addProduct} suppressRefocusRef={checkoutAreaRef} />
+        <ProductSearchInput onSelect={addProductChecked} suppressRefocusRef={checkoutAreaRef} />
         <CategoryFilter selectedCategoryId={selectedCategoryId} onSelect={setSelectedCategoryId} />
-        <ProductGrid categoryId={selectedCategoryId} onSelect={addProduct} />
+        <ProductGrid categoryId={selectedCategoryId} onSelect={addProductChecked} stockLevels={stockLevels} />
         {proforma && (
           <div className="mb-2 flex items-center justify-between rounded-md border border-sky-300 bg-sky-50 px-3 py-2 text-sm dark:border-sky-800 dark:bg-sky-950" role="status">
             <span>{t("proforma.selling", { number: proforma.documentNo })}</span>
@@ -574,7 +619,8 @@ export function PosPage() {
         <Cart
           lines={lines}
           priced={priced.lines}
-          onSetQuantity={setQuantity}
+          onSetQuantity={setQuantityChecked}
+          stockNotes={stockNotes}
           onRemove={removeLine}
           onDiscount={(line) => setDiscountFor(line)}
           onChangePrice={(line) => setPriceFor(line)}

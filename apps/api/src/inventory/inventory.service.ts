@@ -56,6 +56,17 @@ export class InventoryService {
     return [...items, ...placeholders].sort((a, b) => a.product.name.localeCompare(b.product.name));
   }
 
+  /** Quantity on hand of every active stock product in the store (0 without a row). */
+  async levels(storeId: string): Promise<{ productId: string; quantity: string }[]> {
+    const store = await this.prisma.store.findUnique({ where: { id: storeId }, select: { businessId: true } });
+    if (!store) throw new NotFoundException("Store not found");
+    const products = await this.prisma.product.findMany({
+      where: { businessId: store.businessId, trackStock: true, isActive: true },
+      select: { id: true, inventoryItems: { where: { storeId }, select: { quantity: true } } },
+    });
+    return products.map((p) => ({ productId: p.id, quantity: (p.inventoryItems[0]?.quantity ?? new Prisma.Decimal(0)).toString() }));
+  }
+
   /**
    * Sets the stock to what was counted. The difference is an adjustment in
    * the stock history: found stock comes in at the average cost, missing

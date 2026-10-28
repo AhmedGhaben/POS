@@ -199,6 +199,10 @@ model Business {
   shiftDifferenceThreshold Decimal? @db.Decimal(14, 2)
   /// Largest discount (% of the sale or line) anyone but the owner may give; null = no limit.
   maxDiscountPercent       Decimal? @db.Decimal(5, 2)
+  /// Online sales may take stock below zero (tester #32). Off: the till and
+  /// the server refuse a sale beyond the stock on hand. Offline sales are
+  /// always accepted (Sale.createdOffline).
+  allowSellingWithoutStock Boolean  @default(false)
   receiptHeader            String?
   receiptFooter            String?
   invoiceFooter            String?

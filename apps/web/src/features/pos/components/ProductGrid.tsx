@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { LayoutGrid, List } from "lucide-react";
+import { EyeOff, LayoutGrid, List } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ProductDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
@@ -8,10 +8,13 @@ import { posFetchProducts } from "@/features/pos/catalog";
 import { productPhotoSrc } from "@/features/products/api";
 import { useMoney } from "@/features/business/use-money";
 import { cn } from "@/lib/utils";
+import { isOutOfStock, type StockLevels } from "@/features/pos/stock-check";
 
 interface ProductGridProps {
   categoryId: string | null;
   onSelect: (product: ProductDto) => void;
+  /** The stock the till knows about, to hide what's run out (when this till asks). */
+  stockLevels?: StockLevels | null;
 }
 
 type View = "grid" | "list";
@@ -27,11 +30,24 @@ function useProductView(): [View, (view: View) => void] {
   return [view, change];
 }
 
+const HIDE_OUT_OF_STOCK_KEY = "pos-hide-out-of-stock";
+
+/** Hide products that have run out (tester #32), remembered on this device. */
+function useHideOutOfStock(): [boolean, (hide: boolean) => void] {
+  const [hide, setHide] = React.useState(() => localStorage.getItem(HIDE_OUT_OF_STOCK_KEY) === "1");
+  const change = React.useCallback((next: boolean) => {
+    localStorage.setItem(HIDE_OUT_OF_STOCK_KEY, next ? "1" : "0");
+    setHide(next);
+  }, []);
+  return [hide, change];
+}
+
 /** Browsable products of the selected category, as tiles or a list — click to add to the cart. */
-export function ProductGrid({ categoryId, onSelect }: ProductGridProps) {
+export function ProductGrid({ categoryId, onSelect, stockLevels }: ProductGridProps) {
   const { t } = useTranslation("pos");
   const money = useMoney();
   const [view, setView] = useProductView();
+  const [hideOutOfStock, setHideOutOfStock] = useHideOutOfStock();
   const productsQuery = useQuery({
     queryKey: ["pos-category-products", categoryId],
     queryFn: () => posFetchProducts(undefined, categoryId ?? undefined),
@@ -42,11 +58,25 @@ export function ProductGrid({ categoryId, onSelect }: ProductGridProps) {
     return null;
   }
 
-  const products = productsQuery.data ?? [];
+  const all = productsQuery.data ?? [];
+  const products = hideOutOfStock ? all.filter((p) => !isOutOfStock(p, stockLevels)) : all;
 
   return (
     <div className="pb-3">
-      <div className="mb-1 flex justify-end gap-1" role="radiogroup" aria-label={t("view.label")}>
+      <div className="mb-1 flex justify-end gap-1">
+        <Button
+          type="button"
+          size="icon"
+          variant={hideOutOfStock ? "secondary" : "ghost"}
+          className="h-7 w-7"
+          aria-pressed={hideOutOfStock}
+          aria-label={t("view.hideOutOfStock")}
+          title={t("view.hideOutOfStock")}
+          onClick={() => setHideOutOfStock(!hideOutOfStock)}
+        >
+          <EyeOff className="h-3.5 w-3.5" />
+        </Button>
+        <div className="flex gap-1" role="radiogroup" aria-label={t("view.label")}>
         {(["grid", "list"] as const).map((v) => (
           <Button
             key={v}
@@ -63,6 +93,7 @@ export function ProductGrid({ categoryId, onSelect }: ProductGridProps) {
             {v === "grid" ? <LayoutGrid className="h-3.5 w-3.5" /> : <List className="h-3.5 w-3.5" />}
           </Button>
         ))}
+        </div>
       </div>
       {view === "grid" ? (
         <div className="grid max-h-48 grid-cols-3 gap-2 overflow-y-auto">
@@ -105,6 +136,7 @@ export function ProductGrid({ categoryId, onSelect }: ProductGridProps) {
           ))}
         </div>
       )}
+      {all.length > 0 && products.length === 0 && <p className="py-2 text-center text-sm text-muted-foreground">{t("view.allOutOfStock")}</p>}
       {productsQuery.data?.length === 0 && <p className="py-2 text-center text-sm text-muted-foreground">{t("categories.empty")}</p>}
     </div>
   );

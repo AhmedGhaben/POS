@@ -95,6 +95,11 @@ export class UpdateBusinessDto {
   @Max(100)
   maxDiscountPercent?: number | null;
 
+  /** Online sales may take stock below zero. */
+  @IsOptional()
+  @IsBoolean()
+  allowSellingWithoutStock?: boolean;
+
   @IsOptional() @BlankToNull() @IsString() @MaxLength(300)
   receiptHeader?: string | null;
 

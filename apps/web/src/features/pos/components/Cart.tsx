@@ -19,6 +19,8 @@ interface CartProps {
   onDiscount?: (line: CartLine) => void;
   /** Change a line's price (likewise). */
   onChangePrice?: (line: CartLine) => void;
+  /** Lines beyond the stock the till knows about: "Only 3 in stock". */
+  stockNotes?: Record<string, string>;
 }
 
 /**
@@ -59,7 +61,7 @@ function QuantityField({ value, unit, label, onCommit }: { value: number; unit: 
   );
 }
 
-export function Cart({ lines, priced, onSetQuantity, onRemove, onDiscount, onChangePrice }: CartProps) {
+export function Cart({ lines, priced, onSetQuantity, onRemove, onDiscount, onChangePrice, stockNotes }: CartProps) {
   const { t } = useTranslation("pos");
   const money = useMoney();
   if (lines.length === 0) {
@@ -89,6 +91,11 @@ export function Cart({ lines, priced, onSetQuantity, onRemove, onDiscount, onCha
                   </span>
                 )}
               </p>
+              {stockNotes?.[line.product.id] && (
+                <p className="text-xs font-medium text-amber-700 dark:text-amber-400" role="status">
+                  {stockNotes[line.product.id]}
+                </p>
+              )}
               {discounted && line.discount && (
                 <p className="text-xs text-emerald-700 dark:text-emerald-400">
                   {t("cart.discountOff", { label: discountLabel(line.discount, money), amount: money(p.lineDiscount) })}

@@ -207,7 +207,9 @@
   "view": {
     "label": "Mostrar produtos como",
     "grid": "Blocos",
-    "list": "Lista"
+    "list": "Lista",
+    "hideOutOfStock": "Ocultar produtos sem estoque (este caixa)",
+    "allOutOfStock": "Todos os produtos aqui estão sem estoque."
   },
   "card": {
     "open": "Ficha do cliente",
@@ -254,5 +256,11 @@
     "hold": "Deixar pendente",
     "cancel": "Cancelar",
     "back": "Voltar à venda"
+  },
+  "stock": {
+    "onlyLeft": "Só há {{count}} de \"{{name}}\" em estoque",
+    "blocked": "Este negócio não vende além do estoque disponível (Configurações).",
+    "inStock": "{{count}} em estoque",
+    "overInCart": "Não há estoque suficiente de \"{{name}}\": diminua a quantidade para cobrar."
   }
 }

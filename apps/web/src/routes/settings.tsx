@@ -36,6 +36,7 @@ const settingsSchema = z.object({
   postalCode: z.string().max(20),
   province: z.string(),
   eInvoicingActive: z.boolean(),
+  allowSellingWithoutStock: z.boolean(),
   phone: z.string().max(40),
   email: z.union([z.literal(""), z.string().trim().email("validation.email")]),
   website: z.string().max(100),
@@ -69,6 +70,7 @@ function toFormValues(b: BusinessDto): SettingsValues {
     postalCode: b.postalCode ?? "",
     province: b.province ?? "",
     eInvoicingActive: !!b.eInvoicingActive,
+    allowSellingWithoutStock: !!b.allowSellingWithoutStock,
     phone: b.phone ?? "",
     email: b.email ?? "",
     website: b.website ?? "",
@@ -309,6 +311,23 @@ export function SettingsPage() {
                         </FormControl>
                         <FormDescription>{t("tills.thresholdHint")}</FormDescription>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="allowSellingWithoutStock"
+                    render={({ field }) => (
+                      <FormItem className="mt-4">
+                        <div className="flex items-start gap-3">
+                          <FormControl>
+                            <input type="checkbox" className="mt-1 h-4 w-4" checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />
+                          </FormControl>
+                          <div>
+                            <FormLabel>{t("tills.allowSellingWithoutStock")}</FormLabel>
+                            <FormDescription>{t("tills.allowSellingWithoutStockHint")}</FormDescription>
+                          </div>
+                        </div>
                       </FormItem>
                     )}
                   />

@@ -119,7 +119,9 @@
     "threshold": "Sinalizar diferenças de caixa acima de",
     "noThreshold": "Nunca sinalizar",
     "thresholdHint": "Turnos cuja contagem difere mais do que isso (falta ou sobra) ficam sinalizados para os gerentes na página Turnos.",
-    "thresholdRange": "Informe um valor igual ou maior que 0, ou deixe em branco"
+    "thresholdRange": "Informe um valor igual ou maior que 0, ou deixe em branco",
+    "allowSellingWithoutStock": "Permitir vender sem estoque",
+    "allowSellingWithoutStockHint": "Desligado: um caixa conectado recusa vender mais do que o estoque disponível e avisa assim que o item é adicionado. Ligado: só avisa. Um caixa sem conexão sempre vende (a venda fica sinalizada)."
   },
   "tillsList": {
     "title": "Caixas",

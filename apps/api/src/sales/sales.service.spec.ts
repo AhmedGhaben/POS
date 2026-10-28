@@ -30,11 +30,12 @@ interface MockOptions {
   stockQty?: number;
   shift?: { id: string; status: ShiftStatus; openedById: string; terminalId: string | null } | null;
   store?: { country: string; ivaRegime: string; pricesIncludeTax: boolean };
+  allowSellingWithoutStock?: boolean;
 }
 
 function buildPrismaMock(
   product: ReturnType<typeof buildProduct>,
-  { stockQty = 5, shift, store = { country: "AO", ivaRegime: "GERAL", pricesIncludeTax: false } }: MockOptions = {},
+  { stockQty = 5, shift, store = { country: "AO", ivaRegime: "GERAL", pricesIncludeTax: false }, allowSellingWithoutStock = false }: MockOptions = {},
 ) {
   // Mimics what Prisma actually returns for a nested `{ create: [...] }` write
   // under `include`: the resolved rows, not the write-input wrapper.
@@ -56,6 +57,7 @@ function buildPrismaMock(
     },
     // The sale is read back after its Factura-Recibo is issued.
     sale: { create: saleCreate, findUniqueOrThrow: jest.fn(() => created) },
+    business: { findUnique: jest.fn().mockResolvedValue({ allowSellingWithoutStock }) },
   };
   return {
     product: { findMany: jest.fn().mockResolvedValue([product]) },
@@ -126,6 +128,13 @@ describe("SalesService#create", () => {
   it("rejects insufficient stock", async () => {
     const { service } = buildService(buildPrismaMock(buildProduct(10), { stockQty: 0 }));
     await expect(service.create("biz-1", "cashier-1", saleDto())).rejects.toThrow(BadRequestException);
+  });
+
+  it("sells beyond the stock when the business allows selling without stock (tester #32)", async () => {
+    const prisma = buildPrismaMock(buildProduct(10), { stockQty: 0, allowSellingWithoutStock: true });
+    const { service } = buildService(prisma);
+    await expect(service.create("biz-1", "cashier-1", saleDto())).resolves.toBeDefined();
+    expect(prisma.__tx.stockMovement.create).toHaveBeenCalled();
   });
 
   it("computes tendered/change for a single cash payment", async () => {

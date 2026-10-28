@@ -44,6 +44,8 @@ export interface BusinessDto {
   maxDiscountPercent: string | null;
   /** A shift's cash difference above this (decimal string, either way) is flagged; null = never. */
   shiftDifferenceThreshold?: string | null;
+  /** Online sales may take stock below zero; off, the till refuses beyond the stock it knows. Absent on older sessions. */
+  allowSellingWithoutStock?: boolean;
   receiptHeader: string | null;
   receiptFooter: string | null;
   invoiceFooter: string | null;
@@ -69,6 +71,7 @@ export type UpdateBusinessDto = Partial<
     | "province"
     | "country"
     | "eInvoicingActive"
+    | "allowSellingWithoutStock"
     | "legalName"
     | "taxId"
     | "registrationNumber"

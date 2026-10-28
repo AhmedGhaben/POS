@@ -331,7 +331,9 @@ export class SalesService {
         if (onCredit && !offline) await this.accounts.checkCredit(tx, businessId, customerId, creditAmount);
         // Services and the like don't move stock. Offline, the goods already
         // left the shop: the sale is recorded even if the server's count says
-        // there weren't enough. Online there must be enough.
+        // there weren't enough. Online there must be enough, unless the
+        // business allows selling without stock.
+        const requireStock = !offline && !(await this.allowsSellingWithoutStock(tx, businessId));
         const movementIds: string[] = [];
         for (const [i, li] of dto.lineItems.entries()) {
           const product = productById.get(li.productId)!;
@@ -341,7 +343,7 @@ export class SalesService {
             product,
             type: "SALE",
             quantity: -li.quantity,
-            requireStock: !offline,
+            requireStock,
             userId: cashierId,
             occurredAt: createdAt,
           });
@@ -520,6 +522,11 @@ export class SalesService {
    * "Consumidor Final" (NIF 999999999). Every business gets one when it's
    * created (and existing ones in the migration); made here only if missing.
    */
+  private async allowsSellingWithoutStock(tx: Prisma.TransactionClient, businessId: string): Promise<boolean> {
+    const business = await tx.business.findUnique({ where: { id: businessId }, select: { allowSellingWithoutStock: true } });
+    return !!business?.allowSellingWithoutStock;
+  }
+
   async finalConsumerId(businessId: string): Promise<string> {
     const existing = await this.prisma.customer.findFirst({ where: { businessId, isFinalConsumer: true }, select: { id: true } });
     if (existing) return existing.id;

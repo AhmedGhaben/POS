@@ -207,7 +207,9 @@
   "view": {
     "label": "Show products as",
     "grid": "Tiles",
-    "list": "List"
+    "list": "List",
+    "hideOutOfStock": "Hide products out of stock (this till)",
+    "allOutOfStock": "Every product here is out of stock."
   },
   "card": {
     "open": "Customer card",
@@ -254,5 +256,11 @@
     "hold": "Hold order",
     "cancel": "Cancel the sale",
     "back": "Back to the sale"
+  },
+  "stock": {
+    "onlyLeft": "Only {{count}} of \"{{name}}\" in stock",
+    "blocked": "This business doesn't sell beyond the stock on hand (Settings).",
+    "inStock": "{{count}} in stock",
+    "overInCart": "Not enough \"{{name}}\" in stock: lower the quantity to charge."
   }
 }
