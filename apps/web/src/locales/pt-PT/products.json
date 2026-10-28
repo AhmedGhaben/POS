@@ -59,7 +59,11 @@
     "deleteForGood": "Eliminar",
     "deleted": "Produto eliminado",
     "hasHistory": "Este produto tem vendas, compras, movimentos de stock ou documentos, por isso não pode ser eliminado: estes têm de continuar a apontar para ele. Arquive-o: sai da caixa e desta lista, e os relatórios mantêm-no.",
-    "hasHistoryArchived": "Este produto tem vendas, compras, movimentos de stock ou documentos, por isso não pode ser eliminado: estes têm de continuar a apontar para ele. Fica arquivado."
+    "hasHistoryArchived": "Este produto tem vendas, compras, movimentos de stock ou documentos, por isso não pode ser eliminado: estes têm de continuar a apontar para ele. Fica arquivado.",
+    "archiveHasStock": "\"{{name}}\" ainda tem stock. Arquivar mesmo assim? Sai da caixa; o stock fica nas contas até o ajustar.",
+    "archiveAnyway": "Arquivar mesmo assim",
+    "deleteHasStock": "\"{{name}}\" tem stock, por isso não pode ser eliminado. Arquive-o, ou ponha primeiro o stock a 0.",
+    "stockQuantity": "{{quantity}} em stock"
   },
   "import": {
     "title": "Importar produtos de CSV",

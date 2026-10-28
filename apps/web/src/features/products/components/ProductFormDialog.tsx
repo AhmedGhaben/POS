@@ -15,11 +15,13 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import {
   createProduct,
   deleteProduct,
+  fetchProductStock,
   findProductByBarcode,
   productPhotoSrc,
   removeProductPhoto,
   updateProduct,
   uploadProductPhoto,
+  type ProductStockDto,
 } from "@/features/products/api";
 import { fetchCategories } from "@/features/categories/api";
 import { ApiError } from "@/lib/api-client";
@@ -146,9 +148,21 @@ export function ProductFormDialog({
   }, [open]);
   // Deleting for good: asked to confirm first; refused when the product has history.
   const [deleteStep, setDeleteStep] = React.useState<"idle" | "confirm" | "hasHistory">("idle");
+  // Archiving a product that still has stock asks first, showing how much (tester #36).
+  const [confirmArchive, setConfirmArchive] = React.useState(false);
   React.useEffect(() => {
-    if (open) setDeleteStep("idle");
+    if (open) {
+      setDeleteStep("idle");
+      setConfirmArchive(false);
+    }
   }, [open]);
+  const stockQuery = useQuery({
+    queryKey: ["products", product?.id, "stock"],
+    queryFn: () => fetchProductStock(product!.id),
+    enabled: open && !!product?.isActive,
+    staleTime: 0,
+  });
+  const stock = stockQuery.data ?? [];
   const fileRef = React.useRef<HTMLInputElement>(null);
 
   // Barcodes are unique among active products: warn while typing (the server checks too).
@@ -520,14 +534,29 @@ export function ProductFormDialog({
             <Button type="submit" className="w-full" disabled={busy}>
               {saveMutation.isPending ? t("common:actions.saving") : editing ? t("common:actions.saveChanges") : t("form.save")}
             </Button>
+            {editing && confirmArchive && (
+              <div className="space-y-2 rounded-md border border-amber-400/60 p-3 text-sm" role="alert">
+                <p>{t("form.archiveHasStock", { name: product.name })}</p>
+                <StockOnHand stock={stock} />
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setConfirmArchive(false)}>
+                    {t("common:actions.cancel")}
+                  </Button>
+                  <Button type="button" size="sm" disabled={busy} onClick={() => archiveMutation.mutate(false)}>
+                    {t("form.archiveAnyway")}
+                  </Button>
+                </div>
+              </div>
+            )}
             {editing &&
+              !confirmArchive &&
               (product.isActive ? (
                 <Button
                   type="button"
                   variant="ghost"
                   className="w-full gap-2 text-muted-foreground"
-                  disabled={busy}
-                  onClick={() => archiveMutation.mutate(false)}
+                  disabled={busy || stockQuery.isLoading}
+                  onClick={() => (stock.length > 0 ? setConfirmArchive(true) : archiveMutation.mutate(false))}
                 >
                   <Archive className="h-4 w-4" /> {t("form.archive")}
                 </Button>
@@ -552,7 +581,19 @@ export function ProductFormDialog({
                 <Trash2 className="h-4 w-4" /> {t("form.delete")}
               </Button>
             )}
-            {editing && deleteStep === "confirm" && (
+            {editing && deleteStep === "confirm" && stock.length > 0 && (
+              // Stock on hand can't be deleted (the server refuses too): show it, and the way out.
+              <div className="space-y-2 rounded-md border p-3 text-sm" role="alert">
+                <p>{t("form.deleteHasStock", { name: product.name })}</p>
+                <StockOnHand stock={stock} />
+                <div className="flex justify-end">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setDeleteStep("idle")}>
+                    {t("common:actions.close")}
+                  </Button>
+                </div>
+              </div>
+            )}
+            {editing && deleteStep === "confirm" && stock.length === 0 && (
               <div className="space-y-2 rounded-md border border-destructive/40 p-3 text-sm">
                 <p>{t("form.deleteConfirm", { name: product.name })}</p>
                 <div className="flex justify-end gap-2">
@@ -574,5 +615,20 @@ export function ProductFormDialog({
         </Form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** "Loja Principal: 12" per store holding some of the product. */
+export function StockOnHand({ stock }: { stock: ProductStockDto[] }) {
+  const { t, i18n } = useTranslation("products");
+  return (
+    <ul className="space-y-0.5">
+      {stock.map((s) => (
+        <li key={s.storeId} className="flex justify-between gap-3">
+          <span>{s.storeName}</span>
+          <span className="font-medium tabular-nums">{t("form.stockQuantity", { quantity: Number(s.quantity).toLocaleString(i18n.language) })}</span>
+        </li>
+      ))}
+    </ul>
   );
 }

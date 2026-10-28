@@ -2,6 +2,7 @@ import { Prisma, PrismaClient, Role } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import { countryConfig } from "../src/countries";
 import { hashPin } from "../src/common/utils/pin";
+import { recordMovement } from "../src/stock/stock";
 import { assertDemoDataAllowed } from "./demo-guard";
 
 const prisma = new PrismaClient();
@@ -257,15 +258,23 @@ async function main() {
         update: {},
       });
 
-      await prisma.inventoryItem.upsert({
-        where: { storeId_productId: { storeId: store.id, productId: product.id } },
-        create: {
-          storeId: store.id,
-          productId: product.id,
-          quantity: stock,
-          reorderLevel: 10,
-        },
-        update: { quantity: stock },
+      // Stock goes in through a movement (opening, or an adjustment when
+      // re-seeding), like every stock change: stock without history let a
+      // product with stock be deleted (tester #36).
+      await prisma.$transaction(async (tx) => {
+        const current = await tx.inventoryItem.findUnique({ where: { storeId_productId: { storeId: store.id, productId: product.id } } });
+        const difference = stock - Number(current?.quantity ?? 0);
+        if (difference !== 0) {
+          await recordMovement(tx, {
+            storeId: store.id,
+            product,
+            type: current ? "ADJUSTMENT" : "OPENING",
+            quantity: difference,
+            unitCost: product.costPrice,
+            note: "Demo stock",
+          });
+        }
+        await tx.inventoryItem.update({ where: { storeId_productId: { storeId: store.id, productId: product.id } }, data: { reorderLevel: 10 } });
       });
 
       createdProducts.push({ id: product.id, name: product.name });

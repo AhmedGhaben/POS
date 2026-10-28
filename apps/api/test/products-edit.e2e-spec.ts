@@ -240,4 +240,18 @@ describe("Product editing (e2e)", () => {
     const other = await prisma.product.findFirst({ where: { businessId: { not: businessId } } });
     if (other) await http().delete(`/products/${other.id}`).set(auth(ownerToken)).expect(404);
   });
+
+  it("shows the stock before archiving, and never deletes stock that has no movement behind it (tester #36)", async () => {
+    const id = (await http().post("/products").set(auth(ownerToken)).send({ sku: "SHELF-1", name: "Shelf", costPrice: 1, sellPrice: 2, exemptionCode: "M10" }).expect(201)).body.id as string;
+    // Stock written straight in, as the old demo seed did: no movement.
+    await prisma.inventoryItem.create({ data: { storeId, productId: id, quantity: 7 } });
+
+    const stock = await http().get(`/products/${id}/stock`).set(auth(managerToken)).expect(200);
+    expect(stock.body).toEqual([{ storeId, storeName: "E2E Edit Store", quantity: "7" }]);
+    await http().get(`/products/${id}/stock`).set(auth(cashierToken)).expect(403);
+
+    const refused = await http().delete(`/products/${id}`).set(auth(ownerToken)).expect(409);
+    expect(refused.body.message).toBe("This product has stock on hand. Archive it instead.");
+    expect(await prisma.inventoryItem.findFirst({ where: { productId: id } })).toMatchObject({ quantity: expect.anything() });
+  });
 });

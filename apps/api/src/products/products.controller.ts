@@ -89,6 +89,14 @@ export class ProductsController {
     return { id: product.id, photoId: product.photoId };
   }
 
+  /** Stock on hand per store, shown before archiving or deleting (tester #36). */
+  @Get(":productId/stock")
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
+  stock(@CurrentUser() user: AuthenticatedUser, @Param("productId") productId: string) {
+    return this.productsService.stockOnHand(user.businessId, productId);
+  }
+
   /** Only a product with no history; otherwise 409 and it should be archived. */
   @Delete(":productId")
   @UseGuards(RolesGuard)

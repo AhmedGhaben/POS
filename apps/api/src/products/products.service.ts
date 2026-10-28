@@ -173,11 +173,25 @@ export class ProductsService {
     if (Object.values(counts._count).some((n) => n > 0) || documentLines > 0) {
       throw new ConflictException("This product has sales, purchases or stock history. Archive it instead.");
     }
+    // Stock with no movement behind it (older data): never thrown away silently (tester #36).
+    if ((await this.stockOnHand(businessId, productId)).length > 0) {
+      throw new ConflictException("This product has stock on hand. Archive it instead.");
+    }
     await this.prisma.$transaction([
       this.prisma.inventoryItem.deleteMany({ where: { productId } }),
       this.prisma.productPhoto.deleteMany({ where: { productId } }),
       this.prisma.product.delete({ where: { id: productId } }),
     ]);
+  }
+
+  /** Stock on hand per store, only where there is some (asked before archiving or deleting). */
+  async stockOnHand(businessId: string, productId: string): Promise<{ storeId: string; storeName: string; quantity: string }[]> {
+    const items = await this.prisma.inventoryItem.findMany({
+      where: { productId, quantity: { not: 0 }, store: { businessId } },
+      select: { storeId: true, quantity: true, store: { select: { name: true } } },
+      orderBy: { store: { name: "asc" } },
+    });
+    return items.map((i) => ({ storeId: i.storeId, storeName: i.store.name, quantity: i.quantity.toString() }));
   }
 
   async removePhoto(businessId: string, productId: string) {

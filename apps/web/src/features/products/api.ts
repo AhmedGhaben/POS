@@ -20,6 +20,17 @@ export function updateProduct(id: string, dto: UpdateProductDto) {
   return apiClient.patch<ProductDto>(`/products/${id}`, dto);
 }
 
+export interface ProductStockDto {
+  storeId: string;
+  storeName: string;
+  quantity: string;
+}
+
+/** Stock on hand per store, only where there is some: shown before archiving or deleting. */
+export function fetchProductStock(id: string) {
+  return apiClient.get<ProductStockDto[]>(`/products/${id}/stock`);
+}
+
 /** Only a product with no sales, purchases, stock or document history (409 otherwise: archive it). */
 export function deleteProduct(id: string) {
   return apiClient.delete<void>(`/products/${id}`);

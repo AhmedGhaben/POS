@@ -59,7 +59,11 @@
     "deleteForGood": "Delete",
     "deleted": "Product deleted",
     "hasHistory": "This product has sales, purchases, stock movements or documents, so it can't be deleted: they must keep pointing at it. Archive it instead: it leaves the till and this list, and reports keep it.",
-    "hasHistoryArchived": "This product has sales, purchases, stock movements or documents, so it can't be deleted: they must keep pointing at it. It stays archived."
+    "hasHistoryArchived": "This product has sales, purchases, stock movements or documents, so it can't be deleted: they must keep pointing at it. It stays archived.",
+    "archiveHasStock": "\"{{name}}\" still has stock. Archive it anyway? It leaves the till; the stock stays in the books until you adjust it.",
+    "archiveAnyway": "Archive anyway",
+    "deleteHasStock": "\"{{name}}\" has stock on hand, so it can't be deleted. Archive it instead, or bring its stock to 0 first.",
+    "stockQuantity": "{{quantity}} in stock"
   },
   "import": {
     "title": "Import products from CSV",
