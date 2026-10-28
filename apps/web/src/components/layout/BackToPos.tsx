@@ -5,18 +5,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCartDraft, useCartKey } from "@/features/pos/cart-store";
 import { useLeftPos } from "@/features/pos/cart-guard";
+import { useAuthStore } from "@/features/auth/store";
+import { showBackToPos } from "./back-to-pos";
 
 /**
  * "Voltar ao POS": on any page reached from the sale screen (Settings,
  * This device, Dashboard, Products…), back to the same sale, with the
  * number of items still in its cart. Shown while there's a sale in the
- * cart, or after coming from the POS.
+ * cart, or after coming from the POS. Never for an accountant, who has no
+ * till (tester #34): their way home is "Your clients" in the menu.
  */
 export function BackToPos({ className }: { className?: string }) {
   const { t } = useTranslation();
   const left = useLeftPos((s) => s.left);
   const items = useCartDraft(useCartKey()).lines.length;
-  if (!left && items === 0) return null;
+  const role = useAuthStore((s) => s.user?.role);
+  if (!showBackToPos({ role, left, items })) return null;
   return (
     <Button asChild variant={items > 0 ? "default" : "outline"} size="sm" className={className}>
       <NavLink to="/pos">
