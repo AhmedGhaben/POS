@@ -12,7 +12,10 @@ const SIZES = [
 
 async function resize(app: ElectronApplication, page: Page, size: { width: number; height: number }) {
   await app.evaluate(({ BrowserWindow }, { width, height }) => {
-    const win = BrowserWindow.getAllWindows()[0];
+    const win = BrowserWindow.getAllWindows().find((w) => w.isVisible())!;
+    win.setKiosk(false);
+    win.setFullScreen(false);
+    if (win.isMaximized()) win.unmaximize();
     win.setMinimumSize(800, 600);
     win.setContentSize(width, height);
   }, size);
@@ -45,9 +48,9 @@ test.describe.serial("Small screens", () => {
     await proxy.up();
     ({ app, page } = await launch(userData));
     await connect(page, proxy.url);
+    await login(page);
     await page.evaluate(() => localStorage.setItem("pos-language", "pt-PT"));
     await page.reload();
-    await login(page);
     await restock(page);
     await registerTill(page, "Small Till");
   });
@@ -70,6 +73,42 @@ test.describe.serial("Small screens", () => {
       expect(await clipped(panel)).toEqual([]);
       await panel.getByRole("button", { name: /^(Cancel split payment|Cancelar pagamento dividido)$/ }).click();
       await page.getByRole("button", { name: /^(Clear|Limpar)/ }).click().catch(() => {});
+    });
+  }
+
+  // Tester #33: the side menu stays usable on small touchscreens, also with a
+  // large display size (rem grows) or Windows scaling (fewer CSS pixels).
+  for (const { width, height, zoom, font } of [
+    { width: 1024, height: 768, zoom: 1, font: "" },
+    { width: 1280, height: 800, zoom: 1, font: "" },
+    { width: 1024, height: 768, zoom: 1, font: "130%" },
+    { width: 1280, height: 800, zoom: 1.25, font: "115%" },
+  ]) {
+    test(`back office menu at ${width}×${height}, zoom ${zoom}, text ${font || "normal"}`, async () => {
+      await resize(app, page, { width, height });
+      await app.evaluate(({ BrowserWindow }, z) => BrowserWindow.getAllWindows().find((w) => w.isVisible())!.webContents.setZoomFactor(z), zoom);
+      for (const path of ["products", "inventory", "sales", "shifts"]) {
+        await page.goto(`app://pos/${path}`);
+        await page.evaluate((f) => (document.documentElement.style.fontSize = f), font);
+        await page.locator("main h1").first().waitFor();
+        const layout = await page.evaluate(() => {
+          const aside = document.querySelector("aside")!.getBoundingClientRect();
+          const main = document.querySelector("main")!.getBoundingClientRect();
+          return { inner: innerWidth, scroll: document.documentElement.scrollWidth, aside, main };
+        });
+        // No sideways page scroll: everything fits next to the menu.
+        expect(layout.scroll, path).toBeLessThanOrEqual(layout.inner);
+        if (layout.aside.width > 0) {
+          expect(layout.main.left, path).toBeGreaterThanOrEqual(layout.aside.right - 1);
+          expect(layout.aside.width, path).toBeLessThanOrEqual(layout.inner / 4 + 1);
+          await expect(page.locator("aside").getByRole("link", { name: /Point of Sale|Ponto de Venda/ })).toBeInViewport();
+        } else {
+          // Too narrow for a menu: the menu button opens it.
+          await expect(page.getByRole("button", { name: /navigation|navegação/i })).toBeVisible();
+        }
+      }
+      await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.isVisible())!.webContents.setZoomFactor(1));
+      await page.evaluate(() => (document.documentElement.style.fontSize = ""));
     });
   }
 });

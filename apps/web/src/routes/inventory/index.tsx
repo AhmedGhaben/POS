@@ -69,7 +69,7 @@ export function InventoryPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="mb-1 text-2xl font-semibold">{t("common:nav.inventory")}</h1>
           <p className="text-sm text-muted-foreground">{t("inventory.subtitle")}</p>

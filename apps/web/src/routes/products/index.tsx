@@ -73,7 +73,7 @@ export function ProductsPage() {
 
   return (
     <div className="mx-auto max-w-5xl p-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">{t("common:nav.products")}</h1>
           <p className="text-sm text-muted-foreground">
@@ -81,7 +81,7 @@ export function ProductsPage() {
             {canEdit && ` ${t("clickToEdit")}`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             disabled={!productsQuery.data?.length}

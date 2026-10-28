@@ -8,10 +8,11 @@ export function BackOfficeShell() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <div className="flex flex-1 flex-col">
+      {/* min-w-0: a wide table scrolls inside the page instead of pushing it past the screen (tester #33). */}
+      <div className="flex min-w-0 flex-1 flex-col">
         <BackOfficeTopBar />
         <VerifyEmailBanner />
-        <main className="flex-1">
+        <main className="min-w-0 flex-1 overflow-x-auto">
           <Outlet />
         </main>
       </div>
