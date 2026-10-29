@@ -45,7 +45,7 @@ export class SwitchableProxy {
     s.on("error", () => s.destroy());
   }
 
-  async up(mode: ProxyMode = "pass") {
+  async up(mode: ProxyMode = "pass"): Promise<void> {
     this.mode = mode;
     if (this.server) return;
     const server = net.createServer((client) => {
@@ -79,7 +79,14 @@ export class SwitchableProxy {
       upstream.on("end", () => client.end());
     });
     await new Promise<void>((resolve) => server.listen(this.port, "127.0.0.1", resolve));
-    this.port = (server.address() as net.AddressInfo).port;
+    const assignedPort = (server.address() as net.AddressInfo).port;
+    // Windows may allocate these ephemeral ports; Chromium refuses HTTP on them.
+    const blocked = new Set([1719, 1720, 1723, 2049, 3659, 4045, 5060, 5061, 6000, 6566, 6665, 6666, 6667, 6668, 6669, 6697, 10080]);
+    if (this.port === 0 && blocked.has(assignedPort)) {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      return this.up(mode);
+    }
+    this.port = assignedPort;
     this.server = server;
   }
 

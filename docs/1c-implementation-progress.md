@@ -2,6 +2,75 @@
 
 ## Post-audit inventory fixes
 
+### Final comprehensive verification (2026-10-29)
+
+- Verification report and item 1-12 matrix: `docs/1c-final-verification.md`.
+  Separate planning-only document:
+  `docs/1c-historical-accounting-reconciliation-plan.md`. No existing books
+  were accessed; historical review/repair requires separate authorization.
+- This milestone changes tests/configuration/documentation only. Application
+  source, migrations, fiscal signing/numbering/storage, accounting rules,
+  stock writers and offline outbox remain at the verified `ffae264` baseline.
+- Preserved `zz-probe.spec.ts` byte-for-byte and excluded it through Playwright
+  testIgnore: it is a logging diagnostic with a personal absolute screenshot
+  path, no assertions and unsafe teardown, not regression coverage.
+- Test-only corrections: fiscal tests use the current A4 tab and explicitly
+  select Receipt when asserting slip content (format persistence is intended);
+  TCP fault proxies avoid Chromium-blocked ephemeral ports (6667 reproduced
+  as ERR_UNSAFE_PORT); Portuguese fixtures set both device and user language;
+  archive fixture accepts the isolated test database name and has explicit
+  array types. New browser fixtures choose the device role and account for
+  the NIF included in customer option labels. Stock tests explicitly disable
+  overselling and await the changed authoritative levels before clicks.
+- Added browser/Electron coverage for Portuguese split rows/sidebar at
+  1024x768, 1366x768 and 1280x800; quote buyer name/NIF/address and one-off NIF;
+  bidirectional print toggle and persistence; accountant navigation; SKU
+  suggestions/overwrite; current price policy; hide-zero persistence.
+  Enhanced stock-count UI tests exercise valid/invalid XLSX as well as CSV.
+- Added 5 API regressions for bank CSV/XLSX parse/map/import, explicit skipped
+  invalid rows, corrupt/sheetless/truncated/expanded XLSX, all-invalid CSV
+  import rejection and old archive request compatibility. Snapshot-less
+  archive requests are safely rejected for both zero and stocked products;
+  current snapshot requests succeed. The report documents the upgrade path
+  and distinguishes emulated old payloads from an actual old binary update.
+- Passing completed checks: API integration 39 suites / 354 tests; API unit
+  47 suites / 303 tests; web 50 files / 257 tests; desktop unit 29 tests.
+  Added browser/Electron UI 4/4; archive/offline fault checks 6/6.
+  API/web/desktop TypeScript, strict touched E2E TypeScript, API-test lint and
+  diff checks pass. Temporary API and desktop UI builds succeed; existing
+  bundle-size/jspdf warnings remain.
+- Full desktop final clean result: **150 passed, 0 failed, 11 skipped**.
+  Eight skipped opt-in cases passed separately; the three packaged updater
+  cases remain NOT RUN. Across runs, 158 distinct regression cases pass
+  (recovery cases are not double-counted). Earlier failures were classified
+  and corrected as test-only issues above, not hidden or counted as passes.
+  Final JSON: `pos-1c-desktop-clean-final.json` in OS temp; supplemental UI,
+  fault and API JSON reports are listed in the final verification document.
+- Confirmed remaining application defects through isolated diagnostics:
+  opposite-order two-product actual sales produce [500,201] (40P01 deadlock).
+  Loser rollback is complete; manual retry and clientId replay produce no
+  duplicates, with two sales/two fiscal documents and stock [8,8]. Holding a
+  stock row 6.5 seconds produces 500 with no sale and unchanged stock. Global
+  writer lock ordering/retry/readable timeout handling remain a concurrent
+  multi-till sign-off blocker; no inventory fix was implemented here.
+- Malformed percent-encoded bank upload URL returns 500 instead of 400
+  (decodeURIComponent before parse error handling); no statement is created.
+  Normal base64 uploads and bounded malformed XLSX tests pass. This P2
+  validation defect is reported for separate correction/explicit acceptance.
+- Item 8 still needs the owner's decision: cost zero allowed; sell zero only
+  with free-item flag/workflow. Verified, not silently changed. Packaged
+  updater/actual old-binary upgrade, physical hardware, real email and AGT
+  submission are not tested here. Do not give unconditional launch sign-off.
+- Isolation: fresh `pos-1c-final-pg` cluster on loopback 55509, synthetic user
+  `pos_1c_test`, new UTC databases `pos_prompt1c_desktop_test` and
+  `pos_prompt1c_api_test`; the final full desktop rerun uses a third fresh
+  UTC database `pos_prompt1c_desktop_clean_test`. Each received 49 existing
+  migrations and synthetic
+  fixtures. API/web/fault ports 55510/55511/55512/55472. Temporary services
+  and cluster are stopped after verification, with artifacts retained. No existing demo or
+  production database, real credentials, push, merge, deploy or Prompt 2.
+
+
 ### Accounting SQL timezone correction: completed
 
 - Fixed the genuine non-UTC PostgreSQL session defect previously reproduced

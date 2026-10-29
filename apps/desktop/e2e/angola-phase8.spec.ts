@@ -11,6 +11,8 @@ async function sell(page: Page) {
   await page.locator("div.grid > button.text-left").first().click();
   await page.getByRole("button", { name: /^Charge/ }).click();
   const dialog = page.getByRole("dialog");
+  // Item 4 remembers A4: explicitly choose the slip before asserting its content.
+  await dialog.getByRole("tab", { name: "Receipt", exact: true }).click();
   await expect(dialog).toContainText("Sale complete");
   return dialog;
 }
@@ -74,7 +76,7 @@ test.describe.serial("Angola phase 8: fiscal documents at the till", () => {
     await expect(qr).toHaveAttribute("data-qr", new RegExp(`document=FR%20${series}/1$`));
 
     // The A4 copy is the same document, from the server.
-    await receipt.getByRole("button", { name: "A4 invoice" }).click();
+    await receipt.getByRole("tab", { name: "A4", exact: true }).click();
     const a4 = page.getByRole("dialog");
     await expect(a4).toContainText(`Factura-Recibo FR ${series}/1`);
     await expect(a4).toContainText("Consumidor Final");

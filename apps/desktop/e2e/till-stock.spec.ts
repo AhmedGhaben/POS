@@ -73,8 +73,12 @@ test.describe.serial("Till: selling more than is in stock", () => {
   });
 
   test("refuses the third when only two are in stock", async () => {
+    await setAllowed(false);
     await setStock(2);
+    const fresh = page.waitForResponse(async (response) => response.url().includes("/inventory/levels") && response.status() === 200 &&
+      (await response.json() as { productId: string; quantity: string }[]).some((row) => row.productId === product.id && Number(row.quantity) === 2));
     await openPosWithProducts(page);
+    await (await fresh).finished();
     await emptyCart();
     await tile().click();
     await tile().click();
@@ -97,7 +101,10 @@ test.describe.serial("Till: selling more than is in stock", () => {
 
   test("a till can hide products that have run out", async () => {
     await setStock(0);
+    const fresh = page.waitForResponse(async (response) => response.url().includes("/inventory/levels") && response.status() === 200 &&
+      (await response.json() as { productId: string; quantity: string }[]).some((row) => row.productId === product.id && Number(row.quantity) === 0));
     await openPosWithProducts(page);
+    await (await fresh).finished();
     const hide = page.getByRole("button", { name: "Hide products out of stock (this till)" });
     await hide.click();
     await expect(hide).toHaveAttribute("aria-pressed", "true");

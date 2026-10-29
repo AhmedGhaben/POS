@@ -6,12 +6,12 @@ test.skip(process.env.POS_ARCHIVE_TESTS !== "1", "Requires isolated archive test
 for (const mode of ["browser", "electron"] as const) {
   test(`${mode}: archive stock failures, retry, confirmation and deletion`, async ({ request }) => {
     expect(new URL(API_URL).hostname).toMatch(/^(127\.0\.0\.1|localhost)$/);
-    expect(new URL(process.env.DATABASE_URL!).pathname).toMatch(/archive_test/);
+    expect(new URL(process.env.DATABASE_URL!).pathname).toMatch(/test/);
     const reg = await request.post(`${API_URL}/auth/register`, { data: { businessName: "Archive test", storeName: "Archive shop", firstName: "Archive", lastName: "Owner", email: `archive-${mode}-${Date.now()}@e2e.test`, password: "ArchiveTest123!", language: "en" } });
     expect(reg.status()).toBe(201);
     const session = await reg.json();
     const headers = { Authorization: `Bearer ${session.accessToken}` };
-    const products = [];
+    const products: { id: string; name: string }[] = [];
     for (const name of ["Stocked archive", "Zero archive", "Delete unused"]) {
       const res = await request.post(`${API_URL}/products`, { headers, data: { sku: name, name, costPrice: 1, sellPrice: 2, exemptionCode: "M10" } });
       expect(res.status()).toBe(201); products.push(await res.json());

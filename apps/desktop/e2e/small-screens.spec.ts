@@ -58,7 +58,7 @@ test.describe.serial("Small screens", () => {
     ({ app, page } = await launch(userData));
     await connect(page, proxy.url);
     await login(page);
-    await page.evaluate(() => localStorage.setItem("pos-language", "pt-PT"));
+    await page.evaluate(() => { const auth = JSON.parse(localStorage.getItem("pos-auth")!); auth.state.user.language = "pt-PT"; localStorage.setItem("pos-auth", JSON.stringify(auth)); localStorage.setItem("pos-language", "pt-PT"); });
     await page.reload();
     await restock(page);
     await registerTill(page, "Small Till");

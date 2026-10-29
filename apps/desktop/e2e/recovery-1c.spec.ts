@@ -1,6 +1,7 @@
 import { chromium, expect, test, type ElectronApplication, type Page } from "@playwright/test";
 import { API_URL, connect, launch, tempUserData } from "./helpers";
 import { randomUUID } from "node:crypto";
+import { buildXlsx } from "../../api/src/common/xlsx";
 
 // Explicit opt-in: all data belongs to a fresh business on the isolated test API.
 test.skip(process.env.POS_RECOVERY_UI_TESTS !== "1", "Requires an isolated recovery API and POS_RECOVERY_UI_TESTS=1");
@@ -56,6 +57,12 @@ for (const mode of ["browser", "electron"] as const) {
       await expect(dialog.getByRole("button", { name: "Aplicar contagem" })).toBeDisabled();
       await expect(dialog.getByRole("alert")).toBeVisible();
       await dialog.getByRole("button", { name: "Cancelar" }).click();
+      for (const quantity of [-1, 3]) {
+        await upload.setInputFiles({ name: "count.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: buildXlsx([{ name: "Count", header: ["SKU", "Quantity"], rows: [["COUNT-A", quantity], ["COUNT-B", 10]] }]) });
+        if (quantity < 0) { await expect(dialog.getByRole("button", { name: "Aplicar contagem" })).toBeDisabled(); await expect(dialog.getByRole("alert")).toBeVisible(); }
+        else { await expect(dialog.getByRole("button", { name: "Aplicar contagem" })).toBeEnabled(); await expect(dialog).toContainText("Count tea"); }
+        await dialog.getByRole("button", { name: "Cancelar" }).click();
+      }
       await upload.setInputFiles({ name: "count.csv", mimeType: "text/csv", buffer: Buffer.from("SKU,Quantity\nCOUNT-A,2\nCOUNT-B,9") });
       await expect(dialog.getByRole("button", { name: "Aplicar contagem" })).toBeEnabled();
       await dialog.getByRole("button", { name: "Aplicar contagem" }).click();
