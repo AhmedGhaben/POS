@@ -451,10 +451,12 @@ export class SaftExportService {
     for (const store of stores) {
       // The stock after the store's last movement before the next day began there.
       const until = startOfLocalDay(addDays(date, 1), ctx.storeZones.get(store.id) ?? ctx.timeZone);
+      // Date parameters bind as timestamptz; occurredAt stores UTC without a
+      // zone. Compare UTC-naive values, independently of the DB session zone.
       const rows = await this.prisma.$queryRaw<{ productId: string; balance: Prisma.Decimal; averageCost: Prisma.Decimal }[]>(Prisma.sql`
         SELECT DISTINCT ON ("productId") "productId", "balance", "averageCost"
         FROM "stock_movements"
-        WHERE "storeId" = ${store.id} AND "occurredAt" < ${until}
+        WHERE "storeId" = ${store.id} AND "occurredAt" < (${until} AT TIME ZONE 'UTC')
         ORDER BY "productId", "occurredAt" DESC, "id" DESC`);
       for (const r of rows) perStore.push({ productId: r.productId, quantity: D(r.balance), averageCost: D(r.averageCost) });
     }

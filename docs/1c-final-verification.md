@@ -10,6 +10,9 @@ Subsequent item 8 policy approval and implementation also supersede the old
 pending zero-cost/free-item decision below; see the progress document's Item 8
 section. That section records an additional pre-existing non-UTC fiscal stock
 export boundary failure discovered during its full regression run.
+That export defect has subsequently been corrected and verified under all four
+database timezones; see Fiscal inventory-export timezone boundary correction
+in the progress document. These notes preserve the earlier audit evidence.
 
 Recommendation: **do not give unconditional Prompt 1c / multi-till launch
 sign-off yet**. Functional regressions have broad passing coverage, but

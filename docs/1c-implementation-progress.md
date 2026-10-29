@@ -2,6 +2,62 @@
 
 ## Post-audit inventory fixes
 
+### Fiscal inventory-export timezone boundary correction (2026-10-29)
+
+- Reproduced before editing application code on a fresh Moscow test database:
+  2025-12-31T22:30Z gives 10 units at average cost 5; the movement at 23:30Z
+  gives 15 units at average cost 6, but already belongs to 1 January in Luanda.
+  The 31 December export incorrectly returned 15 units / 90 Kz rather than
+  10 / 50. The new failing regression and prior-build reproduction confirm
+  a pre-existing defect, not an item 8 regression.
+- Root cause: Prisma binds the correctly calculated business-local cutoff Date
+  as timestamptz. Comparing it to UTC-stored timestamp-without-time-zone
+  stock_movements.occurredAt implicitly applies the database session timezone
+  to stored values. The only application correction is the parameter expression
+  `occurredAt < (cutoff AT TIME ZONE 'UTC')` in SaftExportService.inventario.
+  This retains the exclusive upper boundary and leaves the indexed column,
+  store/calendar calculations, movement order, balances, weighted costs and
+  inventory layout unchanged. No schema, migration, timezone default or stored
+  date is changed. Fiscal signing, numbering and issued-document storage are
+  unchanged; exports keep their existing audit logging only.
+- Reviewed related comparisons in the service: its other raw query aggregates
+  integer ledger year/period fields; calendar DATE predicates use the existing
+  dateColumnValue through Prisma; timestamp ORM predicates use the existing
+  export period. No additional correction was needed. Existing fiscal export
+  and accounting boundary suites pass under every tested database timezone.
+- Added 18 database-backed regressions: the exact 10-versus-15 reproduction;
+  movements one millisecond before, exactly at and after local midnight;
+  January month-end, year-end, leap day and New York spring/autumn DST dates;
+  explicit Africa/Luanda, America/New_York and Asia/Tokyo store overrides;
+  the default UTC store value's existing Angola-country fallback; multi-store
+  aggregation with different local cutoffs; default prior-year selection;
+  invalid dates/no-stock output; unchanged movement snapshots, current stock,
+  fiscal-document/series and accounting state after reads.
+- Fresh PostgreSQL 18 cluster `pos-fiscal-boundary-pg`, loopback 55559,
+  synthetic user `pos_fiscal_test`. Four fresh databases:
+  `pos_fiscal_boundary_{utc,luanda,moscow,new_york}_test`, with default session
+  timezones UTC, Africa/Luanda, Europe/Moscow and America/New_York respectively.
+  All 49 existing migrations applied only there. Tests assert the actual
+  session timezone and create/clean their own synthetic business fixtures.
+  No existing database, till, historical books or prior export file accessed.
+- Validation: **3 integration suites / 42 tests passed in each timezone**
+  (168 passing executions): fiscal-inventory-timezones, angola-phase8b and
+  accounting-timezones. Full API unit **49 suites / 324 passed**. API TypeScript
+  including tests, touched API/test ESLint and diff checks passed. The initial
+  pre-fix reproduction was the only failing run; no final failures remain.
+  Full API integration, browser and desktop suites were not rerun for this
+  one-comparison API correction. OS-temp logs:
+  `pos-fiscal-boundary-before.log`, `pos-fiscal-boundary-{utc,luanda,moscow,new_york}-e2e.log`
+  and `pos-fiscal-boundary-unit.log`.
+- This resolves the pre-existing export blocker described in the item 8 section
+  below. Remaining historical risk: files previously exported with non-UTC DB
+  sessions may have incorrect cutoff balances and may need reviewed regeneration
+  or reconciliation. Nothing historical was rewritten or automatically repaired.
+  The draft inventory format's previously documented regulatory review and other
+  release checks remain unchanged. No Prompt 2, push, merge or deployment.
+  The temporary PostgreSQL cluster was stopped after validation; synthetic
+  database files and logs remain in OS temp for inspection.
+
 ### Item 8 approved pricing policy (2026-10-29)
 
 - Product decision resolved by the owner: purchase cost 0 Kz is allowed for
