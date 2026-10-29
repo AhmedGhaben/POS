@@ -73,6 +73,11 @@ function unzipAny(archive: Buffer): Map<string, Buffer> {
 
 const xmlText = (s: string) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n))).replace(/&amp;/g, "&");
 
+/** A CSV file or the first sheet of an Excel (.xlsx) one, told apart by name or content. */
+export function readTable(fileName: string, data: Buffer): Table {
+  return /\.xlsx$/i.test(fileName) || data.subarray(0, 2).toString("latin1") === "PK" ? readXlsx(data) : readCsv(data.toString("utf8"));
+}
+
 /** The first sheet of an Excel (.xlsx) file as rows of text (numbers as written in the cell, dates as Excel day numbers). */
 export function readXlsx(file: Buffer): Table {
   const files = unzipAny(file);

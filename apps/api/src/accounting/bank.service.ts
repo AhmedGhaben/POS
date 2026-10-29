@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { JournalKind, LedgerAccountCategory, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { dateValue, isoDate } from "./accounting-dates";
-import { bestMatch, ColumnMapping, mapStatement, readCsv, readXlsx, Table } from "./bank-import";
+import { bestMatch, ColumnMapping, mapStatement, readTable, Table } from "./bank-import";
 import { EntriesService } from "./entries.service";
 
 /**
@@ -25,7 +25,7 @@ export class BankService {
     const data = m[2] ? Buffer.from(m[3], "base64") : Buffer.from(decodeURIComponent(m[3]), "utf8");
     if (data.length > 5 * 1024 * 1024) throw new BadRequestException("Files are 5 MB at most");
     try {
-      const rows = /\.xlsx$/i.test(input.fileName) || data.subarray(0, 2).toString("latin1") === "PK" ? readXlsx(data) : readCsv(data.toString("utf8"));
+      const rows = readTable(input.fileName, data);
       return { rows: rows.slice(0, 5000) };
     } catch {
       throw new BadRequestException("The file can't be read: save the statement as CSV or Excel (.xlsx)");

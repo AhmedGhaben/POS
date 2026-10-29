@@ -682,27 +682,45 @@ model ProductPhoto {
 /// Every change to a store's stock, oldest first: the stock and its value at
 /// any date, and the trail behind the weighted average cost. Each movement
 /// keeps its own unit cost so FIFO lots can be added later.
+/// A stock count saved at once (tester #41): one adjustment movement per
+/// product whose count differed from the stock.
+model StockCount {
+  id         String          @id @default(cuid())
+  businessId String
+  storeId    String
+  userId     String?
+  note       String?
+  createdAt  DateTime        @default(now())
+  movements  StockMovement[]
+
+  @@index([storeId, createdAt])
+  @@map("stock_counts")
+}
+
 model StockMovement {
-  id          String            @id @default(cuid())
-  storeId     String
-  store       Store             @relation(fields: [storeId], references: [id])
-  productId   String
-  product     Product           @relation(fields: [productId], references: [id])
-  type        StockMovementType
+  id           String            @id @default(cuid())
+  storeId      String
+  store        Store             @relation(fields: [storeId], references: [id])
+  productId    String
+  product      Product           @relation(fields: [productId], references: [id])
+  type         StockMovementType
   /// Positive in, negative out.
-  quantity    Decimal           @db.Decimal(14, 3)
+  quantity     Decimal           @db.Decimal(14, 3)
   /// Cost per unit of this movement: what was paid for purchases, the average cost for everything else.
-  unitCost    Decimal           @db.Decimal(14, 4)
+  unitCost     Decimal           @db.Decimal(14, 4)
   /// The store's stock and average cost right after it.
-  balance     Decimal           @db.Decimal(14, 3)
-  averageCost Decimal           @db.Decimal(14, 4)
-  saleId      String?
-  returnId    String?
-  purchaseId  String?
-  transferId  String?
-  userId      String?
-  note        String?
-  occurredAt  DateTime          @default(now())
+  balance      Decimal           @db.Decimal(14, 3)
+  averageCost  Decimal           @db.Decimal(14, 4)
+  saleId       String?
+  returnId     String?
+  purchaseId   String?
+  transferId   String?
+  userId       String?
+  note         String?
+  /// The stock count it came from (Inventory → Save all, or a file).
+  stockCountId String?
+  stockCount   StockCount?       @relation(fields: [stockCountId], references: [id])
+  occurredAt   DateTime          @default(now())
 
   @@index([storeId, productId, occurredAt])
   @@index([storeId, occurredAt])
