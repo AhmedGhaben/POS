@@ -127,7 +127,11 @@ export class InventoryService {
    * stock leaves at it.
    */
   async adjust(storeId: string, productId: string, dto: AdjustStockDto, userId?: string) {
-    const product = await this.prisma.product.findUnique({ where: { id: productId } });
+    const store = await this.prisma.store.findUnique({ where: { id: storeId }, select: { businessId: true } });
+    if (!store) throw new NotFoundException("Store not found");
+    // A valid store does not grant access to another business's products.
+    // Use the same response as an unknown id, before reading product details or writing stock.
+    const product = await this.prisma.product.findFirst({ where: { id: productId, businessId: store.businessId } });
     if (!product) {
       throw new NotFoundException("Product not found");
     }

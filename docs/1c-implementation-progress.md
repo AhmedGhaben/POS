@@ -1,5 +1,27 @@
 # Prompt 1c continuation
 
+## Post-audit inventory fixes
+
+### Task 1 — cross-business product isolation: completed
+
+- `InventoryService.adjust` resolves the target store's business before
+  looking up the product. Foreign and missing product IDs return the same
+  404, before product-specific validation or stock writes. StoreAccessGuard
+  continues to check the caller's store access independently.
+- Added isolated API regression coverage: foreign stocked/non-stock products,
+  unknown IDs, foreign store access, no changes to inventory/movements/audit
+  records on rejection, valid absolute counts, reorder levels, actor/cost
+  attribution, unchanged counts and fractional-unit validation.
+- Validation: 2 integration suites / 6 tests passed (new isolation suite and
+  existing new-product inventory suite); API TypeScript and touched ESLint pass.
+- Test data uses a new temporary PostgreSQL cluster in `pos-inventory-fixes-pg`
+  under the OS temp directory, loopback port 55449, database/user
+  `pos_inventory_test`. All 49 existing migrations applied there only. No seed,
+  existing demo database, production database or fiscal implementation changed.
+- Next: Task 2, lock before reading absolute stock adjustments; exercise
+  concurrent single-row, bulk-count and sale operations. Offline and archive
+  findings remain out of scope.
+
 Recovery baseline: `7adbd25` on `rescue/pos-codex-20261029`.
 The earlier item 1–9 commits and unfinished item 10 groundwork are preserved.
 No push, deployment, production migration or production data changes are authorized.
