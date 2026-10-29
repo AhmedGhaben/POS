@@ -11,6 +11,8 @@ import { ACCOUNTING_EXACT, ACCOUNTING_PATTERNS } from "./accounting-messages";
 export type Translations = Record<TranslatedLanguage, string>;
 
 const EXACT: Record<string, Translations> = {
+  "Stock must be reloaded and reviewed before archiving": { "pt-PT": "Recarregue e confirme o stock antes de arquivar", "pt-BR": "Recarregue e confirme o estoque antes de arquivar" },
+  "Stock changed. Reload and review it before archiving": { "pt-PT": "O stock mudou. Recarregue e confirme antes de arquivar", "pt-BR": "O estoque mudou. Recarregue e confirme antes de arquivar" },
   "Use a CSV or Excel (.xlsx) stock count file": { "pt-PT": "Use um ficheiro de contagem CSV ou Excel (.xlsx)", "pt-BR": "Use um arquivo de contagem CSV ou Excel (.xlsx)" },
   "Stock count files are 5 MB at most": { "pt-PT": "Os ficheiros de contagem têm no máximo 5 MB", "pt-BR": "Os arquivos de contagem têm no máximo 5 MB" },
   "The stock count file cannot be read": { "pt-PT": "Não foi possível ler o ficheiro de contagem", "pt-BR": "Não foi possível ler o arquivo de contagem" },

@@ -183,7 +183,7 @@ describe("Angola phase 6: products, tax and stock (e2e)", () => {
       // A scanner's trailing spaces are trimmed; the lookup finds it.
       expect((await http().get(`/products/barcode/${code}`).set(auth(cashierToken)).expect(200)).body.id).toBe(first.id);
 
-      await http().patch(`/products/${first.id}`).set(auth(ownerToken)).send({ isActive: false }).expect(200);
+      await http().patch(`/products/${first.id}`).set(auth(ownerToken)).send({ isActive: false, archiveStock: [] }).expect(200);
       const second = (await product({ name: "Água nova", barcode: code }).expect(201)).body;
       // Restoring the old one now clashes.
       await http().patch(`/products/${first.id}`).set(auth(ownerToken)).send({ isActive: true }).expect(409);

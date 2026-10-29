@@ -2,6 +2,58 @@
 
 ## Post-audit inventory fixes
 
+### Item 6 - archive stock lookup and confirmation: completed
+
+- Product form disables Archive/Archive anyway during loading, refetching,
+  missing results and errors. Failed lookups display a translated blocking
+  error with Retry. Stock reads have a 10-second timeout and validate the
+  response shape; invalid/missing data cannot become confirmed zero stock.
+- Clicking Archive performs a fresh lookup. Nonzero stock opens the existing
+  confirmation with the exact per-store quantities reviewed; verified zero
+  stock archives normally. A failed refetch cannot fall back to cached `[]`.
+- PWA catalog caching now excludes product `/stock` reads. Catalog/offline
+  selling caches and outbox behavior otherwise remain unchanged.
+- API archive PATCH now requires `archiveStock` (storeId/quantity snapshot,
+  including `[]` for zero). A serializable transaction compares every nonzero
+  store quantity before updating the product. Missing, stale or duplicate
+  snapshots return 409; serialization conflicts also require reload/review.
+  The UI resets confirmation and reloads on rejection. No migration needed.
+  Older clients that omit the snapshot receive a safe 409 and must update.
+- Existing owner/manager permissions, restore behavior, permanent-delete
+  stock/history/fiscal-reference safeguards and fiscal logic are unchanged.
+  API fixtures that archive products now explicitly acknowledge stock.
+- Verification: web 50 files / 257 tests passed; API unit 47 suites / 303
+  tests passed; isolated API integration 4 suites / 89 tests passed (product
+  edits/archive/delete, new-product inventory, Angola phase 6 and accounting).
+  API full-source TypeScript (including tests), web TypeScript, desktop
+  TypeScript/unit tests (29 passed), touched-file ESLint and diff checks pass.
+- Edge and real Windows Electron: `archive-stock.spec.ts` 2 passed. Both
+  exercise HTTP 500, a real 10-second application timeout, disabled Archive
+  during loading/failure, retry success, accurate positive stock, cancelled
+  confirmation, delete-with-stock refusal, stale confirmation 409/reload,
+  cached-zero lookup failure, zero-stock archive and unused-product deletion.
+- Existing offline-selling browser/Electron regressions: 4 passed, including
+  offline checkout, reconnect sync and unchanged Electron fiscal numbers.
+  Desktop and browser/PWA bundles build successfully into temporary folders;
+  existing bundle-size/jspdf mixed-import warnings remain.
+- Test isolation: fresh temporary cluster `pos-archive-test-pg`, loopback
+  55469, database/user `pos_archive_test`, UTC. The 49 existing migrations were
+  applied there only, without seed. Test API/web/fault proxy use
+  55470/55471/55472. No existing demo/production database or real credentials.
+  Temporary services/cluster are stopped; temporary data is retained for inspection.
+- Initial validation caught an incorrect UUID assumption for CUID store ids,
+  missing API translations, and test interception unsupported by Electron's
+  custom protocol. These were corrected; final scoped checks pass. Electron
+  tests use an HTTP fault proxy and close the timed-out connection on recovery.
+  Its existing main-process forwarder does not propagate renderer aborts
+  upstream, so a timed-out upstream request can linger until the server/network
+  closes it. The archive UI remains blocked safely; transport cancellation is
+  unchanged and outside this fix.
+- Full desktop suite/`zz-probe.spec.ts` remain unverified. Item 8's zero-cost/
+  free-item policy and the previously recorded non-UTC accounting date risk
+  remain pending, unchanged. No Prompt 2 or unrelated implementation started.
+
+
 ### Item 5 — immediate warning-only stock while offline: completed
 
 - Stock authority is now derived in `useStockLevels` from OS connectivity,

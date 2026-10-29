@@ -98,7 +98,7 @@ describe("Inventory lists new products (e2e)", () => {
 
   it("leaves out archived products and products without stock", async () => {
     const archived = (await createProduct({ sku: "OLD-1", name: "Archived" })).body;
-    await http().patch(`/products/${archived.id}`).set(auth()).send({ isActive: false }).expect(200);
+    await http().patch(`/products/${archived.id}`).set(auth()).send({ isActive: false, archiveStock: [] }).expect(200);
     const service = (await createProduct({ sku: "SRV-1", name: "Service", trackStock: false })).body;
 
     const ids = (await inventory()).map((i) => i.productId);

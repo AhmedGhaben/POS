@@ -195,7 +195,7 @@ describe("Product editing (e2e)", () => {
 
   it("archiving hides a product from the till and the list; restoring brings it back", async () => {
     await patch(ownerToken, teaId, { barcode: "5601234" }).expect(200);
-    await patch(ownerToken, teaId, { isActive: false }).expect(200);
+    await patch(ownerToken, teaId, { isActive: false, archiveStock: (await http().get(`/products/${teaId}/stock`).set(auth(ownerToken)).expect(200)).body }).expect(200);
 
     const list = await http().get("/products").set(auth(cashierToken)).expect(200);
     expect(list.body.map((p: { id: string }) => p.id)).not.toContain(teaId);
@@ -291,6 +291,24 @@ describe("Product editing (e2e)", () => {
     await http().patch(`/categories/${category.id}`).set(auth(ownerToken)).send({ name: "Electrónica", skuPrefix: "ELC" }).expect(200);
     expect(await next()).toBe("ELC-001");
     expect((await prisma.product.findUniqueOrThrow({ where: { id: a.body.id } })).sku).toBe(a.body.sku);
+  });
+
+  it("requires reviewed stock, rejects stale/duplicate snapshots, and permits confirmed zero stock", async () => {
+    const id = (await http().post("/products").set(auth(ownerToken)).send({ sku: "ARCHIVE-CHECK", name: "Archive check", costPrice: 1, sellPrice: 2, exemptionCode: "M10" }).expect(201)).body.id;
+    await patch(ownerToken, id, { isActive: false }).expect(409);
+    await prisma.inventoryItem.create({ data: { storeId, productId: id, quantity: 7 } });
+    await patch(ownerToken, id, { isActive: false, archiveStock: [] }).expect(409);
+    await patch(ownerToken, id, { isActive: false, archiveStock: [{ storeId, quantity: "6" }] }).expect(409);
+    await patch(ownerToken, id, { isActive: false, archiveStock: [{ storeId, quantity: "7" }, { storeId, quantity: "7" }] }).expect(409);
+    await patch(ownerToken, id, { isActive: false, archiveStock: [{ storeId, quantity: "invalid" }] }).expect(400);
+    expect((await prisma.product.findUniqueOrThrow({ where: { id } })).isActive).toBe(true);
+    await patch(cashierToken, id, { isActive: false, archiveStock: [{ storeId, quantity: "7" }] }).expect(403);
+    await patch(managerToken, id, { isActive: false, archiveStock: [{ storeId, quantity: "7" }] }).expect(200);
+    expect((await prisma.inventoryItem.findFirstOrThrow({ where: { productId: id } })).quantity.toString()).toBe("7");
+    await patch(ownerToken, id, { isActive: true }).expect(200);
+    await prisma.inventoryItem.updateMany({ where: { productId: id }, data: { quantity: 0 } });
+    await patch(ownerToken, id, { isActive: false, archiveStock: [] }).expect(200);
+    await http().delete(`/products/${id}`).set(auth(ownerToken)).expect(204);
   });
 
   it("shows the stock before archiving, and never deletes stock that has no movement behind it (tester #36)", async () => {

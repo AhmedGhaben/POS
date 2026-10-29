@@ -32,6 +32,8 @@
     "restored": "Produto reposto",
     "archive": "Arquivar produto",
     "restore": "Repor produto",
+    "stockLookupFailed": "Não foi possível verificar o stock. O arquivo está bloqueado. Tente novamente.",
+    "retryStock": "Verificar stock novamente",
     "archiveNote": "Arquivar esconde-o da caixa e desta lista. As vendas e relatórios anteriores mantêm-no.",
     "trackStock": "Controlar stock",
     "trackStockHint": "Desligue para serviços e outros artigos sem stock: podem ser sempre vendidos e nunca aparecem no stock nem nos alertas de stock baixo.",

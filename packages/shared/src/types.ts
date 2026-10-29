@@ -315,8 +315,9 @@ export interface CreateProductDto {
   skuAuto?: boolean;
 }
 
-/** PATCH /products/:id. `isActive: false` archives, `true` restores. */
-export type UpdateProductDto = Partial<CreateProductDto> & { isActive?: boolean };
+/** PATCH /products/:id. Archiving requires the reviewed nonzero per-store stock
+ * snapshot (`archiveStock: []` for verified zero). `isActive: true` restores. */
+export type UpdateProductDto = Partial<CreateProductDto> & { isActive?: boolean; archiveStock?: { storeId: string; quantity: string }[] };
 
 export interface InventoryItemDto {
   id: string;

@@ -32,6 +32,8 @@
     "restored": "Product restored",
     "archive": "Archive product",
     "restore": "Restore product",
+    "stockLookupFailed": "Unable to verify stock. Archiving is blocked. Retry the stock lookup.",
+    "retryStock": "Retry stock lookup",
     "archiveNote": "Archiving hides it from the till and this list. Past sales and reports keep it.",
     "trackStock": "Track stock",
     "trackStockHint": "Turn off for services and other things with no stock: they can always be sold and never show in stock or low-stock alerts.",

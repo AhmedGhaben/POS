@@ -168,8 +168,28 @@ export class ProductsService {
       isActive: dto.isActive,
     };
     try {
+      // Require the exact per-store quantities reviewed by the caller, even
+      // for zero stock. Keep verification and archival in one transaction.
+      if (dto.isActive === false) {
+        return await this.prisma.$transaction(async (tx) => {
+          const actual = await tx.inventoryItem.findMany({
+            where: { productId, quantity: { not: 0 }, store: { businessId } },
+            select: { storeId: true, quantity: true },
+          });
+          const reviewed = dto.archiveStock;
+          if (!reviewed || reviewed.length !== actual.length ||
+              new Set(reviewed.map((row) => row.storeId)).size !== reviewed.length ||
+              actual.some((row) => !reviewed.some((seen) => seen.storeId === row.storeId && row.quantity.equals(seen.quantity)))) {
+            throw new ConflictException("Stock must be reloaded and reviewed before archiving");
+          }
+          return tx.product.update({ where: { id: productId }, data });
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      }
       return await this.prisma.product.update({ where: { id: productId }, data });
     } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2034") {
+        throw new ConflictException("Stock changed. Reload and review it before archiving");
+      }
       // Two edits racing for the same SKU.
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
         throw new ConflictException("SKU already exists");

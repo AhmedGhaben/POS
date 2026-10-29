@@ -40,8 +40,9 @@ export default defineConfig(({ mode }) => ({
           {
             // Product/category catalog reads — cached so the POS terminal can
             // keep browsing and charging sales through a connectivity drop.
+            // Archive/delete stock checks must reach the server; never use catalog cache.
             urlPattern: ({ url }) =>
-              url.pathname.startsWith("/api/products") || url.pathname.startsWith("/api/categories"),
+              (url.pathname.startsWith("/api/products") && !url.pathname.endsWith("/stock")) || url.pathname.startsWith("/api/categories"),
             handler: "NetworkFirst",
             options: {
               cacheName: "pos-catalog-cache",

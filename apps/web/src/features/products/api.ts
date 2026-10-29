@@ -27,8 +27,12 @@ export interface ProductStockDto {
 }
 
 /** Stock on hand per store, only where there is some: shown before archiving or deleting. */
-export function fetchProductStock(id: string) {
-  return apiClient.get<ProductStockDto[]>(`/products/${id}/stock`);
+export async function fetchProductStock(id: string) {
+  const stock = await apiClient.get<ProductStockDto[]>(`/products/${id}/stock`, { timeoutMs: 10_000 });
+  if (!Array.isArray(stock) || stock.some((row) => !row || typeof row.storeId !== "string" ||
+      typeof row.storeName !== "string" || typeof row.quantity !== "string" ||
+      !/^-?\d+(\.\d+)?$/.test(row.quantity))) throw new Error("Invalid stock response");
+  return stock;
 }
 
 /** Only a product with no sales, purchases, stock or document history (409 otherwise: archive it). */

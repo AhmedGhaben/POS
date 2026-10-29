@@ -185,11 +185,11 @@ export function ProductFormDialog({
   // Deleting for good: asked to confirm first; refused when the product has history.
   const [deleteStep, setDeleteStep] = React.useState<"idle" | "confirm" | "hasHistory">("idle");
   // Archiving a product that still has stock asks first, showing how much (tester #36).
-  const [confirmArchive, setConfirmArchive] = React.useState(false);
+  const [confirmArchive, setConfirmArchive] = React.useState<ProductStockDto[] | null>(null);
   React.useEffect(() => {
     if (open) {
       setDeleteStep("idle");
-      setConfirmArchive(false);
+      setConfirmArchive(null);
     }
   }, [open]);
   const stockQuery = useQuery({
@@ -197,7 +197,9 @@ export function ProductFormDialog({
     queryFn: () => fetchProductStock(product!.id),
     enabled: open && !!product?.isActive,
     staleTime: 0,
+    retry: false,
   });
+  const stockReady = stockQuery.isSuccess && stockQuery.isFetchedAfterMount && !stockQuery.isFetching;
   const stock = stockQuery.data ?? [];
   const fileRef = React.useRef<HTMLInputElement>(null);
 
@@ -265,10 +267,24 @@ export function ProductFormDialog({
   });
 
   const archiveMutation = useMutation({
-    mutationFn: (isActive: boolean) => updateProduct(product!.id, { isActive }),
+    mutationFn: (isActive: boolean) => updateProduct(product!.id, {
+      isActive, ...(!isActive ? { archiveStock: (confirmArchive ?? []).map(({ storeId, quantity }) => ({ storeId, quantity })) } : {}),
+    }),
     onSuccess: (_data, isActive) => done(isActive ? t("form.restored") : t("form.archived")),
-    onError,
+    onError: (error) => {
+      setConfirmArchive(null);
+      void queryClient.invalidateQueries({ queryKey: ["products", product?.id, "stock"] });
+      onError(error);
+    },
   });
+
+  async function requestArchive() {
+    if (!stockReady) return;
+    const result = await stockQuery.refetch();
+    if (!result.isSuccess || !result.data) return;
+    if (result.data.length) setConfirmArchive(result.data);
+    else archiveMutation.mutate(false);
+  }
 
   async function pickPhoto(file: File | undefined) {
     if (!file) return;
@@ -604,15 +620,23 @@ export function ProductFormDialog({
             <Button type="submit" className="w-full" disabled={busy}>
               {saveMutation.isPending ? t("common:actions.saving") : editing ? t("common:actions.saveChanges") : t("form.save")}
             </Button>
+            {editing && product.isActive && stockQuery.isError && (
+              <div role="alert" className="space-y-2 rounded-md border border-destructive/40 p-3 text-sm">
+                <p>{t("form.stockLookupFailed")}</p>
+                <Button type="button" variant="outline" disabled={stockQuery.isFetching} onClick={() => { setConfirmArchive(null); void stockQuery.refetch(); }}>
+                  {t("form.retryStock")}
+                </Button>
+              </div>
+            )}
             {editing && confirmArchive && (
               <div className="space-y-2 rounded-md border border-amber-400/60 p-3 text-sm" role="alert">
                 <p>{t("form.archiveHasStock", { name: product.name })}</p>
-                <StockOnHand stock={stock} />
+                <StockOnHand stock={confirmArchive} />
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setConfirmArchive(false)}>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setConfirmArchive(null)}>
                     {t("common:actions.cancel")}
                   </Button>
-                  <Button type="button" size="sm" disabled={busy} onClick={() => archiveMutation.mutate(false)}>
+                  <Button type="button" size="sm" disabled={busy || !stockReady} onClick={() => { if (stockReady) archiveMutation.mutate(false); }}>
                     {t("form.archiveAnyway")}
                   </Button>
                 </div>
@@ -625,8 +649,8 @@ export function ProductFormDialog({
                   type="button"
                   variant="ghost"
                   className="w-full gap-2 text-muted-foreground"
-                  disabled={busy || stockQuery.isLoading}
-                  onClick={() => (stock.length > 0 ? setConfirmArchive(true) : archiveMutation.mutate(false))}
+                  disabled={busy || !stockReady}
+                  onClick={() => void requestArchive()}
                 >
                   <Archive className="h-4 w-4" /> {t("form.archive")}
                 </Button>
