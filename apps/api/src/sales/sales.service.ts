@@ -213,12 +213,18 @@ export class SalesService {
       { taxIncluded },
     );
 
+    const hasZeroPrice = unitPrices.some((p) => p.isZero()) || priced.lines.some((line) => line.total === 0);
+    if (hasZeroPrice && (offline || !dto.zeroPriceApproval || !dto.clientId)) {
+      throw new ForbiddenException({ code: "ZERO_PRICE_APPROVAL_REQUIRED", message: "Zero-price sales require online manager approval and a justification" });
+    }
+    const zeroPriceCart = JSON.stringify([dto.lineItems.map((li, i) => [li.productId, li.quantity, Number(unitPrices[i]), li.discount?.type ?? null, li.discount?.value ?? 0]), [dto.discount?.type ?? null, dto.discount?.value ?? 0]]);
+
     // What the cashier may not do alone needs a manager's approval, used
     // (once) inside the sale's transaction.
     const approvals: { permission: Permission; token: string }[] = [];
     if (!offline) {
       const needed: { permission: Permission; message: string }[] = [];
-      if (priceChanged.some(Boolean) && !(await this.permissions.hasPermission(cashierId, role, Permission.CHANGE_PRICE))) {
+      if (!hasZeroPrice && priceChanged.some(Boolean) && !(await this.permissions.hasPermission(cashierId, role, Permission.CHANGE_PRICE))) {
         needed.push({ permission: Permission.CHANGE_PRICE, message: "Changing a price needs a manager's approval" });
       }
       if (priced.discountTotal > 0) {
@@ -324,6 +330,7 @@ export class SalesService {
     let sale: Prisma.SaleGetPayload<{ include: typeof SALE_INCLUDE }>;
     try {
       sale = await stockTransaction(this.prisma, [dto.storeId], async (tx) => {
+        const zeroApproval = hasZeroPrice ? await this.overrides.consumeZeroPrice(dto.zeroPriceApproval!, { userId: cashierId, businessId }, { storeId: dto.storeId, clientId: dto.clientId, cart: zeroPriceCart }, tx) : null;
         for (const approval of approvals) {
           await this.overrides.consume(approval.token, { userId: cashierId, businessId }, approval.permission, tx);
         }
@@ -417,6 +424,10 @@ export class SalesService {
             });
           }
         }
+        if (zeroApproval) await tx.auditLog.create({ data: {
+          businessId, userId: cashierId, action: "ZERO_PRICE_SALE_APPROVED", entityType: "sale", entityId: created.id,
+          metadata: { approvedById: zeroApproval.approvedById, justification: zeroApproval.justification, overrideId: zeroApproval.id, cart: zeroPriceCart },
+        } });
         return tx.sale.findUniqueOrThrow({ where: { id: created.id }, include: SALE_INCLUDE });
       });
     } catch (error) {

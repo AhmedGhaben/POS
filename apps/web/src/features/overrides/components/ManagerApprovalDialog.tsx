@@ -21,11 +21,13 @@ export function ManagerApprovalDialog() {
   const [pin, setPin] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [justification, setJustification] = React.useState("");
 
   React.useEffect(() => {
     setApprover(null);
     setPin("");
     setError(null);
+    setJustification("");
   }, [pending]);
 
   const approvers = useQuery({
@@ -36,17 +38,17 @@ export function ManagerApprovalDialog() {
   });
 
   async function submit() {
-    if (!pending || !approver || pin.length < 4 || busy) return;
+    if (!pending || !approver || pin.length < 4 || busy || (pending.requireJustification && !justification.trim())) return;
     setBusy(true);
     setError(null);
-    const result = await approve(pending, approver, pin);
+    const result = await approve({ ...pending, details: { ...pending.details, ...(pending.requireJustification ? { justification: justification.trim() } : {}) } }, approver, pin);
     setBusy(false);
     setPin("");
     if (result.ok) finish(result.approval);
     else setError(t(`approval.errors.${result.code}`));
   }
 
-  const list = approvers.data ?? [];
+  const list = (approvers.data ?? []).filter((a) => pending?.action !== "sale.zero-price" || a.role === "OWNER" || a.role === "MANAGER");
 
   return (
     <Dialog open={!!pending} onOpenChange={(open) => !open && !busy && finish(null)}>
@@ -58,6 +60,10 @@ export function ManagerApprovalDialog() {
           <DialogDescription>{pending?.description}</DialogDescription>
         </DialogHeader>
 
+        {pending?.requireJustification && <label className="space-y-1 text-sm">
+          <span>{t("approval.justification")}</span>
+          <textarea required aria-label={t("approval.justification")} maxLength={500} value={justification} onKeyDown={(e) => e.stopPropagation()} onChange={(e) => setJustification(e.target.value)} disabled={busy} className="w-full rounded-md border p-2" />
+        </label>}
         {!approver ? (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">{t("approval.who")}</p>

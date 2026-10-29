@@ -2,6 +2,89 @@
 
 ## Post-audit inventory fixes
 
+### Item 8 approved pricing policy (2026-10-29)
+
+- Product decision resolved by the owner: purchase cost 0 Kz is allowed for
+  free stock/bonuses/gifts/samples; selling at 0 Kz requires manager approval
+  and a mandatory justification. This supersedes the historical pending-policy
+  notes below. Existing nonnegative purchase-cost validation, free-item catalogue
+  flag/form/import and normal price-change controls were preserved.
+- Missing checkout protection implemented for catalogue zero prices, zero-price
+  overrides and lines made free through discounts. Every such sale requires an
+  online single-use approval, including for users already granted CHANGE_PRICE.
+  Uses the existing PIN workflow and CHANGE_PRICE permission, plus a dedicated
+  `sale.zero-price` action, active OWNER/MANAGER role and store-access checks.
+  The existing second-person approval rule remains: a cashier's/owner's own
+  login or an ordinary price-change token does not silently authorize it.
+- Approval is bound to business, requesting cashier, store, clientId, quantities,
+  effective prices and discounts. The server requires a nonblank justification
+  (at most 500 characters), rechecks the manager at use and atomically consumes
+  the grant. A `ZERO_PRICE_SALE_APPROVED` audit record contains sale ID, approving
+  manager ID, justification and reviewed cart; existing approval audit includes
+  the manager name. Approval-use auditing now uses the caller's transaction too,
+  so a failed sale rolls back the claim and its audit records together.
+- Checkout shows the reviewed products, manager PIN prompt and mandatory reason.
+  Labels/errors translated in en, pt-PT, pt-BR (pt-AO derived). Price-dialog zero
+  confirmation remains; authorization occurs at checkout for the complete cart.
+  Server DTO/direct-request enforcement rejects missing, forged, ordinary,
+  expired, reused, mismatched-cart/store/key grants and inactive/non-manager
+  approvers. Existing payment, stock, fiscal and accounting algorithms unchanged;
+  no schema/migration or fiscal-number/signature/document-storage changes.
+- Offline approver IDs are not cryptographic server-verifiable proof. Zero-price
+  sales are therefore blocked offline, even with a saved online grant; no offline
+  fallback/outbox sale is created. Normal paid offline sales remain unchanged.
+  An uncertain online request is retained locally with its exact clientId and
+  signed payload, and retried online after reconnect; a changed cart is refused
+  until the original pending checkout is resolved. PINs/private keys are never
+  stored in this pending payload. Known client rejections release the pending
+  request; transport/unknown failures retain it. Local storage must be available.
+- Passing evidence: final focused policy API suite **11/11** (including cashier
+  permission overrides, free catalogue items, zero overrides, full discounts,
+  no-write refusals, rollback, idempotency and costed gift accounting). API unit
+  **49 suites / 324 passed**; web **51 files / 267 passed**; desktop unit **29**.
+  Real Edge browser and Windows Electron policy regressions **2/2**: mandatory
+  justification, PIN approval, audit identity/reason, fiscal receipt, stock
+  movement, then offline refusal with retained cart and no queued sale.
+  API/web/desktop TypeScript, strict touched desktop E2E TypeScript and touched
+  API/web ESLint pass. Temporary API and desktop UI builds succeed (existing
+  bundle-size/jspdf warnings). Existing offline-stock/unreachable-server/sync
+  and native fiscal numbering/signing UI regressions **8/8 passed**; combined
+  relevant browser/Electron coverage is **10/10**. Full UTC API run: **41 suites /
+  376 passed** (before the final costed-gift case was added; the final focused
+  11-case run includes it). Full desktop suite was not rerun in this milestone.
+- Initial development failures were corrected: Prisma Role is not a TS enum
+  namespace; translations were added to satisfy API message coverage; the new
+  test looked up a document by issuer SourceID instead of saleId. None remains
+  in the final item 8 runs.
+- Isolated PostgreSQL 18 cluster `pos-free-policy-pg`, loopback 55549, synthetic
+  user `pos_free_test`; fresh `pos_free_policy_test` (Europe/Moscow) and
+  `pos_free_policy_utc_test` (UTC). All 49 existing migrations and synthetic
+  fixtures applied only here. Test-only deadlock_timeout 100ms retained for the
+  contention regression. Temporary API 55550, Vite 55551/55553 and fault proxy
+  55552, temporary build outputs, repository test signing key; no real credentials.
+  Final logs in OS temp: `pos-free-policy-final-unit.log`,
+  `pos-free-policy-final-web.log`, `pos-free-policy-full-api.log` (Moscow),
+  `pos-free-policy-utc-full-api.log` (UTC). Temporary services and the cluster
+  were stopped after validation; only synthetic data/builds/logs remain.
+- Separate confirmed pre-existing defect, not changed: the full API suite under
+  Europe/Moscow has **374 passed / 1 failed** (before the last two policy cases
+  were added). `angola-phase8b.e2e-spec.ts:254` expects 10 units / 50 Kz at
+  Luanda year-end but gets 15 / 90. `fiscal/saft-export.service.ts:457` compares
+  UTC-stored timestamp-without-time-zone occurredAt with a Date/timestamptz
+  parameter. Reproduced using the prior compiled contention baseline on fresh
+  synthetic rows: 2025-12-31T22:30Z adds 10 units at cost 5; 23:30Z adds 5 at
+  cost 8 (already 1 January in Luanda). Prior build exports 10/50 under UTC and
+  15/90 under Moscow. The same export source is unchanged in this milestone.
+  This affects historical stock export cutoffs on non-UTC sessions and remains
+  a separate high-priority launch blocker requiring its own correction/review.
+  No historical data or issued documents were accessed or changed.
+- Rollout compatibility: old clients cannot perform newly unauthorized free
+  sales. Any already queued zero-price offline documents from older clients
+  require an explicitly reviewed recovery path; the server cannot authenticate
+  their unsigned approver IDs. Their existence was not checked in any existing
+  database or till. Do not delete/rewrite issued documents to bypass this rule.
+  Existing packaged-updater/hardware/release checks remain outside this task.
+
 ### Bank-upload percent-encoding validation correction (2026-10-29)
 
 - Reproduced the audit's `data:text/csv,%E0%A4%A` request on this branch before

@@ -11,6 +11,8 @@ import { ACCOUNTING_EXACT, ACCOUNTING_PATTERNS } from "./accounting-messages";
 export type Translations = Record<TranslatedLanguage, string>;
 
 const EXACT: Record<string, Translations> = {
+  "Zero-price sales require a manager and a justification": { "pt-PT": "Vendas com pre\u00e7o zero exigem um gerente e uma justifica\u00e7\u00e3o", "pt-BR": "Vendas com pre\u00e7o zero exigem um gerente e uma justificativa" },
+  "Zero-price sales require online manager approval and a justification": { "pt-PT": "Vendas com pre\u00e7o zero exigem aprova\u00e7\u00e3o online do gerente e uma justifica\u00e7\u00e3o", "pt-BR": "Vendas com pre\u00e7o zero exigem aprova\u00e7\u00e3o online do gerente e uma justificativa" },
   "Stock is busy. Please try again.": { "pt-PT": "O stock est\u00e1 ocupado. Tente novamente.", "pt-BR": "O estoque est\u00e1 ocupado. Tente novamente." },
   "Stock must be reloaded and reviewed before archiving": { "pt-PT": "Recarregue e confirme o stock antes de arquivar", "pt-BR": "Recarregue e confirme o estoque antes de arquivar" },
   "Stock changed. Reload and review it before archiving": { "pt-PT": "O stock mudou. Recarregue e confirme antes de arquivar", "pt-BR": "O estoque mudou. Recarregue e confirme antes de arquivar" },

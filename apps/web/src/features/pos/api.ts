@@ -7,7 +7,8 @@ import { apiClient, ApiError, isRetryableError, isUnreachableError } from "@/lib
 import { addToOutbox } from "@/lib/offline-db";
 import { findSavedByBarcode } from "./catalog";
 import { currentTaxContext, linePrice, priceCart, productTax, type CartLine } from "./hooks/useCart";
-import { approvalHeaders, type Approval } from "@/features/overrides/approval";
+import { approvalHeaders, requestApproval, type Approval } from "@/features/overrides/approval";
+import { Permission } from "@pos/shared";
 import { buildOfflineSale } from "./offline-sale";
 import { isWorkingOffline, useOfflineStore } from "./offline-store";
 import { peekNumber, useFiscalNumbering, type NextNumber } from "@/features/fiscal/numbering";
@@ -50,7 +51,11 @@ export async function createSale(dto: CreateSaleDto, lines: CartLine[], approval
     // Uploaded later with the till's key, it stays this person's sale.
     actingUserId: useAuthStore.getState().user?.id,
   };
-  const gross = priceCart(lines, dto.discount ?? null).total;
+  const priced = priceCart(lines, dto.discount ?? null);
+  const gross = priced.total;
+  const pendingKey = `pos-zero-price-pending:${useAuthStore.getState().user?.id}:${sale.storeId}:${sale.terminalId ?? "browser"}`;
+  const free = lines.some((l) => linePrice(l) === 0) || priced.lines.some((l) => l.total === 0);
+  if (free || localStorage.getItem(pendingKey)) return createZeroPriceSale(sale, lines, gross, pendingKey);
   // A sale on credit is a Factura the server numbers after checking the
   // customer's credit: it needs the server, and never waits in the queue.
   if ((dto.creditAmount ?? 0) > 0) {
@@ -85,6 +90,40 @@ export async function createSale(dto: CreateSaleDto, lines: CartLine[], approval
       return used(await queueSaleOffline(sale, lines, approvals));
     }
     throw err;
+  }
+}
+
+/** Online-only: PIN approvals cannot be authenticated from offline approver IDs.
+ * Keep an uncertain signed request durable so reconnect retries use its exact
+ * key/signature, rather than queuing or accidentally issuing a second document.
+ */
+async function createZeroPriceSale(sale: CreateSaleDto, lines: CartLine[], gross: number, pendingKey: string): Promise<SaleDto> {
+  if (isWorkingOffline() || useAuthStore.getState().offline) throw new ApiError(403, i18n.t("pos:zeroPrice.online"));
+  const cart = JSON.stringify([sale.lineItems.map((li, i) => [li.productId, li.quantity, linePrice(lines[i]), li.discount?.type ?? null, li.discount?.value ?? 0]), [sale.discount?.type ?? null, sale.discount?.value ?? 0]]);
+  const fingerprint = JSON.stringify([cart, sale.customerId ?? null, sale.payments, sale.creditAmount ?? 0, sale.shiftClientId, sale.proformaId, sale.receiptEmail]);
+  const stored = localStorage.getItem(pendingKey);
+  if (stored) {
+    const pending = JSON.parse(stored) as { fingerprint: string; sale: CreateSaleDto };
+    if (pending.fingerprint !== fingerprint) throw new ApiError(409, i18n.t("pos:zeroPrice.pending"));
+    sale = pending.sale;
+  } else {
+    const approval = await requestApproval({ permission: Permission.CHANGE_PRICE, action: "sale.zero-price", requireJustification: true,
+      description: `${i18n.t("pos:zeroPrice.approval")} ${lines.map((l) => `${l.quantity} x ${l.product.name} (${linePrice(l)})`).join("; ")}`, details: { clientId: sale.clientId, cart } });
+    if (!approval || approval.kind !== "token") throw new ApiError(403, i18n.t("pos:zeroPrice.online"));
+    sale.zeroPriceApproval = approval.token;
+    const next = tillNumber();
+    if (next) sale.fiscal = await signForTill(next, gross);
+  }
+  localStorage.setItem(pendingKey, JSON.stringify({ fingerprint, sale }));
+  try {
+    const result = await postSale(sale, gross);
+    if (sale.fiscal) useFiscalNumbering.getState().commit("FR", sale.fiscal);
+    localStorage.removeItem(pendingKey);
+    return result;
+  } catch (error) {
+    if (error instanceof ApiError && error.status >= 400 && error.status < 500 && error.status !== 408) localStorage.removeItem(pendingKey);
+    else localStorage.setItem(pendingKey, JSON.stringify({ fingerprint, sale }));
+    throw error;
   }
 }
 

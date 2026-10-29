@@ -6,6 +6,11 @@ corrections and regression evidence in `1c-implementation-progress.md`
 (Multi-till checkout contention and Bank-upload percent-encoding validation).
 Other outstanding decisions/limitations below remain unchanged.
 
+Subsequent item 8 policy approval and implementation also supersede the old
+pending zero-cost/free-item decision below; see the progress document's Item 8
+section. That section records an additional pre-existing non-UTC fiscal stock
+export boundary failure discovered during its full regression run.
+
 Recommendation: **do not give unconditional Prompt 1c / multi-till launch
 sign-off yet**. Functional regressions have broad passing coverage, but
 multi-product contention causes real checkout failures, and item 8 still

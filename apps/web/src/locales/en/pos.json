@@ -1,4 +1,5 @@
 {
+  "zeroPrice": {"approval": "Zero-price items require manager approval and a justification.", "online": "Zero-price sales require online manager approval and a justification.", "pending": "Finish the previous zero-price checkout with its original cart before starting another."},
   "noStore": "No store selected.",
   "totals": {
     "subtotal": "Subtotal",

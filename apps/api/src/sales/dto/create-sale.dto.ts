@@ -125,6 +125,12 @@ export class SalePaymentInputDto {
 }
 
 export class CreateSaleDto {
+  /** Single-use, cart-bound manager approval for a zero-price line. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(256)
+  zeroPriceApproval?: string;
+
   @IsString()
   storeId!: string;
 

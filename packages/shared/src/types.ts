@@ -516,6 +516,8 @@ export interface SalePaymentInputDto {
 }
 
 export interface CreateSaleDto {
+  /** Online-only, single-use manager approval for a zero-price line. */
+  zeroPriceApproval?: string;
   storeId: string;
   customerId?: string | null;
   /** Ad-hoc address to email the receipt to. If omitted and a customer with

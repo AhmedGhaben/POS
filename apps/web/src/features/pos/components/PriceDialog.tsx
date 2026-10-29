@@ -52,7 +52,8 @@ export function PriceDialog({
       return;
     }
     let approval: Approval | null = null;
-    if (!canChange) {
+    // Zero-price authorization is cart-bound and requested at checkout.
+    if (!canChange && price !== 0) {
       approval = await requestApproval({
         permission: Permission.CHANGE_PRICE,
         action: "sale.price",

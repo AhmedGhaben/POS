@@ -17,6 +17,7 @@ export type Approval =
   | { kind: "offline"; permission: Permission; approverId: string; approverName: string };
 
 export interface ApprovalRequest {
+  requireJustification?: boolean;
   permission: Permission;
   /** What it's for, e.g. "sale.discount" (audit trail). */
   action: string;
@@ -69,6 +70,7 @@ export async function approve(
   pin: string,
 ): Promise<{ ok: true; approval: Approval } | { ok: false; code: ApproveError; message?: string }> {
   const approverName = `${approver.firstName} ${approver.lastName}`;
+  if (request.action === "sale.zero-price" && (isWorkingOffline() || useAuthStore.getState().offline)) return { ok: false, code: "failed" };
   if (isWorkingOffline() || useAuthStore.getState().offline) {
     if (!desktop?.approval) return { ok: false, code: "failed" };
     const result = await desktop.approval.check(approver.id, pin, request.permission);

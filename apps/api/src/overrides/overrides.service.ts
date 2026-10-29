@@ -52,11 +52,18 @@ export class OverridesService {
 
   /** Checks the approver's PIN and permission, and issues the single-use approval. */
   async approve(user: AuthenticatedUser, dto: RequestOverrideDto) {
+    if (dto.action === "sale.zero-price" && (dto.permission !== Permission.CHANGE_PRICE ||
+        !dto.storeId || typeof dto.details?.justification !== "string" ||
+        !dto.details.justification.trim() || dto.details.justification.trim().length > 500 ||
+        typeof dto.details.clientId !== "string" || typeof dto.details.cart !== "string")) {
+      throw new BadRequestException("Zero-price sales require a manager and a justification");
+    }
     if (dto.approverId === user.userId) throw new BadRequestException("Someone else has to approve this");
     const approver = await this.prisma.user.findFirst({
       where: { id: dto.approverId, businessId: user.businessId, isActive: true },
     });
     if (!approver || !approver.pinHash) throw new ForbiddenException("This person can't approve it");
+    if (dto.action === "sale.zero-price") await this.assertZeroPriceManager(approver, dto.storeId!);
     try {
       await checkPinAttempt(this.prisma, approver, dto.pin);
     } catch (err) {
@@ -95,6 +102,29 @@ export class OverridesService {
     return { token, expiresAt: override.expiresAt, approver: { id: approver.id, firstName: approver.firstName, lastName: approver.lastName } };
   }
 
+  private async assertZeroPriceManager(approver: { id: string; role: Role }, storeId: string, tx: Prisma.TransactionClient = this.prisma) {
+    if ((approver.role !== Role.OWNER && approver.role !== Role.MANAGER) ||
+        (approver.role !== Role.OWNER && !await tx.storeUser.findUnique({ where: { userId_storeId: { userId: approver.id, storeId } } }))) {
+      throw new ForbiddenException("This person can't approve it");
+    }
+  }
+
+  async consumeZeroPrice(token: string, user: Pick<AuthenticatedUser, "userId" | "businessId">,
+    context: { storeId: string; clientId?: string; cart: string }, tx: Prisma.TransactionClient) {
+    const grant = await tx.managerOverride.findUnique({ where: { tokenHash: hashToken(token) } });
+    const details = grant?.details as Record<string, unknown> | null;
+    if (!grant || grant.businessId !== user.businessId || grant.action !== "sale.zero-price" ||
+        grant.storeId !== context.storeId || !context.clientId || details?.clientId !== context.clientId ||
+        details?.cart !== context.cart || typeof details?.justification !== "string" || !details.justification.trim()) {
+      throw new ForbiddenException("Zero-price sales require a manager and a justification");
+    }
+    const manager = await tx.user.findFirst({ where: { id: grant.approvedById, businessId: user.businessId, isActive: true } });
+    if (!manager || !await this.permissions.hasPermission(manager.id, manager.role, Permission.CHANGE_PRICE)) throw new ForbiddenException("This person can't approve it");
+    await this.assertZeroPriceManager(manager, context.storeId, tx);
+    const used = await this.consume(token, user, Permission.CHANGE_PRICE, tx);
+    return { ...used, justification: details.justification.trim() };
+  }
+
   /**
    * Uses an approval for `permission`, once. Valid only for the person it
    * was issued to, before it expires. Runs in the caller's transaction when
@@ -127,7 +157,7 @@ export class OverridesService {
       approvedBy: override.approvedById,
       permission,
       action: override.action,
-    });
+    }, tx);
     return override;
   }
 
@@ -165,8 +195,8 @@ export class OverridesService {
     return { id: override.id, approvedById: approver.id, permission: o.permission };
   }
 
-  private async audit(businessId: string, userId: string, action: string, entityId: string, metadata: Record<string, unknown>) {
-    await this.prisma.auditLog.create({
+  private async audit(businessId: string, userId: string, action: string, entityId: string, metadata: Record<string, unknown>, tx: Prisma.TransactionClient = this.prisma) {
+    await tx.auditLog.create({
       data: { businessId, userId, action, entityType: "manager-override", entityId, metadata: metadata as Prisma.InputJsonValue },
     });
   }
