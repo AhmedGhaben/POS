@@ -5,7 +5,7 @@ import { fiscalTimeZone, localDateTime } from "../fiscal/fiscal-format";
 import { startOfLocalDay } from "../fiscal/saft/period";
 import { PrismaService } from "../prisma/prisma.service";
 import { AccountResolver } from "./account-resolver";
-import { businessTimeZone, businessToday, dateValue, isoDate } from "./accounting-dates";
+import { businessTimeZone, businessToday, dateValue, isoDate, sqlDate, sqlUtcTimestamp } from "./accounting-dates";
 import { ChartService } from "./chart.service";
 import { D, LineInput, ZERO } from "./entry-rules";
 import { EntriesService } from "./entries.service";
@@ -187,7 +187,7 @@ export class IntegrationService implements OnModuleInit, OnModuleDestroy {
     for (;;) {
       const rows = await this.prisma.$queryRaw<{ id: string }[]>`
         SELECT d.id FROM "fiscal_documents" d
-        WHERE d."businessId" = ${ctx.businessId} AND d."documentType" IN (${Prisma.join(perDocument)}) AND d."invoiceDate" >= ${dateValue(ctx.startDate)} AND d.id > ${cursor}
+        WHERE d."businessId" = ${ctx.businessId} AND d."documentType" IN (${Prisma.join(perDocument)}) AND d."invoiceDate" >= ${sqlDate(ctx.startDate)} AND d.id > ${cursor}
           AND NOT EXISTS (SELECT 1 FROM "accounting_source_links" l WHERE l."businessId" = d."businessId" AND l."sourceType" = 'FISCAL_DOCUMENT' AND l."sourceId" = d.id)
         ORDER BY d.id
         LIMIT ${BATCH}`;
@@ -205,7 +205,7 @@ export class IntegrationService implements OnModuleInit, OnModuleDestroy {
     const groups = await this.prisma.$queryRaw<{ storeId: string; terminalId: string | null; invoiceDate: Date }[]>`
       SELECT DISTINCT d."storeId", d."terminalId", d."invoiceDate" FROM "fiscal_documents" d
       WHERE d."businessId" = ${ctx.businessId} AND d."documentType" IN (${Prisma.join(SUMMARY_TYPES)})
-        AND d."invoiceDate" >= ${dateValue(ctx.startDate)} AND d."invoiceDate" < ${dateValue(ctx.today)}
+        AND d."invoiceDate" >= ${sqlDate(ctx.startDate)} AND d."invoiceDate" < ${sqlDate(ctx.today)}
         AND NOT EXISTS (SELECT 1 FROM "accounting_source_links" l WHERE l."businessId" = d."businessId" AND l."sourceType" = 'FISCAL_DOCUMENT' AND l."sourceId" = d.id)
       ORDER BY d."invoiceDate"`;
     for (const g of groups) {
@@ -342,7 +342,7 @@ export class IntegrationService implements OnModuleInit, OnModuleDestroy {
     for (;;) {
       const ids = await this.pendingIds(ctx, "PURCHASE", Prisma.sql`
         SELECT p.id FROM "purchases" p JOIN "stores" s ON s.id = p."storeId"
-        WHERE s."businessId" = ${ctx.businessId} AND p.status <> 'CANCELLED' AND p."createdAt" >= ${ctx.startInstant}`, cursor);
+        WHERE s."businessId" = ${ctx.businessId} AND p.status <> 'CANCELLED' AND p."createdAt" >= ${sqlUtcTimestamp(ctx.startInstant)}`, cursor);
       cursor = ids[ids.length - 1] ?? cursor;
       if (!ids.length) return;
       const purchases = await this.prisma.purchase.findMany({
@@ -386,7 +386,7 @@ export class IntegrationService implements OnModuleInit, OnModuleDestroy {
     let cursor = "";
     for (;;) {
       const ids = await this.pendingIds(ctx, "SUPPLIER_PAYMENT", Prisma.sql`
-        SELECT p.id FROM "supplier_payments" p WHERE p."businessId" = ${ctx.businessId} AND p."paidOn" >= ${dateValue(ctx.startDate)}`, cursor);
+        SELECT p.id FROM "supplier_payments" p WHERE p."businessId" = ${ctx.businessId} AND p."paidOn" >= ${sqlDate(ctx.startDate)}`, cursor);
       cursor = ids[ids.length - 1] ?? cursor;
       if (!ids.length) break;
       const payments = await this.prisma.supplierPayment.findMany({ where: { id: { in: ids } }, include: { supplier: { select: { id: true, name: true } } }, orderBy: { paidOn: "asc" } });
@@ -423,7 +423,7 @@ export class IntegrationService implements OnModuleInit, OnModuleDestroy {
     for (;;) {
       const ids = await this.pendingIds(ctx, "EXPENSE", Prisma.sql`
         SELECT e.id FROM "expenses" e JOIN "stores" s ON s.id = e."storeId"
-        WHERE s."businessId" = ${ctx.businessId} AND e."incurredAt" >= ${ctx.startInstant}`, cursor);
+        WHERE s."businessId" = ${ctx.businessId} AND e."incurredAt" >= ${sqlUtcTimestamp(ctx.startInstant)}`, cursor);
       cursor = ids[ids.length - 1] ?? cursor;
       if (!ids.length) break;
       const expenses = await this.prisma.expense.findMany({ where: { id: { in: ids } }, orderBy: { incurredAt: "asc" } });
@@ -458,7 +458,7 @@ export class IntegrationService implements OnModuleInit, OnModuleDestroy {
     for (;;) {
       const ids = await this.pendingIds(ctx, "SHIFT_DIFFERENCE", Prisma.sql`
         SELECT s.id FROM "shifts" s
-        WHERE s."businessId" = ${ctx.businessId} AND s.status = 'CLOSED' AND s.difference IS NOT NULL AND s.difference <> 0 AND s."closedAt" >= ${ctx.startInstant}`, cursor);
+        WHERE s."businessId" = ${ctx.businessId} AND s.status = 'CLOSED' AND s.difference IS NOT NULL AND s.difference <> 0 AND s."closedAt" >= ${sqlUtcTimestamp(ctx.startInstant)}`, cursor);
       cursor = ids[ids.length - 1] ?? cursor;
       if (!ids.length) return;
       const shifts = await this.prisma.shift.findMany({ where: { id: { in: ids } }, orderBy: { closedAt: "asc" } });
@@ -476,7 +476,7 @@ export class IntegrationService implements OnModuleInit, OnModuleDestroy {
     for (;;) {
       const ids = await this.pendingIds(ctx, "CASH_MOVEMENT", Prisma.sql`
         SELECT m.id FROM "cash_movements" m JOIN "shifts" s ON s.id = m."shiftId"
-        WHERE s."businessId" = ${ctx.businessId} AND m."occurredAt" >= ${ctx.startInstant}`, cursor);
+        WHERE s."businessId" = ${ctx.businessId} AND m."occurredAt" >= ${sqlUtcTimestamp(ctx.startInstant)}`, cursor);
       cursor = ids[ids.length - 1] ?? cursor;
       if (!ids.length) return;
       const movements = await this.prisma.cashMovement.findMany({ where: { id: { in: ids } }, include: { shift: { select: { terminalId: true, storeId: true } } }, orderBy: { occurredAt: "asc" } });
@@ -504,7 +504,7 @@ export class IntegrationService implements OnModuleInit, OnModuleDestroy {
     for (;;) {
       const ids = await this.pendingIds(ctx, "STOCK_ADJUSTMENT", Prisma.sql`
         SELECT m.id FROM "stock_movements" m JOIN "stores" s ON s.id = m."storeId"
-        WHERE s."businessId" = ${ctx.businessId} AND m.type = 'ADJUSTMENT' AND m."occurredAt" >= ${ctx.startInstant}`, cursor);
+        WHERE s."businessId" = ${ctx.businessId} AND m.type = 'ADJUSTMENT' AND m."occurredAt" >= ${sqlUtcTimestamp(ctx.startInstant)}`, cursor);
       cursor = ids[ids.length - 1] ?? cursor;
       if (!ids.length) return;
       const movements = await this.prisma.stockMovement.findMany({
@@ -637,17 +637,17 @@ export class IntegrationService implements OnModuleInit, OnModuleDestroy {
       Prisma.sql`NOT EXISTS (SELECT 1 FROM "accounting_source_links" l WHERE l."businessId" = ${businessId} AND l."sourceType" = ${type} AND l."sourceId" = ${Prisma.raw(alias)}.id)`;
     const count = async (sql: Prisma.Sql) => Number((await this.prisma.$queryRaw<{ n: bigint }[]>(sql))[0].n);
     const counts: Record<string, number> = {
-      FISCAL_DOCUMENT: await count(Prisma.sql`SELECT count(*) AS n FROM "fiscal_documents" d WHERE d."businessId" = ${businessId} AND d."documentType" IN (${Prisma.join(POSTED_DOCUMENT_TYPES)}) AND d."invoiceDate" BETWEEN ${dateValue(from)} AND ${dateValue(to)} AND ${notLinked("FISCAL_DOCUMENT", "d")}`),
+      FISCAL_DOCUMENT: await count(Prisma.sql`SELECT count(*) AS n FROM "fiscal_documents" d WHERE d."businessId" = ${businessId} AND d."documentType" IN (${Prisma.join(POSTED_DOCUMENT_TYPES)}) AND d."invoiceDate" BETWEEN ${sqlDate(from)} AND ${sqlDate(to)} AND ${notLinked("FISCAL_DOCUMENT", "d")}`),
       FISCAL_DOCUMENT_ANNULMENT: await count(Prisma.sql`
         SELECT count(*) AS n FROM "accounting_source_links" l JOIN "fiscal_documents" d ON d.id = l."sourceId"
-        WHERE l."businessId" = ${businessId} AND l."sourceType" = 'FISCAL_DOCUMENT' AND l.skipped = false AND d.status = 'A' AND d."statusDate" >= ${fromInstant} AND d."statusDate" < ${toInstant}
+        WHERE l."businessId" = ${businessId} AND l."sourceType" = 'FISCAL_DOCUMENT' AND l.skipped = false AND d.status = 'A' AND d."statusDate" >= ${sqlUtcTimestamp(fromInstant)} AND d."statusDate" < ${sqlUtcTimestamp(toInstant)}
           AND NOT EXISTS (SELECT 1 FROM "accounting_source_links" a WHERE a."businessId" = l."businessId" AND a."sourceType" = 'FISCAL_DOCUMENT_ANNULMENT' AND a."sourceId" = l."sourceId")`),
-      PURCHASE: await count(Prisma.sql`SELECT count(*) AS n FROM "purchases" p JOIN "stores" s ON s.id = p."storeId" WHERE s."businessId" = ${businessId} AND p.status <> 'CANCELLED' AND p."createdAt" >= ${fromInstant} AND p."createdAt" < ${toInstant} AND ${notLinked("PURCHASE", "p")}`),
-      SUPPLIER_PAYMENT: await count(Prisma.sql`SELECT count(*) AS n FROM "supplier_payments" p WHERE p."businessId" = ${businessId} AND p."paidOn" BETWEEN ${dateValue(from)} AND ${dateValue(to)} AND ${notLinked("SUPPLIER_PAYMENT", "p")}`),
-      EXPENSE: await count(Prisma.sql`SELECT count(*) AS n FROM "expenses" e JOIN "stores" s ON s.id = e."storeId" WHERE s."businessId" = ${businessId} AND e."incurredAt" >= ${fromInstant} AND e."incurredAt" < ${toInstant} AND e."cancelledAt" IS NULL AND ${notLinked("EXPENSE", "e")}`),
-      SHIFT_DIFFERENCE: await count(Prisma.sql`SELECT count(*) AS n FROM "shifts" s WHERE s."businessId" = ${businessId} AND s.status = 'CLOSED' AND s.difference <> 0 AND s."closedAt" >= ${fromInstant} AND s."closedAt" < ${toInstant} AND ${notLinked("SHIFT_DIFFERENCE", "s")}`),
-      CASH_MOVEMENT: await count(Prisma.sql`SELECT count(*) AS n FROM "cash_movements" m JOIN "shifts" s ON s.id = m."shiftId" WHERE s."businessId" = ${businessId} AND m."occurredAt" >= ${fromInstant} AND m."occurredAt" < ${toInstant} AND ${notLinked("CASH_MOVEMENT", "m")}`),
-      STOCK_ADJUSTMENT: await count(Prisma.sql`SELECT count(*) AS n FROM "stock_movements" m JOIN "stores" s ON s.id = m."storeId" WHERE s."businessId" = ${businessId} AND m.type = 'ADJUSTMENT' AND m."occurredAt" >= ${fromInstant} AND m."occurredAt" < ${toInstant} AND ${notLinked("STOCK_ADJUSTMENT", "m")}`),
+      PURCHASE: await count(Prisma.sql`SELECT count(*) AS n FROM "purchases" p JOIN "stores" s ON s.id = p."storeId" WHERE s."businessId" = ${businessId} AND p.status <> 'CANCELLED' AND p."createdAt" >= ${sqlUtcTimestamp(fromInstant)} AND p."createdAt" < ${sqlUtcTimestamp(toInstant)} AND ${notLinked("PURCHASE", "p")}`),
+      SUPPLIER_PAYMENT: await count(Prisma.sql`SELECT count(*) AS n FROM "supplier_payments" p WHERE p."businessId" = ${businessId} AND p."paidOn" BETWEEN ${sqlDate(from)} AND ${sqlDate(to)} AND ${notLinked("SUPPLIER_PAYMENT", "p")}`),
+      EXPENSE: await count(Prisma.sql`SELECT count(*) AS n FROM "expenses" e JOIN "stores" s ON s.id = e."storeId" WHERE s."businessId" = ${businessId} AND e."incurredAt" >= ${sqlUtcTimestamp(fromInstant)} AND e."incurredAt" < ${sqlUtcTimestamp(toInstant)} AND e."cancelledAt" IS NULL AND ${notLinked("EXPENSE", "e")}`),
+      SHIFT_DIFFERENCE: await count(Prisma.sql`SELECT count(*) AS n FROM "shifts" s WHERE s."businessId" = ${businessId} AND s.status = 'CLOSED' AND s.difference <> 0 AND s."closedAt" >= ${sqlUtcTimestamp(fromInstant)} AND s."closedAt" < ${sqlUtcTimestamp(toInstant)} AND ${notLinked("SHIFT_DIFFERENCE", "s")}`),
+      CASH_MOVEMENT: await count(Prisma.sql`SELECT count(*) AS n FROM "cash_movements" m JOIN "shifts" s ON s.id = m."shiftId" WHERE s."businessId" = ${businessId} AND m."occurredAt" >= ${sqlUtcTimestamp(fromInstant)} AND m."occurredAt" < ${sqlUtcTimestamp(toInstant)} AND ${notLinked("CASH_MOVEMENT", "m")}`),
+      STOCK_ADJUSTMENT: await count(Prisma.sql`SELECT count(*) AS n FROM "stock_movements" m JOIN "stores" s ON s.id = m."storeId" WHERE s."businessId" = ${businessId} AND m.type = 'ADJUSTMENT' AND m."occurredAt" >= ${sqlUtcTimestamp(fromInstant)} AND m."occurredAt" < ${sqlUtcTimestamp(toInstant)} AND ${notLinked("STOCK_ADJUSTMENT", "m")}`),
     };
     return { counts: counts as Record<SourceType, number>, total: Object.values(counts).reduce((a, b) => a + b, 0) };
   }

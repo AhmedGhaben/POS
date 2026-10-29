@@ -2,6 +2,75 @@
 
 ## Post-audit inventory fixes
 
+### Accounting SQL timezone correction: completed
+
+- Fixed the genuine non-UTC PostgreSQL session defect previously reproduced
+  on `651b292`: SQL DATE comparisons implicitly promoted calendar dates to
+  session-local instants. Today's documents could be summarized early; date
+  ranges could omit their first/last day.
+- Added accounting-only `sqlDate` (validated calendar string cast to DATE)
+  and `sqlUtcTimestamp` (instant converted to UTC-naive timestamp) helpers.
+  Applied them to document/payment integration start dates, daily summaries,
+  timestamp-source integration, pending counts and IVA date predicates.
+  Columns remain uncast in comparison predicates, preserving index use.
+- Purchase IVA fallback now converts UTC-stored createdAt to the business's
+  local calendar before taking its date. Explicit supplier document dates
+  remain authoritative. `dateValue()` is unchanged for Prisma date writes.
+- Preserved the existing clock policy: books, integration start/range bounds
+  and summary eligibility use the business-country clock (AO: Africa/Luanda).
+  Explicit store overrides still determine fiscal document/source transaction
+  dates. Purchase IVA's missing-date fallback uses the business clock, even
+  when the store overrides its zone. Per-store summary closing would be a
+  separate product-policy change; it is not introduced here.
+- Added `accounting-timezones.e2e-spec.ts`: 11 actual database/service/API
+  regressions, run unchanged against UTC, Europe/Moscow, Africa/Luanda and
+  America/New_York; the suite checks its configured session timezone.
+  Coverage includes Luanda midnight, month/year boundaries and leap day,
+  summary eligibility, repeated integration, delayed offline arrivals,
+  inclusive start dates, first/last-day document/payment pending counts,
+  UTC timestamp boundaries for purchases/expenses/shifts/cash/stock,
+  IVA charged/deductible/cativo totals, business-local purchase fallback,
+  period-close refusal and retry, and explicit store overrides.
+  Issued fiscal documents are compared unchanged after integration; posting
+  date, transaction date, year and period are checked against their dates.
+- Final verification: accounting E2E (original 54 + new 11) **65/65 in
+  each of UTC, Europe/Moscow, Africa/Luanda and America/New_York**. UTC's
+  accounting suites also pass within the full API run: **38 suites / 349
+  tests passed**, including fiscal/signing/SAF-T, offline sales, archive,
+  stock counts, isolation and adjustment concurrency. API unit: **47 suites /
+  303 tests passed**. Full-source API TypeScript (including tests), touched
+  ESLint, whitespace checks and API build into temporary output pass.
+  No remaining failures in the final runs. Jest retains the existing
+  force-exit/open-handle advisory from the integration test configuration.
+- Repeat the matrix with `POS_ACCOUNTING_TEST_TIMEZONE` set to the assigned
+  PostgreSQL timezone and an explicit isolated `DATABASE_URL`; run
+  `jest --config test/jest-e2e.json --runInBand accounting.e2e-spec.ts
+  accounting-timezones.e2e-spec.ts`. The full suite requires synthetic seed
+  fixtures in its own fresh database. JSON reports remain in the OS temp
+  directory as `pos-accounting-{moscow,luanda,newyork}-e2e.json` and
+  `pos-accounting-full-seeded-e2e.json` (UTC full suite).
+- Isolation: fresh temporary cluster `pos-accounting-date-fix-pg`, loopback
+  55489, synthetic user `pos_accounting_test`. Four new timezone databases
+  `pos_accounting_{utc,moscow,luanda,newyork}_test` received all 49 existing
+  migrations. A fifth fresh UTC database `pos_accounting_full_test` contains
+  the repository's synthetic seed fixtures required by older API suites.
+  No existing demo/production database, real credentials or fiscal data used.
+  The temporary cluster is stopped; test databases/builds/reports are retained
+  under the OS temp directory for inspection.
+- Initial validation caught test fixture assumptions (default service type
+  versus goods account) and the old suites' seeded-data dependency. Fixtures
+  were corrected and the full run moved to the new seeded test database.
+- No migration, historical data repair, fiscal numbering/signing/storage,
+  stock writer or outbox changes. Existing records are never rewritten by
+  this fix. If accounting ran with non-UTC database sessions, review prior
+  partial summaries, missing start-date records, IVA boundary totals and
+  closed periods separately; corrected queries can reveal previously hidden
+  pending records. No automatic historical correction is attempted.
+- Item 8's zero-cost/free-item decision, full desktop suite/zz-probe coverage
+  and the existing Electron upstream-cancellation limitation remain separate
+  outstanding work. No Prompt 2, push, merge or deployment.
+
+
 ### Item 6 - archive stock lookup and confirmation: completed
 
 - Product form disables Archive/Archive anyway during loading, refetching,

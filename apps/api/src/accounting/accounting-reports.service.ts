@@ -4,7 +4,7 @@ import { CustomerAccountsService } from "../accounts/customer-accounts.service";
 import { SupplierAccountsService } from "../accounts/supplier-accounts.service";
 import { buildXlsx, XlsxCell } from "../common/xlsx";
 import { PrismaService } from "../prisma/prisma.service";
-import { businessToday, dateValue, isoDate } from "./accounting-dates";
+import { businessTimeZone, businessToday, isoDate, sqlDate } from "./accounting-dates";
 import { compareCodes } from "./chart";
 import { ZERO } from "./entry-rules";
 import { periodDates } from "./periods";
@@ -394,6 +394,10 @@ export class AccountingReportsService {
   private async vat(businessId: string, r: { year: number; fromPeriod: number; toPeriod: number }): Promise<ReportTable[]> {
     const from = periodDates(r.year, Math.max(1, Math.min(12, r.fromPeriod))).startDate;
     const to = periodDates(r.year, Math.max(1, Math.min(12, r.toPeriod))).endDate;
+    const business = await this.prisma.business.findUniqueOrThrow({ where: { id: businessId } });
+    const zone = businessTimeZone(business);
+    // createdAt is UTC-naive; a missing supplier date uses the books' calendar.
+    const purchaseDate = Prisma.sql`COALESCE(p."supplierDocDate", ((p."createdAt" AT TIME ZONE 'UTC') AT TIME ZONE ${zone})::date)`;
     const charged = await this.prisma.$queryRaw<{ code: string; percentage: Prisma.Decimal; exemption: string | null; regime: string; base: Prisma.Decimal; tax: Prisma.Decimal }[]>`
       SELECT t."taxCode" AS code, t.percentage, t."exemptionCode" AS exemption, s."ivaRegime"::text AS regime,
         SUM(CASE WHEN d."documentType" = 'NC' THEN -l."netAmount" ELSE l."netAmount" END) AS base,
@@ -403,17 +407,17 @@ export class AccountingReportsService {
       JOIN "fiscal_documents" d ON d.id = l."documentId"
       JOIN "stores" s ON s.id = d."storeId"
       WHERE d."businessId" = ${businessId} AND d.status <> 'A' AND d."documentType" IN ('FR', 'FT', 'ND', 'NC') AND t."taxType" = 'IVA'
-        AND d."invoiceDate" BETWEEN ${dateValue(from)} AND ${dateValue(to)}
+        AND d."invoiceDate" BETWEEN ${sqlDate(from)} AND ${sqlDate(to)}
       GROUP BY 1, 2, 3, 4 ORDER BY 4, 2 DESC, 3`;
     const deductible = await this.prisma.$queryRaw<{ typology: string; base: Prisma.Decimal; tax: Prisma.Decimal; deductible: Prisma.Decimal }[]>`
       SELECT tl.typology, SUM(tl.base) AS base, SUM(tl."taxAmount") AS tax, SUM(tl."deductibleAmount") AS deductible
       FROM "purchase_tax_lines" tl JOIN "purchases" p ON p.id = tl."purchaseId" JOIN "stores" s ON s.id = p."storeId"
       WHERE s."businessId" = ${businessId} AND p.status <> 'CANCELLED'
-        AND COALESCE(p."supplierDocDate", p."createdAt"::date) BETWEEN ${dateValue(from)} AND ${dateValue(to)}
+        AND ${purchaseDate} BETWEEN ${sqlDate(from)} AND ${sqlDate(to)}
       GROUP BY 1 ORDER BY 1`;
     const cativo = await this.prisma.$queryRaw<{ amount: Prisma.Decimal | null }[]>`
       SELECT SUM(p."withholdingAmount") AS amount FROM "purchases" p JOIN "stores" s ON s.id = p."storeId"
-      WHERE s."businessId" = ${businessId} AND p.status <> 'CANCELLED' AND COALESCE(p."supplierDocDate", p."createdAt"::date) BETWEEN ${dateValue(from)} AND ${dateValue(to)}`;
+      WHERE s."businessId" = ${businessId} AND p.status <> 'CANCELLED' AND ${purchaseDate} BETWEEN ${sqlDate(from)} AND ${sqlDate(to)}`;
     const general = charged.filter((c) => c.regime !== "SIMPLIFICADO");
     const simplified = charged.filter((c) => c.regime === "SIMPLIFICADO");
     const D = (v: Prisma.Decimal | null) => new Prisma.Decimal(v ?? 0);

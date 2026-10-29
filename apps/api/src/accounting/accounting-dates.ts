@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+import { parseCalendarDate } from "../fiscal/saft/period";
 import { countryConfig } from "../countries";
 import { fiscalTimeZone, localDateTime } from "../fiscal/fiscal-format";
 
@@ -19,4 +21,14 @@ export function isoDate(d: Date): string {
 /** YYYY-MM-DD → the DATE column value. */
 export function dateValue(date: string): Date {
   return new Date(`${date}T00:00:00Z`);
+}
+
+/** Raw SQL DATE comparisons must not promote dates to session-local instants. */
+export function sqlDate(date: string): Prisma.Sql {
+  return Prisma.sql`${parseCalendarDate(date)}::date`;
+}
+
+/** Prisma binds Date parameters as timestamptz; stored timestamps are UTC-naive. */
+export function sqlUtcTimestamp(instant: Date): Prisma.Sql {
+  return Prisma.sql`(${instant} AT TIME ZONE 'UTC')`;
 }
