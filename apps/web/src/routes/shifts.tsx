@@ -166,10 +166,10 @@ export function ShiftsPage() {
           {detail.data && (
             <>
               <div className="max-h-[60vh] overflow-y-auto rounded-md border bg-white py-3 text-black">
-                <ShiftReport data={reportFromServer(detail.data)} store={store} />
+                <ShiftReport data={reportFromServer(detail.data)} store={store} withSales />
               </div>
               <PrintArea>
-                <ShiftReport data={reportFromServer(detail.data)} store={store} />
+                <ShiftReport data={reportFromServer(detail.data)} store={store} withSales />
               </PrintArea>
               <Button onClick={() => void printDocument()}>{t("close.print")}</Button>
             </>

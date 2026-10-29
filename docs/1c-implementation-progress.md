@@ -50,11 +50,26 @@ Then import CSV `SKU,Quantity` with one row per product; inspect differences.
 An invalid/duplicate row must disable Apply. Change stock elsewhere after
 preview: applying must fail without applying any of the count.
 
+## Item 11 — back-office shift report parity: completed
+
+- Both back-office preview and PrintArea now request the shared report's full
+  sales list: number, time, payment method and total, including cancellations.
+  Existing payment breakdown, product breakdown, float/count/difference and
+  notes use the same template and server summary as the cashier's report.
+  The cashier's existing optional sales-list checkbox remains available.
+- Tests: report rendering/document-language subset 11 passed; existing shift
+  API integration suite 7 passed on the isolated database. API/web/desktop
+  TypeScript checks passed; touched web ESLint passed.
+- Browser and Windows Electron UI suite: 2 passed, extended to create two
+  sales (cash and card), close the shift, compare close/back-office summaries,
+  verify sales/product/cash reconciliation and compare preview with print DOM.
+  Temporary desktop web bundle rebuilt successfully.
+- Manual check: Shifts → open a closed shift → every sale must be listed;
+  print preview must contain the same sales and cash/product breakdowns.
+
 ## Remaining milestones
 
-1. Item 11: include the full sales list in back-office preview and print;
-   verify parity with the shared close-shift report.
-2. Item 12: audit fiscal-number display on shift lists, printouts, exports
+1. Item 12: audit fiscal-number display on shift lists, printouts, exports
    and remaining invoice-related views. Do not change numbering/signing.
 
 ## Pending decisions and preserved work

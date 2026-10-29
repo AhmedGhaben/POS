@@ -1,11 +1,12 @@
 import { chromium, expect, test, type ElectronApplication, type Page } from "@playwright/test";
 import { API_URL, connect, launch, tempUserData } from "./helpers";
+import { randomUUID } from "node:crypto";
 
 // Explicit opt-in: all data belongs to a fresh business on the isolated test API.
 test.skip(process.env.POS_RECOVERY_UI_TESTS !== "1", "Requires an isolated recovery API and POS_RECOVERY_UI_TESTS=1");
 
 for (const mode of ["browser", "electron"] as const) {
-  test(`${mode}: bulk stock count preview and Save all at touchscreen sizes`, async ({ request }) => {
+  test(`${mode}: stock counts and full back-office shift report at touchscreen sizes`, async ({ request }) => {
     expect(new URL(API_URL).hostname).toMatch(/^(localhost|127\.0\.0\.1)$/);
     const registration = await request.post(`${API_URL}/auth/register`, { data: {
       businessName: `Count UI ${mode}`, storeName: "Count UI Store", firstName: "Count", lastName: "Owner",
@@ -62,6 +63,30 @@ for (const mode of ["browser", "electron"] as const) {
       const inventory = await request.get(`${API_URL}/stores/${storeId}/inventory`, { headers });
       const items = await inventory.json();
       expect(items.map((i: { product: { sku: string }; quantity: string }) => [i.product.sku, i.quantity]).sort()).toEqual([["COUNT-A", "2"], ["COUNT-B", "9"]]);
+
+      const shiftClientId = randomUUID();
+      const opened = await request.post(`${API_URL}/shifts/open`, { headers, data: { storeId, clientId: shiftClientId, openingFloat: 10 } });
+      expect(opened.status()).toBe(200);
+      for (const method of ["CASH", "CARD"]) {
+        const sold = await request.post(`${API_URL}/sales`, { headers, data: { storeId, shiftClientId, lineItems: [{ productId: items[0].productId, quantity: 1 }], payments: [{ method, amount: 4 }] } });
+        expect(sold.status()).toBe(201);
+      }
+      const closed = await request.post(`${API_URL}/shifts/close`, { headers, data: { storeId, shiftClientId, countedCash: 15, note: "UI count note" } });
+      expect(closed.status()).toBe(200);
+      const report = await closed.json();
+      expect(report.summary.sales).toHaveLength(2);
+      const backoffice = await request.get(`${API_URL}/shifts/${report.id}`, { headers });
+      expect((await backoffice.json()).summary).toEqual(report.summary);
+      await page.goto(`${origin}/shifts`);
+      await page.locator("main tbody tr").first().click();
+      const shiftDialog = page.getByRole("dialog");
+      await expect(shiftDialog).toContainText("UI count note");
+      await expect(shiftDialog).toContainText("Count coffee");
+      await expect(shiftDialog).toContainText("Multicaixa");
+      await expect(shiftDialog).toContainText("Sobra 1,00");
+      for (const sale of report.summary.sales) await expect(shiftDialog).toContainText(sale.documentNo ?? sale.receiptNumber);
+      const print = page.locator("#print-root .receipt-slip");
+      expect(await print.textContent()).toEqual(await shiftDialog.locator(".receipt-slip").textContent());
     } finally { await app?.close(); await browser?.close(); }
   });
 }
