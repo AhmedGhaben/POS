@@ -1544,3 +1544,20 @@ export interface DocumentPrintResultDto {
   reprint: boolean;
   printCount: number;
 }
+/** A stock count preview never changes stock. Resolve every error before applying it. */
+export interface StockCountPreviewRowDto {
+  row: number;
+  identifier: string;
+  quantity: number | null;
+  productId?: string;
+  name?: string;
+  unit?: string;
+  currentQuantity?: string;
+  difference?: string;
+  error?: "missingIdentifier" | "unknownProduct" | "ambiguousProduct" | "notStockProduct" | "duplicateProduct" | "invalidQuantity" | "wholeUnits";
+}
+
+export interface StockCountInputDto {
+  lines: { productId: string; quantity: number; expectedQuantity?: number }[];
+  note?: string;
+}

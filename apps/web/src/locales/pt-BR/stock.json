@@ -155,5 +155,31 @@
       "TRANSFER_OUT": "Transferência enviada",
       "ADJUSTMENT": "Ajuste de contagem"
     }
+  },
+  "count": {
+    "discard": "Descartar alterações",
+    "saveAll": "Salvar tudo ({{count}})",
+    "import": "Importar contagem",
+    "title": "Revisar contagem de estoque",
+    "hint": "Revise todas as diferenças antes de aplicar. Os produtos são salvos juntos; alterações de estoque após esta prévia exigem nova revisão.",
+    "current": "Atual",
+    "counted": "Contado",
+    "difference": "Diferença",
+    "apply": "Aplicar contagem",
+    "saved": "Contagem salva: {{count}} produtos alterados",
+    "fixErrors": "Corrija todos os erros no arquivo e importe novamente. Nada foi aplicado.",
+    "reviewAgain": "Não foi possível salvar. Feche esta prévia, atualize o estoque e revise a contagem.",
+    "fileHint": "CSV ou Excel (.xlsx), até 5 MB e 5000 linhas. Colunas: SKU ou Código de barras, Quantidade contada. Use números simples (vírgula ou ponto decimal), sem separadores de milhares. Salve ou limpe as edições manuais antes de importar.",
+    "fileTooLarge": "Os arquivos têm no máximo 5 MB.",
+    "unreadable": "Não foi possível ler o arquivo.",
+    "errors": {
+      "missingIdentifier": "Informe o SKU ou código de barras.",
+      "unknownProduct": "Produto não encontrado nesta empresa.",
+      "ambiguousProduct": "SKU e código de barras devem identificar o mesmo produto, sem ambiguidades.",
+      "notStockProduct": "Escolha um produto ativo com controle de estoque.",
+      "duplicateProduct": "O produto aparece mais de uma vez.",
+      "invalidQuantity": "Informe uma quantidade não negativa com até 3 casas decimais.",
+      "wholeUnits": "Este produto exige uma quantidade inteira."
+    }
   }
 }

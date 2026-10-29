@@ -11,6 +11,16 @@ import { ACCOUNTING_EXACT, ACCOUNTING_PATTERNS } from "./accounting-messages";
 export type Translations = Record<TranslatedLanguage, string>;
 
 const EXACT: Record<string, Translations> = {
+  "Use a CSV or Excel (.xlsx) stock count file": { "pt-PT": "Use um ficheiro de contagem CSV ou Excel (.xlsx)", "pt-BR": "Use um arquivo de contagem CSV ou Excel (.xlsx)" },
+  "Stock count files are 5 MB at most": { "pt-PT": "Os ficheiros de contagem têm no máximo 5 MB", "pt-BR": "Os arquivos de contagem têm no máximo 5 MB" },
+  "The stock count file cannot be read": { "pt-PT": "Não foi possível ler o ficheiro de contagem", "pt-BR": "Não foi possível ler o arquivo de contagem" },
+  "A stock count needs 1 to 5000 product rows": { "pt-PT": "Uma contagem exige entre 1 e 5000 linhas de produtos", "pt-BR": "Uma contagem exige entre 1 e 5000 linhas de produtos" },
+  "Use SKU or Barcode and Counted quantity column headings": { "pt-PT": "Use os cabeçalhos SKU ou Código de barras e Quantidade contada", "pt-BR": "Use os cabeçalhos SKU ou Código de barras e Quantidade contada" },
+  "A product can only appear once in a stock count": { "pt-PT": "Um produto só pode aparecer uma vez na contagem", "pt-BR": "Um produto só pode aparecer uma vez na contagem" },
+  "Every counted product must be an active stock product in this business": { "pt-PT": "Todos os produtos contados devem estar activos e ter controlo de stock nesta empresa", "pt-BR": "Todos os produtos contados devem estar ativos e ter controle de estoque nesta empresa" },
+  "Count whole units for products sold in whole units": { "pt-PT": "Conte unidades inteiras para produtos vendidos à unidade", "pt-BR": "Conte unidades inteiras para produtos vendidos por unidade" },
+  "Stock changed since the count was prepared. Refresh and review the count again.": { "pt-PT": "O stock mudou desde a preparação da contagem. Actualize e reveja a contagem.", "pt-BR": "O estoque mudou desde a preparação da contagem. Atualize e revise a contagem." },
+
   // Generic
   "Internal server error": { "pt-PT": "Erro interno do servidor", "pt-BR": "Erro interno do servidor" },
   "Forbidden resource": { "pt-PT": "Não tem permissão para fazer isto", "pt-BR": "Você não tem permissão para fazer isso" },

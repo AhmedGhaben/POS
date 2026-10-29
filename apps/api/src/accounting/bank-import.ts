@@ -12,7 +12,7 @@ import { inflateRawSync } from "zlib";
 export type Table = string[][];
 
 /** A CSV file (";" or "," separated, quoted fields, BOM) as rows of text. */
-export function readCsv(text: string): Table {
+export function readCsv(text: string, strict = false): Table {
   const input = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
   const firstLine = input.split(/\r?\n/, 1)[0] ?? "";
   const delimiter = (firstLine.match(/;/g)?.length ?? 0) >= (firstLine.match(/,/g)?.length ?? 0) && firstLine.includes(";") ? ";" : firstLine.includes("\t") ? "\t" : ",";
@@ -40,6 +40,7 @@ export function readCsv(text: string): Table {
       field = "";
     } else field += ch;
   }
+  if (strict && quoted) throw new Error("Unclosed CSV quote");
   row.push(field);
   if (row.some((c) => c.trim())) rows.push(row);
   return rows.map((r) => r.map((c) => c.trim()));
@@ -52,6 +53,8 @@ function unzipAny(archive: Buffer): Map<string, Buffer> {
   const end = archive.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
   if (end < 0) throw new Error("Not a zip file");
   const count = archive.readUInt16LE(end + 10);
+  if (count > 1000) throw new Error("Too many archive entries");
+  let expanded = 0;
   let p = archive.readUInt32LE(end + 16);
   for (let i = 0; i < count; i++) {
     const method = archive.readUInt16LE(p + 10);
@@ -65,7 +68,10 @@ function unzipAny(archive: Buffer): Map<string, Buffer> {
     const localExtra = archive.readUInt16LE(local + 28);
     const start = local + 30 + localName + localExtra;
     const data = archive.subarray(start, start + compressed);
-    files.set(name, method === 8 ? inflateRawSync(data) : Buffer.from(data));
+    const contents = method === 8 ? inflateRawSync(data, { maxOutputLength: 20 * 1024 * 1024 }) : Buffer.from(data);
+    expanded += contents.length;
+    if (expanded > 20 * 1024 * 1024) throw new Error("Workbook is too large");
+    files.set(name, contents);
     p += 46 + nameLength + extraLength + commentLength;
   }
   return files;
@@ -74,8 +80,8 @@ function unzipAny(archive: Buffer): Map<string, Buffer> {
 const xmlText = (s: string) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n))).replace(/&amp;/g, "&");
 
 /** A CSV file or the first sheet of an Excel (.xlsx) one, told apart by name or content. */
-export function readTable(fileName: string, data: Buffer): Table {
-  return /\.xlsx$/i.test(fileName) || data.subarray(0, 2).toString("latin1") === "PK" ? readXlsx(data) : readCsv(data.toString("utf8"));
+export function readTable(fileName: string, data: Buffer, strictCsv = false): Table {
+  return /\.xlsx$/i.test(fileName) || data.subarray(0, 2).toString("latin1") === "PK" ? readXlsx(data) : readCsv(data.toString("utf8"), strictCsv);
 }
 
 /** The first sheet of an Excel (.xlsx) file as rows of text (numbers as written in the cell, dates as Excel day numbers). */

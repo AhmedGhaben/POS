@@ -20,6 +20,7 @@ export interface MovementInput {
   returnId?: string;
   purchaseId?: string;
   transferId?: string;
+  stockCountId?: string;
   userId?: string;
   note?: string;
   /** When it happened (an offline sale's time); now by default. */
@@ -59,6 +60,7 @@ export async function recordMovement(tx: Prisma.TransactionClient, input: Moveme
       returnId: input.returnId,
       purchaseId: input.purchaseId,
       transferId: input.transferId,
+      stockCountId: input.stockCountId,
       userId: input.userId,
       note: input.note,
       ...(input.occurredAt ? { occurredAt: input.occurredAt } : {}),

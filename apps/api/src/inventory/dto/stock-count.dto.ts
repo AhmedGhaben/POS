@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { ArrayMaxSize, ArrayMinSize, IsNumber, IsOptional, IsString, MaxLength, Min, ValidateNested } from "class-validator";
+import { ArrayMaxSize, ArrayMinSize, IsNumber, IsOptional, IsString, Max, MaxLength, Min, ValidateNested } from "class-validator";
 
 export class StockCountLineDto {
   @IsString()
@@ -8,7 +8,13 @@ export class StockCountLineDto {
   /** What was counted; up to 3 decimals (kg, litres...). */
   @IsNumber({ maxDecimalPlaces: 3 })
   @Min(0)
+  @Max(99999999999.999)
   quantity!: number;
+
+  /** Stock shown while counting: refuse a stale count rather than lose a sale. */
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 3 })
+  expectedQuantity?: number;
 }
 
 /** A whole stock count saved at once (tester #41). */

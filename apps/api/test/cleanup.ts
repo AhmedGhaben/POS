@@ -43,6 +43,7 @@ export async function deleteBusiness(prisma: PrismaService, businessId: string):
     prisma.stockTransferLineItem.deleteMany({ where: { transfer: { businessId } } }),
     prisma.stockTransfer.deleteMany({ where: { businessId } }),
     prisma.stockMovement.deleteMany({ where: inStores }),
+    prisma.stockCount.deleteMany({ where: { businessId } }),
     prisma.inventoryItem.deleteMany({ where: inStores }),
     prisma.terminalPairingCode.deleteMany({ where: { businessId } }),
     prisma.terminal.deleteMany({ where: { businessId } }),

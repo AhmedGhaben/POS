@@ -155,5 +155,31 @@
       "TRANSFER_OUT": "Transfer out",
       "ADJUSTMENT": "Count adjustment"
     }
+  },
+  "count": {
+    "discard": "Discard edits",
+    "saveAll": "Save all ({{count}})",
+    "import": "Import count",
+    "title": "Review stock count",
+    "hint": "Review every difference before applying. All products are saved together; stock changes since this preview require another review.",
+    "current": "Current",
+    "counted": "Counted",
+    "difference": "Difference",
+    "apply": "Apply stock count",
+    "saved": "Stock count saved: {{count}} products changed",
+    "fixErrors": "Fix every error in the file and import it again. Nothing has been applied.",
+    "reviewAgain": "The count could not be saved. Close this preview, refresh the stock and review again.",
+    "fileHint": "CSV or Excel (.xlsx), up to 5 MB and 5000 rows. Columns: SKU or Barcode, Counted quantity. Use plain numbers (decimal comma or point), without thousands separators. Save or clear manual edits before importing.",
+    "fileTooLarge": "Files are 5 MB at most.",
+    "unreadable": "The file cannot be read.",
+    "errors": {
+      "missingIdentifier": "SKU or barcode is required.",
+      "unknownProduct": "Product not found in this business.",
+      "ambiguousProduct": "SKU and barcode must identify the same single product.",
+      "notStockProduct": "Choose an active product that tracks stock.",
+      "duplicateProduct": "Product appears more than once.",
+      "invalidQuantity": "Enter a non-negative quantity with at most 3 decimals.",
+      "wholeUnits": "This product needs a whole number."
+    }
   }
 }

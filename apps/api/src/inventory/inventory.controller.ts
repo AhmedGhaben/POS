@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from "@nestjs/common";
 import { Permission, Role } from "@prisma/client";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -8,6 +8,7 @@ import { PermissionsService } from "../common/permissions/permissions.service";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { AdjustStockDto } from "./dto/adjust-stock.dto";
 import { InventoryService } from "./inventory.service";
+import { CreateStockCountDto, ParseStockCountDto } from "./dto/stock-count.dto";
 
 /** Costs are for people who may see cost prices (VIEW_COST_PRICE). */
 function withoutCosts<T extends { averageCost?: unknown; product?: { costPrice?: unknown } }>(item: T) {
@@ -27,6 +28,18 @@ export class InventoryController {
 
   private canSeeCosts(user: AuthenticatedUser) {
     return this.permissions.hasPermission(user.userId, user.role, Permission.VIEW_COST_PRICE);
+  }
+
+  @Post("counts/preview")
+  @Roles(Role.OWNER, Role.MANAGER)
+  previewCount(@Param("storeId") storeId: string, @Body() dto: ParseStockCountDto) {
+    return this.inventoryService.previewCount(storeId, dto);
+  }
+
+  @Post("counts")
+  @Roles(Role.OWNER, Role.MANAGER)
+  createCount(@CurrentUser() user: AuthenticatedUser, @Param("storeId") storeId: string, @Body() dto: CreateStockCountDto) {
+    return this.inventoryService.createCount(storeId, dto, user.userId);
   }
 
   @Get()

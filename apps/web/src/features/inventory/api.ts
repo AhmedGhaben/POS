@@ -1,5 +1,14 @@
 import type { AdjustStockDto, InventoryItemDto, StockAtDateRowDto, StockMovementDto } from "@pos/shared";
 import { apiClient } from "@/lib/api-client";
+import type { StockCountInputDto, StockCountPreviewRowDto } from "@pos/shared";
+
+export function createStockCount(storeId: string, dto: StockCountInputDto) {
+  return apiClient.post<{ id: string; changed: number }>(`/stores/${storeId}/inventory/counts`, dto);
+}
+
+export function previewStockCount(storeId: string, fileName: string, dataUrl: string) {
+  return apiClient.post<{ rows: StockCountPreviewRowDto[] }>(`/stores/${storeId}/inventory/counts/preview`, { fileName, dataUrl });
+}
 
 export function fetchInventory(storeId: string) {
   return apiClient.get<InventoryItemDto[]>(`/stores/${storeId}/inventory`);

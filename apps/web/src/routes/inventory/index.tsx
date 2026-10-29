@@ -20,6 +20,8 @@ import { filterInventory, isLowStock } from "@/features/inventory/filter";
 import { downloadCsv } from "@/lib/csv";
 import { formatDateTime, formatQuantity } from "@/lib/format";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { StockCountActions } from "@/features/inventory/components/StockCountActions";
+import type { CountEdits } from "@/features/inventory/count-draft";
 
 export function InventoryPage() {
   const { t } = useTranslation(["stock", "common"]);
@@ -30,7 +32,8 @@ export function InventoryPage() {
   const role = useAuthStore((s) => s.user?.role);
   const canManage = role === "OWNER" || role === "MANAGER";
   const queryClient = useQueryClient();
-  const [edits, setEdits] = React.useState<Record<string, string>>({});
+  const [edits, setEdits] = React.useState<CountEdits>({});
+  React.useEffect(() => setEdits({}), [currentStoreId]);
   const [historyFor, setHistoryFor] = React.useState<InventoryItemDto | null>(null);
   const [search, setSearch] = React.useState("");
   const [lowOnly, setLowOnly] = React.useState(false);
@@ -105,6 +108,8 @@ export function InventoryPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
+        {canManage && <StockCountActions key={currentStoreId} storeId={currentStoreId} items={items} edits={edits} onSaved={() => setEdits({})} disabled={adjustMutation.isPending || inventoryQuery.isFetching} />}
+        {canManage && <p className="w-full text-sm text-muted-foreground">{t("count.fileHint")}</p>}
         <div className="relative w-full max-w-xs">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden />
           <Input
@@ -136,7 +141,7 @@ export function InventoryPage() {
             <TableBody>
               {shown.map((item) => {
                 const unit = item.product.unit ?? "un";
-                const editValue = edits[item.productId] ?? String(Number(item.quantity));
+                const editValue = edits[item.productId]?.quantity ?? String(Number(item.quantity));
                 const low = isLowStock(item);
                 return (
                   <TableRow key={item.id}>
@@ -159,7 +164,8 @@ export function InventoryPage() {
                           className="w-28"
                           aria-label={t("inventory.countFor", { name: item.product.name })}
                           value={editValue}
-                          onChange={(e) => setEdits((prev) => ({ ...prev, [item.productId]: e.target.value }))}
+                          disabled={!canManage}
+                          onChange={(e) => setEdits((prev) => ({ ...prev, [item.productId]: { quantity: e.target.value, expectedQuantity: prev[item.productId]?.expectedQuantity ?? Number(item.quantity) } }))}
                         />
                         {unit !== "un" && <span className="text-sm text-muted-foreground">{unit}</span>}
                       </div>
@@ -168,7 +174,7 @@ export function InventoryPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={adjustMutation.isPending}
+                        disabled={!canManage || adjustMutation.isPending}
                         onClick={() =>
                           adjustMutation.mutate({
                             productId: item.productId,

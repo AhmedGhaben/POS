@@ -1,9 +1,12 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { unitDecimals } from "../sales/pricing";
 import { recordMovement } from "../stock/stock";
 import { AdjustStockDto } from "./dto/adjust-stock.dto";
+import { CreateStockCountDto, ParseStockCountDto } from "./dto/stock-count.dto";
+import { readTable } from "../accounting/bank-import";
+import { previewCountRows } from "./count-import";
 
 export interface StockAtDateRow {
   productId: string;
@@ -20,6 +23,57 @@ export interface StockAtDateRow {
 @Injectable()
 export class InventoryService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async previewCount(storeId: string, dto: ParseStockCountDto) {
+    if (!/\.(csv|xlsx)$/i.test(dto.fileName)) throw new BadRequestException("Use a CSV or Excel (.xlsx) stock count file");
+    const match = /^data:[^,]*;base64,([A-Za-z0-9+/=\r\n]+)$/.exec(dto.dataUrl);
+    if (!match || dto.dataUrl.length > 7 * 1024 * 1024) throw new BadRequestException("Stock count files are 5 MB at most");
+    const data = Buffer.from(match[1], "base64");
+    if (data.length > 5 * 1024 * 1024) throw new BadRequestException("Stock count files are 5 MB at most");
+    let table: string[][];
+    try { table = readTable(dto.fileName, data, true); }
+    catch { throw new BadRequestException("The stock count file cannot be read"); }
+    if (table.length < 2 || table.length > 5001) throw new BadRequestException("A stock count needs 1 to 5000 product rows");
+    const store = await this.prisma.store.findUnique({ where: { id: storeId } });
+    if (!store) throw new NotFoundException("Store not found");
+    const products = await this.prisma.product.findMany({
+      where: { businessId: store.businessId },
+      select: { id: true, sku: true, barcode: true, name: true, unit: true, trackStock: true, isActive: true,
+        inventoryItems: { where: { storeId }, select: { quantity: true } } },
+    });
+    try {
+      return { rows: previewCountRows(table, products.map((p) => ({ ...p, quantity: p.inventoryItems[0]?.quantity.toString() ?? "0" }))) };
+    } catch { throw new BadRequestException("Use SKU or Barcode and Counted quantity column headings"); }
+  }
+
+  /** Lock before reading each balance; deterministic ordering prevents count/count deadlocks. */
+  async createCount(storeId: string, dto: CreateStockCountDto, userId: string) {
+    if (new Set(dto.lines.map((l) => l.productId)).size !== dto.lines.length) throw new BadRequestException("A product can only appear once in a stock count");
+    return this.prisma.$transaction(async (tx) => {
+      const store = await tx.store.findUnique({ where: { id: storeId } });
+      if (!store) throw new NotFoundException("Store not found");
+      const count = await tx.stockCount.create({ data: { businessId: store.businessId, storeId, userId, note: dto.note?.trim() || null } });
+      let changed = 0;
+      for (const line of [...dto.lines].sort((a, b) => a.productId.localeCompare(b.productId))) {
+        const product = await tx.product.findFirst({ where: { id: line.productId, businessId: store.businessId, isActive: true, trackStock: true } });
+        if (!product) throw new BadRequestException("Every counted product must be an active stock product in this business");
+        if (unitDecimals(product.unit) === 0 && !Number.isInteger(line.quantity)) throw new BadRequestException("Count whole units for products sold in whole units");
+        const item = await tx.inventoryItem.upsert({
+          where: { storeId_productId: { storeId, productId: product.id } },
+          create: { storeId, productId: product.id, quantity: 0, averageCost: product.costPrice },
+          update: { quantity: { increment: 0 } },
+        });
+        if (line.expectedQuantity != null && !item.quantity.equals(line.expectedQuantity)) throw new ConflictException("Stock changed since the count was prepared. Refresh and review the count again.");
+        const difference = new Prisma.Decimal(line.quantity).sub(item.quantity);
+        if (!difference.isZero()) {
+          await recordMovement(tx, { storeId, product, type: "ADJUSTMENT", quantity: difference, userId, stockCountId: count.id, note: count.note ?? undefined });
+          changed++;
+        }
+      }
+      await tx.auditLog.create({ data: { businessId: store.businessId, userId, action: "inventory.count", entityType: "StockCount", entityId: count.id, metadata: { storeId, products: dto.lines.length, changed } } });
+      return { id: count.id, changed };
+    }, { timeout: 60_000 });
+  }
 
   /**
    * The store's stock: its inventory rows, plus every active product that
