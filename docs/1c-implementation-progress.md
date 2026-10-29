@@ -2,6 +2,46 @@
 
 ## Post-audit inventory fixes
 
+### Bank-upload percent-encoding validation correction (2026-10-29)
+
+- Reproduced the audit's `data:text/csv,%E0%A4%A` request on this branch before
+  changing application code: the new regression expected HTTP 400 and received
+  HTTP 500. The request DTO validates strings; BankService.parse decoded the
+  payload before its readTable error handler. decodeURIComponent threw URIError.
+  CSV/XLSX preview is separate from mapped statement import and has no writes.
+- Small correction: catch only URIError in the payload-decoding block and return
+  the existing translated unreadable-file BadRequestException. Unexpected
+  decoding exceptions still propagate. The shared readTable/CSV/XLSX readers,
+  permissive CSV preview, column mapping, 5 MB size limit, statement writes,
+  reconciliation and accounting entry logic are unchanged. No fiscal or schema
+  changes, and no changes to existing successful/invalid workbook behavior.
+- Regression coverage: malformed UTF-8 escapes, bare/truncated percent escapes
+  and non-hex escapes; sanitized HTTP 400 without internal details; unchanged
+  statement, statement-line, journal-entry and audit counts after rejection.
+  Valid percent-encoded Unicode/literal-percent CSV round-trips through mapped
+  import. Base64 CSV/XLSX, corrupt/truncated/sheetless/expanded workbooks and
+  invalid movement rows retain their previous behavior. Unexpected decoder
+  errors propagate; an injected database failure remains a sanitized HTTP 500
+  and creates no import rows. The existing bank accounting tests additionally
+  verify auto/manual matching, fee posting and duplicate-post safeguards.
+- Validation: full API unit **49 suites / 324 tests passed**; relevant API
+  integration **2 suites / 62 tests passed** (`prompt1c-verification` and full
+  `accounting`, including bank reconciliation). API TypeScript including tests,
+  touched-file ESLint and diff checks passed. The pre-fix reproduction is the
+  only expected failing run; no failures remain in final runs. The deliberate
+  server-failure test logs its synthetic error; its HTTP 500 assertion passes.
+- Fresh isolated PostgreSQL 18 cluster `pos-bank-validation-pg`, loopback 55539,
+  synthetic user `pos_bank_test`, database `pos_bank_validation_test`; default
+  session timezone Europe/Moscow. All 49 existing migrations applied only here.
+  Suites created and cleaned up their own fixtures; no existing/demo/production
+  database or credentials used. Logs retained in OS temp:
+  `pos-bank-validation-before.log`, `pos-bank-validation-unit.log` and
+  `pos-bank-validation-e2e.log`. Temporary PostgreSQL stopped after validation.
+- No browser/Electron or full API integration rerun claimed for this narrow
+  API-only decoder change. Item 8's policy decision and previously documented
+  release/updater/hardware checks remain outstanding. No push, merge, deploy,
+  Prompt 2 or historical accounting-data access performed.
+
 ### Multi-till checkout contention correction (2026-10-29)
 
 - Reproduced on the unchanged application baseline using a fresh temporary

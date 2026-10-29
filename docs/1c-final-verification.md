@@ -1,8 +1,9 @@
 # Prompt 1c final verification - 2026-10-29
 
-Historical verification snapshot at `560dc60`: the checkout contention
-findings below are superseded by the subsequent correction and regression
-evidence in `1c-implementation-progress.md` (Multi-till checkout contention).
+Historical verification snapshot at `560dc60`: the checkout contention and
+malformed bank-upload findings below are superseded by the subsequent
+corrections and regression evidence in `1c-implementation-progress.md`
+(Multi-till checkout contention and Bank-upload percent-encoding validation).
 Other outstanding decisions/limitations below remain unchanged.
 
 Recommendation: **do not give unconditional Prompt 1c / multi-till launch

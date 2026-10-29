@@ -26,6 +26,21 @@ describe("Prompt 1c parser and archive compatibility (isolated e2e)", () => {
     accountId = (await prisma.ledgerAccount.findUniqueOrThrow({ where: { businessId_code: { businessId, code: "43.1.1" } } })).id;
   }, 30_000);
   afterAll(async () => { try { if (businessId) await deleteBusiness(prisma, businessId); } finally { await app?.close(); } });
+  it("rejects malformed percent-encoded bank uploads without partial writes", async () => {
+    const counts = () => Promise.all([
+      prisma.bankStatement.count({ where: { businessId } }),
+      prisma.bankStatementLine.count({ where: { businessId } }),
+      prisma.journalEntry.count({ where: { businessId } }),
+      prisma.auditLog.count({ where: { businessId } }),
+    ]);
+    const before = await counts();
+    for (const encoded of ["%E0%A4%A", "%", "%2", "%GG", "%C3%28"]) {
+      const result = await http().post("/accounting/bank/parse").set(auth()).send({ fileName: "statement.csv", dataUrl: `data:text/csv,${encoded}` }).expect(400);
+      expect(result.body.message).toBe("The file can't be read: save the statement as CSV or Excel (.xlsx)");
+      expect(JSON.stringify(result.body)).not.toMatch(/URIError|URI malformed|stack/i);
+    }
+    expect(await counts()).toEqual(before);
+  });
   it.each(["csv", "xlsx"])("parses/maps/imports %s with valid rows and explicitly skipped malformed values", async (format) => {
     const csv = 'Date;Description;Amount\n2026-10-17;"Deposit, counter";1.234,56\n31/02/2026;Bad date;2,00\n2026-10-18;Bad amount;abc\n2026-10-18;Fee;-25,00';
     const xlsx = buildXlsx([{ name: "Statement", header: ["Date", "Description", "Amount"], rows: [[{ date: "2026-10-17" }, "Deposit, counter", 1234.56], ["31/02/2026", "Bad date", 2], ["2026-10-18", "Bad amount", "abc"], [{ date: "2026-10-18" }, "Fee", -25]] }]);
@@ -34,6 +49,28 @@ describe("Prompt 1c parser and archive compatibility (isolated e2e)", () => {
     expect(result).toMatchObject({ lines: 2, skippedRows: [3, 4] });
     const lines = await prisma.bankStatementLine.findMany({ where: { statementId: result.id }, orderBy: { date: "asc" } });
     expect(lines.map((l) => [l.date.toISOString().slice(0, 10), l.amount.toString()])).toEqual([["2026-10-17", "1234.56"], ["2026-10-18", "-25"]]);
+  });
+  it("imports a valid percent-encoded CSV with its mapped values unchanged", async () => {
+    const csv = "Date;Description;Amount\n2026-10-17;Dep\u00f3sito 100%;10,50";
+    const parsed = (await http().post("/accounting/bank/parse").set(auth()).send({ fileName: "encoded.csv", dataUrl: `data:text/csv,${encodeURIComponent(csv)}` }).expect(200)).body;
+    const result = (await imported(parsed.rows).expect(201)).body;
+    expect(result).toMatchObject({ lines: 1, skippedRows: [] });
+    const lines = await prisma.bankStatementLine.findMany({ where: { statementId: result.id } });
+    expect(lines.map((l) => [l.description, l.amount.toString(), l.date.toISOString().slice(0, 10)])).toEqual([["Dep\u00f3sito 100%", "10.5", "2026-10-17"]]);
+  });
+  it("keeps unrelated database failures as sanitized 500 responses, without writing an import", async () => {
+    const counts = () => Promise.all([
+      prisma.bankStatement.count({ where: { businessId } }),
+      prisma.bankStatementLine.count({ where: { businessId } }),
+      prisma.journalEntry.count({ where: { businessId } }),
+    ]);
+    const before = await counts();
+    const failure = jest.spyOn(prisma.ledgerAccount, "findFirst").mockRejectedValueOnce(new Error("synthetic private database failure"));
+    try {
+      const result = await imported([["Date", "Description", "Amount"], ["2026-10-17", "Fee", "-25"]]).expect(500);
+      expect(result.body).toEqual({ statusCode: 500, message: "Internal server error" });
+    } finally { failure.mockRestore(); }
+    expect(await counts()).toEqual(before);
   });
   it("rejects corrupt, truncated, sheetless and excessively expanded XLSX files without storing statements", async () => {
     const before = await prisma.bankStatement.count({ where: { businessId } });

@@ -22,7 +22,13 @@ export class BankService {
   parse(input: { fileName: string; dataUrl: string }): { rows: Table } {
     const m = /^data:([^;,]*)(;base64)?,(.*)$/s.exec(input.dataUrl);
     if (!m) throw new BadRequestException("Send the statement as a CSV or Excel file");
-    const data = m[2] ? Buffer.from(m[3], "base64") : Buffer.from(decodeURIComponent(m[3]), "utf8");
+    let data: Buffer;
+    try {
+      data = m[2] ? Buffer.from(m[3], "base64") : Buffer.from(decodeURIComponent(m[3]), "utf8");
+    } catch (error) {
+      if (!(error instanceof URIError)) throw error;
+      throw new BadRequestException("The file can't be read: save the statement as CSV or Excel (.xlsx)");
+    }
     if (data.length > 5 * 1024 * 1024) throw new BadRequestException("Files are 5 MB at most");
     try {
       const rows = readTable(input.fileName, data);
