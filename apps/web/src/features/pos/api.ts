@@ -45,7 +45,7 @@ export async function createSale(dto: CreateSaleDto, lines: CartLine[], approval
     // Managers' approvals: tokens online; a sale queued offline says who approved instead.
     overrides: approvals.flatMap((a) => (a.kind === "token" ? [{ permission: a.permission, token: a.token }] : [])),
     // One key for every attempt at this sale, online or later from the queue.
-    clientId: crypto.randomUUID(),
+    clientId: dto.clientId ?? crypto.randomUUID(),
     terminalId: useDeviceStore.getState().terminal?.id,
     // Uploaded later with the till's key, it stays this person's sale.
     actingUserId: useAuthStore.getState().user?.id,
@@ -58,6 +58,7 @@ export async function createSale(dto: CreateSaleDto, lines: CartLine[], approval
     try {
       return await apiClient.post<SaleDto>("/sales", sale, { timeoutMs: SALE_TIMEOUT_MS });
     } catch (err) {
+      if (isStockBusy(err)) throw err;
       if (isRetryableError(err)) throw new Error(i18n.t("pos:credit.needsOnline"));
       throw err;
     }
@@ -78,6 +79,7 @@ export async function createSale(dto: CreateSaleDto, lines: CartLine[], approval
   try {
     return used(await postSale(sale, gross));
   } catch (err) {
+    if (isStockBusy(err)) throw err;
     // Sales still waiting in the queue come first: this one joins them.
     if (isRetryableError(err) || (err instanceof ApiError && (err.status === 401 || fiscalCode(err) === "FISCAL_NUMBER_AHEAD"))) {
       return used(await queueSaleOffline(sale, lines, approvals));
@@ -276,4 +278,9 @@ export async function followReceiptEmail(sale: SaleDto, notify: (outcome: "sent"
     }
   }
   notify("unknown");
+}
+
+/** A known rolled-back checkout must remain in the cart, never in the outbox. */
+function isStockBusy(error: unknown): boolean {
+  return error instanceof ApiError && (error.body as { code?: string } | undefined)?.code === "STOCK_BUSY";
 }

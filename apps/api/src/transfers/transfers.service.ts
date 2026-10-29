@@ -1,3 +1,4 @@
+import { stockTransaction } from "../stock/stock-transaction";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateTransferDto } from "./dto/create-transfer.dto";
@@ -55,7 +56,7 @@ export class TransfersService {
       }
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return stockTransaction(this.prisma, [dto.fromStoreId, dto.toStoreId], async (tx) => {
       const transfer = await tx.stockTransfer.create({
         data: {
           businessId,

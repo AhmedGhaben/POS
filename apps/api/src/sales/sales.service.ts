@@ -1,3 +1,4 @@
+import { stockTransaction } from "../stock/stock-transaction";
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { Permission, Prisma, PaymentMethod, Role, SaleStatus, ShiftStatus } from "@prisma/client";
 import { OverridesService } from "../overrides/overrides.service";
@@ -322,7 +323,7 @@ export class SalesService {
     const createdAt = offline ? clampToNow(new Date(offline.createdAt)) : undefined;
     let sale: Prisma.SaleGetPayload<{ include: typeof SALE_INCLUDE }>;
     try {
-      sale = await this.prisma.$transaction(async (tx) => {
+      sale = await stockTransaction(this.prisma, [dto.storeId], async (tx) => {
         for (const approval of approvals) {
           await this.overrides.consume(approval.token, { userId: cashierId, businessId }, approval.permission, tx);
         }
@@ -584,7 +585,7 @@ export class SalesService {
         throw new BadRequestException("Sales older than 24 hours can't be cancelled. Use Returns instead.");
       }
 
-      await this.prisma.$transaction(async (tx) => {
+      await stockTransaction(this.prisma, [sale.storeId], async (tx) => {
         // Only one cancel wins, so the stock goes back once.
         const { count } = await tx.sale.updateMany({
           where: { id: sale.id, status: SaleStatus.COMPLETED },

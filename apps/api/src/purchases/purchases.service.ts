@@ -1,3 +1,4 @@
+import { stockTransaction } from "../stock/stock-transaction";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma, PurchasePaymentStatus } from "@prisma/client";
 import { storeDateRange } from "../common/store-period";
@@ -105,7 +106,7 @@ export class PurchasesService {
     const store = await this.prisma.store.findUniqueOrThrow({ where: { id: dto.storeId }, select: { timezone: true, country: true } });
     const today = localDate(new Date(), fiscalTimeZone(store.timezone, countryConfig(store.country)?.timeZone));
 
-    return this.prisma.$transaction(async (tx) => {
+    return stockTransaction(this.prisma, [dto.storeId], async (tx) => {
       const purchase = await tx.purchase.create({
         data: {
           storeId: dto.storeId,

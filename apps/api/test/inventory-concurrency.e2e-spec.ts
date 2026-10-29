@@ -49,7 +49,7 @@ describe("Absolute inventory adjustment concurrency (isolated e2e)", () => {
       const [row] = await prisma.$queryRaw<{ waiting: number }[]>`
         SELECT count(*)::integer AS waiting FROM pg_stat_activity
         WHERE datname = current_database() AND pid <> pg_backend_pid()
-          AND wait_event_type = 'Lock' AND query LIKE '%inventory_items%'`;
+          AND wait_event_type = 'Lock' AND (query LIKE '%inventory_items%' OR query LIKE '%pg_advisory_xact_lock%')`;
       if (row.waiting >= count) return;
       await new Promise((resolve) => setTimeout(resolve, 20));
     }

@@ -31,7 +31,8 @@ export interface MovementInput {
  * Changes a store's stock of one product inside the caller's transaction:
  * locks its row, moves the quantity, re-averages the cost and writes the
  * movement. Every stock change goes through here, so the history adds up
- * to the stock.
+ * to the stock. Runtime writers must enter stockTransaction for all affected
+ * stores first: row locks alone cannot prevent opposite multi-product orders.
  */
 export async function recordMovement(tx: Prisma.TransactionClient, input: MovementInput) {
   const where = { storeId_productId: { storeId: input.storeId, productId: input.product.id } };

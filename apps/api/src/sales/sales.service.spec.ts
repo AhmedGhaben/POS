@@ -45,6 +45,8 @@ function buildPrismaMock(
     return created;
   });
   const tx = {
+    $executeRaw: jest.fn().mockResolvedValue(1),
+    $queryRaw: jest.fn().mockResolvedValue([]),
     inventoryItem: {
       findUnique: jest.fn().mockResolvedValue({ quantity: stockQty }),
       update: jest.fn().mockResolvedValue({}),

@@ -1,3 +1,4 @@
+import { stockTransaction } from "../stock/stock-transaction";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PaymentMethod, Prisma, ShiftStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
@@ -99,7 +100,7 @@ export class ReturnsService {
     });
     const productById = new Map(products.map((p) => [p.id, p]));
 
-    return this.prisma.$transaction(async (tx) => {
+    return stockTransaction(this.prisma, [dto.storeId], async (tx) => {
       const created = await tx.return.create({
         data: {
           saleId: dto.saleId,

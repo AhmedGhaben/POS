@@ -2,6 +2,88 @@
 
 ## Post-audit inventory fixes
 
+### Multi-till checkout contention correction (2026-10-29)
+
+- Reproduced on the unchanged application baseline using a fresh temporary
+  PostgreSQL cluster: opposite-order two-product sales returned 201/500 with
+  SQLSTATE `40P01` (deadlock); a row held for 6.5 seconds produced HTTP 500
+  with Prisma `P2028` (expired interactive transaction). Both losers rolled
+  back. Checkout's transaction contains stock movements, sale/payment rows,
+  fiscal counter/document/signature writes and credit allocations. The old
+  unbounded row wait could outlive that transaction and reach the till's
+  8-second transport fallback. No existing database was inspected or changed.
+- Added one shared transaction wrapper with transaction-scoped advisory
+  locks per store. Multiple stores are locked in sorted order. Checkout,
+  cancellation, single adjustments, bulk counts, purchases, returns,
+  transfers and stock-bearing product imports use it before their writes.
+  Row locks and existing counted-quantity/stale-preview semantics remain.
+  Product metadata edits/archive/deletion do not create stock movements;
+  checkout's bounded waits also cover conflicting locks from those paths.
+  Seed/backfill scripts are not concurrent runtime writers and were unchanged.
+- Each lock wait is limited to 750ms, active statements to 2 seconds, with
+  at most three attempts and a shared 5-second default transaction budget
+  (pool acquisition bounded to 250ms). Existing 60-second count/import body
+  budgets remain. Only confirmed aborted PostgreSQL deadlock/serialization/
+  lock-timeout failures (`40P01`, `40001`/Prisma `P2034`, `55P03`) are replayed.
+  Statement cancellation (`57014`) and Prisma expiry/pool failures are mapped
+  without replay; unknown errors/commit outcomes are never automatically
+  replayed. Imports have mutable result maps, so their bodies are not replayed.
+- Exhaustion returns HTTP 409 `{code: "STOCK_BUSY", retryable: true}` with
+  an English/Portuguese message asking the cashier to retry. This is a known
+  reachable-server refusal. Cash and credit checkout explicitly preserve it
+  instead of taking the generic offline fallback, including a defensive test
+  for that code with HTTP 500. The cart stays intact and Charge is available.
+  Existing outbox 409 handling retains queued sales as pending; no production
+  sync-engine change was needed. Caller-provided clientId is preserved across
+  explicit retries; existing generated keys and lost-response recovery remain.
+- Regressions: overlapping carts in both product orders, simultaneous same-key
+  requests, sale vs stale bulk count and absolute adjustment, opposite transfers,
+  real deadlock recovery, prolonged row-lock exhaustion, and injected aborts
+  after fiscal writes for cash FR and credit FT. Checks include exact balances,
+  movement counts, rolled-back numbers, one document per accepted key and
+  idempotent accounting integration. Existing legacy-invoice concurrency and
+  replay tests remain in the full integration run. Fiscal rules, numbering,
+  signing algorithms, accounting rules and schema/migrations are unchanged.
+- Isolated setup: PostgreSQL 18 cluster `pos-contention-fix-pg` in OS temp,
+  loopback 55529, synthetic user `pos_contention_test`; fresh UTC databases
+  `pos_contention_test` and `pos_contention_full_test`. All 49 existing migrations
+  and synthetic seeds were applied only there. Test DB `deadlock_timeout=100ms`
+  deliberately exercises deadlock detection before the application's 750ms
+  bound; the external test blocker uses a transaction-local 5-second detector.
+  Production PostgreSQL settings are not changed. Temporary API 55530,
+  Vite 55531/55533 and fault proxy 55532 use temporary build outputs and the
+  repository's synthetic fiscal signing key.
+- Passing validation: final full API integration 40 suites / 363 tests,
+  including the nine new stock-contention regressions and accounting/timezone,
+  legacy-invoice, fiscal, import and offline integration coverage. API unit
+  48 suites / 314 tests; web 51 files / 262 tests;
+  desktop unit 29 tests. Real Edge browser and Windows Electron contention
+  recovery 2/2; existing browser/Electron offline stock, unreachable-server,
+  reconnect/sync and native fiscal-number/signature regressions 8/8.
+  API/web/desktop TypeScript, strict touched desktop E2E TypeScript, touched
+  API/web ESLint, API compilation and temporary desktop web build passed.
+  Existing bundle-size/mixed-import warnings remain.
+- Initial failures were test/implementation development feedback, not hidden
+  passes: PostgreSQL void results require executeRaw for advisory locking;
+  new test fixtures needed the shared payment enum/actual document field;
+  UI outbox assertions now exclude the legitimate synced shift-opening entry.
+  Final reruns pass with no remaining failures. Full API log:
+  `pos-contention-final-e2e.log` in OS temp. Desktop coverage here is the ten
+  relevant contention/offline/fiscal cases, not another full desktop run.
+- Tradeoff: writers in one store serialize even when products differ; long
+  counts/imports can make tills receive a safe busy refusal. Different stores
+  remain independent except transfers/shared rows. This is a correctness fix,
+  not a throughput/load certification. Older server versions/raw SQL writers
+  do not participate in advisory locking: upgrade all API instances together;
+  bounded row waits/retries still protect checkout. Network loss and machine
+  failure retain the existing idempotent outbox behavior.
+- Scope stops here. Item 8's zero-cost/free-item policy, malformed percent-encoded
+  bank-upload validation and packaged updater verification remain as previously
+  reported; no unrelated fix, historical reconciliation, Prompt 2, deployment,
+  push or production-data action was performed.
+- Temporary API/Vite services and this task's PostgreSQL cluster were stopped
+  after validation. Only synthetic test data/builds/logs remain in OS temp.
+
 ### Final comprehensive verification (2026-10-29)
 
 - Verification report and item 1-12 matrix: `docs/1c-final-verification.md`.

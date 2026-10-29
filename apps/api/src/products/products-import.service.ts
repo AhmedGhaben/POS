@@ -1,3 +1,4 @@
+import { stockTransaction } from "../stock/stock-transaction";
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma, Role } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
@@ -68,8 +69,8 @@ export class ProductsImportService {
     const result: ImportResult = { created: 0, updated: 0, skipped: [] };
     const seen = new Set<string>();
 
-    await this.prisma.$transaction(
-      async (tx) => {
+    await stockTransaction(
+      this.prisma, dto.storeId ? [dto.storeId] : [], async (tx) => {
         for (const row of dto.rows) {
           const sku = row.sku.trim();
           const skip = (reason: string) => result.skipped.push({ line: row.line, sku, reason });
@@ -183,7 +184,7 @@ export class ProductsImportService {
         }
       },
       // Up to 1,000 rows of sequential writes; the default 5 s is too short.
-      { timeout: 60_000 },
+      { timeout: 60_000, replayBody: false },
     );
     return result;
   }

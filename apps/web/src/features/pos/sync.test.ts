@@ -38,6 +38,11 @@ function harness(entries: OutboxEntry[], respond: (e: OutboxEntry) => { id: stri
 }
 
 describe("drainOutbox", () => {
+  it("leaves a previously queued sale pending when stock is busy, without creating another entry", async () => {
+    const h = harness([entry(1), entry(2)], () => new ApiError(409, "Stock is busy. Please try again.", { code: "STOCK_BUSY" }));
+    expect(await h.result).toEqual({ synced: 0, failed: 0, interrupted: true });
+    expect(h.db.size).toBe(2); expect(h.uploaded).toEqual(["c1"]); expect(h.db.get("c1")?.state).toBe("pending");
+  });
   it("uploads pending entries in order and marks them synced", async () => {
     const h = harness([entry(1), entry(2), entry(3, "synced")], (e) => ({ id: `srv-${e.clientId}` }));
     expect(await h.result).toEqual({ synced: 2, failed: 0, interrupted: false });

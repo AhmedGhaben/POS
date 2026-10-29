@@ -1,3 +1,4 @@
+import { stockTransaction } from "../stock/stock-transaction";
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
@@ -49,7 +50,7 @@ export class InventoryService {
   /** Lock before reading each balance; deterministic ordering prevents count/count deadlocks. */
   async createCount(storeId: string, dto: CreateStockCountDto, userId: string) {
     if (new Set(dto.lines.map((l) => l.productId)).size !== dto.lines.length) throw new BadRequestException("A product can only appear once in a stock count");
-    return this.prisma.$transaction(async (tx) => {
+    return stockTransaction(this.prisma, [storeId], async (tx) => {
       const store = await tx.store.findUnique({ where: { id: storeId } });
       if (!store) throw new NotFoundException("Store not found");
       const count = await tx.stockCount.create({ data: { businessId: store.businessId, storeId, userId, note: dto.note?.trim() || null } });
@@ -142,7 +143,7 @@ export class InventoryService {
       throw new BadRequestException(`"${product.name}" is sold in whole units`);
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return stockTransaction(this.prisma, [storeId], async (tx) => {
       // Acquire the same row lock as recordMovement before reading the balance.
       // An absolute count must subtract the stock after earlier writers commit,
       // not a snapshot taken while a sale or another count was still pending.

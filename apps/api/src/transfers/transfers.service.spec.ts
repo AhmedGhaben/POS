@@ -21,6 +21,8 @@ function buildPrismaMock(opts: { sourceQty: number; destExists: boolean }) {
         : { quantity: 0, averageCost: 0 },
   );
   const tx = {
+    $executeRaw: jest.fn().mockResolvedValue(1),
+    $queryRaw: jest.fn().mockResolvedValue([]),
     inventoryItem: {
       update: inventoryUpdate,
       upsert: inventoryUpsert,

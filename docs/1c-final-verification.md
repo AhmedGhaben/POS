@@ -1,5 +1,10 @@
 # Prompt 1c final verification - 2026-10-29
 
+Historical verification snapshot at `560dc60`: the checkout contention
+findings below are superseded by the subsequent correction and regression
+evidence in `1c-implementation-progress.md` (Multi-till checkout contention).
+Other outstanding decisions/limitations below remain unchanged.
+
 Recommendation: **do not give unconditional Prompt 1c / multi-till launch
 sign-off yet**. Functional regressions have broad passing coverage, but
 multi-product contention causes real checkout failures, and item 8 still
