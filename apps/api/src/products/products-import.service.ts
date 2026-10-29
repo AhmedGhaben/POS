@@ -160,7 +160,15 @@ export class ProductsImportService {
             const current = await tx.inventoryItem.findUnique({
               where: { storeId_productId: { storeId: dto.storeId, productId: product.id } },
             });
-            const difference = new Prisma.Decimal(row.stock).sub(current?.quantity ?? 0);
+            // The earlier lookup only distinguishes opening stock from a recount.
+            // Lock before reading the balance used for this absolute count, just
+            // as InventoryService.adjust/createCount do for manual counts.
+            const locked = await tx.inventoryItem.upsert({
+              where: { storeId_productId: { storeId: dto.storeId, productId: product.id } },
+              create: { storeId: dto.storeId, productId: product.id, quantity: 0, averageCost: product.costPrice },
+              update: { quantity: { increment: 0 } },
+            });
+            const difference = new Prisma.Decimal(row.stock).sub(locked.quantity);
             if (!difference.isZero()) {
               await recordMovement(tx, {
                 storeId: dto.storeId,

@@ -143,8 +143,15 @@ export class InventoryService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const current = await tx.inventoryItem.findUnique({ where: { storeId_productId: { storeId, productId } } });
-      const difference = new Prisma.Decimal(dto.quantity).sub(current?.quantity ?? 0);
+      // Acquire the same row lock as recordMovement before reading the balance.
+      // An absolute count must subtract the stock after earlier writers commit,
+      // not a snapshot taken while a sale or another count was still pending.
+      const current = await tx.inventoryItem.upsert({
+        where: { storeId_productId: { storeId, productId } },
+        create: { storeId, productId, quantity: 0, averageCost: product.costPrice },
+        update: { quantity: { increment: 0 } },
+      });
+      const difference = new Prisma.Decimal(dto.quantity).sub(current.quantity);
       if (!difference.isZero()) {
         await recordMovement(tx, { storeId, product, type: "ADJUSTMENT", quantity: difference, userId, note: dto.note?.trim() || undefined });
       }

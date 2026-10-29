@@ -18,9 +18,53 @@
   under the OS temp directory, loopback port 55449, database/user
   `pos_inventory_test`. All 49 existing migrations applied there only. No seed,
   existing demo database, production database or fiscal implementation changed.
-- Next: Task 2, lock before reading absolute stock adjustments; exercise
-  concurrent single-row, bulk-count and sale operations. Offline and archive
-  findings remain out of scope.
+- Local commit: `e82b950`.
+
+### Task 2 — absolute inventory adjustment concurrency: completed
+
+- Single-row adjustment now upserts/locks the inventory row before reading
+  the balance and calculating the difference, including concurrent first
+  counts when no row exists. The transaction retains that lock through its
+  stock movement, cost calculation and reorder-level update. Counts remain
+  absolute; repeated equal counts create no extra movement.
+- Applied the same lock-before-balance-read correction to product-import
+  counts, another operational absolute-stock writer. Its earlier existence
+  lookup is retained only to select OPENING versus ADJUSTMENT. No schema,
+  fiscal numbering/signing/storage, accounting rules or offline policy changed.
+- Inspected stock writers: operational purchases, sales, sale cancellations,
+  returns and transfers use the row lock in `recordMovement`; bulk counts
+  already lock before reading. Demo seeding was not run or changed and remains
+  a provisioning operation, not something to run alongside live stock writers.
+- New integration suite: 16 passed. Existing-row tests hold a real PostgreSQL
+  row lock, start one writer, observe it waiting in pg_stat_activity, then
+  queue the second writer before releasing the lock. This forces actual
+  contention and checks serialized absolute results, movement quantities,
+  balances, actor and costs, rather than relying on request timing.
+- Coverage: identical/different simultaneous counts, concurrent first counts,
+  adjustment after bulk count, stale bulk-count rollback after adjustment,
+  bulk counts without a baseline, both orderings with a real sale, unchanged
+  counts, insufficient-stock sale rejection, concurrent product import, and
+  the PURCHASE/RETURN/SALE_VOID/TRANSFER_IN/TRANSFER_OUT shared movement writer.
+- Final UTC database run: 6 integration suites / 88 tests passed (isolation,
+  concurrency, new-product inventory, bulk counts, product import and the full
+  accounting suite). All 47 API unit suites / 303 tests passed. API build and
+  full-source TypeScript checks, including integration tests, and touched-file
+  ESLint passed.
+- Earlier broad run: 87 passed, 1 failed in accounting daily-summary test
+  `accounting.e2e-spec.ts:578` (today's document was already linked). Reproduced
+  the same failure with source from both Task 1 commit `e82b950` and pre-fix
+  baseline `651b292`, then restored the current fixes byte-for-byte.
+  The temporary Windows PostgreSQL cluster inherited Europe/Moscow. Its DATE
+  comparison against UTC-midnight timestamptz treats the same calendar day as
+  earlier; configuring **only this temporary test database** to UTC makes the
+  full accounting suite pass (54/54). Non-UTC database compatibility is a
+  confirmed pre-existing accounting risk, left unfixed in this scope; see
+  `integration.service.ts` daily-summary cutoff and `accounting-dates.ts`.
+- Limits: tests establish serialization per stock row. Existing multi-product
+  lock-order deadlocks or long lock waits can still cause transaction rollback;
+  no global lock ordering or automatic retry architecture was introduced.
+- No further inventory, offline-selling or archive fixes are started here.
+  Temporary PostgreSQL is stopped at the end; its files remain in OS temp.
 
 Recovery baseline: `7adbd25` on `rescue/pos-codex-20261029`.
 The earlier item 1–9 commits and unfinished item 10 groundwork are preserved.
