@@ -193,7 +193,7 @@ describe("an Angolan store's documents, printed by someone reading the app in En
     expect(report(9270)).not.toMatch(/Sobra|Falta/);
   });
 
-  it("the shift report lists sales by fiscal number, the internal number beside it", () => {
+  it("the shift report prints fiscal numbers without internal references", () => {
     const summary: ShiftSummaryDto = {
       salesCount: 1, salesTotal: "100", byMethod: { CASH: "100" }, discounts: "0", voided: { count: 0, total: "0" }, returns: { count: 0, total: "0", cash: "0" },
       cashIn: "0", cashOut: "0", movements: [], byCashier: [], expectedCash: "100",
@@ -203,6 +203,6 @@ describe("an Angolan store's documents, printed by someone reading the app in En
       <ShiftReport store={store} withSales data={{ openedBy: "Ana", openedAt: "2026-10-17T08:00:00Z", closedBy: "Ana", closedAt: "2026-10-17T17:00:00Z", openingFloat: 0, countedCash: 100, expectedCash: 100, summary }} />,
     );
     expect(html.indexOf("FR POS001-2026/57")).toBeGreaterThan(-1);
-    expect(html.indexOf("FR POS001-2026/57")).toBeLessThan(html.indexOf("MAIN-1792930259132"));
+    expect(html).not.toContain("MAIN-1792930259132");
   });
 });

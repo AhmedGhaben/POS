@@ -87,6 +87,32 @@ for (const mode of ["browser", "electron"] as const) {
       for (const sale of report.summary.sales) await expect(shiftDialog).toContainText(sale.documentNo ?? sale.receiptNumber);
       const print = page.locator("#print-root .receipt-slip");
       expect(await print.textContent()).toEqual(await shiftDialog.locator(".receipt-slip").textContent());
+      for (const sale of report.summary.sales) {
+        if (sale.documentNo) await expect(print).not.toContainText(sale.receiptNumber);
+      }
+      await page.keyboard.press("Escape");
+      await page.goto(`${origin}/sales`);
+      const salesTable = page.locator("main tbody");
+      for (const sale of report.summary.sales) {
+        await expect(salesTable).toContainText(sale.documentNo);
+        await expect(salesTable).not.toContainText(sale.receiptNumber);
+      }
+      // Capture the actual CSV Blob without opening an OS save dialog in Electron.
+      await page.evaluate(() => {
+        const original = URL.createObjectURL;
+        URL.createObjectURL = (blob) => {
+          if (blob instanceof Blob && blob.type.startsWith("text/csv")) void blob.text().then((text) => { (window as unknown as { recoveryCsv: string }).recoveryCsv = text; });
+          return original(blob);
+        };
+        document.addEventListener("click", (event) => {
+          const anchor = (event.target as HTMLElement).closest("a[download]");
+          if (anchor) event.preventDefault();
+        }, true);
+      });
+      await page.getByRole("button", { name: /Exportar CSV/ }).click();
+      await expect.poll(() => page.evaluate(() => (window as unknown as { recoveryCsv?: string }).recoveryCsv ?? "")).toContain(report.summary.sales[0].documentNo);
+      const csv = await page.evaluate(() => (window as unknown as { recoveryCsv: string }).recoveryCsv);
+      for (const sale of report.summary.sales) { expect(csv).toContain(sale.documentNo); expect(csv).not.toContain(sale.receiptNumber); }
     } finally { await app?.close(); await browser?.close(); }
   });
 }

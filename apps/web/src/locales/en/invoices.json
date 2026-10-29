@@ -1,5 +1,6 @@
 {
   "issue": {
+    "forDocument": "For sale {{number}}. The invoice number is assigned when you continue.",
     "title": "A4 invoice",
     "titleIssued": "Invoice {{number}}",
     "issuedHint": "Issued. Print it, or choose \"Save as PDF\" in the print window to email it.",
@@ -30,6 +31,7 @@
     "total_one": "{{count}} in total.",
     "total_other": "{{count}} in total.",
     "columns": {
+      "saleDocument": "Sale document",
       "number": "Number",
       "date": "Date",
       "billTo": "Bill to",

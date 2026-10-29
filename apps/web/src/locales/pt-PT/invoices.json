@@ -1,5 +1,6 @@
 {
   "issue": {
+    "forDocument": "Para a venda {{number}}. O número da factura é atribuído ao continuar.",
     "title": "Fatura A4",
     "titleIssued": "Fatura {{number}}",
     "issuedHint": "Emitida. Imprima-a, ou escolha \"Guardar como PDF\" na janela de impressão para a enviar por email.",
@@ -30,6 +31,7 @@
     "total_one": "{{count}} no total.",
     "total_other": "{{count}} no total.",
     "columns": {
+      "saleDocument": "Documento da venda",
       "number": "Número",
       "date": "Data",
       "billTo": "Faturar a",

@@ -13,6 +13,7 @@ import { issueInvoice } from "@/features/invoices/api";
 import { A4Preview } from "./A4Preview";
 import { printDocument } from "@/features/desktop/printing";
 import { InvoiceDocument } from "./InvoiceDocument";
+import { saleNumber } from "@/features/fiscal/sale-document";
 
 interface IssueInvoiceDialogProps {
   sale: SaleDto | null;
@@ -77,7 +78,7 @@ export function IssueInvoiceDialog({ sale, customer, onClose }: IssueInvoiceDial
         <DialogHeader>
           <DialogTitle>{invoice ? t("issue.titleIssued", { number: invoice.number }) : t("issue.title")}</DialogTitle>
           <DialogDescription>
-            {invoice ? t("issue.issuedHint") : t("issue.forReceipt", { number: sale?.receiptNumber ?? "" })}
+            {invoice ? t("issue.issuedHint") : t("issue.forDocument", { number: sale ? saleNumber(sale) : "" })}
           </DialogDescription>
         </DialogHeader>
 

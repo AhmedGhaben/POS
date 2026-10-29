@@ -47,6 +47,7 @@
     "beforeDiscount": "Total antes do desconto"
   },
   "invoice": {
+    "saleDocument": "Documento da venda",
     "title": "FATURA",
     "number": "Fatura nº",
     "date": "Data da fatura",

@@ -2,6 +2,7 @@ import type { InvoiceDto } from "@pos/shared";
 import { A4Document } from "@/features/documents/components/A4Document";
 import { linesFromSale } from "@/features/documents/lines";
 import { useDocumentLanguage } from "@/i18n/use-document-language";
+import { saleNumber } from "@/features/fiscal/sale-document";
 
 /** An issued invoice, rendered from its stored snapshot: never from current settings. */
 export function InvoiceDocument({ invoice }: { invoice: InvoiceDto }) {
@@ -17,7 +18,7 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceDto }) {
         [t("invoice.number"), invoice.number],
         [t("invoice.date"), date(invoice.issuedAt)],
         [t("invoice.saleDate"), date(sale.createdAt)],
-        [t("invoice.receiptNumber"), sale.receiptNumber],
+        [t("invoice.saleDocument"), saleNumber(sale)],
       ]}
       seller={seller}
       store={seller.store}

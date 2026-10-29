@@ -1146,7 +1146,7 @@ export interface InvoiceListItemDto {
   issuedAt: string;
   buyerName: string;
   buyerTaxId: string | null;
-  sale: { total: string; receiptNumber: string };
+  sale: Pick<SaleDto, "total" | "receiptNumber" | "fiscalDocuments">;
 }
 
 export interface PagedDto<T> {

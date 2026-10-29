@@ -8,12 +8,14 @@ import { withSoldNames } from "../sales/sales.service";
 import { countryConfig } from "../countries";
 import { IssueInvoiceDto } from "./dto/issue-invoice.dto";
 import { ListInvoicesDto } from "./dto/list-invoices.dto";
+import { DOCUMENT_SUMMARY } from "../fiscal/fiscal.service";
 
 const INVOICE_INCLUDE = {
   sale: {
     include: {
       lineItems: { include: { product: true } },
       payments: true,
+      fiscalDocuments: DOCUMENT_SUMMARY,
     },
   },
 } satisfies Prisma.InvoiceInclude;
@@ -182,7 +184,7 @@ export class InvoicesService {
           issuedAt: true,
           buyerName: true,
           buyerTaxId: true,
-          sale: { select: { total: true, receiptNumber: true } },
+          sale: { select: { total: true, receiptNumber: true, fiscalDocuments: DOCUMENT_SUMMARY } },
         },
       }),
       this.prisma.invoice.count({ where }),

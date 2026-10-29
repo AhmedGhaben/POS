@@ -67,10 +67,56 @@ preview: applying must fail without applying any of the count.
 - Manual check: Shifts → open a closed shift → every sale must be listed;
   print preview must contain the same sales and cash/product breakdowns.
 
-## Remaining milestones
+## Item 12 — fiscal-number display cleanup: completed
 
-1. Item 12: audit fiscal-number display on shift lists, printouts, exports
-   and remaining invoice-related views. Do not change numbering/signing.
+- Shift report / All sales printout now prints FR/FT references without also
+  printing the internal receipt number. Sale time, method, amount and cancelled
+  markings remain. Historical sales without a fiscal document keep a fallback.
+- Older invoice list, past-sale picker, issue dialog and A4 sale-reference
+  field use the shared fiscal-number helper. Invoice reads include existing
+  fiscal summaries; no stored number, signature, series or snapshot is changed.
+  The older invoice's own INV number remains its existing number.
+- Audited sales history, CSV, report tables, returns picker, receipts, customer
+  history and email paths. Fiscal references were already used there. Internal
+  numbers remain stored and searchable; the existing Recent sales screen's
+  secondary support reference is preserved as requested by Prompt 1b.
+  Internal references in offline IDs, audit metadata, React keys and historical
+  fallback paths remain intact. Legal reference creation logic is unchanged.
+- New labels translated in en, pt-PT, pt-BR, with derived pt-AO coverage.
+- Tests: new isolated fiscal-display API suite 2 passed, including unchanged
+  fiscal document data after reads, invoice list/detail references and search
+  by fiscal/internal number. Invoice unit subset 7 passed. Final combined API
+  integration run: 4 suites / 18 passed (counts, shifts, fiscal display and
+  new-product inventory). Final full web suite: 47 files / 240 passed.
+- Browser and Windows Electron UI: 2 passed, now additionally inspecting the
+  actual CSV Blob, sales history and shift print DOM: fiscal numbers present,
+  corresponding internal numbers absent. Runs use the isolated test database.
+- API/web/desktop TypeScript checks passed; touched ESLint checks passed.
+  Desktop unit tests: 29 passed. Production browser/PWA and desktop web bundles
+  built successfully into temporary directories; existing bundle-size and
+  mixed jspdf import warnings remain. No full desktop suite or remote CI claim.
+- Manual check: close a shift with cash and card sales → Shifts → preview/print
+  → verify fiscal references; Sales → Export CSV → verify the same references.
+  Search by an internal reference must still find that sale. A historical sale
+  with no FR/FT must still show its fallback number.
+
+## Local milestones
+
+- Item 10: `9a99136` — save and import atomic bulk stock counts.
+- Item 11: `5340365` — full sales in back-office shift reports.
+- Item 12: the commit containing this final progress update.
+
+## Next steps
+
+- No remaining implementation in the approved items 10–12.
+- Review item 8's product decision below before changing price policy.
+- The isolated UI suite is opt-in (`POS_RECOVERY_UI_TESTS=1`,
+  `POS_TEST_API_URL` and `POS_TEST_WEB_URL` aimed at test services,
+  `POS_DESKTOP_WEB_DIR` aimed at the test bundle). Run only
+  `recovery-1c.spec.ts` to avoid the preserved old diagnostic.
+- Temporary API/web services and the temporary PostgreSQL cluster are stopped
+  at the end of this continuation; database files are retained in the OS temp
+  directory (`pos-recovery-1c-pg`) for inspection. No existing service is stopped.
 
 ## Pending decisions and preserved work
 

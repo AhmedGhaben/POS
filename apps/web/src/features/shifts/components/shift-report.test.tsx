@@ -39,10 +39,16 @@ describe("full shift report", () => {
     const html = renderToStaticMarkup(<ShiftReport data={data} store={store} withSales />).replace(/\u00a0|&nbsp;/g, " ");
     for (const text of ["FR POS001-2026/10", "FR POS001-2026/11", "FR POS001-2026/12", formatDateTime(summary.sales![0].at), "Count tea", "Ana Owner", "Count note", "Multicaixa", "112,00", "110,00", "Sobra 2,00"]) expect(html).toContain(text);
     expect(html).toContain("line-through");
+    expect(html).not.toContain("MAIN-");
   });
   it("can still print the cashier's optional summary without the sales list", () => {
     const html = renderToStaticMarkup(<ShiftReport data={reportFromServer(shift)} store={store} />);
     expect(html).not.toContain("FR POS001-2026/10");
     expect(html).toContain("Count tea");
+  });
+  it("keeps the internal reference as fallback only when a historical sale has no fiscal number", () => {
+    const data = reportFromServer(shift);
+    const html = renderToStaticMarkup(<ShiftReport data={{ ...data, summary: { ...summary, sales: [{ ...summary.sales![0], documentNo: null }] } }} store={store} withSales />);
+    expect(html).toContain("MAIN-1");
   });
 });

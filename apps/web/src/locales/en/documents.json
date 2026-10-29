@@ -47,6 +47,7 @@
     "beforeDiscount": "Total before discount"
   },
   "invoice": {
+    "saleDocument": "Sale document",
     "title": "INVOICE",
     "number": "Invoice no.",
     "date": "Invoice date",

@@ -22,6 +22,7 @@ import { FiscalDocumentsList } from "@/features/fiscal/components/FiscalDocument
 import { ChainAlerts } from "@/features/fiscal/components/ChainAlerts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { saleNumber } from "@/features/fiscal/sale-document";
 
 const PAGE_SIZE = 25;
 
@@ -94,7 +95,8 @@ function PastSalePicker({ open, onClose, onPick }: { open: boolean; onClose: () 
             aria-label={t("page.sale")}
             options={sales.map((sale) => ({
               value: sale.id,
-              label: `${formatDateTime(sale.createdAt)} · ${sale.receiptNumber}`,
+              label: `${formatDateTime(sale.createdAt)} · ${saleNumber(sale)}`,
+              keywords: [sale.receiptNumber],
               description: money(sale.total),
             }))}
           />
@@ -187,7 +189,7 @@ function LegacyInvoices({ canIssue, embedded = false }: { canIssue: boolean; emb
                 <TableHead>{t("page.columns.number")}</TableHead>
                 <TableHead>{t("page.columns.date")}</TableHead>
                 <TableHead>{t("page.columns.billTo")}</TableHead>
-                <TableHead>{t("page.columns.receipt")}</TableHead>
+                <TableHead>{t("page.columns.saleDocument")}</TableHead>
                 <TableHead className="text-right">{t("page.columns.total")}</TableHead>
                 <TableHead className="w-0" />
               </TableRow>
@@ -201,7 +203,7 @@ function LegacyInvoices({ canIssue, embedded = false }: { canIssue: boolean; emb
                     {inv.buyerName}
                     {inv.buyerTaxId && <span className="block text-xs text-muted-foreground">{inv.buyerTaxId}</span>}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{inv.sale.receiptNumber}</TableCell>
+                  <TableCell className="text-muted-foreground">{saleNumber(inv.sale)}</TableCell>
                   <TableCell className="text-right">{money(inv.sale.total)}</TableCell>
                   <TableCell>
                     <Button variant="outline" size="sm" onClick={() => setViewing(inv.id)}>
