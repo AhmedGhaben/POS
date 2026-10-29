@@ -11,6 +11,8 @@ export type ServerState = "unknown" | "up" | "down";
 interface OfflineState {
   internet: boolean;
   server: ServerState;
+  /** Invalidates stock fetched before a connectivity loss; never persisted. */
+  connectionEpoch: number;
   pendingCount: number;
   failedCount: number;
   /** Drawer openings waiting to upload (they sync with the sales). */
@@ -30,13 +32,14 @@ export const useOfflineStore = create<OfflineState>()(
       // No `navigator` outside a browser (e.g. unit tests on Node 20).
       internet: typeof navigator === "undefined" ? true : navigator.onLine,
       server: "unknown",
+      connectionEpoch: 0,
       pendingCount: 0,
       failedCount: 0,
       pendingDrawerCount: 0,
       isSyncing: false,
       lastSyncAt: null,
-      setInternet: (internet) => set({ internet }),
-      setServer: (server) => set({ server }),
+      setInternet: (internet) => set((s) => ({ internet, connectionEpoch: s.connectionEpoch + (s.internet && !internet ? 1 : 0) })),
+      setServer: (server) => set((s) => ({ server, connectionEpoch: s.connectionEpoch + (s.server !== "down" && server === "down" ? 1 : 0) })),
       setSyncing: (isSyncing) => set({ isSyncing }),
       setLastSyncAt: (lastSyncAt) => set({ lastSyncAt }),
       refreshPendingCount: async () => {

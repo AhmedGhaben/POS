@@ -92,10 +92,7 @@ export function PosPage() {
   // Stock the till knows about (tester #32): warn before checkout, or refuse
   // when the figures are current and the business doesn't sell without stock.
   const allowSellingWithoutStock = useAuthStore((s) => !!s.business?.allowSellingWithoutStock);
-  const stockQuery = useStockLevels(currentStoreId);
-  const stockLevels = stockQuery.data
-    ? { ...stockQuery.data, current: stockQuery.data.current && Date.now() - stockQuery.dataUpdatedAt < 5 * 60_000 }
-    : null;
+  const stockLevels = useStockLevels(currentStoreId).data;
   const stockFor = (product: ProductDto, wanted: number) => checkStock(product, wanted, stockLevels, allowSellingWithoutStock);
   /** False when the till refuses the quantity; warns (and allows) when it only might be short. */
   function stockAllows(product: ProductDto, wanted: number): boolean {

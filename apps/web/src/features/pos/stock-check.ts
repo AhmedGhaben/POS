@@ -13,6 +13,14 @@ export interface StockLevels {
   byProduct: Map<string, number>;
   /** Fetched from the server just now, not a saved copy. */
   current: boolean;
+  /** Connection when the server read began; saved offline copies have none. */
+  connectionEpoch?: number;
+}
+
+/** Cached online stock loses authority immediately on disconnect, including
+ * brief outages between renders. Reconnecting alone cannot re-authorize it. */
+export function stockForConnection(levels: StockLevels | null | undefined, updatedAt: number, online: boolean, connectionEpoch: number, now = Date.now()): StockLevels | null {
+  return levels ? { ...levels, current: online && levels.current && levels.connectionEpoch === connectionEpoch && now - updatedAt < 5 * 60_000 } : null;
 }
 
 export function checkStock(

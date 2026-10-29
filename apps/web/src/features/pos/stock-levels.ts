@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/features/auth/store";
 import { apiClient, isUnreachableError } from "@/lib/api-client";
 import { loadCatalog, saveCatalog } from "@/lib/offline-db";
-import { isWorkingOffline } from "./offline-store";
+import { isWorkingOffline, useOfflineStore } from "./offline-store";
+import { stockForConnection } from "./stock-check";
 import type { StockLevels } from "./stock-check";
 
 type LevelRow = { productId: string; quantity: string };
@@ -27,10 +29,11 @@ export async function fetchStockLevels(storeId: string): Promise<StockLevels | n
     return copy ? toLevels(copy.data, false) : null;
   };
   if (isWorkingOffline()) return saved();
+  const connectionEpoch = useOfflineStore.getState().connectionEpoch;
   try {
     const rows = await apiClient.get<LevelRow[]>(`/stores/${storeId}/inventory/levels`);
     await saveCatalog(key(storeId), rows);
-    return toLevels(rows, true);
+    return { ...toLevels(rows, true), connectionEpoch };
   } catch (err) {
     if (isUnreachableError(err)) return saved();
     throw err;
@@ -38,7 +41,9 @@ export async function fetchStockLevels(storeId: string): Promise<StockLevels | n
 }
 
 export function useStockLevels(storeId: string | null | undefined) {
-  return useQuery({
+  const online = useOfflineStore((s) => !isWorkingOffline(s));
+  const connectionEpoch = useOfflineStore((s) => s.connectionEpoch);
+  const query = useQuery({
     queryKey: ["inventory", storeId, "levels"],
     queryFn: () => fetchStockLevels(storeId!),
     enabled: !!storeId,
@@ -46,4 +51,11 @@ export function useStockLevels(storeId: string | null | undefined) {
     staleTime: 60_000,
     refetchInterval: 60_000,
   });
+  const { refetch } = query;
+  useEffect(() => {
+    // A health check can restore connectivity without refreshing this query.
+    // Fetch immediately rather than trusting a fresh-looking pre-outage cache.
+    if (online && storeId) void refetch();
+  }, [online, connectionEpoch, storeId, refetch]);
+  return { ...query, data: stockForConnection(query.data, query.dataUpdatedAt, online, connectionEpoch) };
 }

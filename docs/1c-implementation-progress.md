@@ -2,6 +2,52 @@
 
 ## Post-audit inventory fixes
 
+### Item 5 — immediate warning-only stock while offline: completed
+
+- Stock authority is now derived in `useStockLevels` from OS connectivity,
+  server reachability, snapshot age and a runtime-only connection epoch.
+  Disconnecting immediately downgrades cached online stock to warning-only,
+  so the existing add/increase/overStock/Charge paths cannot enforce it offline.
+- An outage increments the epoch. Returning online does not re-authorize a
+  pre-outage snapshot, even after an outage too brief to render or when an
+  older request completes later. Reconnection triggers an immediate stock
+  refetch; a successful snapshot from the new epoch restores enforcement.
+- Online stock limits and `allowSellingWithoutStock` retain their existing
+  meaning. No changes to the sync engine, offline outbox/payload/idempotency,
+  accounting rules, fiscal numbering/signatures or issued-document storage.
+  No new UI strings or schema changes.
+- Web: 49 files / 249 tests passed, including 9 new connectivity/snapshot
+  tests and existing outbox, pricing, numbering and signature/hash coverage.
+- API: 3 integration suites / 76 tests passed on an isolated database:
+  offline sales, Angola phase 3 and the full accounting suite. Relevant API
+  unit subset (sales, stock costing, signatures, document lines): 55 passed.
+- Browser/Windows UI: 4 passed in `offline-stock.spec.ts`: OS-offline and
+  server-unreachable cases in both Edge Chromium and real Windows Electron.
+  Every case begins with fresh authoritative zero stock blocking online,
+  then adds an item, raises its quantity with the button and typed input,
+  charges offline, observes the pending outbox record and syncs on reconnect.
+  Tests assert one server sale with the same client id, `createdOffline`,
+  quantity 3 and stock -3. A second uncharged cart becomes blocked after fresh
+  stock arrives; online overselling is tested both enabled and disabled.
+- Electron uses a registered Angolan till and the existing native signing
+  path; its synced fiscal document number matches the printed offline one.
+  Browser checkout uses a synthetic non-fiscal (US) fixture: browsers lack
+  the native signing key required for Angolan offline fiscal documents. That
+  existing restriction remains intact; no mock signer or unsigned AO bypass.
+- API/web/desktop TypeScript checks, touched-file ESLint and git whitespace
+  checks passed; desktop unit tests 29 passed. API/desktop compiled and both
+  browser/PWA and desktop web bundles built into temporary output directories.
+  Existing bundle-size/mixed jspdf import warnings remain.
+- Isolation: fresh temporary cluster `pos-offline-stock-pg`, loopback 55459,
+  database/user `pos_offline_test`, UTC database setting. All 49 existing
+  migrations applied there only. API/web/proxy use ports 55460/55461/55462;
+  no existing demo or production database/services are used. New UI suite
+  requires `POS_OFFLINE_STOCK_TESTS=1` and explicit isolated API/database URLs.
+- Temporary services and cluster are stopped after verification; temp data
+  retained for inspection. No push, merge or deployment. The full desktop
+  suite, archive-confirmation gap and prior non-UTC accounting risk remain
+  separate outstanding work; no archive or unrelated fix started.
+
 ### Task 1 — cross-business product isolation: completed
 
 - `InventoryService.adjust` resolves the target store's business before
