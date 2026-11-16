@@ -56,7 +56,7 @@ export function AgtPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-4 p-6">
       <div>
-        <h1 className="text-2xl font-semibold">{t("agt.title")}</h1>
+        <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("agt.title")}</h1>
         <p className="text-sm text-muted-foreground">
           {!s ? t("common:actions.loading") : !s.enabled ? t("agt.off") : !s.businessActive ? t("agt.businessOff") : t("agt.on", { environment: t(`agt.environments.${s.environment}`) })}
         </p>

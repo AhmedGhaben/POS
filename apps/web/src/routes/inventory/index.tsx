@@ -71,7 +71,7 @@ export function InventoryPage() {
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="mb-1 text-2xl font-semibold">{t("common:nav.inventory")}</h1>
+          <h1 className="mb-1 text-2xl font-extrabold tracking-[-0.03em]">{t("common:nav.inventory")}</h1>
           <p className="text-sm text-muted-foreground">{t("inventory.subtitle")}</p>
           {showCosts && items.length > 0 && (
             <p className="mt-1 text-sm">{t("inventory.bookValue", { value: money(bookValue) })}</p>
@@ -348,7 +348,7 @@ function StockHistoryDialog({ storeId, item, onClose }: { storeId: string; item:
                     {t(`history.types.${m.type}`)}
                     {m.note && <span className="block text-xs text-muted-foreground">{m.note}</span>}
                   </TableCell>
-                  <TableCell className={`text-right ${Number(m.quantity) < 0 ? "text-destructive" : "text-emerald-700 dark:text-emerald-400"}`}>
+                  <TableCell className={`text-right ${Number(m.quantity) < 0 ? "text-destructive" : "text-sb-success"}`}>
                     {Number(m.quantity) > 0 ? "+" : ""}
                     {formatQuantity(m.quantity, unit)}
                   </TableCell>

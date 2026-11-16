@@ -39,9 +39,10 @@ export function SaftDeadlines({ link = true }: { link?: boolean }) {
       {deadlines.map((d) => (
         <div
           key={d.key}
-          className={`flex flex-wrap items-center gap-3 rounded-md border px-4 py-3 text-sm ${d.overdue ? "border-destructive/50 bg-destructive/10" : "border-amber-500/40 bg-amber-500/10"}`}
+          // Neutral notice (not amber: amber means offline); overdue is a real problem.
+          className={`flex flex-wrap items-center gap-3 px-4 py-3 text-sm ${d.overdue ? "sb-error" : "sb-notice"}`}
         >
-          <CalendarClock className="h-4 w-4 shrink-0" aria-hidden />
+          <CalendarClock className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
           <span className="flex-1">
             {t(`deadlines.${d.key as "saftInvoicing"}`, {
               covers: d.key === "saftAccounting" ? d.covers.slice(0, 4) : d.key === "saftInventory" ? formatCalendarDate(d.covers) : formatMonth(d.covers),

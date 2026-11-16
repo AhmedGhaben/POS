@@ -27,7 +27,7 @@ export function LockOverlay() {
       <div className="w-full max-w-md space-y-6">
         <div className="space-y-1 text-center">
           <Lock className="mx-auto h-8 w-8 text-muted-foreground" />
-          <h1 className="text-xl font-semibold">{t("pin.locked")}</h1>
+          <h1 className="text-xl font-extrabold tracking-[-0.03em]">{t("pin.locked")}</h1>
           {user && <p className="text-sm text-muted-foreground">{t("pin.lockedBy", { name: `${user.firstName} ${user.lastName}` })}</p>}
         </div>
         <PinSignIn

@@ -25,13 +25,20 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
-                "flex items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] font-medium hover:bg-accent",
-                isActive && "bg-accent text-accent-foreground",
+                "group flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-[0.9375rem] font-medium text-foreground hover:bg-accent",
+                isActive && "bg-sb-nav-active font-semibold text-sb-nav-active-text hover:bg-sb-nav-active",
               )
             }
           >
-            <item.icon className="h-5 w-5 shrink-0" aria-hidden />
-            {t(`nav.${item.label}`)}
+            {({ isActive }) => (
+              <>
+                <item.icon
+                  className={cn("h-5 w-5 shrink-0", isActive ? "text-sb-success" : "text-muted-foreground")}
+                  aria-hidden
+                />
+                {t(`nav.${item.label}`)}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
@@ -52,7 +59,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 /** Stays put while the page scrolls, so Point of Sale is always in the bottom-left corner. */
 export function Sidebar() {
   return (
-    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r p-3 lg:flex">
+    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r bg-card p-3 lg:flex">
       <SidebarNav />
     </aside>
   );

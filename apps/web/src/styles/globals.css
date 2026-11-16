@@ -43,8 +43,6 @@
     --chart-axis: var(--sb-chart-axis);
     --chart-surface: var(--sb-surface);
     --chart-good: var(--sb-status-online);
-    /* Not amber: amber means "offline but still selling" only. */
-    --chart-warning: var(--sb-text-muted);
     --chart-critical: var(--sb-status-error);
     --chart-delta-good: var(--sb-success-text);
     --chart-delta-bad: var(--sb-error-text);

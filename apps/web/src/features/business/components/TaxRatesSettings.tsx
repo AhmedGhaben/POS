@@ -106,7 +106,7 @@ export function TaxRatesSettings() {
                     </Badge>
                   )}
                   {r.verifyValidity && (
-                    <span className="ml-2 inline-flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400" title={r.note ?? undefined}>
+                    <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium text-foreground" title={r.note ?? undefined}>
                       <AlertTriangle className="h-3 w-3" /> {t("rates.verify")}
                     </span>
                   )}

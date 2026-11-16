@@ -124,7 +124,7 @@ export function DiscountDialog({ open, onOpenChange, title, base, current, onApp
             )
           )}
           {!error && needs && (
-            <p className="text-sm text-amber-700 dark:text-amber-400">
+            <p className="text-sm font-medium text-foreground">
               {overMax ? t("discount.overMaxApproval", { max }) : t("discount.needsApproval")}
             </p>
           )}

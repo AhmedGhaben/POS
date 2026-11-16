@@ -41,8 +41,8 @@ export function VerifyEmailBanner() {
   }
 
   return (
-    <div className="flex items-center gap-3 border-b bg-amber-50 px-4 py-2 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-      <MailWarning className="h-4 w-4 shrink-0" />
+    <div className="flex items-center gap-3 border-b bg-card px-4 py-2 text-sm text-foreground">
+      <MailWarning className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
       <span className="flex-1">
         <Trans t={t} i18nKey="banner.body" values={{ email: user.email }} components={{ b: <span className="font-medium" /> }} />
       </span>
@@ -55,7 +55,7 @@ export function VerifyEmailBanner() {
       >
         {resend.isSuccess ? t("banner.sentShort") : resend.isPending ? t("banner.sending") : t("banner.resend")}
       </Button>
-      <button type="button" aria-label={t("common:actions.dismiss")} onClick={dismiss} className="rounded p-1 hover:bg-amber-100 dark:hover:bg-amber-900/40">
+      <button type="button" aria-label={t("common:actions.dismiss")} onClick={dismiss} className="rounded-lg p-1 hover:bg-accent">
         <X className="h-4 w-4" />
       </button>
     </div>

@@ -90,7 +90,7 @@ export function OpeningBalancesDialog({ open, onClose, onDone, defaultYear }: { 
               </tbody>
               <tfoot className="font-medium">
                 <tr>
-                  <td colSpan={2} className={`p-1 ${debit === credit ? "text-emerald-600" : "text-destructive"}`}>
+                  <td colSpan={2} className={`p-1 ${debit === credit ? "text-sb-success" : "text-destructive"}`}>
                     {debit === credit ? t("entries.balanced") : t("entries.difference", { amount: money(centsToNumber(Math.abs(debit - credit))) })}
                   </td>
                   <td className="p-1 text-right">{money(centsToNumber(debit))}</td>

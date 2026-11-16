@@ -350,7 +350,7 @@ export function DevicePage() {
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 p-4 sm:p-6">
       <div>
-        <h1 className="text-2xl font-semibold">{t("common:nav.thisDevice")}</h1>
+        <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("common:nav.thisDevice")}</h1>
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
       <Card>

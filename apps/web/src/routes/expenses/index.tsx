@@ -97,7 +97,7 @@ export function ExpensesPage() {
     <div className="mx-auto max-w-4xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{t("common:nav.expenses")}</h1>
+          <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("common:nav.expenses")}</h1>
           <p className="text-sm text-muted-foreground">
             {expensesQuery.data ? t("expenses.summary", { count: activeCount, total: money(total) }) : t("expenses.subtitle")}
           </p>

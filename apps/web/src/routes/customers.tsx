@@ -31,7 +31,7 @@ export function CustomersPage() {
     <div className="mx-auto max-w-5xl space-y-4 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">{t("common:nav.customers")}</h1>
+          <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("common:nav.customers")}</h1>
           <p className="text-sm text-muted-foreground">{t("customers.subtitle", { amount: money(owing) })}</p>
         </div>
         <Button

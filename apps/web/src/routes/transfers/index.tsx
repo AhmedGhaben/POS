@@ -100,7 +100,7 @@ export function TransfersPage() {
     <div className="mx-auto max-w-4xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{t("transfers.title")}</h1>
+          <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("transfers.title")}</h1>
           <p className="text-sm text-muted-foreground">{t("transfers.subtitle")}</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

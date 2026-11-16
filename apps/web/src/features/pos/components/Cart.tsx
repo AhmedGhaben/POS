@@ -84,13 +84,13 @@ export function Cart({ lines, priced, onSetQuantity, onRemove, onDiscount, onCha
                   ? t("cart.perUnit", { price: money(linePrice(line)), unit: line.product.unit })
                   : t("cart.each", { price: money(linePrice(line)) })}
                 {line.unitPrice != null && (
-                  <span className="ml-1 text-amber-700 dark:text-amber-400">
+                  <span className="ml-1 font-medium text-foreground">
                     {t("cart.priceChanged", { price: money(line.product.sellPrice) })}
                   </span>
                 )}
               </p>
               {discounted && line.discount && (
-                <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                <p className="text-xs text-sb-success">
                   {t("cart.discountOff", { label: discountLabel(line.discount, money), amount: money(p.lineDiscount) })}
                 </p>
               )}

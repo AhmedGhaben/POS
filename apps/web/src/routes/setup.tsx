@@ -45,7 +45,7 @@ export function SetupPage() {
       <LanguagePicker className="absolute right-4 top-4 h-9 bg-background" />
       <div className="mx-auto max-w-3xl space-y-6 py-8">
         <div>
-          <h1 className="text-2xl font-semibold">{t("setup.title")}</h1>
+          <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("setup.title")}</h1>
           <ol className="mt-4 flex flex-wrap gap-2 text-sm" aria-label={t("setup.steps")}>
             {STEPS.map((s, i) => (
               <li
