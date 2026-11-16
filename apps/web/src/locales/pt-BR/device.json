@@ -36,7 +36,8 @@
     "checking": "Verificando…",
     "allSynced": "Todas as vendas sincronizadas",
     "refused": "Vendas recusadas pelo servidor",
-    "refusedHint": "Ficam aqui até serem corrigidas e reenviadas. Nada é apagado."
+    "refusedHint": "Ficam aqui até serem corrigidas e reenviadas. Nada é apagado.",
+    "refusedEntry": "Venda recusada de {{when}}: {{reason}}"
   },
   "updates": {
     "title": "Atualizações",

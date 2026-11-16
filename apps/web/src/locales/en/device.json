@@ -36,7 +36,8 @@
     "checking": "Checking…",
     "allSynced": "All sales synced",
     "refused": "Sales the server refused",
-    "refusedHint": "Kept here until they're fixed and retried. Nothing is deleted."
+    "refusedHint": "Kept here until they're fixed and retried. Nothing is deleted.",
+    "refusedEntry": "Refused sale from {{when}}: {{reason}}"
   },
   "updates": {
     "title": "Updates",

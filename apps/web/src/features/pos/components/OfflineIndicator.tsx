@@ -4,6 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { StatusDiamond } from "@/components/ui/status-diamond";
+import { refusedEntriesPath } from "@/features/pos/refused-link";
 import { isWorkingOffline, useOfflineStore } from "@/features/pos/offline-store";
 import { syncOutbox } from "@/features/pos/sync";
 
@@ -53,7 +54,7 @@ export function OfflineIndicator() {
         />
       )}
       {failedCount > 0 && (
-        <Link to="/device" className="sb-error inline-flex h-8 items-center px-2.5 text-xs font-semibold hover:underline">
+        <Link to={refusedEntriesPath()} className="sb-error inline-flex h-8 items-center px-2.5 text-xs font-semibold hover:underline">
           <StatusDiamond state="error" label={`${tc("connection.error")} · ${t("sync.failed", { count: failedCount })}`} />
         </Link>
       )}
