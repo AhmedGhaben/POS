@@ -20,6 +20,13 @@
     "customers": "Clientes",
     "sales": "Vendas"
   },
+  "connection": {
+    "online": "Online",
+    "offline": "Sem internet · a vender",
+    "syncing": "A sincronizar",
+    "inactive": "Desligada",
+    "error": "Erro de sincronização"
+  },
   "shell": {
     "openNavigation": "Abrir navegação",
     "accountMenu": "Menu da conta",

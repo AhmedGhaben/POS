@@ -20,6 +20,13 @@
     "customers": "Customers",
     "sales": "Sales"
   },
+  "connection": {
+    "online": "Online",
+    "offline": "Offline · still selling",
+    "syncing": "Syncing",
+    "inactive": "Off",
+    "error": "Sync error"
+  },
   "shell": {
     "openNavigation": "Open navigation",
     "accountMenu": "Account menu",

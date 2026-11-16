@@ -1,15 +1,15 @@
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, CloudOff, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Badge, badgeVariants } from "@/components/ui/badge";
+import { StatusDiamond } from "@/components/ui/status-diamond";
 import { isWorkingOffline, useOfflineStore } from "@/features/pos/offline-store";
 import { syncOutbox } from "@/features/pos/sync";
 
 /**
- * Connectivity and sync status for the cashier: "Working offline — 4 sales
- * waiting to sync", "Syncing 4 sales…", failures. Sync itself runs in the
+ * Connectivity and sync status for the cashier: "Sem internet · a vender ·
+ * 4 vendas por enviar", "A sincronizar 4 vendas…", failures. Sync itself runs in the
  * background (startSyncEngine); "Retry sync" just runs it now.
  */
 export function OfflineIndicator() {
@@ -32,27 +32,32 @@ export function OfflineIndicator() {
     return null;
   }
 
+  // Looks only: the states are the same as before, drawn with StatusDiamond.
   return (
     <div className="flex items-center gap-2" data-testid="sync-status">
       {offline && (
-        <Badge variant="destructive" className="gap-1" title={internet ? t("sync.serverDown") : t("sync.noInternet")}>
-          <CloudOff className="h-3 w-3" />
-          {pendingCount > 0 ? t("sync.offlineWaiting", { count: pendingCount }) : t("sync.offline")}
-        </Badge>
+        <StatusDiamond
+          state="offline"
+          className="sb-offline h-8 px-2.5 text-xs font-semibold"
+          title={internet ? t("sync.serverDown") : t("sync.noInternet")}
+          label={pendingCount > 0 ? t("sync.offlineWaiting", { count: pendingCount }) : t("sync.offline")}
+        />
       )}
       {!offline && isSyncing && pendingCount > 0 && (
-        <Badge variant="secondary" className="gap-1">
-          <RefreshCw className="h-3 w-3 animate-spin" /> {t("sync.syncing", { count: pendingCount })}
-        </Badge>
+        <StatusDiamond
+          state="syncing"
+          className="h-8 rounded-xl border bg-card px-2.5 text-xs font-semibold"
+          label={t("sync.syncing", { count: pendingCount })}
+        />
       )}
       {failedCount > 0 && (
-        <Link to="/device" className={badgeVariants({ variant: "destructive", className: "gap-1" })}>
-          <AlertTriangle className="h-3 w-3" /> {t("sync.failed", { count: failedCount })}
+        <Link to="/device" className="sb-error inline-flex h-8 items-center px-2.5 text-xs font-semibold hover:underline">
+          <StatusDiamond state="error" label={t("sync.failed", { count: failedCount })} />
         </Link>
       )}
       {pendingCount > 0 && (
         <Button variant="outline" size="sm" disabled={isSyncing} onClick={retry} className="gap-1">
-          <RefreshCw className={`h-3 w-3 ${isSyncing ? "animate-spin" : ""}`} />
+          <RefreshCw className={`h-3 w-3 ${isSyncing ? "animate-spin" : ""}`} aria-hidden />
           {t("sync.retry")}
         </Button>
       )}

@@ -207,3 +207,21 @@ html.touch input[type="radio"] {
   size: A4;
   margin: 15mm;
 }
+
+/* StatusDiamond "syncing": a gentle pulse; none for people who ask for less motion. */
+@keyframes sb-diamond-pulse {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.5;
+  }
+}
+.sb-diamond-pulse {
+  animation: sb-diamond-pulse 1.2s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sb-diamond-pulse {
+    animation: none;
+  }
+}

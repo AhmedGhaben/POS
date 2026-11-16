@@ -1,4 +1,5 @@
 import * as React from "react";
+import { StatusDiamond } from "@/components/ui/status-diamond";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Download, FolderOpen, RefreshCw, Wand2 } from "lucide-react";
@@ -193,7 +194,12 @@ function SyncSection() {
         <div>
           {serverUrl && <Row label={t("sync.address")}>{serverUrl}</Row>}
           <Row label={t("sync.server")}>{serverStatus}</Row>
-          <Row label={t("sync.mode")}>{offline ? t("pos:sync.offline") : t("sync.online")}</Row>
+          <Row label={t("sync.mode")}>
+            <StatusDiamond
+              state={offline ? "offline" : "online"}
+              label={offline ? t("pos:sync.offline") : t("sync.online")}
+            />
+          </Row>
           <Row label={t("sync.pending")}>{pendingCount}</Row>
           <Row label={t("sync.failed")}>{failedCount}</Row>
           <Row label={t("sync.lastSync")}>{formatTime(lastSyncAt, t)}</Row>
