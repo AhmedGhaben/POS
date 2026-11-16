@@ -508,10 +508,30 @@ model Terminal {
   drawerEvents   DrawerEvent[]
   shifts         Shift[]
   documentSeries DocumentSeries[]
+  status         TerminalStatus?
 
   @@unique([businessId, sequence])
   @@index([storeId])
   @@map("terminals")
+}
+
+/// What a till last told the server about its connection ("Lojas agora"):
+/// one row per till, upserted by its heartbeat. Status only: nothing here
+/// feeds sales, the offline queue, accounting or fiscal documents.
+model TerminalStatus {
+  terminalId           String    @id
+  terminal             Terminal  @relation(fields: [terminalId], references: [id], onDelete: Cascade)
+  /// Server time of the last heartbeat.
+  lastSeenAt           DateTime
+  /// Server time of the last heartbeat sent with nothing left to upload
+  /// (no pending and no failed entries on the till).
+  lastSyncSuccessAt    DateTime?
+  /// Entries waiting on the till at its last heartbeat.
+  pendingCountReported Int       @default(0)
+  appVersion           String?
+  updatedAt            DateTime  @updatedAt
+
+  @@map("terminal_status")
 }
 
 /// Every time a till opened its cash drawer: with a cash sale, or by hand

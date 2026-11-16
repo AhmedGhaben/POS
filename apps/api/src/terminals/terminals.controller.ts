@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { Public } from "../common/decorators/public.decorator";
 import { CurrentTerminal, TerminalKeyGuard } from "../till/terminal-key.guard";
 import type { TillTerminal } from "../till/till-auth.service";
@@ -9,13 +9,17 @@ import { RolesGuard } from "../common/guards/roles.guard";
 import { StoreAccessGuard } from "../common/guards/store-access.guard";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { Throttle } from "@nestjs/throttler";
-import { CreatePairingCodeDto, CreateTerminalDto, PairTerminalDto, UpdateTerminalDto } from "./dto/terminal.dto";
+import { CreatePairingCodeDto, CreateTerminalDto, PairTerminalDto, TerminalHeartbeatDto, UpdateTerminalDto } from "./dto/terminal.dto";
+import { TerminalStatusService } from "./terminal-status.service";
 import { TerminalsService } from "./terminals.service";
 
 /** Physical tills running the desktop app. Setting one up needs a manager. */
 @Controller("terminals")
 export class TerminalsController {
-  constructor(private readonly terminalsService: TerminalsService) {}
+  constructor(
+    private readonly terminalsService: TerminalsService,
+    private readonly statusService: TerminalStatusService,
+  ) {}
 
   @Post()
   @UseGuards(RolesGuard, StoreAccessGuard)
@@ -53,6 +57,19 @@ export class TerminalsController {
   @Get("me/staff")
   staff(@CurrentTerminal() terminal: TillTerminal) {
     return this.terminalsService.staffForTill(terminal);
+  }
+
+  /**
+   * The till's heartbeat ("Lojas agora"): its queue size and version, every
+   * minute while it's online. Till key, nobody need be signed in. The till
+   * sends it fire-and-forget; selling never waits for it.
+   */
+  @Public()
+  @UseGuards(TerminalKeyGuard)
+  @Post("me/heartbeat")
+  @HttpCode(204)
+  async heartbeat(@CurrentTerminal() terminal: TillTerminal, @Body() dto: TerminalHeartbeatDto): Promise<void> {
+    await this.statusService.heartbeat(terminal, dto);
   }
 
   /** A new key for the till (the old one stops working). */

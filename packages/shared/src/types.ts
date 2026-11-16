@@ -1529,3 +1529,43 @@ export interface DocumentPrintResultDto {
   reprint: boolean;
   printCount: number;
 }
+
+/* ---------- "Lojas agora": store and till connection status ---------- */
+
+/** A registered Windows till, as the server last heard from it. */
+export type TillSyncStatus = "online" | "syncing" | "offline" | "inactive" | "never";
+
+/**
+ * A store: the worst of its tills, or, with no Windows till, whether someone
+ * is selling in a browser there ("browser") or nothing is set up ("noTill").
+ * Neither of those two is ever an alarm.
+ */
+export type StoreSyncStatus = TillSyncStatus | "browser" | "noTill";
+
+export interface TillStatusDto {
+  terminalId: string;
+  name: string;
+  code: string;
+  status: TillSyncStatus;
+  /** Server time it was last heard from (heartbeat or upload), or null if never. */
+  lastSeenAt: string | null;
+  /** Server time it last reported nothing left to upload. */
+  lastSyncSuccessAt: string | null;
+  /** Entries waiting on the till when it last reported: unknown since then. */
+  pendingCountReported: number;
+  appVersion: string | null;
+  hasOpenShift: boolean;
+}
+
+export interface StoreStatusDto {
+  storeId: string;
+  name: string;
+  /** For showing times on the store's clock. */
+  timezone: string;
+  country: string;
+  status: StoreSyncStatus;
+  /** Of the tills that decide the store's status. */
+  lastSeenAt: string | null;
+  lastSyncSuccessAt: string | null;
+  devices: TillStatusDto[];
+}
