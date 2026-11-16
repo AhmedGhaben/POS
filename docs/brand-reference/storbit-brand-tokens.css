@@ -1,0 +1,17 @@
+/* STORBIT official brand tokens — design reference, not a replacement for existing app tokens. */
+:root {
+  --storbit-coral: #FF3366;
+  --storbit-orange: #FF7A00;
+  --storbit-violet: #7A00FF;
+  --storbit-purple: #B84DFF;
+  --storbit-pink: #FFB3E6;
+  --storbit-charcoal: #0F1221;
+  --storbit-slate: #64748B;
+  --storbit-off-white: #F7F8FC;
+  --storbit-brand-gradient: linear-gradient(90deg, #FF3366, #FF7A00, #7A00FF);
+  --storbit-font-heading: "Poppins", "Inter", sans-serif;
+  --storbit-font-interface: "Inter", system-ui, sans-serif;
+}
+/* Contrast guidance: use #0F1221 for headings and primary actions;
+   use #475569 for small body text, not low-contrast pastel accents.
+   Load approved licensed font assets locally when available. */

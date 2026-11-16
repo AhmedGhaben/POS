@@ -51,8 +51,8 @@ export function PosShell() {
   if (role === "ACCOUNTANT") return <Navigate to="/accounting" replace />;
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="flex h-14 items-center justify-between border-b px-4">
+    <div className="storbit-ui storbit-shell flex min-h-screen flex-col bg-background text-foreground">
+      <header className="flex h-14 items-center justify-between border-b bg-card px-4 shadow-sm">
         {location.pathname !== "/pos" ? (
           // This device for a cashier (any page in the till's frame): back to the same sale.
           <NavLink to="/pos" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">

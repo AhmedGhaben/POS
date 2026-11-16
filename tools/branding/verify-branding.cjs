@@ -1,0 +1,68 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const { execFileSync } = require('node:child_process');
+const crypto = require('node:crypto');
+const { AppInfo } = require('app-builder-lib/out/appInfo');
+const { getWindowsInstallationDirName } = require('app-builder-lib/out/targets/targetUtil');
+const { validateConfiguration } = require('app-builder-lib/out/util/config/config');
+const { DebugLogger } = require('builder-util');
+const { UUID } = require('builder-util-runtime');
+const root = path.resolve(__dirname, '../..');
+const read = file => fs.readFileSync(path.join(root, file), 'utf8');
+const oldText = file => execFileSync('git', ['show', `HEAD:${file}`], { cwd: root, encoding: 'utf8' });
+const oldModule = { exports: {} };
+vm.runInNewContext(oldText('apps/desktop/electron-builder.config.js'), { module: oldModule, process: { env: process.env } });
+const before = JSON.parse(JSON.stringify(oldModule.exports));
+const after = require('../../apps/desktop/electron-builder.config');
+const oldPackage = JSON.parse(oldText('apps/desktop/package.json'));
+const newPackage = JSON.parse(read('apps/desktop/package.json'));
+const info = (config, metadata) => new AppInfo({ config, metadata }, undefined, config.win);
+const oldInfo = info(before, oldPackage);
+const newInfo = info(after, newPackage);
+(async () => {
+  await validateConfiguration(after, new DebugLogger(false));
+  const identities = {};
+  for (const property of ['id', 'name', 'productFilename', 'updaterCacheDirName']) {
+    assert.equal(newInfo[property], oldInfo[property], property);
+    identities[property] = newInfo[property];
+  }
+  identities.installDirectory = getWindowsInstallationDirName(newInfo, true);
+  assert.equal(identities.installDirectory, getWindowsInstallationDirName(oldInfo, true));
+  const namespace = UUID.parse('50e065bc-3134-11e6-9bab-38c9862bdaf3');
+  identities.nsisGuid = after.nsis.guid || UUID.v5(newInfo.id, namespace);
+  assert.equal(identities.nsisGuid, before.nsis.guid || UUID.v5(oldInfo.id, namespace));
+  for (const property of ['publish', 'electronFuses', 'extraResources']) assert.deepEqual(after[property], before[property]);
+  for (const property of ['target', 'artifactName', 'signAndEditExecutable']) assert.equal(after.win[property], before.win[property]);
+  for (const property of ['perMachine', 'oneClick', 'deleteAppDataOnUninstall', 'allowToChangeInstallationDirectory']) assert.equal(after.nsis[property], before.nsis[property]);
+  assert.equal(newPackage.name, oldPackage.name);
+  assert.equal(newPackage.version, oldPackage.version);
+  assert.equal(newInfo.productName, 'STORBIT');
+  assert.equal(after.nsis.shortcutName, 'STORBIT');
+  assert.equal(after.win.icon, 'build/icon.ico');
+  assert.ok(after.files.includes('build/icon.ico'));
+  assert.deepEqual(after.files.filter(file => file !== 'build/icon.ico'), before.files);
+  const main = read('apps/desktop/src/main.ts');
+  assert.ok(main.includes('path.join(app.getPath("appData"), "POS")'));
+  assert.ok(main.includes('process.env.POS_DESKTOP_USER_DATA'));
+  assert.ok(main.includes('app.setAppUserModelId("app.pos.desktop")'));
+  for (const file of ['apps/desktop/src/main.ts', 'apps/desktop/src/customer-display.ts']) assert.ok(read(file).includes('icon: path.join(app.getAppPath(), "build", "icon.ico")'));
+  for (const logo of ['storbit-logo-original.png', 'storbit-logo-light.png']) {
+    assert.deepEqual(fs.readFileSync(path.join(root, 'apps/web/public/brand', logo)), fs.readFileSync(path.join(root, 'docs/brand-reference', logo)));
+  }
+  assert.deepEqual(fs.readFileSync(path.join(root, 'apps/web/public/brand/storbit-app-icon.svg')), fs.readFileSync(path.join(root, 'apps/web/public/pwa-icon.svg')));
+  assert.deepEqual(fs.readFileSync(path.join(root, 'apps/desktop/build/icon.ico')), fs.readFileSync(path.join(root, 'apps/web/public/favicon.ico')));
+  const saved = JSON.parse(read('docs/storbit-verification/branding-final/source-before.json'));
+  const protectedFiles = Object.keys(saved).filter(file => /LoginLayout|SignupLayout|AuthAppearanceControls|auth-entrance|sample-counters|routes\/(login|signup)|storbit-login\.css|ThemeProvider|locales\/|features\//.test(file));
+  for (const file of protectedFiles) assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest('hex'), saved[file], `Preserve ${file}`);
+  const html = read('apps/web/index.html');
+  assert.ok(html.includes('<title>STORBIT</title>'));
+  assert.ok(html.includes('/brand/storbit-app-icon.svg'));
+  assert.ok(html.includes('/favicon.ico'));
+  const manifest = JSON.parse(read('apps/web/dist/manifest.webmanifest'));
+  assert.equal(manifest.name, 'STORBIT');
+  assert.equal(manifest.short_name, 'STORBIT');
+  for (const icon of manifest.icons) assert.ok(fs.existsSync(path.join(root, 'apps/web/public', icon.src)));
+  console.log(JSON.stringify({ result: 'PASS', identities, displayName: newInfo.productName, protectedFilesUnchanged: protectedFiles.length, manifest: { name: manifest.name, short_name: manifest.short_name, icons: manifest.icons } }, null, 2));
+})().catch(error => { console.error(error); process.exitCode = 1; });

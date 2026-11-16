@@ -43,7 +43,11 @@ import { clearSigningKey, refreshSigningKey, signDocument, signingStatus } from 
 // Tests (and a second profile on one PC) point the app at another data folder.
 if (process.env.POS_DESKTOP_USER_DATA) {
   app.setPath("userData", path.resolve(process.env.POS_DESKTOP_USER_DATA));
+} else {
+  // productName is now STORBIT; retain the existing POS profile and sessions.
+  app.setPath("userData", path.join(app.getPath("appData"), "POS"));
 }
+if (process.platform === "win32") app.setAppUserModelId("app.pos.desktop");
 
 initLogging(app.isPackaged);
 registerAppScheme();
@@ -71,7 +75,8 @@ function createWindow() {
     height: 860,
     minWidth: 1024,
     minHeight: 640,
-    title: "POS",
+    title: "STORBIT",
+    icon: path.join(app.getAppPath(), "build", "icon.ico"),
     backgroundColor: "#0a0a0a",
     show: false,
     kiosk: !!getConfig().kiosk,

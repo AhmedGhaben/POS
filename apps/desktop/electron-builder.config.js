@@ -15,15 +15,17 @@ const editExe = process.env.CI === "true" || process.env.POS_EDIT_EXE === "1";
 /** @type {import("electron-builder").Configuration} */
 module.exports = {
   appId: "app.pos.desktop",
-  productName: "POS",
+  productName: "STORBIT",
   // Tests only: build a "newer" copy to serve from a local update feed.
   extraMetadata: process.env.POS_VERSION_OVERRIDE ? { version: process.env.POS_VERSION_OVERRIDE } : undefined,
   directories: { output: process.env.POS_RELEASE_DIR || "release", buildResources: "build" },
-  files: ["dist/**/*", "static/**/*", "package.json", "!dist/**/*.map", "!dist/**/*.test.js", "!dist/unit-tests.js"],
+  files: ["dist/**/*", "static/**/*", "build/icon.ico", "package.json", "!dist/**/*.map", "!dist/**/*.test.js", "!dist/unit-tests.js"],
   extraResources: [{ from: "../web/dist-desktop", to: "web" }],
   win: {
     target: "nsis",
-    icon: "build/icon.png",
+    // Keep the installed executable/directory identity while changing display branding.
+    executableName: "POS",
+    icon: "build/icon.ico",
     signAndEditExecutable: editExe,
     artifactName: "POS-Setup-${version}.${ext}",
   },
@@ -33,7 +35,7 @@ module.exports = {
     allowToChangeInstallationDirectory: true,
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
-    shortcutName: "POS",
+    shortcutName: "STORBIT",
     deleteAppDataOnUninstall: false,
     installerIcon: "build/icon.ico",
     uninstallerIcon: "build/icon.ico",

@@ -1,4 +1,5 @@
-import { BrowserWindow, screen } from "electron";
+import { app, BrowserWindow, screen } from "electron";
+import path from "node:path";
 import { z } from "zod";
 import { getDisplay, type DisplaySettings } from "./config";
 import type { HardwareResult } from "./hardware/drawer";
@@ -139,7 +140,8 @@ export function openCustomerWindow() {
     fullscreen: ownScreen,
     autoHideMenuBar: true,
     skipTaskbar: true,
-    title: "Customer display",
+    title: "STORBIT - Customer display",
+    icon: path.join(app.getAppPath(), "build", "icon.ico"),
     backgroundColor: "#000000",
     webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false },
   });

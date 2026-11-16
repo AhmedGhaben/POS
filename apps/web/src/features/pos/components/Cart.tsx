@@ -66,19 +66,19 @@ export function Cart({ lines, priced, onSetQuantity, onRemove, onDiscount, onCha
   const money = useMoney();
   if (lines.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+      <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed bg-card/50 text-sm text-muted-foreground">
         {t("cart.empty")}
       </div>
     );
   }
 
   return (
-    <div className="flex-1 divide-y overflow-y-auto">
+    <div className="flex-1 divide-y overflow-y-auto rounded-lg bg-card">
       {lines.map((line, i) => {
         const p = priced[i];
         const discounted = !!p && p.lineDiscount > 0;
         return (
-          <div key={line.product.id} className="flex items-center gap-3 px-4 py-3">
+          <div key={line.product.id} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50">
             <div className="flex-1">
               <p className="text-sm font-medium">{line.product.name}</p>
               <p className="text-xs text-muted-foreground">
@@ -128,7 +128,7 @@ export function Cart({ lines, priced, onSetQuantity, onRemove, onDiscount, onCha
                 <Plus className="h-3 w-3" />
               </Button>
             </div>
-            <div className="w-20 text-right">
+            <div className="w-20 text-right tabular-nums">
               {discounted && (
                 <p className="text-xs text-muted-foreground line-through">{money(p.gross)}</p>
               )}

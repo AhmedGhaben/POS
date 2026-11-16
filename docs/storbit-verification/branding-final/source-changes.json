@@ -1,0 +1,7 @@
+[
+  "apps/web/src/routes/customer-display.tsx",
+  "apps/web/src/components/layout/AuthLayout.tsx",
+  "apps/web/src/components/layout/Sidebar.tsx",
+  "apps/desktop/src/customer-display.ts",
+  "apps/desktop/src/main.ts"
+]

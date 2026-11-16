@@ -430,7 +430,7 @@ export function PosPage() {
           <span className="text-muted-foreground">{t("totals.tax")}</span>
           <span>{money(totals.taxTotal)}</span>
         </div>
-        <div className="flex justify-between text-lg font-semibold">
+        <div className="flex justify-between border-t pt-2 text-lg font-semibold tabular-nums">
           <span>{t("totals.total")}</span>
           <span>{money(totals.total)}</span>
         </div>
@@ -624,7 +624,7 @@ export function PosPage() {
         />
       </div>
 
-      <div className="hidden w-96 flex-col p-4 lg:flex" data-testid="checkout-panel">{checkoutPanel}</div>
+      <div className="hidden w-96 flex-col bg-card p-4 lg:flex" data-testid="checkout-panel">{checkoutPanel}</div>
 
       <Sheet open={cartSheetOpen} onOpenChange={setCartSheetOpen}>
         <SheetTrigger asChild>

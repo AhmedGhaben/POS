@@ -42,7 +42,7 @@ export function BackOfficeTopBar() {
   }
 
   return (
-    <header className="flex h-14 items-center justify-between gap-2 border-b px-4">
+    <header className="flex h-14 items-center justify-between gap-2 border-b bg-card px-4 shadow-sm">
       <div className="flex items-center gap-2 lg:hidden">
         <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
           <SheetTrigger asChild>

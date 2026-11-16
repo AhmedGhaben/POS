@@ -21,14 +21,14 @@ export function CustomerDisplayPage() {
   const listRef = React.useRef<HTMLUListElement>(null);
 
   React.useEffect(() => {
-    document.title = t("display.windowTitle");
+    document.title = "STORBIT";
     const channel = new BroadcastChannel(CUSTOMER_DISPLAY_CHANNEL);
     channel.onmessage = (e: MessageEvent<CustomerDisplayMessage>) => {
       if (e.data?.type === "state") setState(e.data.state);
     };
     channel.postMessage({ type: "hello" } satisfies CustomerDisplayMessage);
     return () => channel.close();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Keep the newest lines in view on a long sale.
   React.useEffect(() => {

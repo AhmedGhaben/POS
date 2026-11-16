@@ -4,22 +4,16 @@ import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { signupSchema, registrationValues } from "./signup-schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { AuthLayout } from "@/components/layout/AuthLayout";
+import { SignupLayout } from "@/components/layout/SignupLayout";
+import { ArrowRight } from "lucide-react";
 import { useAuthStore } from "@/features/auth/store";
 import { register } from "@/features/auth/api";
 import { currentLanguage } from "@/i18n";
 
-const signupSchema = z.object({
-  firstName: z.string().trim().min(1, "validation.required").max(50),
-  lastName: z.string().trim().min(1, "validation.required").max(50),
-  businessName: z.string().trim().min(1, "validation.required").max(100),
-  storeName: z.string().trim().min(1, "validation.required").max(100),
-  email: z.string().trim().email("validation.email"),
-  password: z.string().min(8, "validation.passwordLength"),
-});
 
 type SignupValues = z.output<typeof signupSchema>;
 
@@ -30,6 +24,7 @@ const defaultValues: z.input<typeof signupSchema> = {
   storeName: "",
   email: "",
   password: "",
+  confirmPassword: "",
 };
 
 function browserTimezone(): string | undefined {
@@ -50,7 +45,7 @@ export function SignupPage() {
   });
 
   const signupMutation = useMutation({
-    mutationFn: (values: SignupValues) => register({ ...values, timezone: browserTimezone(), language: currentLanguage() }),
+    mutationFn: (values: SignupValues) => register({ ...registrationValues(values), timezone: browserTimezone(), language: currentLanguage() }),
     onSuccess: ({ accessToken, user, stores, business }) => {
       setSession(accessToken, user, stores, business);
       navigate("/welcome", { replace: true });
@@ -58,9 +53,7 @@ export function SignupPage() {
   });
 
   return (
-    <AuthLayout
-      title={t("signup.title")}
-      description={t("signup.description")}
+    <SignupLayout
       footer={
         <>
           {t("signup.haveAccount")}{" "}
@@ -72,7 +65,7 @@ export function SignupPage() {
     >
       <Form {...form}>
         <form
-          className="space-y-3"
+          className="login-form signup-form"
           onSubmit={form.handleSubmit((values) => signupMutation.mutate(values))}
           noValidate
         >
@@ -143,6 +136,7 @@ export function SignupPage() {
               </FormItem>
             )}
           />
+          <div className="signup-passwords">
           <FormField
             control={form.control}
             name="password"
@@ -156,14 +150,28 @@ export function SignupPage() {
               </FormItem>
             )}
           />
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("fields.confirmPassword")}</FormLabel>
+                <FormControl>
+                  <Input type="password" autoComplete="new-password" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          </div>
           {signupMutation.error && (
-            <p className="text-sm text-destructive">{(signupMutation.error as Error).message}</p>
+            <p role="alert" className="error-message">{(signupMutation.error as Error).message}</p>
           )}
-          <Button type="submit" className="w-full" disabled={signupMutation.isPending}>
-            {signupMutation.isPending ? t("signup.submitting") : t("signup.submit")}
+          <Button type="submit" className="signin" disabled={signupMutation.isPending}>
+            {signupMutation.isPending ? t("signup.submitting") : t("signup.submit")}<ArrowRight aria-hidden="true" />
           </Button>
         </form>
       </Form>
-    </AuthLayout>
+    </SignupLayout>
   );
 }

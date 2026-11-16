@@ -24,7 +24,7 @@ export function CategoryFilter({ selectedCategoryId, onSelect }: CategoryFilterP
         type="button"
         onClick={() => onSelect(null)}
         className={cn(
-          "rounded-full border px-3 py-1 text-xs font-medium hover:bg-accent",
+          "rounded-full border bg-card px-3 py-1 text-xs font-medium shadow-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           selectedCategoryId === null && "border-primary bg-primary text-primary-foreground",
         )}
       >
@@ -36,7 +36,7 @@ export function CategoryFilter({ selectedCategoryId, onSelect }: CategoryFilterP
           type="button"
           onClick={() => onSelect(category.id)}
           className={cn(
-            "rounded-full border px-3 py-1 text-xs font-medium hover:bg-accent",
+            "rounded-full border bg-card px-3 py-1 text-xs font-medium shadow-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             selectedCategoryId === category.id && "border-primary bg-primary text-primary-foreground",
           )}
         >

@@ -102,7 +102,7 @@ export function ProductGrid({ categoryId, onSelect, stockLevels }: ProductGridPr
               key={product.id}
               type="button"
               onClick={() => onSelect(product)}
-              className="flex items-center gap-2 rounded-md border p-2 text-left text-sm hover:bg-accent"
+              className="flex items-center gap-2 rounded-md border bg-card p-2 text-left text-sm shadow-sm transition-colors hover:border-ring hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {productPhotoSrc(product) && (
                 <img src={productPhotoSrc(product)!} alt="" loading="lazy" className="h-10 w-10 shrink-0 rounded object-cover" />
@@ -124,7 +124,7 @@ export function ProductGrid({ categoryId, onSelect, stockLevels }: ProductGridPr
               key={product.id}
               type="button"
               onClick={() => onSelect(product)}
-              className={cn("flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-accent")}
+              className={cn("flex w-full items-center justify-between gap-3 bg-card px-3 py-2 text-left text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring")}
             >
               <span className="min-w-0 flex-1 truncate font-medium">{product.name}</span>
               <span className="shrink-0 text-xs text-muted-foreground">{product.sku}</span>

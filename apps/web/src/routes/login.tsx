@@ -5,7 +5,8 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AuthLayout } from "@/components/layout/AuthLayout";
+import { LoginLayout } from "@/components/layout/LoginLayout";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "@/features/auth/store";
 import { login } from "@/features/auth/api";
 import { ApiError } from "@/lib/api-client";
@@ -24,6 +25,7 @@ export function LoginPage() {
     () => (location.state as { email?: string } | null)?.email ?? "",
   );
   const [password, setPassword] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
   // On a till with PINs, the name buttons come first.
@@ -49,9 +51,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout
-      title={t("login.title")}
-      description={t("login.description")}
+    <LoginLayout
       footer={
         <>
           {t("login.newHere")}{" "}
@@ -69,7 +69,7 @@ export function LoginPage() {
           </Button>
         </div>
       ) : (
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="login-form">
         <div className="space-y-2">
           <Label htmlFor="email">{t("fields.email")}</Label>
           <Input
@@ -84,22 +84,24 @@ export function LoginPage() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">{t("fields.password")}</Label>
-            <Link to="/forgot-password" className="text-sm text-muted-foreground hover:underline">
+            <Link to="/forgot-password" className="text-link">
               {t("login.forgot")}
             </Link>
           </div>
-          <Input
+          <div className="input-wrap"><Input
+            className="password-input"
             id="password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+          <button className="password-toggle" type="button" aria-label={t(showPassword ? "login.hidePassword" : "login.showPassword")} aria-pressed={showPassword} onClick={() => setShowPassword((value) => !value)}>{showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}</button></div>
         </div>
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? t("login.submitting") : t("login.submit")}
+        {error && <p role="alert" className="error-message">{error}</p>}
+        <Button type="submit" className="signin" disabled={loading}>
+          {loading ? t("login.submitting") : t("login.submit")}<ArrowRight aria-hidden="true" />
         </Button>
         {tillMode && (
           <Button type="button" variant="link" className="w-full" onClick={() => setUseEmail(false)}>
@@ -108,6 +110,6 @@ export function LoginPage() {
         )}
       </form>
       )}
-    </AuthLayout>
+    </LoginLayout>
   );
 }

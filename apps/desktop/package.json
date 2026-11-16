@@ -1,6 +1,6 @@
 {
   "name": "@pos/desktop",
-  "productName": "POS",
+  "productName": "STORBIT",
   "version": "0.2.6",
   "private": true,
   "description": "POS for Windows: offline till, silent printing, POS hardware",

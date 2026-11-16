@@ -1,0 +1,32 @@
+{
+  "logos": [
+    {
+      "name": "storbit-logo-original.png",
+      "sha256": "863d32ad93f5cd83179af4105f7be9d42b59d3e530c2c0f2f9b32efecf1a0c30",
+      "size": [
+        2172,
+        724
+      ],
+      "mode": "RGBA",
+      "alpha": [
+        0,
+        255
+      ]
+    },
+    {
+      "name": "storbit-logo-light.png",
+      "sha256": "f57e6d88bb563934003c19dedc413b9ce103577d9122f95327a97279b08d09e2",
+      "size": [
+        2172,
+        724
+      ],
+      "mode": "RGBA",
+      "alpha": [
+        0,
+        255
+      ]
+    }
+  ],
+  "buttonStates": "Exact approved dark tokens and state rules confirmed by source inspection; computed rendering remains manual.",
+  "portuguese": "UTF-8 decoding and corrected headline verified in both locale files."
+}

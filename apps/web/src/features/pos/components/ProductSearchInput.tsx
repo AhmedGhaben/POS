@@ -78,7 +78,7 @@ export function ProductSearchInput({ onSelect, suppressRefocusRef }: ProductSear
         ref={inputRef}
         autoFocus
         placeholder={t("search.placeholder")}
-        className="h-14 text-lg"
+          className="h-14 border-ring/60 bg-card text-lg shadow-sm"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}

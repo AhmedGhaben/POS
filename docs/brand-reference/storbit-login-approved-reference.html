@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>STORBIT — Approved Login Reference (Light + Dark)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--coral:#FF3366;--orange:#FF7A00;--violet:#7A00FF;--purple:#B84DFF;--pink:#FFB3E6;--charcoal:#0F1221;--slate:#64748B;--offwhite:#F7F8FC;--lavender:#EDEBFF;--lavender-hover:#DCD6FF;--lavender-pressed:#C9BFFF;--focus:#B84DFF;--brand-bg:#171C2D;--auth-bg:#0B0E17;--panel:#1E2537;--panel-border:#39445B;--text:#F7F8FC;--muted:#C5CDDC;--subtle:#9AA7BD;--field:#1B2233;--field-border:#46536D;--button-bg:var(--lavender);--button-hover:var(--lavender-hover);--button-pressed:var(--lavender-pressed);--button-text:var(--charcoal);--shadow:0 24px 70px rgba(0,0,0,.24)}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:Inter,Arial,sans-serif}
+body{background:#080A10;color:#e8edf7;padding:24px}
+button,input{font:inherit}
+.toolbar{max-width:1440px;margin:0 auto 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.toolbar-title{font:600 13px Inter,sans-serif;letter-spacing:.02em;color:#dce3f1}
+.toolbar-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.control-group{display:flex;padding:4px;border:1px solid #30394d;background:#111622;border-radius:12px;gap:3px}
+.control-group button{border:0;background:transparent;color:#b7c1d4;border-radius:8px;padding:8px 13px;font-size:12px;font-weight:650;cursor:pointer}
+.control-group button[aria-pressed=true]{background:#354057;color:#fff}
+.control-group button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.preview-wrap{max-width:1440px;margin:auto}
+.login-screen{width:100%;min-height:860px;display:grid;grid-template-columns:46.5% 53.5%;overflow:hidden;border:1px solid #2a3142;border-radius:18px;background:var(--auth-bg);box-shadow:var(--shadow);color:var(--text)}
+.brand-panel{position:relative;background:var(--brand-bg);padding:46px clamp(34px,4.2vw,64px) 38px;display:flex;flex-direction:column;min-width:0}
+.brand-top{display:flex;align-items:center;justify-content:space-between;min-height:46px}
+.logo-wrap{display:inline-flex;align-items:center;min-width:0}
+.logo-img{display:block;width:138px;height:auto;max-height:48px;object-fit:contain;object-position:left center}
+.logo-fallback{display:none;border:1px dashed #8190aa;border-radius:7px;padding:8px 11px;color:#d6deec;font-size:10px;letter-spacing:.1em;font-weight:700}
+.logo-wrap.logo-missing .logo-fallback{display:inline-flex}
+.logo-wrap.logo-missing .logo-img{display:none}
+.brand-copy{margin-top:76px;max-width:520px}
+.eyebrow{font-size:11px;line-height:1.4;letter-spacing:.13em;text-transform:uppercase;font-weight:750;color:#ff9bc0}
+.eyebrow .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--purple);margin-right:9px;vertical-align:1px}
+h1,h2,h3{font-family:Poppins,Inter,sans-serif;margin:0;letter-spacing:-.045em}
+.brand-copy h1{font-size:clamp(31px,3.1vw,45px);line-height:1.18;font-weight:700;color:var(--text);margin-top:22px;max-width:510px}
+.brand-copy p{font-size:14px;line-height:1.8;color:var(--muted);max-width:440px;margin:18px 0 0}
+.brand-accent{height:3px;width:68px;border-radius:99px;background:linear-gradient(90deg,var(--coral),var(--orange),var(--violet));margin-top:24px}
+.dashboard{margin-top:38px;max-width:600px;border:1px solid var(--panel-border);border-radius:15px;background:rgba(30,37,55,.82);padding:18px 18px 15px;box-shadow:0 10px 30px rgba(0,0,0,.1)}
+.dash-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.dash-title{font:700 14px Poppins,Inter,sans-serif;color:#fff}
+.dash-subtitle{font-size:10px;color:#aebbd0;margin-top:4px}
+.sample-badge{white-space:nowrap;border-radius:7px;padding:7px 9px;background:rgba(184,77,255,.14);color:#d9aaff;font-size:9px;font-weight:800;letter-spacing:.04em}
+.metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:17px}
+.metric{background:#20283b;border:1px solid #3c4961;border-radius:9px;padding:11px 10px 10px;min-width:0}
+.metric-label{font-size:10px;color:#c3ccdc;white-space:nowrap}
+.metric-value{font:700 17px Poppins,Inter,sans-serif;color:#fff;margin-top:8px;white-space:nowrap}
+.metric-note{font-size:9px;font-weight:700;margin-top:5px;color:#58d6b2}
+.metric-note.warn{color:#ffb36c}
+.chart-head{display:flex;justify-content:space-between;gap:10px;margin-top:20px;color:#eaf0fa;font-size:10px;font-weight:650}
+.chart-head span:last-child{color:#aebbd0;font-weight:450}
+.chart{display:block;width:100%;height:112px;margin-top:6px;overflow:visible}
+.dash-foot{border-top:1px solid #3a465c;padding-top:10px;margin-top:4px;display:flex;justify-content:space-between;gap:10px;font-size:9px;color:#c7d0e0}
+.dash-foot strong{color:#fff}
+.auth-panel{position:relative;background:var(--auth-bg);padding:32px clamp(34px,5.2vw,76px) 34px;display:flex;flex-direction:column;min-width:0}
+.auth-top{display:flex;justify-content:flex-end;align-items:center;min-height:46px}
+.language{display:inline-flex;gap:3px;padding:4px;border:1px solid #39445a;background:#151b29;border-radius:10px}
+.language button{border:0;border-radius:7px;background:transparent;color:#b8c4d8;padding:8px 13px;font-size:11px;font-weight:750;cursor:pointer}
+.language button[aria-pressed=true]{background:#364158;color:#fff}
+.language button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.auth-content{width:100%;max-width:470px;margin:auto;align-self:center;padding:28px 0 20px}
+.workspace-label{font-size:10px;font-weight:800;letter-spacing:.12em;color:#a9c7ff;text-transform:uppercase;margin-bottom:25px}
+.workspace-label:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--purple);margin-right:9px;vertical-align:1px}
+.auth-content h2{font-size:34px;line-height:1.2;font-weight:700;color:var(--text)}
+.auth-intro{font-size:13px;line-height:1.65;color:var(--muted);margin:12px 0 31px}
+.field{margin-top:19px}
+.field-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}
+.field label{font-size:12px;font-weight:700;color:var(--text)}
+.text-link{font-size:11px;font-weight:650;color:#c9a6ff;text-decoration:none}
+.text-link:hover{text-decoration:underline;text-underline-offset:3px}
+.input-wrap{position:relative}
+.input-wrap input{display:block;width:100%;height:52px;border:1px solid var(--field-border);border-radius:9px;background:var(--field);color:var(--text);padding:0 14px;font-size:13px;outline:none;transition:border-color .16s,box-shadow .16s}
+.input-wrap input::placeholder{color:#a6b4cb;opacity:1}
+.input-wrap input:focus{border-color:#b98aff;box-shadow:0 0 0 3px rgba(184,77,255,.18)}
+.password-input{padding-right:52px!important}
+.password-toggle{position:absolute;right:7px;top:50%;transform:translateY(-50%);height:38px;width:38px;border:0;border-radius:7px;background:transparent;color:#b8c4d8;display:grid;place-items:center;cursor:pointer}
+.password-toggle:hover{background:rgba(255,255,255,.07);color:#fff}
+.password-toggle:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.password-toggle svg{width:18px;height:18px}
+.remember-row{display:flex;align-items:center;gap:10px;margin-top:18px;color:#dbe3f1;font-size:11px}
+.remember-row input{appearance:none;width:17px;height:17px;margin:0;border:1px solid #77849b;border-radius:4px;background:#1a2130;display:grid;place-items:center;cursor:pointer}
+.remember-row input:checked{background:var(--purple);border-color:var(--purple)}
+.remember-row input:checked:after{content:"";width:8px;height:4px;border-left:2px solid white;border-bottom:2px solid white;transform:rotate(-45deg) translateY(-1px)}
+.remember-row input:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+.signin{width:100%;height:54px;margin-top:26px;border:0;border-radius:9px;background:var(--button-bg);color:var(--button-text);display:flex;align-items:center;justify-content:center;gap:14px;font-size:13px;font-weight:800;cursor:pointer;transition:background .14s,transform .14s,box-shadow .14s}
+.signin:hover{background:var(--button-hover)}
+.signin:active{background:var(--button-pressed);transform:translateY(1px)}
+.signin:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.signin svg{width:16px;height:16px}
+.signup{font-size:11px;color:var(--muted);text-align:center;margin-top:25px}
+.signup a{color:#d6a6ff;font-weight:700;text-decoration:none}
+.signup a:hover{text-decoration:underline;text-underline-offset:3px}
+.auth-footer{border-top:1px solid #30394b;margin-top:auto;padding-top:18px;text-align:center;color:#9eabc0;font-size:10px}
+.preview-note{max-width:1440px;margin:12px auto 0;color:#8692a7;font-size:11px;line-height:1.6}
+.implementation-notes{max-width:1440px;margin:20px auto 0;padding:18px 20px;border:1px solid #283145;border-radius:14px;background:#101520;color:#cbd5e5;font-size:12px;line-height:1.7}
+.implementation-notes h3{font-size:16px;color:#fff;margin-bottom:8px}
+.implementation-notes code{color:#f4c9ff;background:#1c2434;padding:2px 5px;border-radius:4px}
+.implementation-notes ul{margin:8px 0 0;padding-left:19px}
+body[data-theme="light"]{color-scheme:light}
+body[data-theme="light"] .login-screen{--brand-bg:#F7F8FC;--auth-bg:#FFFFFF;--panel:#fff;--panel-border:#E0E5EF;--text:#0F1221;--muted:#46536A;--subtle:#64748B;--field:#fff;--field-border:#CBD3E0;--button-bg:#0F1221;--button-hover:#242B3E;--button-pressed:#343D54;--button-text:#fff;background:#fff;border-color:#e4e8f0;color:#0F1221}
+body[data-theme="light"] .brand-panel{background:#F7F8FC}
+body[data-theme="light"] .brand-copy h1{color:#0F1221}
+body[data-theme="light"] .eyebrow{color:#7A00FF}
+body[data-theme="light"] .brand-copy p{color:#46536A}
+body[data-theme="light"] .dashboard{background:#fff;border-color:#dce3ee;box-shadow:0 12px 30px rgba(15,18,33,.06)}
+body[data-theme="light"] .dash-title,body[data-theme="light"] .metric-value,body[data-theme="light"] .dash-foot strong{color:#0F1221}
+body[data-theme="light"] .dash-subtitle,body[data-theme="light"] .metric-label,body[data-theme="light"] .dash-foot{color:#526078}
+body[data-theme="light"] .metric{background:#F7F8FC;border-color:#e1e6ef}
+body[data-theme="light"] .chart-head{color:#0F1221}
+body[data-theme="light"] .chart-head span:last-child{color:#64748B}
+body[data-theme="light"] .auth-panel{background:#fff}
+body[data-theme="light"] .language{background:#fff;border-color:#d5dce8}
+body[data-theme="light"] .language button{color:#526078}
+body[data-theme="light"] .language button[aria-pressed=true]{background:#0F1221;color:#fff}
+body[data-theme="light"] .workspace-label{color:#64748B}
+body[data-theme="light"] .auth-content h2,body[data-theme="light"] .field label{color:#0F1221}
+body[data-theme="light"] .auth-intro{color:#526078}
+body[data-theme="light"] .text-link{color:#6D28D9}
+body[data-theme="light"] .input-wrap input{background:#fff;color:#0F1221;border-color:#cbd3e0}
+body[data-theme="light"] .input-wrap input::placeholder{color:#718096}
+body[data-theme="light"] .password-toggle{color:#64748B}
+body[data-theme="light"] .remember-row{color:#344054}
+body[data-theme="light"] .remember-row input{background:#fff;border-color:#98a2b3}
+body[data-theme="light"] .signup{color:#526078}
+body[data-theme="light"] .signup a{color:#6D28D9}
+body[data-theme="light"] .auth-footer{border-color:#e2e7ef;color:#64748B}
+body[data-theme="light"] .logo-fallback{color:#344054;border-color:#98a2b3}
+body.mode-mobile{padding:18px 0}
+body.mode-mobile .login-screen{width:min(100%,390px);min-height:844px;height:auto;margin:0 auto;display:flex;flex-direction:column;border-radius:30px;border:7px solid #30394b}
+body.mode-mobile .brand-panel{padding:24px 20px 20px;min-height:0;flex:none}
+body.mode-mobile .brand-top{min-height:40px}
+body.mode-mobile .logo-img{width:104px;max-height:36px}
+body.mode-mobile .brand-copy{margin-top:28px}
+body.mode-mobile .brand-copy h1{font-size:23px;line-height:1.25;margin-top:14px;max-width:340px}
+body.mode-mobile .brand-copy p{font-size:11px;line-height:1.6;margin-top:8px;max-width:330px}
+body.mode-mobile .brand-accent{width:auto;height:2px;margin:18px -20px 0;border-radius:0}
+body.mode-mobile .dashboard{display:none}
+body.mode-mobile .auth-panel{padding:24px 20px 22px;flex:1}
+body.mode-mobile .auth-top{display:none}
+body.mode-mobile .auth-content{max-width:none;margin:0;padding:4px 0 20px}
+body.mode-mobile .workspace-label{display:none}
+body.mode-mobile .auth-content h2{font-size:25px}
+body.mode-mobile .auth-intro{font-size:11px;margin:8px 0 21px}
+body.mode-mobile .field{margin-top:16px}
+body.mode-mobile .field-row{margin-bottom:8px}
+body.mode-mobile .field label{font-size:11px}
+body.mode-mobile .text-link{font-size:10px}
+body.mode-mobile .input-wrap input{height:48px;font-size:11px}
+body.mode-mobile .remember-row{margin-top:15px;font-size:10px}
+body.mode-mobile .signin{height:50px;margin-top:21px;font-size:12px}
+body.mode-mobile .signup{font-size:10px;margin-top:20px}
+body.mode-mobile .auth-footer{font-size:9px;padding-top:15px}
+body.mode-mobile .mobile-brand-top{display:flex;align-items:center;justify-content:space-between}
+body.mode-mobile .mobile-brand-top .language{display:inline-flex}
+.mobile-brand-top{display:none}
+body.mode-mobile .brand-top>.logo-wrap{display:none}
+body.mode-mobile .mobile-brand-top{display:flex}
+@media(max-width:760px){
+ body{padding:0}
+ .toolbar{padding:12px 14px;margin-bottom:0}
+ .preview-wrap{width:100%}
+ .login-screen{border-radius:0;border-left:0;border-right:0;min-height:100vh;display:flex;flex-direction:column}
+ .brand-panel{padding:22px 22px 18px;min-height:0;flex:none}
+ .brand-top{min-height:40px}
+ .logo-img{width:106px;max-height:36px}
+ .brand-copy{margin-top:25px}
+ .brand-copy h1{font-size:24px;line-height:1.23;margin-top:13px}
+ .brand-copy p{font-size:12px;line-height:1.55;margin-top:8px}
+ .brand-accent{height:2px;width:auto;margin:18px -22px 0;border-radius:0}
+ .dashboard{display:none}
+ .auth-panel{padding:24px 22px 22px;flex:1}
+ .auth-top{display:none}
+ .auth-content{max-width:none;margin:0;padding:4px 0 22px}
+ .workspace-label{display:none}
+ .auth-content h2{font-size:26px}
+ .auth-intro{font-size:12px;margin:8px 0 22px}
+ .field{margin-top:16px}
+ .field-row{margin-bottom:8px}
+ .field label{font-size:11px}
+ .text-link{font-size:10px}
+ .input-wrap input{height:49px;font-size:12px}
+ .remember-row{margin-top:15px;font-size:11px}
+ .signin{height:51px;margin-top:22px;font-size:12px}
+ .signup{font-size:11px;margin-top:21px}
+ .auth-footer{font-size:9px;padding-top:15px}
+ .mobile-brand-top{display:flex;align-items:center;justify-content:space-between}
+ .mobile-brand-top .language{display:inline-flex}
+ .brand-top>.logo-wrap{display:none}
+}
+@media(max-height:760px) and (min-width:761px){.login-screen{min-height:760px}.brand-copy{margin-top:48px}.dashboard{margin-top:25px}.auth-content{padding:10px 0}.auth-footer{padding-top:12px}}
+</style>
+</head>
+<body data-theme="dark">
+<div class="toolbar" aria-label="Reference preview controls">
+  <div class="toolbar-title">STORBIT · APPROVED LOGIN REFERENCE</div>
+  <div class="toolbar-controls">
+    <div class="control-group" aria-label="Theme">
+      <button type="button" data-theme-choice="dark" aria-pressed="true">Dark</button>
+      <button type="button" data-theme-choice="light" aria-pressed="false">Light</button>
+    </div>
+    <div class="control-group" aria-label="Viewport">
+      <button type="button" data-mode-choice="desktop" aria-pressed="true">Desktop</button>
+      <button type="button" data-mode-choice="mobile" aria-pressed="false">Mobile</button>
+    </div>
+  </div>
+</div>
+<main class="preview-wrap">
+<section class="login-screen" aria-label="STORBIT login page design preview">
+  <aside class="brand-panel">
+    <div class="brand-top">
+      <div class="logo-wrap">
+        <img class="logo-img" data-logo alt="Original STORBIT wordmark" src="./storbit-logo-light.png">
+        <span class="logo-fallback">ORIGINAL STORBIT LOGO ASSET</span>
+      </div>
+    </div>
+    <div class="mobile-brand-top">
+      <div class="logo-wrap">
+        <img class="logo-img" data-logo alt="Original STORBIT wordmark" src="./storbit-logo-light.png">
+        <span class="logo-fallback">ORIGINAL STORBIT LOGO ASSET</span>
+      </div>
+      <div class="language" aria-label="Language selector">
+        <button type="button" aria-pressed="true">EN</button><button type="button" aria-pressed="false">PT</button>
+      </div>
+    </div>
+    <div class="brand-copy">
+      <div class="eyebrow">Retail. With clarity</div>
+      <h1>From the counter to<br class="desktop-break"> the bigger picture.</h1>
+      <p>Sales, inventory and store operations. Together in one clear workspace.</p>
+      <div class="brand-accent" aria-hidden="true"></div>
+    </div>
+    <section class="dashboard" aria-label="Illustrative store overview dashboard">
+      <div class="dash-head">
+        <div><div class="dash-title">Store overview</div><div class="dash-subtitle">Main store · Luanda</div></div>
+        <span class="sample-badge">SAMPLE DATA</span>
+      </div>
+      <div class="metric-grid">
+        <div class="metric"><div class="metric-label">Sales today</div><div class="metric-value">Kz 2.48M</div><div class="metric-note">↗ 12.8%</div></div>
+        <div class="metric"><div class="metric-label">Transactions</div><div class="metric-value">126</div><div class="metric-note">Today</div></div>
+        <div class="metric"><div class="metric-label">Low stock</div><div class="metric-value">04</div><div class="metric-note warn">Needs review</div></div>
+      </div>
+      <div class="chart-head"><span>Sales performance</span><span>Last 7 days</span></div>
+      <svg class="chart" viewBox="0 0 520 112" role="img" aria-label="Illustrative rising sales line chart">
+        <defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B84DFF" stop-opacity=".24"/><stop offset="1" stop-color="#B84DFF" stop-opacity="0"/></linearGradient></defs>
+        <path d="M0 90H520 M0 56H520 M0 22H520" stroke="#536078" stroke-width="1" stroke-dasharray="4 5" opacity=".55" fill="none"/>
+        <path d="M0 94 L74 68 L148 82 L222 38 L296 54 L370 12 L444 29 L520 0 L520 112 L0 112Z" fill="url(#chartFill)"/>
+        <path d="M0 94 L74 68 L148 82 L222 38 L296 54 L370 12 L444 29 L520 0" stroke="#C34DFF" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="520" cy="0" r="4.5" fill="#FF3366"/>
+      </svg>
+      <div class="dash-foot"><span><strong>Latest sale</strong> · Kz 85,000</span><span><strong>Stock alerts</strong> · 4</span></div>
+    </section>
+  </aside>
+  <section class="auth-panel">
+    <div class="auth-top">
+      <div class="language" aria-label="Language selector"><button type="button" aria-pressed="true">EN</button><button type="button" aria-pressed="false">PT</button></div>
+    </div>
+    <div class="auth-content">
+      <div class="workspace-label">Your workspace</div>
+      <h2>Welcome back.</h2>
+      <p class="auth-intro">Sign in to access your STORBIT Workspace.</p>
+      <form autocomplete="off" onsubmit="return false">
+        <div class="field">
+          <div class="field-row"><label for="email">Email address</label></div>
+          <div class="input-wrap"><input id="email" type="email" placeholder="you@business.com" autocomplete="off"></div>
+        </div>
+        <div class="field">
+          <div class="field-row"><label for="password">Password</label><a class="text-link" href="#forgot-password" onclick="return false">Forgot password?</a></div>
+          <div class="input-wrap"><input class="password-input" id="password" type="password" placeholder="Enter your password" autocomplete="new-password"><button class="password-toggle" type="button" aria-label="Show password" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.5 12s3.2-6 9.5-6 9.5 6 9.5 6-3.2 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.7"/></svg></button></div>
+        </div>
+        <label class="remember-row"><input type="checkbox"><span>Remember me</span></label>
+        <button class="signin" type="button"><span>Sign in</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>
+      </form>
+      <p class="signup">New to STORBIT? <a href="#create-account" onclick="return false">Create an account</a></p>
+    </div>
+    <div class="auth-footer">A clearer view of your business starts here.</div>
+  </section>
+</section>
+</main>
+<p class="preview-note">Design reference only. The dashboard values are illustrative sample data. The form, language selector and links are visual previews and do not authenticate, navigate, or change the product's actual language.</p>
+<section class="implementation-notes">
+  <h3>Implementation notes for Codex</h3>
+  <ul>
+    <li>Use this file as a visual/spacing reference, not as production authentication code. Preserve the project's existing login, password recovery, registration, till PIN, i18n, session handling and route guards.</li>
+    <li>Place the authentic logo assets beside this HTML file: <code>storbit-logo-original.png</code> for light mode and <code>storbit-logo-light.png</code> for dark mode. The logo must be the owner's original asset; do not recreate it with text or SVG. If an asset is absent or incorrect, retain a clearly marked placeholder.</li>
+    <li>Dark palette: brand panel <code>#171C2D</code>, auth panel <code>#0B0E17</code>, charcoal <code>#0F1221</code>, lavender button <code>#EDEBFF</code> / hover <code>#DCD6FF</code> / pressed <code>#C9BFFF</code>, button text <code>#0F1221</code>, focus ring <code>#B84DFF</code>. Use restrained coral/orange/violet accents only.</li>
+    <li>Light palette: off-white <code>#F7F8FC</code>, white <code>#FFFFFF</code>, charcoal <code>#0F1221</code>, slate <code>#64748B</code>; primary sign-in button solid charcoal with white text.</li>
+    <li>Typography: Poppins for headings; Inter for controls, labels, helper text and body. Use project font assets/dependencies if already present before adding new dependencies.</li>
+    <li>Desktop: two-column split approximately 46.5% brand / 53.5% authentication; sample dashboard visible only on desktop and clearly labelled SAMPLE DATA. One language selector only.</li>
+    <li>Mobile: compact logo + EN/PT header, short brand intro, thin brand-gradient divider, then form. Hide dashboard. Keep touch targets at least 44px and ensure content scrolls naturally on short screens.</li>
+    <li>Do not add the old “On a private device” copy. Do not alter fiscal logic, business logic, API contracts, database schema, inventory, payments or unrelated POS screens.</li>
+    <li>Check keyboard operation, focus visibility, contrast, validation/error/loading states and password visibility. Capture desktop/mobile screenshots in both themes before reporting completion.</li>
+    <li>Local-only implementation. Do not commit, push, merge or deploy. Report implemented, tested, blocked and not-run items separately.</li>
+  </ul>
+</section>
+<script>
+(function(){
+ const body=document.body;
+ document.querySelectorAll('[data-theme-choice]').forEach(btn=>btn.addEventListener('click',()=>{
+  const theme=btn.dataset.themeChoice;body.dataset.theme=theme;
+  document.querySelectorAll('[data-theme-choice]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
+  document.querySelectorAll('[data-logo]').forEach(img=>{const wrap=img.closest('.logo-wrap');wrap.classList.remove('logo-missing');img.src=theme==='dark'?'./storbit-logo-light.png':'./storbit-logo-original.png';});
+ }));
+ document.querySelectorAll('[data-mode-choice]').forEach(btn=>btn.addEventListener('click',()=>{
+  const mode=btn.dataset.modeChoice;body.classList.toggle('mode-mobile',mode==='mobile');
+  document.querySelectorAll('[data-mode-choice]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
+ }));
+ document.querySelectorAll('.logo-img').forEach(img=>img.addEventListener('error',()=>img.closest('.logo-wrap').classList.add('logo-missing')));
+ document.querySelectorAll('.language').forEach(group=>group.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{
+  group.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
+ })));
+ const toggle=document.querySelector('.password-toggle'),password=document.querySelector('#password');
+ toggle.addEventListener('click',()=>{const show=password.type==='password';password.type=show?'text':'password';toggle.setAttribute('aria-pressed',String(show));toggle.setAttribute('aria-label',show?'Hide password':'Show password');});
+})();
+</script>
+</body>
+</html>

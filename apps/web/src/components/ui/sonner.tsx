@@ -10,7 +10,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme={theme}
-      className="toaster group"
+      className="storbit-ui storbit-shell toaster group"
       toastOptions={{
         classNames: {
           toast:

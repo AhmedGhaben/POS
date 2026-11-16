@@ -184,3 +184,175 @@ html.touch input[type="radio"] {
   size: A4;
   margin: 15mm;
 }
+
+/* STORBIT UI only. Keep the original root tokens and all paper/calibration
+ * rules above intact: #print-root is a separate body child, not a UI shell. */
+@media screen {
+  @font-face {
+    font-family: "STORBIT Inter";
+    src: url("/fonts/storbit/Inter-Regular.woff") format("woff");
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "STORBIT Inter";
+    src: url("/fonts/storbit/Inter-SemiBold.woff") format("woff");
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+  }
+
+  /* Approved family only: never relabel another font as Poppins. */
+  @font-face {
+    font-family: "STORBIT Poppins";
+    src: local("Poppins Medium"), local("Poppins-Medium");
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "STORBIT Poppins";
+    src: local("Poppins SemiBold"), local("Poppins-SemiBold");
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "STORBIT Poppins";
+    src: local("Poppins Bold"), local("Poppins-Bold");
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+  }
+
+  .storbit-ui:not([role="dialog"]:has(.a4-doc, .receipt-slip)) {
+    --background: 228 45% 98%;
+    --foreground: 232 27% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 232 27% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 232 27% 12%;
+    --primary: 232 18% 16%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 230 23% 94%;
+    --secondary-foreground: 232 27% 18%;
+    --muted: 230 23% 95%;
+    --muted-foreground: 232 12% 42%;
+    --accent: 267 80% 95%;
+    --accent-foreground: 267 70% 36%;
+    --destructive: 350 74% 42%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 232 22% 87%;
+    --input: 232 18% 68%;
+    --ring: 267 72% 48%;
+    --radius: 0.75rem;
+    --chart-series-1: #7140b8;
+    --chart-ink-primary: #1b1c27;
+    --chart-ink-secondary: #565767;
+    --chart-ink-muted: #666778;
+    --chart-grid: #e4e2ec;
+    --chart-axis: #c8c5d4;
+    --chart-surface: #fff;
+  }
+
+  .dark .storbit-ui:not([role="dialog"]:has(.a4-doc, .receipt-slip)) {
+    --background: 232 22% 7%;
+    --foreground: 230 20% 96%;
+    --card: 232 16% 11%;
+    --card-foreground: 230 20% 96%;
+    --popover: 232 16% 11%;
+    --popover-foreground: 230 20% 96%;
+    --primary: 230 20% 94%;
+    --primary-foreground: 232 22% 10%;
+    --secondary: 232 14% 18%;
+    --secondary-foreground: 230 20% 96%;
+    --muted: 232 14% 16%;
+    --muted-foreground: 230 12% 73%;
+    --accent: 267 32% 21%;
+    --accent-foreground: 267 90% 85%;
+    --destructive: 350 70% 43%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 232 13% 24%;
+    --input: 232 12% 47%;
+    --ring: 267 90% 76%;
+    --chart-series-1: #bb96ef;
+    --chart-ink-primary: #f3f3f7;
+    --chart-ink-secondary: #c4c3d1;
+    --chart-ink-muted: #a4a3b5;
+    --chart-grid: #34313f;
+    --chart-axis: #504b61;
+    --chart-surface: #1d1b26;
+  }
+
+  .storbit-shell {
+    font-family: "STORBIT Inter", Inter, ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .storbit-heading {
+    font-family: "STORBIT Poppins", Poppins, "STORBIT Inter", ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.025em;
+  }
+
+  /* Theme print-preview chrome without changing inherited document tokens.
+   * The actual paper/calibration rules and document font classes are untouched. */
+  .storbit-ui[role="dialog"]:has(.a4-doc, .receipt-slip) {
+    background-color: #f7f8fc;
+    border-color: #d6d6e1;
+    color: #1b1c27;
+  }
+
+  .dark .storbit-ui[role="dialog"]:has(.a4-doc, .receipt-slip) {
+    background-color: #16171f;
+    border-color: #363744;
+    color: #f3f3f7;
+  }
+
+  .storbit-ui :is(h1, h2, h3):not(:where(.a4-doc *, .receipt-slip *)) {
+    font-family: "STORBIT Poppins", Poppins, "STORBIT Inter", ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.025em;
+  }
+
+  .storbit-ui .storbit-card:not(:where(.a4-doc *, .receipt-slip *)) {
+    box-shadow: 0 2px 10px -6px hsl(var(--foreground) / 18%);
+  }
+
+  .storbit-ui .storbit-table:not(:where(.a4-doc *, .receipt-slip *)) > thead {
+    background-color: hsl(var(--muted) / 60%);
+  }
+
+  .storbit-ui .storbit-table:not(:where(.a4-doc *, .receipt-slip *)) > tbody > tr:hover {
+    background-color: hsl(var(--muted) / 45%);
+  }
+
+  .storbit-ui :is(input, textarea, select)[aria-invalid="true"]:not(:where(.a4-doc *, .receipt-slip *)) {
+    border-color: hsl(var(--destructive));
+  }
+
+  .storbit-ui select:not(:where(.a4-doc *, .receipt-slip *)) {
+    background-color: hsl(var(--card));
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--input));
+    border-radius: calc(var(--radius) - 4px);
+  }
+
+  .storbit-ui :is(select, input[type="checkbox"], input[type="radio"]):focus-visible:not(:where(.a4-doc *, .receipt-slip *)) {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  .storbit-ui input:is([type="checkbox"], [type="radio"]):not(:where(.a4-doc *, .receipt-slip *)) {
+    accent-color: hsl(var(--ring));
+  }
+
+  /* Login alone may use brand gradients. A 30% scrim retains saturation
+   * while white text clears 4.5:1 across the coral/orange/violet ramp. */
+  .storbit-login-cta {
+    color: #fff;
+    background-image: linear-gradient(rgb(0 0 0 / 30%), rgb(0 0 0 / 30%)),
+      linear-gradient(105deg, #ff3366, #ff7a00 35%, #7a00ff);
+  }
+}

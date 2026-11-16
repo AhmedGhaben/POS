@@ -33,3 +33,6 @@ dist-desktop/
 # Desktop app icons (electron-builder buildResources)
 !apps/desktop/build/
 demo/dist/
+
+# Local desktop runtime data
+.local-desktop/

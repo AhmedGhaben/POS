@@ -1,0 +1,215 @@
+.storbit-login{color-scheme:dark;--coral:#FF3366;--orange:#FF7A00;--violet:#7A00FF;--purple:#B84DFF;--pink:#FFB3E6;--charcoal:#0F1221;--slate:#64748B;--offwhite:#F7F8FC;--lavender:#EDEBFF;--lavender-hover:#DCD6FF;--lavender-pressed:#C9BFFF;--focus:#B84DFF;--brand-bg:#171C2D;--auth-bg:#0B0E17;--panel:#1E2537;--panel-border:#39445B;--text:#F7F8FC;--muted:#C5CDDC;--subtle:#9AA7BD;--field:#1B2233;--field-border:#46536D;--button-bg:var(--lavender);--button-hover:var(--lavender-hover);--button-pressed:var(--lavender-pressed);--button-text:var(--charcoal);--shadow:0 24px 70px rgba(0,0,0,.24);display:grid;grid-template-columns:46.5% 53.5%;min-height:100svh;font-family:"STORBIT Inter",Inter,system-ui,sans-serif;color:var(--text);background:var(--auth-bg)}
+.storbit-login .brand-panel{position:relative;background:var(--brand-bg);padding:46px clamp(34px,4.2vw,64px) 38px;display:flex;flex-direction:column;min-width:0}
+.storbit-login .brand-top{display:flex;align-items:center;justify-content:space-between;min-height:46px}
+.storbit-login .logo-wrap{display:inline-flex;align-items:center;min-width:0}
+.storbit-login .logo-img{display:block;width:138px;height:auto;max-height:48px;object-fit:contain;object-position:left center}
+.storbit-login .logo-fallback{display:none;border:1px dashed #8190aa;border-radius:7px;padding:8px 11px;color:#d6deec;font-size:10px;letter-spacing:.1em;font-weight:700}
+.storbit-login .logo-wrap.logo-missing .logo-fallback{display:inline-flex}
+.storbit-login .logo-wrap.logo-missing .logo-img{display:none}
+.storbit-login .brand-copy{margin-top:76px;max-width:520px}
+.storbit-login .eyebrow{font-size:11px;line-height:1.4;letter-spacing:.13em;text-transform:uppercase;font-weight:750;color:#ff9bc0}
+.storbit-login .eyebrow .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--purple);margin-right:9px;vertical-align:1px}
+.storbit-login h1, .storbit-login h2, .storbit-login h3{font-family:Poppins,Inter,sans-serif;margin:0;letter-spacing:-.045em}
+.storbit-login .brand-copy h1{font-size:clamp(31px,3.1vw,45px);line-height:1.18;font-weight:700;color:var(--text);margin-top:22px;max-width:510px}
+.storbit-login .brand-copy p{font-size:14px;line-height:1.8;color:var(--muted);max-width:440px;margin:18px 0 0}
+.storbit-login .brand-accent{height:3px;width:68px;border-radius:99px;background:linear-gradient(90deg,var(--coral),var(--orange),var(--violet));margin-top:24px}
+.storbit-login .dashboard{margin-top:38px;max-width:600px;border:1px solid var(--panel-border);border-radius:15px;background:rgba(30,37,55,.82);padding:18px 18px 15px;box-shadow:0 10px 30px rgba(0,0,0,.1)}
+.storbit-login .dash-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.storbit-login .dash-title{font:700 14px Poppins,Inter,sans-serif;color:#fff}
+.storbit-login .dash-subtitle{font-size:10px;color:#aebbd0;margin-top:4px}
+.storbit-login .sample-badge{white-space:nowrap;border-radius:7px;padding:7px 9px;background:rgba(184,77,255,.14);color:#d9aaff;font-size:9px;font-weight:800;letter-spacing:.04em}
+.storbit-login .metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:17px}
+.storbit-login .metric{background:#20283b;border:1px solid #3c4961;border-radius:9px;padding:11px 10px 10px;min-width:0}
+.storbit-login .metric-label{font-size:10px;color:#c3ccdc;white-space:nowrap}
+.storbit-login .metric-value{font:700 17px Poppins,Inter,sans-serif;color:#fff;margin-top:8px;white-space:nowrap}
+.storbit-login .metric-note{font-size:9px;font-weight:700;margin-top:5px;color:#58d6b2}
+.storbit-login .metric-note.warn{color:#ffb36c}
+.storbit-login .chart-head{display:flex;justify-content:space-between;gap:10px;margin-top:20px;color:#eaf0fa;font-size:10px;font-weight:650}
+.storbit-login .chart-head span:last-child{color:#aebbd0;font-weight:450}
+.storbit-login .chart{display:block;width:100%;height:112px;margin-top:6px;overflow:visible}
+.storbit-login .dash-foot{border-top:1px solid #3a465c;padding-top:10px;margin-top:4px;display:flex;justify-content:space-between;gap:10px;font-size:9px;color:#c7d0e0}
+.storbit-login .dash-foot strong{color:#fff}
+.storbit-login .auth-panel{position:relative;background:var(--auth-bg);padding:32px clamp(34px,5.2vw,76px) 34px;display:flex;flex-direction:column;min-width:0}
+.storbit-login .auth-top{display:flex;justify-content:flex-end;align-items:center;min-height:46px}
+.storbit-login .language button[aria-pressed=true]{background:#364158;color:#fff}
+.storbit-login .language button:focus-visible{outline:2px solid var(--focus);outline-offset:0}
+.storbit-login .auth-content{width:100%;max-width:470px;margin:auto;align-self:center;padding:28px 0 20px}
+.storbit-login .workspace-label{font-size:10px;font-weight:800;letter-spacing:.12em;color:#a9c7ff;text-transform:uppercase;margin-bottom:25px}
+.storbit-login .workspace-label:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--purple);margin-right:9px;vertical-align:1px}
+.storbit-login .auth-content h2{font-size:34px;line-height:1.2;font-weight:700;color:var(--text)}
+.storbit-login .auth-intro{font-size:13px;line-height:1.65;color:var(--muted);margin:12px 0 31px}
+.storbit-login .field{margin-top:19px}
+.storbit-login .field-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}
+.storbit-login .field label{font-size:12px;font-weight:700;color:var(--text)}
+.storbit-login .text-link{font-size:11px;font-weight:650;color:#c9a6ff;text-decoration:none}
+.storbit-login .text-link:hover{text-decoration:underline;text-underline-offset:3px}
+.storbit-login .input-wrap{position:relative}
+.storbit-login .input-wrap input{display:block;width:100%;height:52px;border:1px solid var(--field-border);border-radius:9px;background:var(--field);color:var(--text);padding:0 14px;font-size:13px;outline:none;transition:border-color .16s,box-shadow .16s}
+.storbit-login .input-wrap input::placeholder{color:#a6b4cb;opacity:1}
+.storbit-login .input-wrap input:focus{border-color:#b98aff;box-shadow:0 0 0 3px rgba(184,77,255,.18)}
+.storbit-login .password-input{padding-right:52px!important}
+.storbit-login .password-toggle{position:absolute;right:7px;top:50%;transform:translateY(-50%);height:38px;width:38px;border:0;border-radius:7px;background:transparent;color:#b8c4d8;display:grid;place-items:center;cursor:pointer}
+.storbit-login .password-toggle:hover{background:rgba(255,255,255,.07);color:#fff}
+.storbit-login .password-toggle:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.storbit-login .password-toggle svg{width:18px;height:18px}
+.storbit-login .remember-row{display:flex;align-items:center;gap:10px;margin-top:18px;color:#dbe3f1;font-size:11px}
+.storbit-login .remember-row input{appearance:none;width:17px;height:17px;margin:0;border:1px solid #77849b;border-radius:4px;background:#1a2130;display:grid;place-items:center;cursor:pointer}
+.storbit-login .remember-row input:checked{background:var(--purple);border-color:var(--purple)}
+.storbit-login .remember-row input:checked:after{content:"";width:8px;height:4px;border-left:2px solid white;border-bottom:2px solid white;transform:rotate(-45deg) translateY(-1px)}
+.storbit-login .remember-row input:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+.storbit-login .signin{width:100%;height:54px;margin-top:26px;border:0;border-radius:9px;background:var(--button-bg);color:var(--button-text);display:flex;align-items:center;justify-content:center;gap:14px;font-size:13px;font-weight:800;cursor:pointer;transition:background .14s,transform .14s,box-shadow .14s}
+.storbit-login .signin:hover{background:var(--button-hover)}
+.storbit-login .signin:active{background:var(--button-pressed);transform:translateY(1px)}
+.storbit-login .signin:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.storbit-login .signin svg{width:16px;height:16px}
+.storbit-login .signup{font-size:11px;color:var(--muted);text-align:center;margin-top:25px}
+.storbit-login .signup a{color:#d6a6ff;font-weight:700;text-decoration:none}
+.storbit-login .signup a:hover{text-decoration:underline;text-underline-offset:3px}
+.storbit-login .auth-footer{border-top:1px solid #30394b;margin-top:auto;padding-top:18px;text-align:center;color:#9eabc0;font-size:10px}
+
+:root:not(.dark) .storbit-login{--brand-bg:#F7F8FC;--auth-bg:#FFFFFF;--panel:#fff;--panel-border:#E0E5EF;--text:#0F1221;--muted:#46536A;--subtle:#64748B;--field:#fff;--field-border:#CBD3E0;--button-bg:#0F1221;--button-hover:#242B3E;--button-pressed:#343D54;--button-text:#fff;background:#fff;border-color:#e4e8f0;color:#0F1221}
+:root:not(.dark) .storbit-login .brand-panel{background:#F7F8FC}
+:root:not(.dark) .storbit-login .brand-copy h1{color:#0F1221}
+:root:not(.dark) .storbit-login .eyebrow{color:#7A00FF}
+:root:not(.dark) .storbit-login .brand-copy p{color:#46536A}
+:root:not(.dark) .storbit-login .dashboard{background:#fff;border-color:#dce3ee;box-shadow:0 12px 30px rgba(15,18,33,.06)}
+:root:not(.dark) .storbit-login .dash-title,:root:not(.dark) .storbit-login .metric-value,:root:not(.dark) .storbit-login .dash-foot strong{color:#0F1221}
+:root:not(.dark) .storbit-login .dash-subtitle,:root:not(.dark) .storbit-login .metric-label,:root:not(.dark) .storbit-login .dash-foot{color:#526078}
+:root:not(.dark) .storbit-login .metric{background:#F7F8FC;border-color:#e1e6ef}
+:root:not(.dark) .storbit-login .chart-head{color:#0F1221}
+:root:not(.dark) .storbit-login .chart-head span:last-child{color:#64748B}
+:root:not(.dark) .storbit-login .auth-panel{background:#fff}
+:root:not(.dark) .storbit-login .language button{color:#526078}
+:root:not(.dark) .storbit-login .language button[aria-pressed=true]{background:#0F1221;color:#fff}
+:root:not(.dark) .storbit-login .workspace-label{color:#64748B}
+:root:not(.dark) .storbit-login .auth-content h2,:root:not(.dark) .storbit-login .field label{color:#0F1221}
+:root:not(.dark) .storbit-login .auth-intro{color:#526078}
+:root:not(.dark) .storbit-login .text-link{color:#6D28D9}
+:root:not(.dark) .storbit-login .input-wrap input{background:#fff;color:#0F1221;border-color:#cbd3e0}
+:root:not(.dark) .storbit-login .input-wrap input::placeholder{color:#718096}
+:root:not(.dark) .storbit-login .password-toggle{color:#64748B}
+:root:not(.dark) .storbit-login .remember-row{color:#344054}
+:root:not(.dark) .storbit-login .remember-row input{background:#fff;border-color:#98a2b3}
+:root:not(.dark) .storbit-login .signup{color:#526078}
+:root:not(.dark) .storbit-login .signup a{color:#6D28D9}
+:root:not(.dark) .storbit-login .auth-footer{border-color:#e2e7ef;color:#64748B}
+:root:not(.dark) .storbit-login .logo-fallback{color:#344054;border-color:#98a2b3}
+
+.storbit-login :is(h1,h2,h3,.dash-title,.metric-value){font-family:"STORBIT Poppins",Poppins,"STORBIT Inter",sans-serif}
+.storbit-login .login-language{position:absolute;right:clamp(34px,5.2vw,76px);top:32px;z-index:1}
+.storbit-login .auth-content{padding-top:80px}
+.storbit-login .login-form{display:flex;flex-direction:column;gap:19px}
+.storbit-login .login-form label{font-size:12px;font-weight:600}
+.storbit-login .login-form input{height:52px;border:1px solid var(--field-border);border-radius:9px;background:var(--field);color:var(--text);font-size:13px;box-shadow:none}
+.storbit-login .login-form input:focus-visible{outline:2px solid #B84DFF;outline-offset:2px;--tw-ring-color:transparent}
+.storbit-login .login-form .password-input{padding-right:52px}
+.storbit-login .signin{margin-top:7px;background-image:none}
+.storbit-login .signin:disabled{cursor:wait;opacity:.65}
+.storbit-login a:focus-visible{outline:2px solid #B84DFF;outline-offset:3px;border-radius:3px}
+.storbit-login .auth-footer{line-height:1.6}
+.storbit-login .password-toggle{height:44px;width:44px;right:4px}
+.storbit-login .error-message{color:#ff9bb4;font-size:13px}
+:root:not(.dark) .storbit-login .error-message{color:#b51840}
+@media(max-width:760px){
+.storbit-login{display:flex;flex-direction:column;position:relative}
+.storbit-login .brand-panel{padding:22px 22px 0;flex:none}
+.storbit-login .brand-top{min-height:44px}
+.storbit-login .logo-img{width:106px}
+.storbit-login .login-language{top:22px;right:22px}
+.storbit-login .brand-copy{margin-top:25px}
+.storbit-login .brand-copy h1{font-size:24px;line-height:1.23;margin-top:13px}
+.storbit-login .brand-copy p{font-size:12px;line-height:1.55;margin-top:8px}
+.storbit-login .brand-accent{height:2px;width:auto;margin:18px -22px 0;border-radius:0}
+.storbit-login .dashboard{display:none}
+.storbit-login .auth-panel{padding:24px 22px 22px;flex:1}
+.storbit-login .auth-content{max-width:none;margin:0;padding:4px 0 22px}
+.storbit-login .workspace-label{display:none}
+.storbit-login .auth-content h2{font-size:26px}
+.storbit-login .auth-intro{font-size:12px;margin:8px 0 22px}
+.storbit-login .login-form{gap:16px}
+.storbit-login .login-form input{height:49px;font-size:16px}
+.storbit-login .text-link{display:inline-flex;align-items:center;min-height:44px}
+.storbit-login .signin{height:51px;margin-top:6px}
+.storbit-login .signup{font-size:11px;margin-top:21px}
+.storbit-login .signup a{display:inline-flex;align-items:center;min-height:44px}
+.storbit-login .auth-footer{font-size:10px;padding-top:15px}
+}
+@media(max-height:760px) and (min-width:761px){.storbit-login .brand-copy{margin-top:48px}
+.storbit-login .dashboard{margin-top:25px}}
+.storbit-login .signup a{color:#c9a6ff}
+:root:not(.dark) .storbit-login .signup a{color:#6D28D9}
+
+:root:not(.dark) .storbit-login .metric-note{color:#13785c}
+:root:not(.dark) .storbit-login .metric-note.warn{color:#995000}
+:root:not(.dark) .storbit-login .sample-badge{color:#6D28D9}
+
+:root:not(.dark) .storbit-login{color-scheme:light}
+/* Auth-only controls share a compact 40px frame. */
+.storbit-login .login-language{display:flex;align-items:center;gap:8px}
+.storbit-login .auth-theme-toggle,.storbit-login .language{box-sizing:border-box;height:40px;min-height:40px;border:1px solid var(--panel-border);border-radius:9px;background:var(--auth-bg);color:var(--text)}
+.storbit-login .auth-theme-toggle{display:grid;place-items:center;width:40px;flex:none;padding:0;cursor:pointer}
+.storbit-login .auth-theme-toggle svg{width:18px;height:18px}
+.storbit-login .auth-theme-toggle:hover{background:var(--panel)}
+.storbit-login .auth-theme-toggle:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+.storbit-login .language{display:inline-flex;align-items:stretch;gap:2px;padding:3px}
+.storbit-login .language button{box-sizing:border-box;display:flex;align-items:center;justify-content:center;align-self:stretch;min-width:35px;min-height:0;height:32px;margin:0;padding:0 8px;border:0;border-radius:5px;background:transparent;color:#b8c4d8;font-size:11px;font-weight:750;line-height:1;cursor:pointer}
+.storbit-signup .brand-copy{margin-top:40px}
+.storbit-signup .brand-copy h1{font-size:clamp(30px,3.1vw,45px);max-width:500px}
+.storbit-signup .storefront{display:block;flex:none;width:100%;max-width:560px;height:auto;margin:22px auto 14px}
+.storbit-signup .onboarding-card{fill:var(--panel);stroke:var(--panel-border);stroke-width:1.5}
+.storbit-signup .signup-benefits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));list-style:none;padding:0;margin:10px 0 0;gap:16px}
+.storbit-signup .signup-benefits li{min-width:0;padding-left:16px;border-left:1px solid var(--panel-border)}
+.storbit-signup .signup-benefits li:first-child{padding-left:0;border-left:0}
+.storbit-signup .benefit-icon{display:grid;place-items:center;width:38px;height:38px;border:1px solid var(--panel-border);border-radius:11px;background:var(--panel);color:#C9A6FF;margin-bottom:10px}
+:root:not(.dark) .storbit-signup .benefit-icon{color:#7A00FF}
+.storbit-signup .benefit-icon svg{width:22px;height:22px}
+.storbit-signup .signup-benefits strong{display:block;font-size:12px;line-height:1.4}
+.storbit-signup .signup-benefits p{font-size:11px;line-height:1.6;color:var(--muted);margin:5px 0 0}
+.storbit-signup .auth-content{max-width:560px;padding-top:82px}
+.storbit-signup .workspace-label{margin-bottom:17px}
+.storbit-signup .auth-intro{margin-bottom:25px}
+.storbit-signup .signup-form{gap:13px}
+.storbit-signup .signup-form input{height:44px}
+.storbit-signup .signup-passwords{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.storbit-signup .signup-form [aria-invalid=true]{border-color:#FF3366}
+.storbit-signup .signup-form [id$="-form-item-message"]{color:#ff9bb4}
+:root:not(.dark) .storbit-signup .signup-form [id$="-form-item-message"]{color:#b51840}
+.storbit-login .sample-counter{display:grid;font-variant-numeric:tabular-nums}
+.storbit-login .sample-counter>span:not(.sr-only){grid-area:1/1}
+.storbit-login .sample-counter-size{visibility:hidden}
+@keyframes storbit-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes storbit-chart{from{stroke-dashoffset:1000}to{stroke-dashoffset:0}}
+@keyframes storbit-awning{from{opacity:0;transform:translateY(-4px) scaleY(.92)}to{opacity:1;transform:translateY(0) scaleY(1)}}
+@keyframes storbit-shop-item{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes storbit-chart-detail{from{opacity:0}to{opacity:1}}
+@media(min-width:761px) and (prefers-reduced-motion:no-preference){
+.storbit-login[data-auth-entrance="pending"] .dashboard,.storbit-signup[data-auth-entrance="pending"] .storefront,.storbit-signup[data-auth-entrance="pending"] .signup-benefits li{opacity:0;transform:translateY(8px)}
+.storbit-login[data-auth-entrance="pending"] .chart-line{stroke-dasharray:1000;stroke-dashoffset:1000}
+.storbit-login[data-auth-entrance="running"] .dashboard{animation:storbit-enter 450ms ease-out both}
+.storbit-signup[data-auth-entrance="running"] .storefront{animation:storbit-enter 350ms ease-out both}
+.storbit-login[data-auth-entrance="running"] .chart-line{stroke-dasharray:1000;animation:storbit-chart 700ms 450ms ease-out both}
+.storbit-login[data-auth-entrance="pending"] .chart-detail{opacity:0}
+.storbit-login[data-auth-entrance="running"] .chart-detail{animation:storbit-chart-detail 350ms 800ms ease-out both}
+.storbit-signup .shop-awning{transform-box:fill-box;transform-origin:top center}
+.storbit-signup[data-auth-entrance="pending"] :is(.shop-awning,.shop-box,.shop-check){opacity:0}
+.storbit-signup[data-auth-entrance="running"] .shop-awning{animation:storbit-awning 350ms ease-out both}
+.storbit-signup[data-auth-entrance="running"] .shop-box-one{animation:storbit-shop-item 200ms 350ms ease-out both}
+.storbit-signup[data-auth-entrance="running"] .shop-box-two{animation:storbit-shop-item 200ms 420ms ease-out both}
+.storbit-signup[data-auth-entrance="running"] .shop-check-one{animation:storbit-shop-item 140ms 350ms ease-out both}
+.storbit-signup[data-auth-entrance="running"] .shop-check-two{animation:storbit-shop-item 140ms 430ms ease-out both}
+.storbit-signup[data-auth-entrance="running"] .shop-check-three{animation:storbit-shop-item 140ms 510ms ease-out both}
+.storbit-signup[data-auth-entrance="running"] .signup-benefits li{animation:storbit-enter 350ms 650ms ease-out both}
+.storbit-signup[data-auth-entrance="running"] .signup-benefits li:nth-child(2){animation-delay:750ms}
+.storbit-signup[data-auth-entrance="running"] .signup-benefits li:nth-child(3){animation-delay:850ms}
+}
+@media(prefers-reduced-motion:reduce){.storbit-login *{animation:none!important;transition:none!important}}
+@media(max-width:760px){
+.storbit-login .brand-top{min-height:44px;align-items:center}
+.storbit-login .login-language{top:24px;left:auto;right:22px;gap:8px}
+.storbit-login .brand-copy{margin-top:25px}
+.storbit-signup .brand-copy h1{font-size:24px;max-width:420px}
+.storbit-signup .storefront,.storbit-signup .signup-benefits{display:none;animation:none}
+.storbit-signup .auth-content{padding-top:4px}
+.storbit-signup .signup-form input{height:49px}
+.storbit-signup .signup-passwords{grid-template-columns:1fr}
+}
