@@ -145,6 +145,8 @@ export type PinResumeResult =
  * Absent in a normal browser, where every desktop feature switches off.
  */
 export interface PosDesktopApi {
+  /** The computer's OS (Node's process.platform); older desktop builds lack it. */
+  platform?: string;
   app: {
     info(): Promise<DesktopAppInfo>;
     openLogFolder(): Promise<void>;

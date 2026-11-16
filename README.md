@@ -20,7 +20,8 @@ Prisma backend.
     loses nothing, and someone else signing in on the till gets their own.
     It goes only when the sale completes, is cleared or held. Logging out
     or closing the till with a sale in it asks: "Deixar pendente" or
-    "Cancelar". Every page reached from the POS has "Voltar ao POS".
+    "Cancelar". Back-office pages have "Abrir ponto de venda" at the bottom of the
+    sidebar (with the cart's item count); a cashier's This device has "Voltar ao POS".
   - **Held orders** ("Deixar pendente" / "Vendas pendentes"): put an order
     on hold, serve someone else, resume it later. Kept on the till; no
     stock or document number until it's completed.

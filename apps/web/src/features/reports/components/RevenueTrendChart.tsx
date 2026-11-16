@@ -1,17 +1,10 @@
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { SalesTrendPointDto } from "@pos/shared";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCalendarDate, formatCurrency, formatShortDate } from "@/lib/format";
-import { currentCurrency, useCompactMoney } from "@/features/business/use-money";
+import { currentCurrency, useCurrency } from "@/features/business/use-money";
+import { axisAmount } from "../chart-labels";
 
 interface RevenueTrendChartProps {
   data: SalesTrendPointDto[];
@@ -30,10 +23,13 @@ function TrendTooltip({ active, payload, label }: any) {
   );
 }
 
-/** Single-series trend — sequential blue, per the "trend over time" form. No legend needed for one series. */
+/**
+ * Daily revenue as bars (brand green, one series, no legend). Bars, not a
+ * smoothed line: a curve between days invents peaks and dips below zero.
+ */
 export function RevenueTrendChart({ data }: RevenueTrendChartProps) {
   const { t } = useTranslation("reports");
-  const compact = useCompactMoney();
+  const currency = useCurrency();
   return (
     <Card>
       <CardHeader>
@@ -41,7 +37,8 @@ export function RevenueTrendChart({ data }: RevenueTrendChartProps) {
       </CardHeader>
       <CardContent className="h-72 pl-0">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+          {/* Top margin: the highest tick label is never clipped. */}
+          <BarChart data={data} margin={{ top: 16, right: 16, bottom: 0, left: 0 }} barCategoryGap="20%">
             <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
             <XAxis
               dataKey="date"
@@ -52,22 +49,15 @@ export function RevenueTrendChart({ data }: RevenueTrendChartProps) {
               minTickGap={24}
             />
             <YAxis
-              tickFormatter={(v: number) => compact(v)}
+              tickFormatter={(v: number) => axisAmount(v, currency)}
               tick={{ fill: "var(--chart-ink-muted)", fontSize: 12 }}
               axisLine={false}
               tickLine={false}
-              width={64}
+              width={56}
             />
-            <Tooltip content={<TrendTooltip />} cursor={{ stroke: "var(--chart-axis)" }} />
-            <Line
-              type="monotone"
-              dataKey="revenue"
-              stroke="var(--chart-series-1)"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4, stroke: "var(--chart-surface)", strokeWidth: 2 }}
-            />
-          </LineChart>
+            <Tooltip content={<TrendTooltip />} cursor={{ fill: "var(--sb-chart-track)" }} />
+            <Bar dataKey="revenue" fill="var(--chart-series-1)" radius={[4, 4, 0, 0]} maxBarSize={32} />
+          </BarChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>

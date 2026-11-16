@@ -101,6 +101,8 @@ type ApprovalCheckResult = { ok: true } | { ok: false; code: "wrong" | "locked" 
  * in apps/web/src/features/desktop/bridge.ts.
  */
 const posDesktop = {
+  /** "win32", "darwin"…: for labels such as the Ctrl K / ⌘K hint. */
+  platform: process.platform,
   app: {
     info: (): Promise<{ version: string; platform: string; logFile: string }> => ipcRenderer.invoke("app:info"),
     openLogFolder: (): Promise<void> => ipcRenderer.invoke("app:open-log-folder"),

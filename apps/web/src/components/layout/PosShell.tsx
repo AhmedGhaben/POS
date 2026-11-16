@@ -10,6 +10,7 @@ import { useAuthStore } from "@/features/auth/store";
 import { logOutOrCloseShift } from "@/features/shifts/close-request";
 import { OfflineIndicator } from "@/features/pos/components/OfflineIndicator";
 import { DisplaySizeMenu } from "@/features/display/DisplaySizeMenu";
+import { ShortcutHint } from "./ShortcutHint";
 import { StorbitLogo } from "@/components/brand/StorbitLogo";
 import { useConnectionLogoStatus } from "@/components/brand/use-logo-status";
 
@@ -79,9 +80,7 @@ export function PosShell() {
         <div className="flex items-center gap-2">
           <UpdateReady />
           <OfflineIndicator />
-          <kbd className="hidden items-center gap-1 rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-flex">
-            <span>⌘</span>K
-          </kbd>
+          <ShortcutHint />
           <StoreSwitcher />
           <Button variant="ghost" size="icon" asChild aria-label={t("nav.thisDevice")}>
             <NavLink to="/device" title={t("nav.thisDevice")}>

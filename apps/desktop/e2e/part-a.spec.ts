@@ -144,9 +144,9 @@ test.describe.serial("Part A: terminal, outbox and sync", () => {
     expect(sales.filter((s) => s.clientId === killed.clientId)).toHaveLength(1);
   });
 
-  test("Point of Sale stays in the bottom-left corner while back-office pages scroll", async () => {
+  test("Open point of sale stays in the bottom-left corner while back-office pages scroll", async () => {
     await page.goto("app://pos/dashboard");
-    const pos = page.getByRole("link", { name: "Point of Sale" });
+    const pos = page.getByRole("link", { name: "Open point of sale" });
     await expect(pos).toBeVisible();
     // Make sure the page really is taller than the window, then scroll to the end.
     await page.evaluate(() => {

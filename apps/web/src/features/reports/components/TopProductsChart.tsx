@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { TopProductReportDto } from "@pos/shared";
 import { useTranslation } from "react-i18next";
@@ -5,6 +6,7 @@ import i18n from "@/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/format";
 import { currentCurrency, useCompactMoney } from "@/features/business/use-money";
+import { chartProductNames, noWrap } from "../chart-labels";
 
 interface TopProductsChartProps {
   data: TopProductReportDto[];
@@ -12,10 +14,10 @@ interface TopProductsChartProps {
 
 function TopProductsTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
-  const item = payload[0].payload as TopProductReportDto;
+  const item = payload[0].payload as TopProductReportDto & { label: string };
   return (
     <div className="rounded-md border bg-popover px-3 py-2 text-sm shadow-md">
-      <p className="font-medium text-foreground">{item.name}</p>
+      <p className="font-medium text-foreground">{item.label}</p>
       <p className="text-muted-foreground">
         {formatCurrency(item.revenue, currentCurrency())} · {i18n.t("reports:charts.sold", { count: item.quantitySold })}
       </p>
@@ -23,11 +25,13 @@ function TopProductsTooltip({ active, payload }: any) {
   );
 }
 
-/** Magnitude comparison across a handful of named items — sequential blue, one measure. */
+/** Magnitude comparison across a handful of named items — brand green, one measure. */
 export function TopProductsChart({ data }: TopProductsChartProps) {
   const { t } = useTranslation("reports");
   const compact = useCompactMoney();
   const hasData = data.length > 0;
+  // Display names only (no barcodes, duplicates told apart); the data is unchanged.
+  const rows = React.useMemo(() => chartProductNames(data), [data]);
 
   return (
     <Card>
@@ -38,16 +42,17 @@ export function TopProductsChart({ data }: TopProductsChartProps) {
         {hasData ? (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={data}
+              data={rows}
               layout="vertical"
-              margin={{ top: 8, right: 48, bottom: 0, left: 8 }}
+              // Room on the right for the value labels, so they never wrap.
+              margin={{ top: 8, right: 88, bottom: 0, left: 8 }}
               barCategoryGap="24%"
             >
               <CartesianGrid horizontal={false} stroke="var(--chart-grid)" />
               <XAxis type="number" hide />
               <YAxis
                 type="category"
-                dataKey="name"
+                dataKey="label"
                 tick={{ fill: "var(--chart-ink-secondary)", fontSize: 12 }}
                 axisLine={false}
                 tickLine={false}
@@ -58,7 +63,7 @@ export function TopProductsChart({ data }: TopProductsChartProps) {
                 <LabelList
                   dataKey="revenue"
                   position="right"
-                  formatter={(v: unknown) => compact(Number(v))}
+                  formatter={(v: unknown) => noWrap(compact(Number(v)))}
                   fill="var(--chart-ink-secondary)"
                   fontSize={12}
                 />

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/command";
 import { useAuthStore } from "@/features/auth/store";
 import { navItemsFor } from "./nav-items";
+import { isCommandPaletteShortcut } from "@/lib/platform";
 
 export function CommandPalette() {
   const { t } = useTranslation();
@@ -20,8 +21,10 @@ export function CommandPalette() {
   const role = useAuthStore((s) => s.user?.role);
 
   React.useEffect(() => {
+    // Ctrl+K on Windows/Linux, ⌘K on a Mac (also while typing, as before).
+    // preventDefault keeps the browser's own Ctrl+K (search bar) out of it.
     function handleKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      if (isCommandPaletteShortcut(e)) {
         e.preventDefault();
         setOpen((v) => !v);
       }
