@@ -114,7 +114,7 @@
     "failedReview_one": "{{count}} sale failed to sync — needs review",
     "failedReview_other": "{{count}} sales failed to sync — needs review",
     "unreachable": "Couldn't reach the server — will keep trying",
-    "serverDown": "The POS server can't be reached",
+    "serverDown": "The STORBIT server can't be reached",
     "noInternet": "No internet connection",
     "offline": "Working offline",
     "offlineWaiting_one": "Working offline — {{count}} sale waiting to sync",

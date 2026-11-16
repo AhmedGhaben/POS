@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>POS setup</title>
+    <title>STORBIT setup</title>
     <style>
       /* STORBIT brand tokens (docs/brand/storbit-tokens.css), inlined: this
          page is shown before the app's own styles are available. */
@@ -58,6 +58,7 @@
         border-radius: 16px;
         padding: 32px;
       }
+      .logo { display: block; width: 120px; height: auto; margin: 0 0 24px; }
       h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; margin: 0 0 4px; }
       p { color: var(--muted); margin: 0 0 20px; }
       label { display: block; font-weight: 600; margin-bottom: 6px; }
@@ -92,8 +93,12 @@
   </head>
   <body>
     <main>
+      <picture>
+        <source srcset="logo-on-dark.svg" media="(prefers-color-scheme: dark)" />
+        <img class="logo" src="logo.svg" alt="storbit" width="120" height="35" />
+      </picture>
       <h1 id="title">Connect this till</h1>
-      <p id="intro">Enter the address of your POS server. You only need to do this once on this computer.</p>
+      <p id="intro">Enter the address of your STORBIT server. You only need to do this once on this computer.</p>
       <form id="form">
         <label id="label" for="server">Server address</label>
         <input id="server" name="server" type="url" placeholder="https://pos.example.com/api" required autofocus />

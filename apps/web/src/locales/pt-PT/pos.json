@@ -114,7 +114,7 @@
     "failedReview_one": "{{count}} venda não sincronizou — precisa de revisão",
     "failedReview_other": "{{count}} vendas não sincronizaram — precisam de revisão",
     "unreachable": "Não foi possível contactar o servidor — vamos continuar a tentar",
-    "serverDown": "Não é possível contactar o servidor do ponto de venda",
+    "serverDown": "Não é possível contactar o servidor STORBIT",
     "noInternet": "Sem ligação à internet",
     "offline": "A trabalhar sem internet",
     "offlineWaiting_one": "A trabalhar sem internet — {{count}} venda por sincronizar",

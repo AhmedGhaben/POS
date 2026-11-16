@@ -155,7 +155,7 @@ public static class PosRaw {
     if (!OpenPrinter(printer, out h, IntPtr.Zero)) return "ERR " + Marshal.GetLastWin32Error();
     try {
       DOCINFO info = new DOCINFO();
-      info.pDocName = "POS";
+      info.pDocName = "STORBIT";
       info.pDataType = "RAW";
       if (StartDocPrinter(h, 1, info) == 0) return "ERR " + Marshal.GetLastWin32Error();
       try {

@@ -97,7 +97,7 @@ export function tempUserData() {
 
 /**
  * Launches the dev build, or the packaged app when POS_DESKTOP_EXECUTABLE
- * points at it (e.g. release/win-unpacked/POS.exe).
+ * points at it (e.g. release/win-unpacked/STORBIT.exe).
  */
 export async function launch(
   userData: string,

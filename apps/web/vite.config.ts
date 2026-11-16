@@ -19,11 +19,11 @@ export default defineConfig(({ mode }) => ({
         type: "module",
       },
       manifest: {
-        name: "POS",
-        short_name: "POS",
+        name: "STORBIT",
+        short_name: "STORBIT",
         description: "Point of sale, inventory, and back-office management.",
-        theme_color: "#0a0a0a",
-        background_color: "#0a0a0a",
+        theme_color: "#15171B",
+        background_color: "#F4F1EA",
         display: "standalone",
         icons: [
           { src: "/pwa-icon.svg", sizes: "any", type: "image/svg+xml" },

@@ -5,12 +5,12 @@
 const TEXTS = {
   en: {
     title: "Connect this till",
-    intro: "Enter the address of your POS server. You only need to do this once on this computer.",
+    intro: "Enter the address of your STORBIT server. You only need to do this once on this computer.",
     label: "Server address",
     connect: "Connect",
     checking: "Checking…",
     invalid: "That isn't a valid address",
-    unreachable: "Couldn't reach a POS server at that address",
+    unreachable: "Couldn't reach a STORBIT server at that address",
     failed: "Something went wrong. Try again.",
   },
   "pt-PT": {

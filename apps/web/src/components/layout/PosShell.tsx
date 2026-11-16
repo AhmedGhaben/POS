@@ -10,6 +10,8 @@ import { useAuthStore } from "@/features/auth/store";
 import { logOutOrCloseShift } from "@/features/shifts/close-request";
 import { OfflineIndicator } from "@/features/pos/components/OfflineIndicator";
 import { DisplaySizeMenu } from "@/features/display/DisplaySizeMenu";
+import { StorbitLogo } from "@/components/brand/StorbitLogo";
+import { useConnectionLogoStatus } from "@/components/brand/use-logo-status";
 
 /**
  * Minimal terminal-mode shell for the POS sale screen — no sidebar, no
@@ -40,6 +42,7 @@ export function PosShell() {
   const location = useLocation();
   const tillMode = useTillMode();
   const lock = useLockStore((s) => s.lock);
+  const logoStatus = useConnectionLogoStatus();
 
   // With a shift open, Log out closes it first (blind count, report).
   function handleLogout() {
@@ -52,7 +55,9 @@ export function PosShell() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="flex h-14 items-center justify-between border-b px-4">
+      <header className="flex h-14 items-center justify-between border-b bg-card px-4">
+        <div className="flex items-center gap-4">
+        <StorbitLogo className="h-6" status={logoStatus} />
         {location.pathname !== "/pos" ? (
           // This device for a cashier (any page in the till's frame): back to the same sale.
           <NavLink to="/pos" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
@@ -70,6 +75,7 @@ export function PosShell() {
         ) : (
           <span />
         )}
+        </div>
         <div className="flex items-center gap-2">
           <UpdateReady />
           <OfflineIndicator />

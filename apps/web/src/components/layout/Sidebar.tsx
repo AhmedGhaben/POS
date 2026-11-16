@@ -4,13 +4,19 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/features/auth/store";
 import { navItemsFor } from "./nav-items";
+import { StorbitLogo } from "@/components/brand/StorbitLogo";
+import { useConnectionLogoStatus } from "@/components/brand/use-logo-status";
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useTranslation();
   const role = useAuthStore((s) => s.user?.role);
+  const logoStatus = useConnectionLogoStatus();
   return (
     <>
-      <div className="mb-4 px-2 text-lg font-semibold">POS</div>
+      <div className="mb-5 flex items-end gap-2 px-2 pt-1">
+        <StorbitLogo className="h-7" status={logoStatus} />
+        <span className="pb-0.5 text-xs font-semibold text-muted-foreground">{t("shell.backOffice")}</span>
+      </div>
       <nav className="-mx-1 min-h-0 flex-1 space-y-1 overflow-y-auto px-1 pb-2">
         {navItemsFor(role).map((item) => (
           <NavLink
