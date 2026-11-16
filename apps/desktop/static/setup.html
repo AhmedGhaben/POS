@@ -5,27 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>POS setup</title>
     <style>
+      /* STORBIT brand tokens (docs/brand/storbit-tokens.css), inlined: this
+         page is shown before the app's own styles are available. */
+      @font-face { font-family: "Inter"; font-weight: 400; font-display: swap; src: url(fonts/inter-latin-400-normal.woff2) format("woff2"); }
+      @font-face { font-family: "Inter"; font-weight: 600; font-display: swap; src: url(fonts/inter-latin-600-normal.woff2) format("woff2"); }
+      @font-face { font-family: "Inter"; font-weight: 800; font-display: swap; src: url(fonts/inter-latin-800-normal.woff2) format("woff2"); }
       :root {
         color-scheme: light dark;
-        --bg: #fafafa;
-        --card: #ffffff;
-        --fg: #0a0a0a;
-        --muted: #737373;
-        --border: #e5e5e5;
-        --primary: #171717;
-        --primary-fg: #fafafa;
-        --danger: #dc2626;
+        --bg: #F4F1EA;
+        --card: #FFFFFF;
+        --fg: #15171B;
+        --muted: #5B606B;
+        --border: #E6E1D6;
+        --border-strong: #D6D0C4;
+        --primary: #0B7D52;
+        --primary-hover: #086342;
+        --primary-fg: #FFFFFF;
+        --focus: #0B7D52;
+        --danger: #A3211A;
+        --diamond: #0B7D52;
       }
       @media (prefers-color-scheme: dark) {
         :root {
-          --bg: #0a0a0a;
-          --card: #171717;
-          --fg: #fafafa;
-          --muted: #a3a3a3;
-          --border: #262626;
-          --primary: #fafafa;
-          --primary-fg: #171717;
-          --danger: #f87171;
+          --bg: #0F1114;
+          --card: #181B20;
+          --fg: #F2EFE8;
+          --muted: #A9ADB5;
+          --border: #262A31;
+          --border-strong: #3A3E46;
+          --primary: #1BC47D;
+          --primary-hover: #35D08F;
+          --primary-fg: #0B1F15;
+          --focus: #1BC47D;
+          --danger: #F38B83;
+          --diamond: #1BC47D;
         }
       }
       * { box-sizing: border-box; }
@@ -36,39 +49,43 @@
         place-items: center;
         background: var(--bg);
         color: var(--fg);
-        font: 14px/1.5 system-ui, "Segoe UI", sans-serif;
+        font: 15px/1.5 "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       }
       main {
         width: min(420px, calc(100vw - 32px));
         background: var(--card);
         border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 28px;
+        border-radius: 16px;
+        padding: 32px;
       }
-      h1 { font-size: 20px; margin: 0 0 4px; }
+      h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; margin: 0 0 4px; }
       p { color: var(--muted); margin: 0 0 20px; }
-      label { display: block; font-weight: 500; margin-bottom: 6px; }
+      label { display: block; font-weight: 600; margin-bottom: 6px; }
       input {
         width: 100%;
-        padding: 9px 11px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        background: transparent;
+        height: 48px;
+        padding: 0 14px;
+        border: 1.5px solid var(--border-strong);
+        border-radius: 12px;
+        background: var(--card);
         color: inherit;
         font: inherit;
       }
       button {
         margin-top: 16px;
         width: 100%;
-        padding: 10px;
+        min-height: 48px;
+        padding: 0 16px;
         border: 0;
-        border-radius: 8px;
+        border-radius: 12px;
         background: var(--primary);
         color: var(--primary-fg);
         font: inherit;
-        font-weight: 500;
+        font-weight: 700;
         cursor: pointer;
       }
+      button:hover:not(:disabled) { background: var(--primary-hover); }
+      input:focus-visible, button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
       button:disabled { opacity: 0.6; cursor: default; }
       #error { color: var(--danger); margin-top: 12px; min-height: 1.5em; }
     </style>

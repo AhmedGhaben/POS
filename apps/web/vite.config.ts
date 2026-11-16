@@ -35,6 +35,8 @@ export default defineConfig(({ mode }) => ({
         // The app's main bundle (just over 2 MiB, workbox's default limit)
         // must be precached, or the web POS can't start offline.
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // The bundled Inter font too, so the web POS looks the same offline.
+        globPatterns: ["**/*.{js,css,html,woff2}"],
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {

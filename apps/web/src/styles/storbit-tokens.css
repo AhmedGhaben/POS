@@ -1,0 +1,125 @@
+/*
+ * Copied from docs/brand/storbit-tokens.css (source of truth). Only change:
+ * the dark block also answers to `.dark`, the app's theme class.
+ *
+ * STORBIT brand tokens — v1 (diamond mark, "Sinal" palette)
+ * Light theme is the default; dark theme applies with [data-theme="dark"]
+ * (or map these to your existing theme mechanism — see BRAND_HANDOFF.md).
+ *
+ * Rules:
+ *  - Green = actions and "online / open / OK". Never decoration.
+ *  - Amber = "offline but still selling" ONLY. Never use amber for other warnings.
+ *  - Red = real blocking errors and negative money differences ONLY.
+ *  - Neutral notices (e.g. SAF-T deadlines) use --sb-surface + --sb-border, not amber.
+ *  - No gradients. No purple/pink in the business product.
+ */
+
+:root {
+  /* Brand */
+  --sb-graphite: #15171B;
+  --sb-paper: #F4F1EA;
+  --sb-white: #FFFFFF;
+  --sb-green: #0B7D52;        /* actions, links, logo diamond on light */
+  --sb-green-hover: #086342;
+  --sb-green-bright: #1BC47D; /* logo diamond + status dot on dark only */
+  --sb-green-tint: #E3F2EA;
+
+  /* Status (fixed, never re-themed) */
+  --sb-status-online: #1BC47D;
+  --sb-status-offline: #F5A524;
+  --sb-status-error: #C8281E;
+
+  /* Semantic — light (default) */
+  --sb-bg: #F4F1EA;
+  --sb-surface: #FFFFFF;
+  --sb-surface-sunken: #F8F6F1;
+  --sb-border: #E6E1D6;
+  --sb-border-strong: #D6D0C4;      /* inputs */
+  --sb-text: #15171B;
+  --sb-text-muted: #5B606B;          /* 5.6:1 on paper */
+  --sb-chip: #ECE8DF;
+  --sb-action: #0B7D52;
+  --sb-action-hover: #086342;
+  --sb-action-text: #FFFFFF;          /* 5.2:1 */
+  --sb-link: #0B7D52;
+  --sb-focus-ring: #0B7D52;
+  --sb-nav-active-bg: #E8F3EC;
+  --sb-nav-active-text: #0B5C3C;
+  --sb-success-text: #0B7D52;
+  --sb-offline-bg: #FFF4DE;
+  --sb-offline-border: #F5D7A1;
+  --sb-offline-text: #5C3B00;
+  --sb-error-bg: #FDECEA;
+  --sb-error-text: #A3211A;
+  --sb-chart-bar: #0B7D52;
+  --sb-chart-track: #F0ECE4;
+  --sb-chart-grid: #EEEAE1;
+  --sb-chart-axis: #CFC9BD;
+  --sb-logo-diamond: #0B7D52;
+
+  /* Type */
+  --sb-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --sb-font-features: "tnum" 1;      /* tabular numbers for money */
+  --sb-weight-regular: 400;
+  --sb-weight-medium: 500;
+  --sb-weight-semibold: 600;
+  --sb-weight-bold: 700;
+  --sb-weight-heavy: 800;            /* headings only */
+  --sb-text-xs: 12px;
+  --sb-text-sm: 13px;
+  --sb-text-base: 15px;
+  --sb-text-md: 17px;
+  --sb-text-lg: 20px;
+  --sb-text-xl: 28px;
+  --sb-text-2xl: 36px;
+  --sb-text-3xl: 50px;
+  --sb-tracking-tight: -0.03em;      /* headings ≥ 20px */
+
+  /* Shape & space */
+  --sb-radius-sm: 8px;
+  --sb-radius-md: 12px;              /* buttons, inputs */
+  --sb-radius-lg: 16px;              /* cards */
+  --sb-radius-xl: 22px;
+  --sb-radius-pill: 999px;
+  --sb-control-height: 44px;         /* minimum touch target */
+  --sb-control-height-lg: 52px;
+  --sb-space-1: 4px;
+  --sb-space-2: 8px;
+  --sb-space-3: 12px;
+  --sb-space-4: 16px;
+  --sb-space-5: 20px;
+  --sb-space-6: 24px;
+  --sb-space-8: 32px;
+  --sb-shadow-card: none;            /* use borders, not shadows */
+}
+
+/* The app switches themes with the `.dark` class (ThemeProvider); both work. */
+[data-theme="dark"],
+.dark {
+  --sb-bg: #0F1114;
+  --sb-surface: #181B20;
+  --sb-surface-sunken: #14171B;
+  --sb-border: #262A31;
+  --sb-border-strong: #3A3E46;
+  --sb-text: #F2EFE8;
+  --sb-text-muted: #A9ADB5;          /* 7.5:1 on surface */
+  --sb-chip: #262A31;
+  --sb-action: #1BC47D;
+  --sb-action-hover: #35D08F;
+  --sb-action-text: #0B1F15;          /* dark text on bright green */
+  --sb-link: #1BC47D;
+  --sb-focus-ring: #1BC47D;
+  --sb-nav-active-bg: #1F2228;
+  --sb-nav-active-text: #FFFFFF;
+  --sb-success-text: #1BC47D;
+  --sb-offline-bg: #2A2213;
+  --sb-offline-border: #4A3A17;
+  --sb-offline-text: #F5C46B;
+  --sb-error-bg: #2B1715;
+  --sb-error-text: #F38B83;
+  --sb-chart-bar: #1BC47D;
+  --sb-chart-track: #22262C;
+  --sb-chart-grid: #22262C;
+  --sb-chart-axis: #3A3E46;
+  --sb-logo-diamond: #1BC47D;
+}
