@@ -36,7 +36,7 @@ export function AccountingPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-4 p-6">
       <div>
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
+        <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("title")}</h1>
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
         {!canWrite && <p className="text-sm text-muted-foreground">{t("readOnly")}</p>}
       </div>

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { DERIVED_LANGUAGES, LANGUAGES, matchLanguage } from "./index";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { DERIVED_LANGUAGES, LANGUAGES, detectLanguage, matchLanguage } from "./index";
 
 /** Every translation must have exactly English's keys, placeholders and tags. */
 const files = import.meta.glob<{ default: Record<string, unknown> }>("../locales/*/*.json", { eager: true });
@@ -62,5 +62,29 @@ describe("matchLanguage", () => {
     expect(matchLanguage("pt")).toBe("pt-PT");
     expect(matchLanguage("en-GB")).toBe("en");
     expect(matchLanguage("fr-FR")).toBeNull();
+  });
+});
+
+describe("detectLanguage", () => {
+  afterEach(() => {
+    localStorage.setItem("pos-language", "en"); // as the test setup left it
+    vi.unstubAllGlobals();
+  });
+
+  it("a first run opens in Angolan Portuguese, whatever the computer's language", () => {
+    localStorage.removeItem("pos-language");
+    vi.stubGlobal("navigator", { language: "en-US", languages: ["en-US", "fr-FR"] });
+    expect(detectLanguage()).toBe("pt-AO");
+  });
+
+  it("this device's saved choice wins", () => {
+    localStorage.setItem("pos-language", "en");
+    expect(detectLanguage()).toBe("en");
+  });
+});
+
+describe("language picker", () => {
+  it("lists Angolan Portuguese first, each language in its own words", () => {
+    expect(LANGUAGES.map((l) => l.label)).toEqual(["Português (Angola)", "English", "Português (Portugal)", "Português (Brasil)"]);
   });
 });

@@ -67,13 +67,13 @@ export function SaftTab({ today, canWrite }: { today: string; canWrite: boolean 
         {check && (
           <div className="space-y-2" role="status">
             {check.ready && (
-              <p className="flex items-center gap-2 text-sm text-emerald-600">
+              <p className="flex items-center gap-2 text-sm text-sb-success">
                 <CheckCircle2 className="h-4 w-4" aria-hidden />
                 {t("saft.ready")}
               </p>
             )}
             {check.issues.map((issue) => (
-              <p key={issue.code} className={`flex items-start gap-2 text-sm ${issue.blocking ? "text-destructive" : "text-amber-600"}`}>
+              <p key={issue.code} className={`flex items-start gap-2 text-sm ${issue.blocking ? "text-destructive" : "text-foreground"}`}>
                 <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                 {t(`saft.issues.${issue.code}`, { detail: issue.detail ?? "" })}
               </p>

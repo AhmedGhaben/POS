@@ -41,8 +41,14 @@ import {
 import { clearSigningKey, refreshSigningKey, signDocument, signingStatus } from "./fiscal-signing";
 
 // Tests (and a second profile on one PC) point the app at another data folder.
+// Otherwise the data folder keeps the name it had before the app was called
+// STORBIT ("POS"): settings, staff PINs, the signing key and sales waiting to
+// upload stay where installed tills already keep them.
+const DATA_FOLDER_NAME = "POS";
 if (process.env.POS_DESKTOP_USER_DATA) {
   app.setPath("userData", path.resolve(process.env.POS_DESKTOP_USER_DATA));
+} else {
+  app.setPath("userData", path.join(app.getPath("appData"), DATA_FOLDER_NAME));
 }
 
 initLogging(app.isPackaged);
@@ -71,8 +77,9 @@ function createWindow() {
     height: 860,
     minWidth: 1024,
     minHeight: 640,
-    title: "POS",
-    backgroundColor: "#0a0a0a",
+    title: "STORBIT",
+    icon: path.join(__dirname, "../static/storbit.ico"),
+    backgroundColor: "#F4F1EA", // --sb-bg, while the first page loads
     show: false,
     kiosk: !!getConfig().kiosk,
     autoHideMenuBar: true,

@@ -97,11 +97,13 @@ export function tempUserData() {
 
 /**
  * Launches the dev build, or the packaged app when POS_DESKTOP_EXECUTABLE
- * points at it (e.g. release/win-unpacked/POS.exe).
+ * points at it (e.g. release/win-unpacked/STORBIT.exe).
  */
 export async function launch(
   userData: string,
   extraEnv: Record<string, string> = {},
+  /** A first run opens in pt-AO; the tests read English unless they pass null. */
+  language: string | null = "en",
 ): Promise<{ app: ElectronApplication; page: Page }> {
   const executablePath = process.env.POS_DESKTOP_EXECUTABLE;
   const app = await electron.launch({
@@ -111,6 +113,8 @@ export async function launch(
   });
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
+  const chosen = language && (await page.evaluate((l) => !localStorage.getItem("pos-language") && (localStorage.setItem("pos-language", l), true), language));
+  if (chosen) await page.reload();
   return { app, page };
 }
 

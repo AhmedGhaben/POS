@@ -13,12 +13,19 @@
     "employees": "Funcionários",
     "settings": "Configurações",
     "thisDevice": "Este dispositivo",
-    "pointOfSale": "Ponto de Venda",
+    "pointOfSale": "Abrir ponto de venda",
     "shifts": "Turnos",
     "reports": "Relatórios",
     "accounting": "Contabilidade",
     "customers": "Clientes",
     "sales": "Vendas"
+  },
+  "connection": {
+    "online": "Online",
+    "offline": "Sem internet · vendendo",
+    "syncing": "Sincronizando",
+    "inactive": "Desligado",
+    "error": "Erro de sincronização"
   },
   "shell": {
     "openNavigation": "Abrir navegação",
@@ -38,6 +45,7 @@
     "lock": "Bloquear caixa",
     "setMyPin": "Definir meu PIN",
     "backToPos": "Voltar ao PDV",
+    "backOffice": "Gestão",
     "cartItems_one": "{{count}} item no carrinho",
     "cartItems_other": "{{count}} itens no carrinho",
     "sessionRetry": "Não foi possível renovar a sessão agora. Você continua conectado; tente de novo em instantes."

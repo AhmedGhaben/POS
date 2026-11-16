@@ -184,7 +184,7 @@ export function PurchasesPage() {
     <div className="mx-auto max-w-5xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{t("common:nav.purchases")}</h1>
+          <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("common:nav.purchases")}</h1>
           <p className="text-sm text-muted-foreground">{t("purchases.subtitle")}</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

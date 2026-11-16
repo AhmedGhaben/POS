@@ -19,7 +19,7 @@ export function OthersShiftPanel({
 }) {
   const { t } = useTranslation("shifts");
   return (
-    <div className="space-y-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+    <div className="sb-notice space-y-3 p-4">
       <div>
         <p className="font-semibold">{t("others.title", { name: shift.openedBy.name })}</p>
         <p className="text-sm">{t("others.description", { name: shift.openedBy.name, time: formatDateTime(shift.openedAt) })}</p>

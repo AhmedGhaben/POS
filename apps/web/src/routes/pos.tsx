@@ -352,14 +352,14 @@ export function PosPage() {
 
   const checkoutPanel = (
     <>
-      <div className="flex-1 space-y-2 text-sm">
+      <div className="flex-1 space-y-2 text-sm tabular-nums">
         <div className="flex justify-between">
           <span className="text-muted-foreground">{t("totals.subtotal")}</span>
           {/* After line discounts, so it adds up with the cart lines (as on the receipt). */}
           <span>{money(totals.subtotal - (totals.discountTotal - totals.saleDiscount))}</span>
         </div>
         {totals.saleDiscount > 0 && saleDiscount && (
-          <div className="flex justify-between text-emerald-700 dark:text-emerald-400">
+          <div className="flex justify-between text-sb-success">
             <span>
               {t("totals.saleDiscount")}
               {saleDiscount.type === "PERCENT" && ` (${discountLabel(saleDiscount, money)})`}
@@ -541,7 +541,7 @@ export function PosPage() {
         <CategoryFilter selectedCategoryId={selectedCategoryId} onSelect={setSelectedCategoryId} />
         <ProductGrid categoryId={selectedCategoryId} onSelect={addProduct} />
         {proforma && (
-          <div className="mb-2 flex items-center justify-between rounded-md border border-sky-300 bg-sky-50 px-3 py-2 text-sm dark:border-sky-800 dark:bg-sky-950" role="status">
+          <div className="sb-notice mb-2 flex items-center justify-between px-3 py-2 text-sm" role="status">
             <span>{t("proforma.selling", { number: proforma.documentNo })}</span>
             <Button variant="ghost" size="sm" onClick={() => setProforma(null)}>
               {t("proforma.detach")}

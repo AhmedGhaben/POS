@@ -64,10 +64,10 @@ test.describe.serial("POS cart kept, Back to POS, documents in the store's langu
     expect(before.tendered).toBe("99999");
   });
 
-  test("to the dashboard and back with Back to POS: nothing lost", async () => {
+  test("to the dashboard and back with Open point of sale: nothing lost", async () => {
     await page.getByRole("link", { name: "Back to dashboard" }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
-    const back = page.getByRole("link", { name: /^Back to POS/ });
+    const back = page.getByRole("link", { name: /^Open point of sale/ });
     await expect(back).toContainText("2"); // two different products in the cart
     await back.click();
     await expect(page).toHaveURL(/\/pos$/);
@@ -76,17 +76,17 @@ test.describe.serial("POS cart kept, Back to POS, documents in the store's langu
 
   test("to Settings, This device and Products, and back: nothing lost", async () => {
     await page.goto("app://pos/settings");
-    await page.getByRole("link", { name: /^Back to POS/ }).click();
+    await page.getByRole("link", { name: /^Open point of sale/ }).click();
     expect(await snapshot()).toEqual(before);
 
     await page.getByRole("link", { name: "This device" }).click();
     await expect(page).toHaveURL(/\/device$/);
-    // The owner sees This device in the back office: Back to POS shows the cart's count.
-    await page.getByRole("link", { name: /^Back to POS/ }).click();
+    // The owner sees This device in the back office: Open point of sale shows the cart's count.
+    await page.getByRole("link", { name: /^Open point of sale/ }).click();
     expect(await snapshot()).toEqual(before);
 
     await page.goto("app://pos/products");
-    await page.getByRole("link", { name: /^Back to POS/ }).click();
+    await page.getByRole("link", { name: /^Open point of sale/ }).click();
     expect(await snapshot()).toEqual(before);
   });
 
@@ -137,7 +137,7 @@ test.describe.serial("POS cart kept, Back to POS, documents in the store's langu
     await page.keyboard.press("Escape");
     await expect(page.getByText("Cart is empty — scan or search a product to begin.")).toBeVisible();
     await page.getByRole("link", { name: "Back to dashboard" }).click();
-    await page.getByRole("link", { name: /^Back to POS/ }).click();
+    await page.getByRole("link", { name: /^Open point of sale/ }).click();
     await expect(page.getByText("Cart is empty — scan or search a product to begin.")).toBeVisible();
   });
 

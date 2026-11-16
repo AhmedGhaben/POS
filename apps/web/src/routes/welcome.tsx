@@ -32,7 +32,7 @@ export function WelcomePage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <div className="w-full max-w-3xl space-y-6">
         <div className="space-y-1 text-center">
-          <h1 className="text-2xl font-semibold">{t("welcome.title", { name: user.firstName })}</h1>
+          <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("welcome.title", { name: user.firstName })}</h1>
           <p className="text-muted-foreground">
             {storeName ? t("welcome.storeReady", { store: storeName }) : t("welcome.anyStoreReady")}{" "}
             {t("welcome.getStarted")}

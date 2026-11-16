@@ -9,7 +9,7 @@ export function SlipHeader({ store }: { store: StoreDto | undefined }) {
   const { t } = useDocumentLanguage(undefined, store?.id);
   const logo = logoSrc(business);
   const storeName = store?.name ?? t("store");
-  // Show the business name too when the store has its own (e.g. "Main Street").
+  // Show the business name too when the store has its own (e.g. "Loja Central").
   const businessName = business && business.name !== storeName ? business.name : null;
 
   return (

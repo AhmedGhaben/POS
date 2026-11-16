@@ -129,7 +129,7 @@ export function InvoicesPage() {
   return (
     <div className="mx-auto max-w-5xl p-6">
       <div className="mb-4">
-        <h1 className="text-2xl font-semibold">{t("common:nav.invoices")}</h1>
+        <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("common:nav.invoices")}</h1>
         <p className="text-sm text-muted-foreground">{t("fiscal.subtitle")}</p>
       </div>
       <ChainAlerts />
@@ -167,7 +167,7 @@ function LegacyInvoices({ canIssue, embedded = false }: { canIssue: boolean; emb
     <div className={embedded ? "" : "mx-auto max-w-4xl p-6"}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          {!embedded && <h1 className="text-2xl font-semibold">{t("common:nav.invoices")}</h1>}
+          {!embedded && <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("common:nav.invoices")}</h1>}
           <p className="text-sm text-muted-foreground">
             {embedded ? t("fiscal.legacyNote") : t("page.subtitle")} {data ? t("page.total", { count: data.total }) : ""}
           </p>

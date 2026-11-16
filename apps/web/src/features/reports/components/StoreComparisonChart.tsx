@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/format";
-import { currentCurrency, useCompactMoney } from "@/features/business/use-money";
+import { currentCurrency, useCompactMoney, useCurrency } from "@/features/business/use-money";
+import { axisAmount, noWrap } from "../chart-labels";
 
 interface StoreComparisonChartProps {
   data: StoreComparisonDto[];
@@ -31,6 +32,7 @@ function StoreComparisonTooltip({ active, payload }: any) {
 export function StoreComparisonChart({ data }: StoreComparisonChartProps) {
   const { t } = useTranslation("reports");
   const compact = useCompactMoney();
+  const currency = useCurrency();
   return (
     <Card>
       <CardHeader>
@@ -47,7 +49,7 @@ export function StoreComparisonChart({ data }: StoreComparisonChartProps) {
               tickLine={false}
             />
             <YAxis
-              tickFormatter={(v: number) => compact(v)}
+              tickFormatter={(v: number) => axisAmount(v, currency)}
               tick={{ fill: "var(--chart-ink-muted)", fontSize: 12 }}
               axisLine={false}
               tickLine={false}
@@ -58,7 +60,7 @@ export function StoreComparisonChart({ data }: StoreComparisonChartProps) {
               <LabelList
                 dataKey="revenue"
                 position="top"
-                formatter={(v: unknown) => compact(Number(v))}
+                formatter={(v: unknown) => noWrap(compact(Number(v)))}
                 fill="var(--chart-ink-secondary)"
                 fontSize={12}
               />

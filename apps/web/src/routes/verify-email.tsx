@@ -70,7 +70,7 @@ export function VerifyEmailPage() {
     return (
       <AuthLayout title={t("verify.doneTitle")}>
         <div className="mb-4 flex items-start gap-2 text-sm">
-          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-sb-success" />
           <span>
             <Trans t={t} i18nKey="verify.confirmed" values={{ email: result.email }} components={{ b: <span className="font-medium" /> }} />
           </span>

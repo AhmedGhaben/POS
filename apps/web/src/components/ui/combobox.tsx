@@ -124,7 +124,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(funct
           aria-label={fallbackLabel}
           disabled={disabled}
           className={cn(
-            "flex h-10 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-left text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+            "flex h-12 w-full items-center justify-between gap-2 rounded-xl border-[1.5px] border-input bg-card px-3.5 py-2 text-left text-[0.9375rem] ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
             className,
           )}
           onKeyDown={(e) => {

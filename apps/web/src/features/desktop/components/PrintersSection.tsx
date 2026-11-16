@@ -133,7 +133,7 @@ function A4TestPage({ printerName }: { printerName: string }) {
   const { t } = useTranslation("device");
   return (
     <div className="a4-doc mx-auto w-[210mm] bg-white p-[15mm] text-sm text-black">
-      <h1 className="text-2xl font-bold">{t("printers.a4TestTitle")}</h1>
+      <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("printers.a4TestTitle")}</h1>
       <p className="mt-1">{printerName}</p>
       <p>{formatDateTime(new Date())}</p>
       <div className="mt-6 border-2 border-black p-4">

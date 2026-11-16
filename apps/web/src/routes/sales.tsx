@@ -94,7 +94,7 @@ export function SalesPage() {
     <div className="mx-auto max-w-6xl space-y-4 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">{t("common:nav.sales")}</h1>
+          <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("common:nav.sales")}</h1>
           <p className="text-sm text-muted-foreground">{t("sales.subtitle", { store: store?.name ?? "" })}</p>
         </div>
         <Button variant="outline" disabled={total === 0 || exporting} onClick={() => void exportCsv()}>

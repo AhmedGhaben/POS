@@ -39,7 +39,7 @@ export function CustomerDisplayPage() {
 
   return (
     <div
-      className="fixed inset-0 flex select-none flex-col overflow-hidden bg-neutral-950 p-[3vmin] text-white"
+      className="fixed inset-0 flex select-none flex-col overflow-hidden bg-[var(--sb-graphite)] p-[3vmin] text-[color:var(--sb-paper)]"
       data-testid="customer-display"
     >
       {state.mode === "idle" && (

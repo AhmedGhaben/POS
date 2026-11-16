@@ -52,7 +52,7 @@ export function AccountantInvitationPage() {
     return (
       <AuthLayout title={t("invitation.doneTitle")}>
         <div className="mb-4 flex items-start gap-2 text-sm">
-          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-sb-success" />
           <span>{t("invitation.done", { name: result.businessName, email: result.email })}</span>
         </div>
         {sameAccount ? (

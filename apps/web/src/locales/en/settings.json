@@ -26,7 +26,7 @@
       "province": "Province"
     },
     "hints": {
-      "legalName": "If different from the business name, e.g. \"Corner Cafe LLC\"."
+      "legalName": "If different from the business name, e.g. \"Mercearia Central, Lda.\"."
     },
     "choose": "Choose…",
     "none": "Not set",

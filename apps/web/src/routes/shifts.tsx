@@ -57,7 +57,7 @@ export function ShiftsPage() {
   return (
     <div className="mx-auto max-w-6xl p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold">{t("common:nav.shifts")}</h1>
+        <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("common:nav.shifts")}</h1>
         <p className="text-sm text-muted-foreground">{t("page.description")}</p>
       </div>
       <div className="mb-4 flex flex-wrap items-center gap-2">

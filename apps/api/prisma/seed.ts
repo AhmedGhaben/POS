@@ -132,7 +132,7 @@ async function main() {
   const ao = countryConfig("AO")!;
   const business = await prisma.business.upsert({
     where: { id: "seed-business" },
-    create: { id: "seed-business", name: "Demo Retail Co.", plan: "SIMPLE", country: ao.code, currency: ao.currency, language: ao.defaultLanguage },
+    create: { id: "seed-business", name: "Mercearia Central, Lda.", plan: "SIMPLE", country: ao.code, currency: ao.currency, language: ao.defaultLanguage },
     update: {},
   });
 
@@ -148,8 +148,8 @@ async function main() {
     create: {
       id: "seed-store-main",
       businessId: business.id,
-      name: "Main Street Store",
-      address: "123 Main St",
+      name: "Loja Central",
+      address: "Rua 1, Luanda",
       timezone: ao.timeZone,
       country: ao.code,
       ivaRegime: ao.defaultIvaRegime,

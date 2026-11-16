@@ -19,11 +19,11 @@ export default defineConfig(({ mode }) => ({
         type: "module",
       },
       manifest: {
-        name: "POS",
-        short_name: "POS",
+        name: "STORBIT",
+        short_name: "STORBIT",
         description: "Point of sale, inventory, and back-office management.",
-        theme_color: "#0a0a0a",
-        background_color: "#0a0a0a",
+        theme_color: "#15171B",
+        background_color: "#F4F1EA",
         display: "standalone",
         icons: [
           { src: "/pwa-icon.svg", sizes: "any", type: "image/svg+xml" },
@@ -35,6 +35,8 @@ export default defineConfig(({ mode }) => ({
         // The app's main bundle (just over 2 MiB, workbox's default limit)
         // must be precached, or the web POS can't start offline.
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // The bundled Inter font too, so the web POS looks the same offline.
+        globPatterns: ["**/*.{js,css,html,woff2}"],
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {

@@ -155,7 +155,7 @@ function EditStoreDialog({ store, onClose }: { store: StoreDto | null; onClose: 
                   }))}
                 />
                 <p className="text-xs text-muted-foreground">{t(`stores.regimeHint.${form.ivaRegime}`)}</p>
-                {regimeChanged && <p className="text-xs font-medium text-amber-700 dark:text-amber-400">{t("stores.regimeChangeLogged")}</p>}
+                {regimeChanged && <p className="text-xs font-medium text-foreground">{t("stores.regimeChangeLogged")}</p>}
                 <label className="flex items-start gap-2 pt-1 text-sm">
                   <input
                     type="checkbox"

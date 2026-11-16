@@ -78,14 +78,14 @@ test.describe.serial("Part A: terminal, outbox and sync", () => {
     // The till numbers it in its own series; the internal OFF-… number isn't printed (tester #26).
     expect(receipt).toMatch(/FR POS\d+-\d{4}\/\d+/);
     expect(receipt).not.toMatch(/OFF-[A-Z0-9]{4}-[A-Z0-9]{12}|Talão/);
-    await expect(status()).toContainText("Working offline — 1 sale waiting to sync");
+    await expect(status()).toContainText("Offline · still selling · 1 sale waiting to sync");
   });
 
   test("the device page shows the server as unreachable", async () => {
     await page.goto("app://pos/device");
     const main = page.getByRole("main");
     await expect(main.getByText("Unreachable", { exact: true })).toBeVisible();
-    await expect(main.getByText("Working offline", { exact: true })).toBeVisible();
+    await expect(main.getByText("Offline · still selling", { exact: true })).toBeVisible();
   });
 
   test("a response lost after the server saved the sale still syncs exactly once", async () => {
@@ -144,9 +144,9 @@ test.describe.serial("Part A: terminal, outbox and sync", () => {
     expect(sales.filter((s) => s.clientId === killed.clientId)).toHaveLength(1);
   });
 
-  test("Point of Sale stays in the bottom-left corner while back-office pages scroll", async () => {
+  test("Open point of sale stays in the bottom-left corner while back-office pages scroll", async () => {
     await page.goto("app://pos/dashboard");
-    const pos = page.getByRole("link", { name: "Point of Sale" });
+    const pos = page.getByRole("link", { name: "Open point of sale" });
     await expect(pos).toBeVisible();
     // Make sure the page really is taller than the window, then scroll to the end.
     await page.evaluate(() => {

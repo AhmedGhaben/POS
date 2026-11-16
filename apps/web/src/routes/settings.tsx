@@ -144,7 +144,7 @@ export function SettingsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-semibold">{t("common:nav.settings")}</h1>
+        <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("common:nav.settings")}</h1>
         <p className="text-sm text-muted-foreground">
           {t("subtitle")}
         </p>

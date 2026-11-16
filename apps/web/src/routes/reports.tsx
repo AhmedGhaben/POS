@@ -82,7 +82,7 @@ export function ReportsPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("title")}</h1>
 
       <SaftDeadlines link={false} />
 
@@ -173,7 +173,7 @@ function SaftPeriodCount({ summary }: { summary: SaftFacturacaoSummaryDto }) {
   const period = { start: formatCalendarDate(summary.startDate), end: formatCalendarDate(summary.endDate) };
   if (summary.total === 0) {
     return (
-      <p role="status" className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
+      <p role="status" className="sb-notice flex gap-2 p-3 text-sm">
         <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
         {t("exports.emptyPeriod", period)}
       </p>

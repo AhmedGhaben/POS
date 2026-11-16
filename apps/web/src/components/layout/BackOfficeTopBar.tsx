@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Check, KeyRound, Lock, Moon, Sun, LogOut, Menu, User as UserIcon } from "lucide-react";
+import { KeyRound, Lock, Moon, Sun, LogOut, Menu, User as UserIcon } from "lucide-react";
 import { useLockStore, useTillMode } from "@/features/till/lock-store";
 import { SetPinDialog } from "@/features/till/components/SetPinDialog";
 import { useTranslation } from "react-i18next";
@@ -18,16 +18,16 @@ import { StoreSwitcher } from "./StoreSwitcher";
 import { AgtIndicator } from "@/features/agt/components/AgtIndicator";
 import { DisplaySizeMenu } from "@/features/display/DisplaySizeMenu";
 import { SidebarNav } from "./Sidebar";
-import { BackToPos } from "./BackToPos";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuthStore } from "@/features/auth/store";
 import { logOutOrCloseShift } from "@/features/shifts/close-request";
-import { LANGUAGES } from "@/i18n";
-import { useLanguage } from "@/i18n/use-language";
+import { LanguagePicker } from "./LanguagePicker";
+import { ShortcutHint } from "./ShortcutHint";
+import { StorbitLogo } from "@/components/brand/StorbitLogo";
+import { useConnectionLogoStatus } from "@/components/brand/use-logo-status";
 
 export function BackOfficeTopBar() {
   const { t } = useTranslation();
-  const [language, setLanguage] = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
@@ -35,6 +35,7 @@ export function BackOfficeTopBar() {
   const [pinOpen, setPinOpen] = React.useState(false);
   const tillMode = useTillMode();
   const lock = useLockStore((s) => s.lock);
+  const logoStatus = useConnectionLogoStatus();
 
   // With a shift open, Log out closes it first (on the POS page).
   function handleLogout() {
@@ -42,7 +43,7 @@ export function BackOfficeTopBar() {
   }
 
   return (
-    <header className="flex h-14 items-center justify-between gap-2 border-b px-4">
+    <header className="flex h-14 items-center justify-between gap-2 border-b bg-card px-4">
       <div className="flex items-center gap-2 lg:hidden">
         <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
           <SheetTrigger asChild>
@@ -54,16 +55,15 @@ export function BackOfficeTopBar() {
             <SidebarNav onNavigate={() => setMobileNavOpen(false)} />
           </SheetContent>
         </Sheet>
+        <StorbitLogo className="h-6" status={logoStatus} />
       </div>
-      <BackToPos />
 
       <div className="ml-auto flex items-center gap-2">
-        <kbd className="hidden items-center gap-1 rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-flex">
-          <span>⌘</span>K
-        </kbd>
+        <ShortcutHint />
         <AgtIndicator />
         <StoreSwitcher />
         <DisplaySizeMenu />
+        <LanguagePicker />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" aria-label={t("shell.accountMenu")}>
@@ -81,14 +81,6 @@ export function BackOfficeTopBar() {
               )}
               {t("shell.toggleTheme")}
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t("language.label")}</DropdownMenuLabel>
-            {LANGUAGES.map((l) => (
-              <DropdownMenuItem key={l.code} onClick={() => setLanguage(l.code)}>
-                <Check className={l.code === language ? "h-4 w-4" : "h-4 w-4 opacity-0"} />
-                {l.label}
-              </DropdownMenuItem>
-            ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => setPinOpen(true)}>
               <KeyRound className="h-4 w-4" />

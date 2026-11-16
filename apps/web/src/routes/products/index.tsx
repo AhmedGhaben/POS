@@ -75,7 +75,7 @@ export function ProductsPage() {
     <div className="mx-auto max-w-5xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{t("common:nav.products")}</h1>
+          <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("common:nav.products")}</h1>
           <p className="text-sm text-muted-foreground">
             {t("subtitle")}
             {canEdit && ` ${t("clickToEdit")}`}
@@ -148,7 +148,7 @@ export function ProductsPage() {
       {toReview.length > 0 && (
         <div
           role="status"
-          className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+          className="sb-notice mb-4 flex flex-wrap items-center justify-between gap-3 p-3 text-sm"
         >
           <div className="flex items-start gap-2">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
@@ -205,7 +205,7 @@ export function ProductsPage() {
                     {(() => {
                       const tax = taxLabel(product);
                       return (
-                        <span className={tax.check ? "inline-flex items-center gap-1 text-amber-700 dark:text-amber-400" : undefined} title={tax.check ? t("checkTax") : undefined}>
+                        <span className={tax.check ? "inline-flex items-center gap-1 font-medium text-foreground" : undefined} title={tax.check ? t("checkTax") : undefined}>
                           {tax.check && <AlertTriangle className="h-3 w-3" />}
                           {tax.text}
                         </span>

@@ -52,7 +52,7 @@ jobs:
       - name: Build the desktop app
         run: npm run build --workspace apps/desktop
 
-      # CI=true: icon and version info are written into POS.exe and the
+      # CI=true: icon and version info are written into STORBIT.exe and the
       # Electron fuses are applied (see apps/desktop/electron-builder.config.js).
       # Unsigned until a code-signing certificate is added (CSC_LINK).
       - name: Build the installer and publish the release

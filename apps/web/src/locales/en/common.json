@@ -13,12 +13,19 @@
     "employees": "Employees",
     "settings": "Settings",
     "thisDevice": "This device",
-    "pointOfSale": "Point of Sale",
+    "pointOfSale": "Open point of sale",
     "shifts": "Shifts",
     "reports": "Reports",
     "accounting": "Accounting",
     "customers": "Customers",
     "sales": "Sales"
+  },
+  "connection": {
+    "online": "Online",
+    "offline": "Offline · still selling",
+    "syncing": "Syncing",
+    "inactive": "Off",
+    "error": "Sync error"
   },
   "shell": {
     "openNavigation": "Open navigation",
@@ -38,6 +45,7 @@
     "lock": "Lock till",
     "setMyPin": "Set my PIN",
     "backToPos": "Back to POS",
+    "backOffice": "Back office",
     "cartItems_one": "{{count}} item in the cart",
     "cartItems_other": "{{count}} items in the cart",
     "sessionRetry": "Couldn't renew your session just now. You're still signed in; try again in a moment."

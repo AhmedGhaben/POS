@@ -146,6 +146,8 @@ export type PinResumeResult =
  */
 export interface PosDesktopApi {
   app: {
+    /** The computer's OS (Node's process.platform); older desktop builds lack it. */
+    platform?: string;
     info(): Promise<DesktopAppInfo>;
     openLogFolder(): Promise<void>;
   };

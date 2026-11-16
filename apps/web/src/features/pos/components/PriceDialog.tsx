@@ -73,7 +73,7 @@ export function PriceDialog({
             <Label htmlFor="line-price">{t("price.label")}</Label>
             <NumericField id="line-price" autoFocus value={value} onValueChange={setValue} />
           </div>
-          {changed && !canChange && <p className="text-sm text-amber-700 dark:text-amber-400">{t("price.needsApproval")}</p>}
+          {changed && !canChange && <p className="text-sm font-medium text-foreground">{t("price.needsApproval")}</p>}
           <div className="grid grid-cols-2 gap-2">
             <Button
               type="button"

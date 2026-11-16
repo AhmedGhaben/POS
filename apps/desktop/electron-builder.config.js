@@ -2,10 +2,10 @@
  * electron-builder config (Windows installer + auto-update feed).
  *
  * - Release builds (GitHub Actions on a `v*` tag) embed the icon and
- *   version info in POS.exe and lock the binary down with Electron fuses.
+ *   version info in STORBIT.exe and lock the binary down with Electron fuses.
  * - POS_TEST_BUILD=1: same app, but the fuses that stop Playwright from
  *   driving it (inspect flags) stay off. Never ship a test build.
- * - Editing POS.exe needs electron-builder's Windows tools, which only
+ * - Editing STORBIT.exe needs electron-builder's Windows tools, which only
  *   unpack where symlinks are allowed (CI, or Windows Developer Mode):
  *   set POS_EDIT_EXE=1 locally to try.
  */
@@ -14,8 +14,11 @@ const editExe = process.env.CI === "true" || process.env.POS_EDIT_EXE === "1";
 
 /** @type {import("electron-builder").Configuration} */
 module.exports = {
+  // appId stays "app.pos.desktop" (from before the app was named STORBIT):
+  // it is how Windows and the installer recognise installed tills, so an
+  // update replaces the old app instead of installing a second one.
   appId: "app.pos.desktop",
-  productName: "POS",
+  productName: "STORBIT",
   // Tests only: build a "newer" copy to serve from a local update feed.
   extraMetadata: process.env.POS_VERSION_OVERRIDE ? { version: process.env.POS_VERSION_OVERRIDE } : undefined,
   directories: { output: process.env.POS_RELEASE_DIR || "release", buildResources: "build" },
@@ -23,9 +26,9 @@ module.exports = {
   extraResources: [{ from: "../web/dist-desktop", to: "web" }],
   win: {
     target: "nsis",
-    icon: "build/icon.png",
+    icon: "build/icon.ico",
     signAndEditExecutable: editExe,
-    artifactName: "POS-Setup-${version}.${ext}",
+    artifactName: "STORBIT-Setup-${version}.${ext}",
   },
   nsis: {
     oneClick: false,
@@ -33,7 +36,7 @@ module.exports = {
     allowToChangeInstallationDirectory: true,
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
-    shortcutName: "POS",
+    shortcutName: "STORBIT",
     deleteAppDataOnUninstall: false,
     installerIcon: "build/icon.ico",
     uninstallerIcon: "build/icon.ico",
@@ -54,7 +57,7 @@ module.exports = {
         enableNodeCliInspectArguments: false,
         onlyLoadAppFromAsar: true,
         enableCookieEncryption: true,
-        // Needs the integrity hash written into POS.exe (exe editing).
+        // Needs the integrity hash written into STORBIT.exe (exe editing).
         enableEmbeddedAsarIntegrityValidation: editExe,
       },
 };

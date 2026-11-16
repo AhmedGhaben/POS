@@ -1,4 +1,5 @@
 import * as React from "react";
+import { StatusDiamond } from "@/components/ui/status-diamond";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Download, FolderOpen, RefreshCw, Wand2 } from "lucide-react";
@@ -193,7 +194,12 @@ function SyncSection() {
         <div>
           {serverUrl && <Row label={t("sync.address")}>{serverUrl}</Row>}
           <Row label={t("sync.server")}>{serverStatus}</Row>
-          <Row label={t("sync.mode")}>{offline ? t("pos:sync.offline") : t("sync.online")}</Row>
+          <Row label={t("sync.mode")}>
+            <StatusDiamond
+              state={offline ? "offline" : "online"}
+              label={offline ? t("pos:sync.offline") : t("sync.online")}
+            />
+          </Row>
           <Row label={t("sync.pending")}>{pendingCount}</Row>
           <Row label={t("sync.failed")}>{failedCount}</Row>
           <Row label={t("sync.lastSync")}>{formatTime(lastSyncAt, t)}</Row>
@@ -344,7 +350,7 @@ export function DevicePage() {
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 p-4 sm:p-6">
       <div>
-        <h1 className="text-2xl font-semibold">{t("common:nav.thisDevice")}</h1>
+        <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("common:nav.thisDevice")}</h1>
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
       <Card>

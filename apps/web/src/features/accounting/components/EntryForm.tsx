@@ -204,7 +204,7 @@ export function EntryForm({ open, onClose, onSaved, initial, title }: { open: bo
                   </td>
                   <td className="p-2 text-right" data-testid="entry-total-debit">{money(centsToNumber(totals.debit))}</td>
                   <td className="p-2 text-right" data-testid="entry-total-credit">{money(centsToNumber(totals.credit))}</td>
-                  <td colSpan={2} className={`p-2 ${balanced ? "text-emerald-600" : "text-destructive"}`} role="status">
+                  <td colSpan={2} className={`p-2 ${balanced ? "text-sb-success" : "text-destructive"}`} role="status">
                     {balanced ? t("entries.balanced") : t("entries.difference", { amount: money(centsToNumber(Math.abs(totals.debit - totals.credit))) })}
                   </td>
                 </tr>

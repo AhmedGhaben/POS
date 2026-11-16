@@ -125,10 +125,10 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
+    <div className="mx-auto max-w-[1480px] space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">{t("common:nav.dashboard")}</h1>
+          <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("common:nav.dashboard")}</h1>
           <p className="text-sm text-muted-foreground">
             {businessQuery.data?.name ?? t("common:actions.loading")}
           </p>

@@ -15,10 +15,10 @@ function StockBadge({ quantity }: { quantity: number }) {
   const isOut = quantity <= 0;
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
-      style={{ backgroundColor: isOut ? "var(--chart-critical)" : "var(--chart-warning)" }}
+      // Out of stock is a real problem (red); low is a neutral chip (amber is for offline only).
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${isOut ? "bg-destructive text-destructive-foreground" : "bg-sb-chip text-foreground"}`}
     >
-      {isOut ? <OctagonAlert className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+      {isOut ? <OctagonAlert className="h-3 w-3" aria-hidden /> : <AlertTriangle className="h-3 w-3" aria-hidden />}
       {isOut ? t("lowStock.out") : t("lowStock.low")}
     </span>
   );

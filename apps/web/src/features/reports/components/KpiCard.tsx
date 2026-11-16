@@ -24,17 +24,17 @@ export function KpiCard({ label, value, deltaPct, upIsGood = true }: KpiCardProp
         <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-semibold">{value}</div>
+        <div className="whitespace-nowrap text-[28px] font-extrabold leading-tight tracking-[-0.03em] tabular-nums">{value}</div>
         {deltaPct !== null ? (
           <div
             className={cn(
               "mt-1 flex items-center gap-1 text-sm",
-              isGoodDirection ? "text-[color:var(--chart-delta-good)]" : "text-[color:var(--chart-delta-bad)]",
+              isGoodDirection ? "text-sb-success" : "text-sb-error-text",
               deltaPct === 0 && "text-muted-foreground",
             )}
           >
-            {isUp && <ArrowUp className="h-3.5 w-3.5" />}
-            {isDown && <ArrowDown className="h-3.5 w-3.5" />}
+            {isUp && <ArrowUp className="h-3.5 w-3.5" aria-label="↑" />}
+            {isDown && <ArrowDown className="h-3.5 w-3.5" aria-label="↓" />}
             <span>
               {deltaPct === 0
                 ? t("kpi.noChange")
