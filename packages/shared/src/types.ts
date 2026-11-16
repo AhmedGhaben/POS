@@ -1533,7 +1533,11 @@ export interface DocumentPrintResultDto {
 /* ---------- "Lojas agora": store and till connection status ---------- */
 
 /** A registered Windows till, as the server last heard from it. */
-export type TillSyncStatus = "online" | "syncing" | "offline" | "inactive" | "never";
+/**
+ * "waiting": it has sales saved but nobody is signed in, so they upload when
+ * someone does. Never an alarm, never offline.
+ */
+export type TillSyncStatus = "online" | "syncing" | "waiting" | "offline" | "inactive" | "never";
 
 /**
  * A store: the worst of its tills, or, with no Windows till, whether someone
@@ -1554,6 +1558,8 @@ export interface TillStatusDto {
   /** Entries waiting on the till when it last reported: unknown since then. */
   pendingCountReported: number;
   appVersion: string | null;
+  /** Its sync engine was running (someone signed in) when it last reported. */
+  syncActive: boolean;
   hasOpenShift: boolean;
 }
 

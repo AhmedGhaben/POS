@@ -49,6 +49,36 @@ describe("Lojas agora lines (pt-AO)", () => {
     expect(storeLine(t(), store({ status: "noTill" }), NOW)).toBe("Sem caixa Windows configurada");
   });
 
+  it("waiting: the sales its tills reported, held until someone signs in", () => {
+    const till = (status: "waiting" | "online", pendingCountReported: number) => ({
+      terminalId: `t-${status}-${pendingCountReported}`,
+      name: "Caixa",
+      code: "POS-001",
+      status,
+      lastSeenAt: "2026-11-17T13:09:00Z",
+      lastSyncSuccessAt: null,
+      pendingCountReported,
+      appVersion: null,
+      syncActive: status !== "waiting",
+      hasOpenShift: true,
+    });
+    expect(storeLine(t(), store({ status: "waiting", devices: [till("waiting", 3), till("online", 0)] }), NOW)).toBe(
+      "3 vendas guardadas na caixa · enviam quando um operador entrar",
+    );
+    expect(storeLine(t(), store({ status: "waiting", devices: [till("waiting", 1)] }), NOW)).toBe(
+      "1 venda guardada na caixa · envia quando um operador entrar",
+    );
+    const en = i18n.getFixedT("en", "reports");
+    expect(storeLine(en, store({ status: "waiting", devices: [till("waiting", 2)] }), NOW)).toBe(
+      "2 sales saved on the till · they upload when someone signs in",
+    );
+  });
+
+  it("waiting is a muted outline: never amber, never in the banner or the offline count", () => {
+    expect(diamondFor("waiting")).toBe("waiting");
+    expect(offlineStores([store({ status: "waiting" }), store({ status: "offline" })])).toHaveLength(1);
+  });
+
   it("only offline is amber; browser and no-till are muted and never offline", () => {
     expect(diamondFor("offline")).toBe("offline");
     expect(diamondFor("syncing")).toBe("syncing");

@@ -209,6 +209,8 @@
       "onlineNoSync": "Online",
       "syncing": "Uploading saved sales · last {{at}}",
       "syncingNoSync": "Uploading saved sales",
+      "waiting_one": "{{count}} sale saved on the till · it uploads when someone signs in",
+      "waiting_other": "{{count}} sales saved on the till · they upload when someone signs in",
       "offline": "No connection since {{since}} · sales made meanwhile arrive when it's back",
       "inactive": "Off · last contact {{at}}",
       "never": "No contact yet",
@@ -219,6 +221,7 @@
     "device": {
       "online": "Online",
       "syncing": "Syncing",
+      "waiting": "Waiting for sign-in",
       "offline": "No connection",
       "inactive": "Off",
       "never": "No contact yet"

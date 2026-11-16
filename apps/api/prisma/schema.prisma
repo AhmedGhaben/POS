@@ -528,6 +528,9 @@ model TerminalStatus {
   lastSyncSuccessAt    DateTime?
   /// Entries waiting on the till at its last heartbeat.
   pendingCountReported Int       @default(0)
+  /// The till's sync engine was running (someone signed in) at its last
+  /// heartbeat. Off: saved sales wait there until someone signs in.
+  syncActive           Boolean   @default(true)
   appVersion           String?
   updatedAt            DateTime  @updatedAt
 

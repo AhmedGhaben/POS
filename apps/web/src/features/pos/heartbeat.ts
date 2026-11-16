@@ -22,7 +22,22 @@ const CHECK_EVERY_MS = 15_000;
 export interface HeartbeatBody {
   pendingCount: number;
   syncedOk: boolean;
+  /** The sync engine is running (someone signed in); off, saved sales wait for someone. */
+  syncActive: boolean;
   appVersion?: string;
+}
+
+let syncEngineRunning = false;
+const engineListeners = new Set<() => void>();
+
+/**
+ * Where the sync engine is started and stopped (signing in and out) says
+ * so here; the engine itself isn't involved. Reported as syncActive.
+ */
+export function setSyncEngineRunning(running: boolean) {
+  if (running === syncEngineRunning) return;
+  syncEngineRunning = running;
+  for (const listener of engineListeners) listener();
 }
 
 /** Up to date: the last pass ended with nothing pending and nothing failed. */
@@ -95,6 +110,7 @@ export function startHeartbeat(): () => void {
       pendingCount,
       // Up to date: the last pass ended clean and nothing has been queued since.
       syncedOk: lastPassClean && pendingCount === 0 && failedCount === 0,
+      syncActive: syncEngineRunning,
       ...(appVersion ? { appVersion } : {}),
     };
     // Not awaited by anyone; errors and timeouts are dropped (the next one is in a minute).
@@ -119,6 +135,9 @@ export function startHeartbeat(): () => void {
     if (nowOnline && !wasOnline) void send();
   });
   const handleOnline = () => void send();
+  // Signing in or out changes what the dashboard should say: report at once.
+  const handleEngine = () => void send();
+  engineListeners.add(handleEngine);
   if (typeof window !== "undefined") window.addEventListener?.("online", handleOnline);
 
   const timer = setInterval(() => {
@@ -130,6 +149,7 @@ export function startHeartbeat(): () => void {
     clearInterval(timer);
     stopPasses();
     stopReconnect();
+    engineListeners.delete(handleEngine);
     if (typeof window !== "undefined") window.removeEventListener?.("online", handleOnline);
   };
 }

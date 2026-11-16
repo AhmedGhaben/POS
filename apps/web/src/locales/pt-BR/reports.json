@@ -209,6 +209,8 @@
       "onlineNoSync": "Online",
       "syncing": "Sincronizando vendas guardadas · última {{at}}",
       "syncingNoSync": "Sincronizando vendas guardadas",
+      "waiting_one": "{{count}} venda guardada no caixa · envia quando um operador entrar",
+      "waiting_other": "{{count}} vendas guardadas no caixa · enviam quando um operador entrar",
       "offline": "Sem conexão desde {{since}} · as vendas feitas nesse período chegam quando a conexão voltar",
       "inactive": "Desligado · último contato {{at}}",
       "never": "Ainda sem contato",
@@ -219,6 +221,7 @@
     "device": {
       "online": "Online",
       "syncing": "Sincronizando",
+      "waiting": "Aguardando um operador",
       "offline": "Sem conexão",
       "inactive": "Desligado",
       "never": "Ainda sem contato"

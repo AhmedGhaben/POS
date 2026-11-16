@@ -21,6 +21,7 @@ export class TerminalStatusService {
     const fields = {
       lastSeenAt: now,
       pendingCountReported: dto.pendingCount,
+      syncActive: dto.syncActive ?? true,
       appVersion: dto.appVersion ?? null,
       ...(dto.syncedOk ? { lastSyncSuccessAt: now } : {}),
     };
@@ -67,16 +68,18 @@ export class TerminalStatusService {
         const seen = latest(t.lastSeenAt, t.status?.lastSeenAt);
         const synced = t.status?.lastSyncSuccessAt ?? null;
         const pending = t.status?.pendingCountReported ?? 0;
+        const syncActive = t.status?.syncActive ?? true;
         const hasOpenShift = t.shifts.length > 0;
         return {
           terminalId: t.id,
           name: t.name,
           code: t.code,
-          status: tillStatus({ lastSeenAt: seen, pendingCountReported: pending, hasOpenShift }, now),
+          status: tillStatus({ lastSeenAt: seen, pendingCountReported: pending, syncActive, hasOpenShift }, now),
           lastSeenAt: seen?.toISOString() ?? null,
           lastSyncSuccessAt: synced?.toISOString() ?? null,
           pendingCountReported: pending,
           appVersion: t.status?.appVersion ?? null,
+          syncActive,
           hasOpenShift,
           seen,
           synced,

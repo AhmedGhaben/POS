@@ -55,4 +55,13 @@ export class TerminalHeartbeatDto {
   @IsString()
   @MaxLength(40)
   appVersion?: string;
+
+  /**
+   * The till's sync engine is running (someone is signed in). False: saved
+   * sales wait on the till until someone signs in. Older tills don't send
+   * it; they only report while someone is signed in, so it counts as true.
+   */
+  @IsOptional()
+  @IsBoolean()
+  syncActive?: boolean;
 }

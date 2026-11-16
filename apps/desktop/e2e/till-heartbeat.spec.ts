@@ -33,6 +33,7 @@ interface TillStatus {
   hasOpenShift: boolean;
   appVersion: string | null;
   lastSeenAt: string | null;
+  syncActive: boolean;
 }
 
 test.describe.serial("Till heartbeat with nobody signed in", () => {
@@ -71,7 +72,8 @@ test.describe.serial("Till heartbeat with nobody signed in", () => {
     };
     // The first heartbeat goes out within 15 s of start, with the app's version.
     await expect.poll(async () => (await till())?.appVersion ?? null, { timeout: 30_000 }).not.toBeNull();
-    expect(await till()).toMatchObject({ status: "online", hasOpenShift: true });
+    // Nobody signed in, so no sync running; with nothing saved it's simply online.
+    expect(await till()).toMatchObject({ status: "online", hasOpenShift: true, syncActive: false });
     // Still nobody signed in.
     await expect(page.getByText("Tap your name")).toBeVisible();
   });

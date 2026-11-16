@@ -3,7 +3,7 @@ import { GONE_AFTER_MS, SEEN_RECENTLY_MS, latest, storeStatus, tillStatus, type 
 const NOW = new Date("2026-11-17T14:10:00Z");
 const ago = (ms: number) => new Date(NOW.getTime() - ms);
 const MIN = 60_000;
-const till = (facts: Partial<TillFacts>): TillFacts => ({ lastSeenAt: null, pendingCountReported: 0, hasOpenShift: false, ...facts });
+const till = (facts: Partial<TillFacts>): TillFacts => ({ lastSeenAt: null, pendingCountReported: 0, syncActive: true, hasOpenShift: false, ...facts });
 
 describe("tillStatus", () => {
   it("never: registered but never heard from", () => {
@@ -18,6 +18,30 @@ describe("tillStatus", () => {
 
   it("syncing: heard from within 2 min with sales to upload", () => {
     expect(tillStatus(till({ lastSeenAt: ago(30_000), pendingCountReported: 3 }), NOW)).toBe("syncing");
+  });
+
+  describe("waiting: sales saved but nobody signed in (its sync engine isn't running)", () => {
+    it("heard from within 2 min with sales to upload and sync off", () => {
+      expect(tillStatus(till({ lastSeenAt: ago(30_000), pendingCountReported: 3, syncActive: false, hasOpenShift: true }), NOW)).toBe("waiting");
+      expect(tillStatus(till({ lastSeenAt: ago(30_000), pendingCountReported: 3, syncActive: false }), NOW)).toBe("waiting");
+    });
+
+    it("nothing saved: online, whether anyone is signed in or not", () => {
+      expect(tillStatus(till({ lastSeenAt: ago(30_000), syncActive: false, hasOpenShift: true }), NOW)).toBe("online");
+    });
+
+    it("someone signs in and sync starts: syncing", () => {
+      expect(tillStatus(till({ lastSeenAt: ago(5_000), pendingCountReported: 3, syncActive: true }), NOW)).toBe("syncing");
+    });
+
+    it("kept between 2 and 3 min, like the others", () => {
+      expect(tillStatus(till({ lastSeenAt: ago(2.5 * MIN), pendingCountReported: 2, syncActive: false, hasOpenShift: true }), NOW)).toBe("waiting");
+    });
+
+    it("gone quiet for over 3 min: offline or inactive as usual, by its shift", () => {
+      expect(tillStatus(till({ lastSeenAt: ago(GONE_AFTER_MS + 1), pendingCountReported: 2, syncActive: false, hasOpenShift: true }), NOW)).toBe("offline");
+      expect(tillStatus(till({ lastSeenAt: ago(GONE_AFTER_MS + 1), pendingCountReported: 2, syncActive: false }), NOW)).toBe("inactive");
+    });
   });
 
   it("offline: not heard from for over 3 min with a shift open", () => {
@@ -56,8 +80,11 @@ describe("tillStatus", () => {
 });
 
 describe("storeStatus", () => {
-  it("is the worst of its tills: offline > syncing > online > inactive > never", () => {
+  it("is the worst of its tills: offline > waiting > syncing > online > inactive > never", () => {
     expect(storeStatus(["online", "offline", "syncing"], false)).toBe("offline");
+    expect(storeStatus(["waiting", "offline"], false)).toBe("offline");
+    expect(storeStatus(["syncing", "waiting", "online"], false)).toBe("waiting");
+    expect(storeStatus(["online", "waiting", "inactive", "never"], false)).toBe("waiting");
     expect(storeStatus(["online", "syncing", "inactive"], false)).toBe("syncing");
     expect(storeStatus(["inactive", "online", "never"], false)).toBe("online");
     expect(storeStatus(["never", "inactive"], false)).toBe("inactive");

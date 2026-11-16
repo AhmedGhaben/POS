@@ -14,6 +14,8 @@ export function diamondFor(status: StoreSyncStatus | TillSyncStatus): DiamondSta
       return "online";
     case "syncing":
       return "syncing";
+    case "waiting":
+      return "waiting";
     case "offline":
       return "offline";
     default:
@@ -52,6 +54,11 @@ export function storeLine(t: Translate, store: StoreStatusDto, now?: Date): stri
       const synced = at(store.lastSyncSuccessAt);
       return synced ? t("storesNow.line.syncing", { at: synced }) : t("storesNow.line.syncingNoSync");
     }
+    case "waiting":
+      // What the tills said when they last reported, nothing live.
+      return t("storesNow.line.waiting", {
+        count: store.devices.filter((d) => d.status === "waiting").reduce((n, d) => n + d.pendingCountReported, 0),
+      });
     case "offline":
       return t("storesNow.line.offline", { since: store.lastSeenAt ? whenText(t, "since", store.lastSeenAt, store, now) : "—" });
     case "inactive":

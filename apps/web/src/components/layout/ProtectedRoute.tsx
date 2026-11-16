@@ -6,6 +6,7 @@ import { BUSINESS_QUERY_KEY, fetchBusiness } from "@/features/business/api";
 import { useDeviceStore } from "@/features/desktop/bridge";
 import { fetchMyPermissions, myPermissionsQueryKey } from "@/features/users/api";
 import { startSyncEngine } from "@/features/pos/sync";
+import { setSyncEngineRunning } from "@/features/pos/heartbeat";
 import { startCustomerDisplayChannel, useIdleMessageBroadcast } from "@/features/desktop/customer-display";
 import { CommandPalette } from "./CommandPalette";
 import { LockOverlay } from "@/features/till/components/LockOverlay";
@@ -55,7 +56,13 @@ export function ProtectedRoute() {
   React.useEffect(() => {
     if (!signedIn) return;
     void useDeviceStore.getState().load();
-    return startSyncEngine();
+    const stopSync = startSyncEngine();
+    // The till's heartbeat reports whether saved sales are being uploaded.
+    setSyncEngineRunning(true);
+    return () => {
+      setSyncEngineRunning(false);
+      stopSync();
+    };
   }, [signedIn]);
 
   if (!signedIn) {

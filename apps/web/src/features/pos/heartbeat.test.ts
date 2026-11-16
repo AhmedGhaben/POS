@@ -12,7 +12,7 @@ vi.mock("@/features/desktop/bridge", () => ({
   useDeviceStore: { getState: () => ({ loaded: true, load: async () => {}, terminal: { id: "t1", name: "Caixa 1", code: "POS-001", storeId: "s1" } }) },
 }));
 
-import { HEARTBEAT_EVERY_MS, heartbeatDue, passWasClean, reportAfterPass, startHeartbeat } from "./heartbeat";
+import { HEARTBEAT_EVERY_MS, heartbeatDue, passWasClean, reportAfterPass, setSyncEngineRunning, startHeartbeat } from "./heartbeat";
 import { useOfflineStore } from "./offline-store";
 import { useAuthStore } from "@/features/auth/store";
 
@@ -122,6 +122,33 @@ describe("startHeartbeat", () => {
     await vi.advanceTimersByTimeAsync(HEARTBEAT_EVERY_MS);
     expect(bodies()[3]).toMatchObject({ pendingCount: 1, syncedOk: false });
     stop();
+  });
+
+  it("says whether the sync engine runs (someone signed in), and reports at once when that changes", async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+    useOfflineStore.setState({ pendingCount: 2 });
+    setSyncEngineRunning(true);
+    const stop = startHeartbeat();
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(bodies()[0]).toMatchObject({ pendingCount: 2, syncActive: true });
+
+    // The cashier signs out: the sales wait on the till.
+    setSyncEngineRunning(false);
+    await flush();
+    expect(bodies()[1]).toMatchObject({ pendingCount: 2, syncActive: false });
+    await vi.advanceTimersByTimeAsync(HEARTBEAT_EVERY_MS);
+    expect(bodies()[2]).toMatchObject({ syncActive: false });
+
+    // Someone signs in: reported at once.
+    setSyncEngineRunning(true);
+    await flush();
+    expect(bodies()[3]).toMatchObject({ syncActive: true });
+    // No change, no extra request.
+    setSyncEngineRunning(true);
+    await flush();
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    stop();
+    setSyncEngineRunning(false);
   });
 
   it("a server that errors or never answers holds nothing up", async () => {

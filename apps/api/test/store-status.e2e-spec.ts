@@ -155,6 +155,25 @@ describe("Store sync status (e2e)", () => {
     expect(storeIn((await status(ownerToken)).body, storeA).status).toBe("online");
   });
 
+  it("sales saved, nobody signed in (sync off): 'waiting', never offline; signing in makes it 'syncing'", async () => {
+    await http().post("/terminals/me/heartbeat").set(till()).send({ pendingCount: 2, syncedOk: false, syncActive: false }).expect(204);
+    let a = storeIn((await status(ownerToken)).body, storeA);
+    expect(a.status).toBe("waiting");
+    expect(a.devices[0]).toMatchObject({ status: "waiting", pendingCountReported: 2, syncActive: false, hasOpenShift: true });
+
+    await http().post("/terminals/me/heartbeat").set(till()).send({ pendingCount: 2, syncedOk: false, syncActive: true }).expect(204);
+    a = storeIn((await status(ownerToken)).body, storeA);
+    expect(a.status).toBe("syncing");
+
+    // An older till that doesn't send syncActive counts as signed in (it only reported then).
+    await http().post("/terminals/me/heartbeat").set(till()).send({ pendingCount: 2, syncedOk: false }).expect(204);
+    expect(storeIn((await status(ownerToken)).body, storeA).devices[0]).toMatchObject({ status: "syncing", syncActive: true });
+
+    await http().post("/terminals/me/heartbeat").set(till()).send({ pendingCount: 0, syncedOk: true, syncActive: false }).expect(204);
+    expect(storeIn((await status(ownerToken)).body, storeA).status).toBe("online");
+    await http().post("/terminals/me/heartbeat").set(till()).send({ pendingCount: 0, syncedOk: true, syncActive: "no" }).expect(400);
+  });
+
   it("a browser shift in a store without a Windows till shows 'browser', never offline", async () => {
     await ensureShift(app, ownerToken, storeB);
     const res = (await status(ownerToken)).body;
