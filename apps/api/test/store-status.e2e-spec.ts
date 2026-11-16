@@ -135,6 +135,26 @@ describe("Store sync status (e2e)", () => {
     expect(a.lastSeenAt).toBe(a.devices[0].lastSeenAt);
   });
 
+  it("shift open, nobody signed in, till online: the till's key alone keeps it online", async () => {
+    // Between cashiers the till sits on the PIN screen: no session, shift still open.
+    // Its last upload was long ago; only the heartbeat (till key, no Authorization) says it's there.
+    await prisma.terminal.update({ where: { id: terminalId }, data: { lastSeenAt: new Date(Date.now() - 30 * 60_000) } });
+    expect(storeIn((await status(ownerToken)).body, storeA).status).toBe("offline");
+
+    await http().post("/terminals/me/heartbeat").set(till()).send({ pendingCount: 0, syncedOk: true }).expect(204);
+    let a = storeIn((await status(ownerToken).expect(200)).body, storeA);
+    expect(a.status).toBe("online");
+    expect(a.devices[0]).toMatchObject({ status: "online", hasOpenShift: true });
+
+    // Still online two and a half minutes later (inside the 3-minute window), then
+    // another heartbeat keeps it there.
+    await prisma.terminalStatus.update({ where: { terminalId }, data: { lastSeenAt: new Date(Date.now() - 150_000) } });
+    a = storeIn((await status(ownerToken)).body, storeA);
+    expect(a.status).toBe("online");
+    await http().post("/terminals/me/heartbeat").set(till()).send({ pendingCount: 0, syncedOk: true }).expect(204);
+    expect(storeIn((await status(ownerToken)).body, storeA).status).toBe("online");
+  });
+
   it("a browser shift in a store without a Windows till shows 'browser', never offline", async () => {
     await ensureShift(app, ownerToken, storeB);
     const res = (await status(ownerToken)).body;

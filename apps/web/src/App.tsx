@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { PwaUpdatePrompt } from "@/components/layout/PwaUpdatePrompt";
@@ -7,6 +8,7 @@ import { PosShell } from "@/components/layout/PosShell";
 import { DeviceShell } from "@/components/layout/DeviceShell";
 import { homePathFor } from "@/components/layout/nav-items";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
+import { startHeartbeat } from "@/features/pos/heartbeat";
 import { useAuthStore } from "@/features/auth/store";
 import { useLanguageSync } from "@/i18n/use-language";
 import { useDisplaySizeSync } from "@/features/display/display-size";
@@ -48,6 +50,9 @@ function DefaultLanding() {
 }
 
 export function App() {
+  // Registered Windows tills report their connection ("Lojas agora") for as
+  // long as the app runs, signed in or not; fire-and-forget.
+  React.useEffect(() => startHeartbeat(), []);
   useLanguageSync();
   useDisplaySizeSync();
   useTouchModeSync();

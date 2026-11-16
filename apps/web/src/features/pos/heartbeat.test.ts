@@ -9,11 +9,12 @@ vi.mock("./sync", () => ({
 }));
 vi.mock("@/features/desktop/bridge", () => ({
   desktop: { app: { info: () => Promise.resolve({ version: "0.3.0", platform: "win32", logFile: "" }) } },
-  useDeviceStore: { getState: () => ({ terminal: { id: "t1", name: "Caixa 1", code: "POS-001", storeId: "s1" } }) },
+  useDeviceStore: { getState: () => ({ loaded: true, load: async () => {}, terminal: { id: "t1", name: "Caixa 1", code: "POS-001", storeId: "s1" } }) },
 }));
 
 import { HEARTBEAT_EVERY_MS, heartbeatDue, passWasClean, reportAfterPass, startHeartbeat } from "./heartbeat";
 import { useOfflineStore } from "./offline-store";
+import { useAuthStore } from "@/features/auth/store";
 
 const ok = { synced: 0, failed: 0, interrupted: false };
 
@@ -42,12 +43,18 @@ describe("heartbeat rules", () => {
 
 describe("startHeartbeat", () => {
   const fetchMock = vi.fn();
+  let online = true;
+  /** The request goes out after reading the queue size (a microtask). */
+  const flush = () => vi.advanceTimersByTimeAsync(0);
 
   beforeEach(() => {
     vi.useFakeTimers();
     fetchMock.mockReset();
+    online = true;
     vi.stubGlobal("fetch", fetchMock);
-    useOfflineStore.setState({ internet: true, server: "up", pendingCount: 0, failedCount: 0 });
+    vi.stubGlobal("navigator", { get onLine() { return online; } });
+    // The queue lives in IndexedDB; here the counts are set directly.
+    useOfflineStore.setState({ internet: true, server: "up", pendingCount: 0, failedCount: 0, refreshPendingCount: async () => {} });
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -69,9 +76,24 @@ describe("startHeartbeat", () => {
     await vi.advanceTimersByTimeAsync(30_000);
     expect(fetchMock).toHaveBeenCalledTimes(2);
 
-    useOfflineStore.setState({ server: "down" });
+    online = false;
     await vi.advanceTimersByTimeAsync(5 * 60_000);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    stop();
+  });
+
+  it("keeps going with nobody signed in (till on the PIN screen between cashiers, shift open)", async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+    useAuthStore.setState({ user: null, accessToken: null });
+    // The sync engine isn't running then: its idea of the server may be stale.
+    useOfflineStore.setState({ server: "unknown" });
+    const stop = startHeartbeat();
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(4 * 60_000);
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+    // It authenticates with the till key the desktop app adds, never a session.
+    for (const [, init] of fetchMock.mock.calls) expect(JSON.stringify((init as RequestInit).headers)).not.toMatch(/authorization/i);
     stop();
   });
 
@@ -80,17 +102,25 @@ describe("startHeartbeat", () => {
     useOfflineStore.setState({ server: "down", pendingCount: 3 });
     const stop = startHeartbeat();
     useOfflineStore.setState({ server: "up" });
+    await flush();
     expect(bodies()).toEqual([expect.objectContaining({ pendingCount: 3, syncedOk: false })]);
 
     useOfflineStore.setState({ pendingCount: 0 });
     passListeners.forEach((l) => l({ synced: 3, failed: 0, interrupted: false }, 3));
+    await flush();
     expect(bodies()[1]).toMatchObject({ pendingCount: 0, syncedOk: true });
 
     // Nothing moved: no extra request; the minute heartbeat still says it's up to date.
     passListeners.forEach((l) => l(ok, 0));
+    await flush();
     expect(fetchMock).toHaveBeenCalledTimes(2);
     await vi.advanceTimersByTimeAsync(HEARTBEAT_EVERY_MS);
     expect(bodies()[2]).toMatchObject({ pendingCount: 0, syncedOk: true });
+
+    // A sale queued since then: no longer up to date.
+    useOfflineStore.setState({ pendingCount: 1 });
+    await vi.advanceTimersByTimeAsync(HEARTBEAT_EVERY_MS);
+    expect(bodies()[3]).toMatchObject({ pendingCount: 1, syncedOk: false });
     stop();
   });
 
@@ -102,6 +132,7 @@ describe("startHeartbeat", () => {
     const started = Date.now();
     passListeners.forEach((l) => l({ synced: 1, failed: 0, interrupted: false }, 2));
     expect(Date.now() - started).toBeLessThan(50);
+    await flush();
     expect(fetchMock).toHaveBeenCalledTimes(1);
     // A 5 s timeout is set on it; no retries.
     expect((fetchMock.mock.calls[0][1] as RequestInit).signal).toBeInstanceOf(AbortSignal);
@@ -111,6 +142,14 @@ describe("startHeartbeat", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     await vi.advanceTimersByTimeAsync(10_000);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    stop();
+  });
+
+  it("the customer display window (same app, second screen) sends nothing", async () => {
+    vi.stubGlobal("window", { ...globalThis, location: { pathname: "/customer-display" } });
+    const stop = startHeartbeat();
+    await vi.advanceTimersByTimeAsync(2 * HEARTBEAT_EVERY_MS);
+    expect(fetchMock).not.toHaveBeenCalled();
     stop();
   });
 });
