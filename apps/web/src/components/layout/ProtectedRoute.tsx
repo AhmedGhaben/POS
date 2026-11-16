@@ -6,6 +6,7 @@ import { BUSINESS_QUERY_KEY, fetchBusiness } from "@/features/business/api";
 import { useDeviceStore } from "@/features/desktop/bridge";
 import { fetchMyPermissions, myPermissionsQueryKey } from "@/features/users/api";
 import { startSyncEngine } from "@/features/pos/sync";
+import { startHeartbeat } from "@/features/pos/heartbeat";
 import { startCustomerDisplayChannel, useIdleMessageBroadcast } from "@/features/desktop/customer-display";
 import { CommandPalette } from "./CommandPalette";
 import { LockOverlay } from "@/features/till/components/LockOverlay";
@@ -55,7 +56,13 @@ export function ProtectedRoute() {
   React.useEffect(() => {
     if (!signedIn) return;
     void useDeviceStore.getState().load();
-    return startSyncEngine();
+    const stopSync = startSyncEngine();
+    // Registered Windows tills report their connection ("Lojas agora"); fire-and-forget.
+    const stopHeartbeat = startHeartbeat();
+    return () => {
+      stopHeartbeat();
+      stopSync();
+    };
   }, [signedIn]);
 
   if (!signedIn) {
