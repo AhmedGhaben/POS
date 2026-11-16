@@ -97,7 +97,7 @@ test.describe.serial("Angola phase 7: company data and country config", () => {
   });
 
   test("changing the store's IVA regime warns that it's logged", async () => {
-    await page.getByRole("row", { name: /Main Street Store/ }).getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("row", { name: /Loja Central/ }).getByRole("button", { name: "Edit" }).click();
     const dialog = page.getByRole("dialog");
     await dialog.getByRole("combobox", { name: "IVA regime" }).click();
     await page.getByRole("option", { name: /Regime de Exclusão/ }).click();

@@ -387,7 +387,7 @@ docker compose stop api                      # before `npm run dev:api` on :4000
 ```
 
 **Demo logins (from the seed).** The seed makes an Angolan demo store
-("Demo Retail Co."): AOA, pt-AO documents, Africa/Luanda, Regime Geral,
+("Mercearia Central, Lda."): AOA, pt-AO documents, Africa/Luanda, Regime Geral,
 70 products priced in kwanzas.
 
 - `owner@demo-store.test` / `OwnerPass123!` (till PIN 8642)

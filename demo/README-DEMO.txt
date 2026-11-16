@@ -51,7 +51,7 @@ WHAT IS IN THIS FOLDER
    invoice and opening balances posted, so the trial balance and the
    statements have figures in them straight away.
 
-   The demo store is "Demo Retail Co." in Angola, with prices in Kwanza
+   The demo store is "Mercearia Central, Lda." in Angola, with prices in Kwanza
    and IVA at 14%.
 
 

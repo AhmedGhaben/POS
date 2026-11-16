@@ -4,22 +4,26 @@ import { aoSpellingTree } from "./ao-spelling";
 import { PT_AO_OVERRIDES, withOverrides } from "./pt-ao-overrides";
 
 /**
- * Languages the app ships with. Adding one: add its folder under
+ * Languages the app ships with, in the order the language picker shows
+ * them, each named in its own language. Adding one: add its folder under
  * src/locales with the same files as `en`, and an entry here.
  * See docs/plans/I18N.md.
  */
 export const LANGUAGES = [
+  // Made from pt-PT with the Angolan spelling (Factura, actual…): no files of its own.
+  { code: "pt-AO", label: "Português (Angola)" },
   { code: "en", label: "English" },
   { code: "pt-PT", label: "Português (Portugal)" },
   { code: "pt-BR", label: "Português (Brasil)" },
-  // Made from pt-PT with the Angolan spelling (Factura, actual…): no files of its own.
-  { code: "pt-AO", label: "Português (Angola)" },
 ] as const;
 
 /** Languages made from another one rather than shipped as files. */
 export const DERIVED_LANGUAGES: Partial<Record<Language, Language>> = { "pt-AO": "pt-PT" };
 export type Language = (typeof LANGUAGES)[number]["code"];
+/** Fallback for missing translations and unknown document languages (unchanged). */
 export const DEFAULT_LANGUAGE: Language = "en";
+/** What the screens open in on a first run, whatever the computer's language. */
+export const FIRST_RUN_LANGUAGE: Language = "pt-AO";
 
 const STORAGE_KEY = "pos-language";
 
@@ -39,7 +43,11 @@ export function matchLanguage(tag: string | undefined | null): Language | null {
   return null;
 }
 
-/** Before anyone signs in: this device's last choice, then the computer's language, then English. */
+/**
+ * Before anyone signs in: this device's last choice, otherwise Angolan
+ * Portuguese (first run). A signed-in person's saved language still wins
+ * (useLanguageSync).
+ */
 export function detectLanguage(): Language {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -47,12 +55,7 @@ export function detectLanguage(): Language {
   } catch {
     // storage blocked: fall through
   }
-  const tags = typeof navigator === "undefined" ? [] : [...(navigator.languages ?? []), navigator.language];
-  for (const tag of tags) {
-    const match = matchLanguage(tag);
-    if (match) return match;
-  }
-  return DEFAULT_LANGUAGE;
+  return FIRST_RUN_LANGUAGE;
 }
 
 // Every locales/<language>/<area>.json, bundled so the app works offline.

@@ -42,7 +42,7 @@ export function SetupPage() {
 
   return (
     <div className="relative min-h-screen bg-muted/40 p-4">
-      <LanguagePicker className="absolute right-4 top-4 h-9 bg-background" />
+      <LanguagePicker className="absolute right-4 top-4" />
       <div className="mx-auto max-w-3xl space-y-6 py-8">
         <div>
           <h1 className="text-2xl font-extrabold tracking-[-0.03em]">{t("setup.title")}</h1>

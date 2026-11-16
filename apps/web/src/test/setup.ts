@@ -11,3 +11,6 @@ globalThis.localStorage = {
   },
 };
 (globalThis as { window?: unknown }).window ??= globalThis;
+
+// The app opens in pt-AO on a first run; unit tests read English unless they choose otherwise.
+localStorage.setItem("pos-language", "en");

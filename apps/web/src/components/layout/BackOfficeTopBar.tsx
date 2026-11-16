@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Check, KeyRound, Lock, Moon, Sun, LogOut, Menu, User as UserIcon } from "lucide-react";
+import { KeyRound, Lock, Moon, Sun, LogOut, Menu, User as UserIcon } from "lucide-react";
 import { useLockStore, useTillMode } from "@/features/till/lock-store";
 import { SetPinDialog } from "@/features/till/components/SetPinDialog";
 import { useTranslation } from "react-i18next";
@@ -22,12 +22,10 @@ import { BackToPos } from "./BackToPos";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuthStore } from "@/features/auth/store";
 import { logOutOrCloseShift } from "@/features/shifts/close-request";
-import { LANGUAGES } from "@/i18n";
-import { useLanguage } from "@/i18n/use-language";
+import { LanguagePicker } from "./LanguagePicker";
 
 export function BackOfficeTopBar() {
   const { t } = useTranslation();
-  const [language, setLanguage] = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
@@ -64,6 +62,7 @@ export function BackOfficeTopBar() {
         <AgtIndicator />
         <StoreSwitcher />
         <DisplaySizeMenu />
+        <LanguagePicker />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" aria-label={t("shell.accountMenu")}>
@@ -81,14 +80,6 @@ export function BackOfficeTopBar() {
               )}
               {t("shell.toggleTheme")}
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t("language.label")}</DropdownMenuLabel>
-            {LANGUAGES.map((l) => (
-              <DropdownMenuItem key={l.code} onClick={() => setLanguage(l.code)}>
-                <Check className={l.code === language ? "h-4 w-4" : "h-4 w-4 opacity-0"} />
-                {l.label}
-              </DropdownMenuItem>
-            ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => setPinOpen(true)}>
               <KeyRound className="h-4 w-4" />

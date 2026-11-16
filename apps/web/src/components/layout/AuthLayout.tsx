@@ -17,7 +17,7 @@ interface AuthLayoutProps {
 export function AuthLayout({ title, description, footer, className, children }: AuthLayoutProps) {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center gap-6 bg-background p-4">
-      <LanguagePicker className="absolute right-4 top-4 h-10 bg-card" />
+      <LanguagePicker className="absolute right-4 top-4" />
       <StorbitLogo className="h-9" />
       <Card className={cn("w-full max-w-sm", className)}>
         <CardHeader>

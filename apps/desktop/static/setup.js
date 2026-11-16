@@ -35,18 +35,21 @@ const TEXTS = {
   },
 };
 
+// The app's own language choice on this computer (same storage as the app);
+// on a first run, Angolan Portuguese (worded as pt-PT here).
 function pickLanguage() {
-  for (const tag of navigator.languages || [navigator.language]) {
-    const lower = String(tag).toLowerCase();
-    if (lower === "pt-br") return "pt-BR";
-    if (lower.startsWith("pt")) return "pt-PT";
-    if (lower.startsWith("en")) return "en";
+  let saved = null;
+  try {
+    saved = localStorage.getItem("pos-language");
+  } catch {
+    // storage blocked: first-run language
   }
-  return "en";
+  if (saved === "en" || saved === "pt-PT" || saved === "pt-BR") return saved;
+  return "pt-AO";
 }
 
 const lang = pickLanguage();
-const t = TEXTS[lang];
+const t = TEXTS[lang === "pt-AO" ? "pt-PT" : lang];
 document.documentElement.lang = lang;
 document.getElementById("title").textContent = t.title;
 document.getElementById("intro").textContent = t.intro;
