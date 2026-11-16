@@ -123,9 +123,9 @@ export function Cart({ lines, priced, onSetQuantity, onRemove, onDiscount, onCha
             </div>
             <div className="w-20 text-right">
               {discounted && (
-                <p className="text-xs text-muted-foreground line-through">{money(p.gross)}</p>
+                <p className="text-xs tabular-nums text-muted-foreground line-through">{money(p.gross)}</p>
               )}
-              <p className="text-sm font-medium">{money(p ? p.gross - p.lineDiscount : fromCents(lineGrossCents(linePrice(line), line.quantity)))}</p>
+              <p className="text-sm font-medium tabular-nums">{money(p ? p.gross - p.lineDiscount : fromCents(lineGrossCents(linePrice(line), line.quantity)))}</p>
             </div>
             {onChangePrice && (
               <Button

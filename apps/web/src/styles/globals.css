@@ -81,7 +81,16 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--sb-font);
-    /* Tabular numbers: money and quantities line up in every list and total. */
+  }
+
+  /* Tabular numbers where money and quantities are shown (amount columns,
+   * totals, number fields). Not on all text: in Inter it also widens hyphens. */
+  .text-right,
+  .tabular-nums,
+  input[type="number"],
+  input[inputmode="decimal"],
+  input[inputmode="numeric"],
+  kbd {
     font-feature-settings: var(--sb-font-features);
   }
 

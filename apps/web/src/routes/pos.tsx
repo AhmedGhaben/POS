@@ -352,7 +352,7 @@ export function PosPage() {
 
   const checkoutPanel = (
     <>
-      <div className="flex-1 space-y-2 text-sm">
+      <div className="flex-1 space-y-2 text-sm tabular-nums">
         <div className="flex justify-between">
           <span className="text-muted-foreground">{t("totals.subtotal")}</span>
           {/* After line discounts, so it adds up with the cart lines (as on the receipt). */}
