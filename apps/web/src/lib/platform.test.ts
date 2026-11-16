@@ -17,7 +17,7 @@ describe("command palette shortcut", () => {
 
   it("the Windows app's own platform wins", () => {
     vi.stubGlobal("navigator", { platform: "MacIntel" });
-    vi.stubGlobal("window", { posDesktop: { platform: "win32" } });
+    vi.stubGlobal("window", { posDesktop: { app: { platform: "win32" } } });
     expect(commandPaletteShortcut()).toBe("Ctrl K");
   });
 

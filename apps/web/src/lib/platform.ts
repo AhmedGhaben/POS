@@ -5,7 +5,7 @@
  */
 export function isMacPlatform(): boolean {
   if (typeof window === "undefined") return false;
-  const desktopPlatform = (window as { posDesktop?: { platform?: string } }).posDesktop?.platform;
+  const desktopPlatform = (window as { posDesktop?: { app?: { platform?: string } } }).posDesktop?.app?.platform;
   if (desktopPlatform) return desktopPlatform === "darwin";
   if (typeof navigator === "undefined") return false;
   const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
