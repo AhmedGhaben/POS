@@ -20,6 +20,7 @@ export function OfflineIndicator() {
   const isSyncing = useOfflineStore((s) => s.isSyncing);
   const offline = isWorkingOffline({ internet, server });
   const { t } = useTranslation("pos");
+  const { t: tc } = useTranslation();
 
   async function retry() {
     const { synced, failed, interrupted } = await syncOutbox();
@@ -28,8 +29,9 @@ export function OfflineIndicator() {
     if (interrupted) toast.error(t("sync.unreachable"));
   }
 
+  // All up to date: a quiet green "Online" (outside the sync-status box, which only shows work to do).
   if (!offline && pendingCount === 0 && failedCount === 0 && !isSyncing) {
-    return null;
+    return <StatusDiamond state="online" className="h-8 px-1 text-xs font-semibold" data-testid="connection-online" />;
   }
 
   // Looks only: the states are the same as before, drawn with StatusDiamond.
@@ -52,7 +54,7 @@ export function OfflineIndicator() {
       )}
       {failedCount > 0 && (
         <Link to="/device" className="sb-error inline-flex h-8 items-center px-2.5 text-xs font-semibold hover:underline">
-          <StatusDiamond state="error" label={t("sync.failed", { count: failedCount })} />
+          <StatusDiamond state="error" label={`${tc("connection.error")} · ${t("sync.failed", { count: failedCount })}`} />
         </Link>
       )}
       {pendingCount > 0 && (

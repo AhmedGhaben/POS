@@ -185,5 +185,70 @@
     "total": "Total",
     "noCategory": "No category",
     "generatedAt": "Generated {{at}}"
+  },
+  "storesNow": {
+    "title": "Stores now",
+    "description": "Each store's Windows tills, as of their last contact with the server.",
+    "at": {
+      "today": "at {{time}}",
+      "yesterday": "yesterday at {{time}}",
+      "other": "{{date}} at {{time}}"
+    },
+    "since": {
+      "today": "{{time}}",
+      "yesterday": "yesterday at {{time}}",
+      "other": "{{date}} at {{time}}"
+    },
+    "sinceAt": {
+      "today": "{{time}}",
+      "yesterday": "yesterday at {{time}}",
+      "other": "{{date}} at {{time}}"
+    },
+    "line": {
+      "online": "Online · synced {{at}}",
+      "onlineNoSync": "Online",
+      "syncing": "Uploading saved sales · last {{at}}",
+      "syncingNoSync": "Uploading saved sales",
+      "offline": "No connection since {{since}} · sales made meanwhile arrive when it's back",
+      "inactive": "Off · last contact {{at}}",
+      "never": "No contact yet",
+      "setUp": "set up a till",
+      "browser": "Selling in a browser · connection status only on Windows tills",
+      "noTill": "No Windows till set up"
+    },
+    "device": {
+      "online": "Online",
+      "syncing": "Syncing",
+      "offline": "No connection",
+      "inactive": "Off",
+      "never": "No contact yet"
+    },
+    "details": {
+      "title": "Tills · {{store}}",
+      "description": "What each Windows till reported last time.",
+      "lastSeen": "Last contact",
+      "lastSync": "Last sync",
+      "pending": "Sales to upload (when it reported)",
+      "version": "App version",
+      "shiftOpen": "Shift open",
+      "noShift": "No shift open",
+      "never": "—",
+      "empty": "No tills connected to this store yet.",
+      "browserNote": "Browser sales have no till: connection status is only shown for Windows tills."
+    },
+    "open": "See {{store}}'s tills",
+    "banner": {
+      "one": "{{store}} has had no connection since {{since}}.",
+      "many": "{{count}} stores have no connection.",
+      "body": "Sales made meanwhile arrive when the connection is back.",
+      "viewOne": "See {{store}}",
+      "viewMany": "See stores"
+    },
+    "logo": {
+      "thisDevice": "This till has no internet",
+      "stores": "{{offline}} of {{total}} stores offline"
+    },
+    "loading": "Loading…",
+    "error": "Couldn't get the stores' status."
   }
 }

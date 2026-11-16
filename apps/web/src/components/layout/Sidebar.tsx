@@ -8,19 +8,27 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/features/auth/store";
 import { navItemsFor } from "./nav-items";
 import { StorbitLogo } from "@/components/brand/StorbitLogo";
-import { useConnectionLogoStatus } from "@/components/brand/use-logo-status";
+import { useOverallStatus } from "@/features/stores/use-overall-status";
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useTranslation();
   const role = useAuthStore((s) => s.user?.role);
-  const logoStatus = useConnectionLogoStatus();
+  // Amber when this device or any store is offline, with a line saying which.
+  const overall = useOverallStatus();
   // The sale waiting on the till: the button shows how many items are in its cart.
   const items = useCartDraft(useCartKey()).lines.length;
   return (
     <>
-      <div className="mb-5 flex items-end gap-2 px-2 pt-1">
-        <StorbitLogo className="h-7" status={logoStatus} />
-        <span className="pb-0.5 text-xs font-semibold text-muted-foreground">{t("shell.backOffice")}</span>
+      <div className="mb-5 px-2 pt-1">
+        <div className="flex items-end gap-2">
+          <StorbitLogo className="h-7" status={overall.status} />
+          <span className="pb-0.5 text-xs font-semibold text-muted-foreground">{t("shell.backOffice")}</span>
+        </div>
+        {overall.note && (
+          <NavLink to="/dashboard" onClick={onNavigate} className="mt-1.5 block text-xs font-semibold text-sb-offline-text hover:underline" role="status">
+            {overall.note}
+          </NavLink>
+        )}
       </div>
       <nav className="-mx-1 min-h-0 flex-1 space-y-1 overflow-y-auto px-1 pb-2">
         {navItemsFor(role).map((item) => (

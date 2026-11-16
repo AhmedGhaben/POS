@@ -185,5 +185,70 @@
     "total": "Total",
     "noCategory": "Sem categoria",
     "generatedAt": "Gerado em {{at}}"
+  },
+  "storesNow": {
+    "title": "Lojas agora",
+    "description": "A conexão dos caixas Windows de cada loja, pelo último contato com o servidor.",
+    "at": {
+      "today": "às {{time}}",
+      "yesterday": "ontem às {{time}}",
+      "other": "{{date}} às {{time}}"
+    },
+    "since": {
+      "today": "{{time}}",
+      "yesterday": "ontem às {{time}}",
+      "other": "{{date}} às {{time}}"
+    },
+    "sinceAt": {
+      "today": "as {{time}}",
+      "yesterday": "ontem às {{time}}",
+      "other": "{{date}} às {{time}}"
+    },
+    "line": {
+      "online": "Online · sincronizada {{at}}",
+      "onlineNoSync": "Online",
+      "syncing": "Sincronizando vendas guardadas · última {{at}}",
+      "syncingNoSync": "Sincronizando vendas guardadas",
+      "offline": "Sem conexão desde {{since}} · as vendas feitas nesse período chegam quando a conexão voltar",
+      "inactive": "Desligado · último contato {{at}}",
+      "never": "Ainda sem contato",
+      "setUp": "configurar caixa",
+      "browser": "Vendendo no navegador · status da conexão só no caixa Windows",
+      "noTill": "Nenhum caixa Windows configurado"
+    },
+    "device": {
+      "online": "Online",
+      "syncing": "Sincronizando",
+      "offline": "Sem conexão",
+      "inactive": "Desligado",
+      "never": "Ainda sem contato"
+    },
+    "details": {
+      "title": "Caixas · {{store}}",
+      "description": "O que cada caixa Windows informou da última vez.",
+      "lastSeen": "Último contato",
+      "lastSync": "Última sincronização",
+      "pending": "Vendas a enviar (quando informou)",
+      "version": "Versão do aplicativo",
+      "shiftOpen": "Turno aberto",
+      "noShift": "Sem turno aberto",
+      "never": "—",
+      "empty": "Ainda não há caixas conectados a esta loja.",
+      "browserNote": "As vendas no navegador não têm caixa associado: o status da conexão só aparece nos caixas Windows."
+    },
+    "open": "Ver os caixas de {{store}}",
+    "banner": {
+      "one": "{{store}} sem conexão desde {{since}}.",
+      "many": "{{count}} lojas sem conexão.",
+      "body": "As vendas feitas nesse período chegam quando a conexão voltar.",
+      "viewOne": "Ver {{store}}",
+      "viewMany": "Ver lojas"
+    },
+    "logo": {
+      "thisDevice": "Este caixa está sem internet",
+      "stores": "{{offline}} de {{total}} lojas sem conexão"
+    },
+    "loading": "Carregando…",
+    "error": "Não foi possível obter o status das lojas."
   }
 }
