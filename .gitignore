@@ -18,10 +18,10 @@ dist/
 build/
 dev-dist/
 
-# Env
+# Env: keep all machine-specific environment files and host/IP settings out of Git
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # Prisma
 apps/api/prisma/dev.db
