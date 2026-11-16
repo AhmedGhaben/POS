@@ -32,7 +32,7 @@ function Till({ till, store }: { till: TillStatusDto; store: StoreStatusDto }) {
           <span className="tabular-nums">{till.pendingCountReported}</span>
         </Row>
         <Row label={t("storesNow.details.version")}>{till.appVersion ?? "—"}</Row>
-        <Row label={t("storesNow.details.shiftOpen")}>{till.hasOpenShift ? t("storesNow.details.shiftOpen") : t("storesNow.details.noShift")}</Row>
+        <Row label={t("storesNow.details.shift")}>{till.hasOpenShift ? t("storesNow.details.shiftOpen") : t("storesNow.details.noShift")}</Row>
       </dl>
     </li>
   );

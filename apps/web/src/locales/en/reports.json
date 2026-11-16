@@ -230,6 +230,7 @@
       "lastSync": "Last sync",
       "pending": "Sales to upload (when it reported)",
       "version": "App version",
+      "shift": "Shift",
       "shiftOpen": "Shift open",
       "noShift": "No shift open",
       "never": "—",

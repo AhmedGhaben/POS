@@ -230,6 +230,7 @@
       "lastSync": "Última sincronização",
       "pending": "Vendas por enviar (quando comunicou)",
       "version": "Versão da aplicação",
+      "shift": "Turno",
       "shiftOpen": "Turno aberto",
       "noShift": "Sem turno aberto",
       "never": "—",
