@@ -269,14 +269,25 @@ describe("Angola phase 8b: SAF-T and accountant exports (e2e)", () => {
       const inSep = await purchase("2026-09-30T22:30:00Z");
       const inOct = await purchase("2026-09-30T23:30:00Z");
 
-      const res = await download("/fiscal-documents/accountant-export?startDate=2026-10-01&endDate=2026-10-31").expect(200);
-      expect(res.headers["content-type"]).toMatch(/spreadsheetml/);
-      const files = unzip(res.body as Buffer);
-      expect(files.get("xl/workbook.xml")!.toString()).toMatch(/Vendas[\s\S]*Compras[\s\S]*Recebimentos e pagamentos/);
-      const compras = files.get("xl/worksheets/sheet2.xml")!.toString();
+      // Purchases: the month-end boundary, with dates the test sets itself (October 2026).
+      const october = await download("/fiscal-documents/accountant-export?startDate=2026-10-01&endDate=2026-10-31").expect(200);
+      expect(october.headers["content-type"]).toMatch(/spreadsheetml/);
+      const octFiles = unzip(october.body as Buffer);
+      expect(octFiles.get("xl/workbook.xml")!.toString()).toMatch(/Vendas[\s\S]*Compras[\s\S]*Recebimentos e pagamentos/);
+      const compras = octFiles.get("xl/worksheets/sheet2.xml")!.toString();
       expect(compras).toContain(inOct);
       expect(compras).not.toContain(inSep);
       expect(compras).toContain("5401234567");
+
+      // Sales and money: the FR, annulled FR, credit note and refund made in "every kind of
+      // document this month" are issued today, and fiscal documents can't be back-dated. So
+      // read the month they were really issued in (Luanda's date), whenever the suite runs.
+      const nc = await prisma.fiscalDocument.findFirstOrThrow({ where: { businessId, documentType: "NC" } });
+      const issued = nc.invoiceDate.toISOString().slice(0, 10);
+      const [year, month] = issued.split("-").map(Number);
+      const lastDay = new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+      const res = await download(`/fiscal-documents/accountant-export?startDate=${issued.slice(0, 8)}01&endDate=${lastDay}`).expect(200);
+      const files = unzip(res.body as Buffer);
       const vendas = files.get("xl/worksheets/sheet1.xml")!.toString();
       expect(vendas).toContain("Base 14%");
       expect(vendas).toContain("Nota de Crédito");
