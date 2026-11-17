@@ -1,0 +1,67 @@
+name: Windows installer verification
+
+# Build unsigned installers on a Windows runner so packaging problems, such
+# as a missing executable icon or local symlink restrictions, surface before
+# release. This workflow NEVER publishes or tags a release.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/desktop/**"
+      - ".github/workflows/desktop-installer-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-installer:
+    runs-on: windows-latest
+    timeout-minutes: 35
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Package Windows installer (never publish)
+        run: npm run dist --workspace apps/desktop
+
+      - name: Verify installed executable icon and installer output
+        shell: pwsh
+        run: |
+          $release = "apps/desktop/release"
+          $exe = Join-Path $release "win-unpacked/STORBIT.exe"
+          $installer = Get-ChildItem $release -Filter 'STORBIT-Setup-*.exe' -File | Select-Object -First 1
+          if (!(Test-Path $exe)) { throw "STORBIT.exe is missing" }
+          if (!$installer) { throw "STORBIT installer is missing" }
+
+          Add-Type -AssemblyName System.Drawing
+          $icon = [System.Drawing.Icon]::ExtractAssociatedIcon((Resolve-Path $exe).Path)
+          if (!$icon) { throw "Windows did not find an executable icon" }
+          try {
+            $preview = Join-Path $release "embedded-exe-icon.png"
+            $bmp = $icon.ToBitmap()
+            try { $bmp.Save($preview, [System.Drawing.Imaging.ImageFormat]::Png) }
+            finally { $bmp.Dispose() }
+          }
+          finally { $icon.Dispose() }
+
+          Write-Host "Installer: $($installer.Name)"
+          Write-Host "Embedded executable icon preview saved: embedded-exe-icon.png"
+          Write-Host "This is an unsigned test build, not a customer release."
+
+      - name: Attach short-lived installer and icon preview for manual QA
+        uses: actions/upload-artifact@v4
+        with:
+          name: STORBIT-Windows-icon-check-unsigned-NOT-FOR-RELEASE
+          path: |
+            apps/desktop/release/STORBIT-Setup-*.exe
+            apps/desktop/release/embedded-exe-icon.png
+          if-no-files-found: error
+          retention-days: 3
