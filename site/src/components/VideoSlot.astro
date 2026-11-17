@@ -1,0 +1,63 @@
+---
+/**
+ * One of the seven planned videos (handoff §4).
+ * - ready  → poster button; the player loads only on click, never autoplays.
+ * - planned, preview → branded poster "Em produção", no play control.
+ * - planned, public  → nothing (or the `fallback` slot).
+ */
+import { videos, isVideoReady, type VideoKey } from '../data/marketingAssets';
+import { PREVIEW } from '../config';
+import StatusDiamond from './StatusDiamond.astro';
+interface Props { video: VideoKey; class?: string }
+const { video, class: cls = '' } = Astro.props;
+const v = videos[video];
+const ready = isVideoReady(v);
+const id = `video-${video.toLowerCase()}`;
+---
+{ready ? (
+  <div class:list={['video', cls]}>
+    <button type="button" class="poster" data-video-open={id} data-event="video_play" data-event-source={video} aria-haspopup="dialog">
+      {v.poster && <img src={v.poster} alt="" loading="lazy" decoding="async" />}
+      <span class="play"><span aria-hidden="true">▶</span> Ver vídeo: {v.title} ({v.length})</span>
+    </button>
+    <dialog id={id} class="video-dialog" aria-label={v.title}>
+      <form method="dialog"><button class="btn btn--secondary btn--sm">Fechar</button></form>
+      <template data-video-template>
+        <video controls playsinline preload="none" poster={v.poster || undefined}>
+          <source src={v.src} />
+          {v.captionsSrc && <track kind="subtitles" srclang="pt" label="Português" src={v.captionsSrc} default />}
+        </video>
+      </template>
+    </dialog>
+  </div>
+) : PREVIEW ? (
+  <figure class:list={['video video--planned', cls]} data-preview-only>
+    <div class="poster poster--planned" role="img" aria-label={`Vídeo em produção: ${v.title}`}>
+      <StatusDiamond state="inactive" size={16} />
+      <span class="vt">{v.title}</span>
+      <span class="pv-tag">Vídeo · em produção · {v.length}</span>
+    </div>
+    <figcaption class="small muted">{video} · sem reprodução até o vídeo existir</figcaption>
+  </figure>
+) : (
+  <slot name="fallback" />
+)}
+<style>
+  .video { margin: 0; }
+  .poster {
+    position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--sb-radius-lg);
+    background: var(--sb-graphite); color: #f2efe8; border: 1px solid var(--sb-border);
+    display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; text-align: center;
+    padding: 20px; overflow: hidden; font: inherit;
+  }
+  button.poster { cursor: pointer; }
+  .poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .play { position: relative; background: var(--sb-surface); color: var(--sb-text); font-weight: 700; padding: 10px 16px; border-radius: var(--sb-radius-md); }
+  .poster--planned { border: 1.5px dashed var(--site-preview); }
+  .vt { font-weight: 800; font-size: clamp(18px, 2.4vw, 24px); letter-spacing: -0.02em; }
+  figcaption { margin-top: 8px; }
+  .video-dialog { width: min(960px, 94vw); border: none; border-radius: var(--sb-radius-lg); padding: 12px; background: var(--sb-graphite); }
+  .video-dialog::backdrop { background: rgba(0, 0, 0, 0.7); }
+  .video-dialog form { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+  .video-dialog :global(video) { width: 100%; border-radius: var(--sb-radius-md); }
+</style>

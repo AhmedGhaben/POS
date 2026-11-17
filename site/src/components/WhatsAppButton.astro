@@ -1,0 +1,22 @@
+---
+/** Secondary WhatsApp action. Renders nothing without a configured number. */
+import { whatsappCta, type WaMessage } from '../lib/cta';
+import { PREVIEW } from '../config';
+interface Props { message: WaMessage; size?: 'sm' | 'md'; label?: string; class?: string; showPending?: boolean }
+const { message, size = 'md', label, class: cls = '', showPending = true } = Astro.props;
+const cta = whatsappCta(message);
+---
+{cta ? (
+  <a
+    class:list={['btn btn--secondary', size === 'sm' && 'btn--sm', cls]}
+    href={cta.href}
+    target="_blank"
+    rel="noopener"
+    data-event="whatsapp_click"
+    data-event-source={message}
+  >{label ?? cta.label}<span class="visually-hidden"> (abre o WhatsApp)</span></a>
+) : PREVIEW && showPending ? (
+  <span class:list={['btn btn--secondary', size === 'sm' && 'btn--sm', cls]} role="link" aria-disabled="true" data-preview-only title="Número de WhatsApp por configurar">
+    {label ?? 'Falar pelo WhatsApp'} · número por configurar
+  </span>
+) : null}

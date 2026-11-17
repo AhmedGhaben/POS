@@ -1,0 +1,83 @@
+---
+/**
+ * /pre-visualizacao — preview builds only (getStaticPaths returns nothing in
+ * public builds, so this page never exists in production).
+ * Feature-flag table, media status and open owner decisions for reviewers.
+ */
+import Base from '../layouts/Base.astro';
+import StatusDiamond from '../components/StatusDiamond.astro';
+import { CONFIG_SNAPSHOT, PREVIEW } from '../config';
+import { primaryCta } from '../lib/cta';
+import { screens, videos } from '../data/marketingAssets';
+
+export function getStaticPaths() {
+  return PREVIEW ? [{ params: { preview: 'pre-visualizacao' } }] : [];
+}
+const cta = primaryCta();
+const decisions = [
+  ['1', 'História dos fundadores aprovada para publicação', 'FOUNDER_STORY_APPROVED', 'Texto neutro no público'],
+  ['2', 'Fundadores identificados (nome, retrato)?', '—', 'Sem nomes nem fotografias (direcção "faceless")'],
+  ['3', 'Identidade legal: denominação, NIF, sede + autorização', 'COMPANY_* + COMPANY_PUBLISH_APPROVED', 'Coluna omitida; /sobre fica em staging'],
+  ['4', 'Contactos: WhatsApp, email, horário', 'WHATSAPP_NUMBER, CONTACT_EMAIL, SUPPORT_HOURS', 'Canais não configurados ficam ocultos'],
+  ['5', 'Frase de compromisso AGT (revisão jurídica)', 'AGT_SENTENCE_APPROVED', 'Só as linhas de estado'],
+  ['6', 'Máquina de estados do CTA (WhatsApp-first)', '—', 'Linha 1: WhatsApp'],
+  ['7', 'Capturas de um build revisto + dados de demonstração', 'marketingAssets.screens[*].status', 'Prova de produto oculta no público'],
+  ['8', 'Publicação: só staging até 3 e 5 resolvidas?', 'SITE_INDEXABLE', 'Sim, só staging; noindex'],
+  ['9', 'Princípio 2: "Dizemos o que ainda não está pronto" (brief) vs "Clareza em cada etapa" (handoff)', '—', 'Usado o do brief'],
+  ['10', 'Linha de posicionamento "Ouvimos quem está atrás do balcão…"', '—', 'Usada como título no Início (rascunho)'],
+  ['11', '"factura/facturação" vs "fatura/faturação"', '—', 'factura (pré-AO90, como na app)'],
+  ['12', 'Preços, IVA, experiência, métodos de pagamento', 'PRICING_PUBLISHED', '"Preços anunciados no lançamento"'],
+  ['13', 'Instalador público e URL', 'DOWNLOAD_PUBLIC + DOWNLOAD_URL', 'Sem botão de transferência'],
+];
+const claims = [
+  ['store-status', 'Painel "Lojas agora" (PR #13 já está em main; confirmar num build revisto)'],
+  ['power-cut', 'Teste de corte de energia durante e logo após uma venda'],
+  ['export', 'Exportação de produtos, vendas e clientes (4.º cartão em /sobre)'],
+  ['hardware-models', 'Lista de impressoras e gavetas testadas'],
+];
+---
+<Base title="Estado da pré-visualização" description="Pré-visualização privada." path="/pre-visualizacao" message="inicio" noindex hideMobileBar>
+  <section class="section section--cream">
+    <div class="container">
+      <span class="pv-tag">Só existe em builds de pré-visualização</span>
+      <h1>Estado da pré-visualização</h1>
+      <p class="lead">CTA principal actual: <strong>{cta ? `${cta.label} → ${cta.kind}` : 'nenhum'}</strong></p>
+
+      <h2 class="h3">Configuração</h2>
+      <table>
+        <thead><tr><th>Variável</th><th>Valor</th></tr></thead>
+        <tbody>{Object.entries(CONFIG_SNAPSHOT).map(([k, v]) => <tr><td><code>{k}</code></td><td>{String(v)}</td></tr>)}</tbody>
+      </table>
+
+      <h2 class="h3">Vídeos (7)</h2>
+      <table>
+        <thead><tr><th>Chave</th><th>Título</th><th>Duração</th><th>Página</th><th>Estado</th></tr></thead>
+        <tbody>{Object.entries(videos).map(([k, v]) => <tr><td><code>{k}</code></td><td>{v.title}</td><td>{v.length}</td><td>{v.placement}</td><td><StatusDiamond state={v.status === 'ready' ? 'online' : 'pending'} size={10} /> {v.status}</td></tr>)}</tbody>
+      </table>
+
+      <h2 class="h3">Capturas</h2>
+      <table>
+        <thead><tr><th>Ecrã</th><th>Origem</th><th>Estado</th></tr></thead>
+        <tbody>{Object.entries(screens).map(([k, s]) => <tr><td>{k}</td><td><code>{s.source}</code></td><td>{s.status}</td></tr>)}</tbody>
+      </table>
+
+      <h2 class="h3">Afirmações por verificar (CLAIMS_VERIFIED)</h2>
+      <table>
+        <thead><tr><th>Id</th><th>Teste</th></tr></thead>
+        <tbody>{claims.map(([k, t]) => <tr><td><code>{k}</code></td><td>{t}</td></tr>)}</tbody>
+      </table>
+
+      <h2 class="h3">Decisões em aberto</h2>
+      <table>
+        <thead><tr><th>#</th><th>Decisão</th><th>Configuração</th><th>Por omissão</th></tr></thead>
+        <tbody>{decisions.map((d) => <tr>{d.map((c) => <td>{c}</td>)}</tr>)}</tbody>
+      </table>
+    </div>
+  </section>
+</Base>
+<style>
+  .h3 { font-size: var(--sb-text-lg); margin-top: 32px; }
+  table { width: 100%; border-collapse: collapse; background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius-md); font-size: 15px; display: block; overflow-x: auto; }
+  th, td { text-align: left; padding: 8px 12px; border-top: 1px solid var(--sb-border); vertical-align: top; }
+  th { background: var(--sb-surface-sunken); }
+</style>

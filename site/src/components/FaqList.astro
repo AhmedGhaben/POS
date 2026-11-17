@@ -1,0 +1,55 @@
+---
+import { CLAIM_VERIFIED, PREVIEW } from '../config';
+import type { Faq } from '../data/help';
+import { publicAnswer } from '../lib/faq';
+interface Props { items: Faq[] }
+const { items } = Astro.props;
+const rows = items
+  .map((f) => {
+    const verified = !f.claim || CLAIM_VERIFIED(f.claim);
+    if (verified) return { f, answer: f.a, preview: false };
+    if (PREVIEW) return { f, answer: f.a, preview: true };
+    const a = publicAnswer(f);
+    return a ? { f, answer: a, preview: false } : null;
+  })
+  .filter(Boolean) as { f: Faq; answer: string; preview: boolean }[];
+---
+<div class="faq">
+  {rows.map(({ f, answer, preview }) => (
+    <details id={`faq-${f.id}`} data-faq data-search={`${f.q} ${answer}`.toLowerCase()}>
+      <summary><span>{f.q}</span><span class="plus" aria-hidden="true"></span></summary>
+      <div class="answer">
+        {preview ? (
+          <div class="pv-block" data-preview-only>
+            <span class="pv-tag">A verificar · {f.claim} · só publicado depois do teste</span>
+            <p>{answer}</p>
+            {f.fallback ? (
+              <>
+                <span class="pv-tag">Versão pública enquanto não verificado</span>
+                <p>{f.fallback}</p>
+              </>
+            ) : (
+              <p class="small muted">Enquanto não for verificado, esta pergunta não aparece no site público.</p>
+            )}
+          </div>
+        ) : (
+          <p>{answer}</p>
+        )}
+      </div>
+    </details>
+  ))}
+</div>
+<style>
+  .faq { display: grid; gap: 10px; }
+  details { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius-lg); }
+  summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 18px 20px; font-weight: 700; min-height: 56px; }
+  summary::-webkit-details-marker { display: none; }
+  .plus { flex: none; width: 14px; height: 14px; position: relative; }
+  .plus::before, .plus::after { content: ''; position: absolute; left: 0; top: 6px; width: 14px; height: 2px; background: currentColor; border-radius: 2px; }
+  .plus::after { transform: rotate(90deg); transition: transform 150ms ease; }
+  details[open] .plus::after { transform: rotate(0); }
+  .answer { padding: 0 20px 18px; color: var(--sb-text-muted); max-width: 72ch; }
+  .answer p:last-child { margin-bottom: 0; }
+  .pv-block p { margin: 8px 0; color: var(--sb-text); }
+  @media (prefers-reduced-motion: reduce) { .plus::after { transition: none; } }
+</style>

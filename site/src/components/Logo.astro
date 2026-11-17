@@ -1,0 +1,24 @@
+---
+/**
+ * The STORBIT wordmark, inlined from docs/brand/logo (used as provided,
+ * never redrawn). `tone` picks the on-light or on-dark file.
+ */
+import onLight from '../../../docs/brand/logo/storbit-logo-on-light.svg?raw';
+import onDark from '../../../docs/brand/logo/storbit-logo-on-dark.svg?raw';
+interface Props {
+  tone?: 'light' | 'dark';
+  width?: number;
+  class?: string;
+}
+const { tone = 'light', width = 112, class: cls = '' } = Astro.props;
+const svg = (tone === 'dark' ? onDark : onLight)
+  .replace(/<\?xml[^>]*>/, '')
+  .replace('<svg ', `<svg width="${width}" focusable="false" `)
+  .replace(/aria-labelledby="t"/, 'aria-label="STORBIT"')
+  .replace(/<title id="t">storbit<\/title>/, '');
+---
+<span class:list={['logo', cls]} set:html={svg} />
+<style>
+  .logo { display: inline-flex; line-height: 0; }
+  .logo :global(svg) { height: auto; }
+</style>

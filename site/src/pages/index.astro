@@ -1,0 +1,241 @@
+---
+import Base from '../layouts/Base.astro';
+import HeroTill from '../components/HeroTill.astro';
+import CtaButton from '../components/CtaButton.astro';
+import StatusDiamond from '../components/StatusDiamond.astro';
+import Screenshot from '../components/Screenshot.astro';
+import VideoSlot from '../components/VideoSlot.astro';
+import StatusCard from '../components/StatusCard.astro';
+import CtaBand from '../components/CtaBand.astro';
+import FaqList from '../components/FaqList.astro';
+import PreviewTag from '../components/PreviewTag.astro';
+import Claim from '../components/Claim.astro';
+import { faqs } from '../data/help';
+import { faqJsonLd } from '../lib/faq';
+import { primaryCta } from '../lib/cta';
+import { videos, isVideoReady } from '../data/marketingAssets';
+import { PREVIEW } from '../config';
+
+const homeFaqs = faqs.filter((f) => f.home);
+const cta = primaryCta();
+const formFlow = cta?.kind === 'form';
+const overviewReady = isVideoReady(videos.VIDEO_PRODUCT_OVERVIEW);
+const showVideoRow = PREVIEW || overviewReady || isVideoReady(videos.VIDEO_STOCK_REPORTS);
+---
+<Base
+  title="STORBIT · Software de caixa feito para as lojas de Angola"
+  description="Caixa para Windows que continua a vender quando a internet falha, e Gestão no navegador para acompanhar produtos, stock e várias lojas. Para mercearias, minimercados e supermercados em Angola."
+  path="/"
+  message="inicio"
+  jsonLd={[faqJsonLd(homeFaqs)]}
+>
+  <!-- Hero -->
+  <section class="section section--cream hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow"><StatusDiamond size={10} /> Para mercearias, minimercados e supermercados</p>
+        <h1>Software de caixa feito para as lojas de Angola.</h1>
+        <p class="lead">
+          Registe vendas na Caixa para Windows, mesmo quando falha a internet, e acompanhe produtos, stock e lojas na Gestão.
+        </p>
+
+        {formFlow ? (
+          <form class="capture" action="/demonstracao" method="get">
+            <p class="capture-title">Peça uma demonstração — deixe o seu WhatsApp</p>
+            <div class="capture-row">
+              <label class="visually-hidden" for="hero-tel">Número de WhatsApp</label>
+              <span class="prefix" aria-hidden="true">+244</span>
+              <input id="hero-tel" name="telefone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="9XX XXX XXX" />
+              <button class="btn btn--primary" type="submit" data-event="demo_click" data-event-source="hero">Pedir demonstração <span aria-hidden="true">→</span></button>
+            </div>
+            <p class="hint">Não cria conta agora. Respondemos por WhatsApp para marcar a demonstração.</p>
+          </form>
+        ) : (
+          <div class="actions">
+            <CtaButton source="hero" />
+            <a class="btn btn--secondary" href="/como-funciona">Ver como funciona</a>
+          </div>
+        )}
+        <p class="small muted reassure">
+          Sem compromisso.
+          {overviewReady && <> · <a href="#visao-geral">Ver em 1 minuto</a></>}
+        </p>
+      </div>
+      <div class="hero-visual">
+        <HeroTill />
+      </div>
+    </div>
+  </section>
+
+  <!-- Three merchant problems -->
+  <section class="section section--white" aria-labelledby="ouvimos">
+    <div class="container">
+      <p class="eyebrow"><StatusDiamond size={10} /> O que os comerciantes nos pediram</p>
+      <h2 id="ouvimos">Ouvimos quem está atrás do balcão. Construímos a pensar neles.</h2>
+      <PreviewTag>Linha de posicionamento · rascunho por aprovar</PreviewTag>
+      <div class="grid grid--3 cards-top">
+        <article class="card reveal">
+          <h3>Uma caixa simples de seguir</h3>
+          <p>Ler o código de barras ou procurar o produto, ver o total e receber. O estado da ligação está sempre à vista no topo do ecrã.</p>
+        </article>
+        <article class="card reveal">
+          <h3>Impressora e gaveta na própria caixa</h3>
+          <p>Escolha a impressora de talões e a ligação da gaveta de dinheiro nas definições da caixa, e acerte o talão com uma impressão de calibração.</p>
+          <Claim id="hardware-models" note="lista de modelos testados">
+            <p class="small">Veja os modelos testados na <a href="/ajuda#faq-impressoras">página de ajuda</a>.</p>
+            <p slot="fallback" class="small muted">Antes de comprar equipamento, confirme connosco o modelo.</p>
+          </Claim>
+        </article>
+        <article class="card reveal">
+          <h3>Várias lojas, uma só Gestão</h3>
+          <p>Cada loja vende na sua caixa. Na Gestão acompanha as vendas, os produtos e o stock de todas, com os dados actualizados depois da sincronização.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Product -->
+  <section class="section section--cream" aria-labelledby="produto" id="visao-geral">
+    <div class="container">
+      <p class="eyebrow"><StatusDiamond size={10} /> O produto</p>
+      <h2 id="produto">Uma caixa na loja. A Gestão no navegador.</h2>
+      <div class="grid grid--2 product">
+        <div class="product-col">
+          <h3>STORBIT Caixa</h3>
+          <p class="muted">Registe vendas no computador Windows da loja, mesmo durante falhas de ligação à internet.</p>
+          <Screenshot screen="CAIXA" />
+        </div>
+        <div class="product-col">
+          <h3>STORBIT Gestão</h3>
+          <p class="muted">Acompanhe vendas, produtos, stock e lojas a partir do navegador, com os dados actualizados após a sincronização.</p>
+          <Screenshot screen="GESTAO" />
+        </div>
+      </div>
+      {showVideoRow && (
+        <div class="video-row">
+          <VideoSlot video="VIDEO_PRODUCT_OVERVIEW" />
+          <VideoSlot video="VIDEO_STOCK_REPORTS" />
+        </div>
+      )}
+      <p><a href="/como-funciona">Ver como funciona <span aria-hidden="true">→</span></a></p>
+    </div>
+  </section>
+
+  <!-- Three states: the offline story, told once in depth -->
+  <section class="section section--white" aria-labelledby="estados">
+    <div class="container">
+      <p class="eyebrow"><StatusDiamond state="offline" size={10} /> Quando a internet falha</p>
+      <h2 id="estados">A caixa continua a vender. E diz-lhe sempre em que estado está.</h2>
+      <p class="lead readable">A caixa continua a vender sem internet e envia as vendas guardadas quando a ligação volta. O estado fica sempre à vista.</p>
+      <ol class="grid grid--3 states">
+        <li class="card reveal">
+          <p class="state-pill state-pill--online"><StatusDiamond state="online" size={12} /> Online</p>
+          <h3>Ligada e actualizada</h3>
+          <p>As vendas chegam à Gestão à medida que são feitas.</p>
+        </li>
+        <li class="card reveal">
+          <p class="state-pill state-pill--offline"><StatusDiamond state="offline" size={12} /> Sem internet · a vender</p>
+          <h3>A internet falhou</h3>
+          <p>A caixa continua a registar vendas no computador da loja e mostra quantas estão por enviar.</p>
+        </li>
+        <li class="card reveal">
+          <p class="state-pill state-pill--syncing"><StatusDiamond state="syncing" size={12} /> A sincronizar</p>
+          <h3>A ligação voltou</h3>
+          <p>A caixa envia as vendas guardadas para a Gestão. Se alguma ainda não foi enviada, continua a aparecer como por enviar.</p>
+        </li>
+      </ol>
+      <p class="small muted note">Uma falha de energia é diferente de uma falha de internet. <a href="/ajuda#faq-energia">O que sabemos sobre cortes de energia</a>.</p>
+    </div>
+  </section>
+
+  <!-- Green band -->
+  {cta && (
+    <section class="section section--green band" aria-labelledby="pratica">
+      <div class="container band-inner">
+        <h2 id="pratica">Quer ver como funciona na prática?</h2>
+        <div class="actions">
+          <CtaButton source="green-band" />
+          <a class="btn btn--secondary" href="/como-funciona">Ver como funciona</a>
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- See first, decide later -->
+  <section class="section section--cream" aria-labelledby="passos">
+    <div class="container">
+      <p class="eyebrow"><StatusDiamond size={10} /> Como começar</p>
+      <h2 id="passos">Veja primeiro. Decida depois.</h2>
+      <ol class="grid grid--4 steps">
+        <li class="card reveal"><span class="num">1</span><h3>Peça uma demonstração</h3><p>{cta?.kind === 'whatsapp' ? 'Envie-nos uma mensagem pelo WhatsApp.' : cta?.kind === 'form' ? 'Preencha o pedido com os dados da sua loja.' : 'Fale connosco pelos contactos indicados.'}</p></li>
+        <li class="card reveal"><span class="num">2</span><h3>Combinamos consigo</h3><p>Entramos em contacto para conhecer a sua loja e combinar a demonstração.</p></li>
+        <li class="card reveal"><span class="num">3</span><h3>Veja a Caixa e a Gestão</h3><p>Uma venda, uma falha de internet e o que aparece na Gestão depois.</p></li>
+        <li class="card reveal"><span class="num">4</span><h3>Decida com calma</h3><p>Sem criar conta e sem compromisso.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Who it's for + honest status -->
+  <section class="section section--white" aria-labelledby="para-quem">
+    <div class="container grid grid--2 who">
+      <div>
+        <p class="eyebrow"><StatusDiamond size={10} /> Para quem é</p>
+        <h2 id="para-quem">Para o comércio do dia a dia.</h2>
+        <ul class="check-list">
+          <li><StatusDiamond size={10} /> <span><strong>Mercearias</strong> com uma caixa e muitos produtos.</span></li>
+          <li><StatusDiamond size={10} /> <span><strong>Minimercados</strong> que querem saber o que vendem e o que falta em stock.</span></li>
+          <li><StatusDiamond size={10} /> <span><strong>Supermercados</strong> e quem tem mais do que uma loja.</span></li>
+        </ul>
+      </div>
+      <StatusCard id="estado-inicio" compact />
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section section--cream" aria-labelledby="perguntas">
+    <div class="container narrow">
+      <p class="eyebrow"><StatusDiamond size={10} /> Perguntas frequentes</p>
+      <h2 id="perguntas">Perguntas frequentes</h2>
+      <FaqList items={homeFaqs} />
+      <p class="more"><a href="/ajuda">Mais perguntas e glossário <span aria-hidden="true">→</span></a></p>
+    </div>
+  </section>
+
+  <CtaBand message="inicio" source="inicio" />
+</Base>
+
+<style>
+  .hero { padding-top: clamp(32px, 6vw, 80px); }
+  .hero-grid { display: grid; gap: clamp(32px, 5vw, 64px); align-items: center; }
+  .hero-copy h1 { max-width: 14ch; }
+  .hero-copy .lead { max-width: 52ch; margin-bottom: 28px; }
+  .reassure { margin-top: 16px; }
+  .capture { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius-lg); padding: 20px; max-width: 560px; }
+  .capture-title { font-weight: 700; margin-bottom: 12px; }
+  .capture-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
+  .prefix { display: inline-flex; align-items: center; padding: 0 12px; border: 1.5px solid var(--sb-border-strong); border-radius: var(--sb-radius-md); background: var(--sb-chip); font-weight: 600; }
+  .capture-row input { flex: 1 1 160px; min-height: 52px; font: inherit; border: 1.5px solid var(--sb-border-strong); border-radius: var(--sb-radius-md); padding: 0 14px; }
+  .capture .hint { margin: 12px 0 0; }
+  .cards-top { margin-top: 32px; }
+  .product { margin-top: 24px; }
+  .product-col h3 { font-size: 24px; margin-bottom: 6px; }
+  .product-col > p { margin-bottom: 18px; }
+  .video-row { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); margin: 32px 0 16px; }
+  .video-row:empty { display: none; }
+  .states, .steps { list-style: none; padding: 0; margin: 32px 0 0; }
+  .state-pill { display: inline-flex; gap: 8px; align-items: center; font-weight: 700; font-size: 14px; padding: 6px 12px; border-radius: var(--sb-radius-pill); border: 1px solid var(--sb-border); margin-bottom: 14px; }
+  .state-pill--online { background: var(--sb-nav-active-bg); color: var(--sb-nav-active-text); }
+  .state-pill--offline { background: var(--sb-offline-bg); border-color: var(--sb-offline-border); color: var(--sb-offline-text); }
+  .state-pill--syncing { background: var(--sb-surface); color: var(--sb-nav-active-text); }
+  .note { margin-top: 24px; }
+  .band { padding: clamp(40px, 6vw, 64px) 0; }
+  .band-inner { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; }
+  .band h2 { margin: 0; color: #fff; max-width: 20ch; }
+  .num { display: inline-flex; width: 36px; height: 36px; align-items: center; justify-content: center; border-radius: 50%; background: var(--sb-chip); font-weight: 800; margin-bottom: 14px; }
+  .who { align-items: start; }
+  .narrow { max-width: 860px; }
+  .more { margin-top: 20px; }
+  @media (min-width: 1000px) {
+    .hero-grid { grid-template-columns: 1.15fr 0.85fr; }
+  }
+</style>

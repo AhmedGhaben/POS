@@ -1,0 +1,34 @@
+---
+/**
+ * Wraps copy that depends on an untested claim (About brief [VERIFY]).
+ * - verified           → children, no marking
+ * - not verified, preview → children inside a dashed "A verificar" block
+ * - not verified, public  → `fallback` slot (or nothing)
+ */
+import { CLAIM_VERIFIED, PREVIEW, type ClaimId } from '../config';
+interface Props { id: ClaimId; note?: string; inline?: boolean }
+const { id, note, inline = false } = Astro.props;
+const ok = CLAIM_VERIFIED(id);
+const hasFallback = Astro.slots.has('fallback');
+const Tag = inline ? 'span' : 'div';
+---
+{ok ? <slot /> : PREVIEW ? (
+  <Tag class="pv-block claim" data-preview-only data-claim={id}>
+    <span class="pv-tag">A verificar · {note ?? id}</span>
+    {!inline && ' '}
+    <slot />
+    {hasFallback && (
+      <Tag class="claim-fallback">
+        <span class="pv-tag">Versão pública enquanto não verificado</span>{' '}
+        <slot name="fallback" />
+      </Tag>
+    )}
+  </Tag>
+) : (
+  <slot name="fallback" />
+)}
+<style>
+  .claim { display: block; }
+  span.claim { display: inline; padding: 2px 6px; }
+  .claim-fallback { display: block; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--site-preview); }
+</style>

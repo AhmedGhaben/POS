@@ -1,0 +1,43 @@
+---
+/**
+ * A real product capture. Captures not yet approved from a reviewed build
+ * appear in preview builds only, clearly labelled; publicly they are hidden
+ * (About brief §9.7 default: don't publish the product-proof section).
+ */
+import { Image } from 'astro:assets';
+import { screens, type ScreenKey } from '../data/marketingAssets';
+import { PREVIEW } from '../config';
+interface Props { screen: ScreenKey; caption?: string; eager?: boolean; class?: string }
+const { screen, caption, eager = false, class: cls = '' } = Astro.props;
+const s = screens[screen];
+const approved = s.status === 'approved';
+const show = approved || PREVIEW;
+---
+{show && (
+  <figure class:list={['shot', cls]}>
+    <div class="frame">
+      <Image
+        src={s.image}
+        alt={s.alt}
+        widths={[480, 720, 960, 1440]}
+        sizes="(min-width: 1000px) 560px, 92vw"
+        format="webp"
+        loading={eager ? 'eager' : 'lazy'}
+        fetchpriority={eager ? 'high' : undefined}
+      />
+    </div>
+    <figcaption>
+      {!approved && <span class="pv-tag" data-preview-only>Captura de pré-visualização · dados de demonstração · substituir por captura de build revisto</span>}
+      <span class="demo">Dados de demonstração</span>
+      {caption && <span class="cap">{caption}</span>}
+    </figcaption>
+  </figure>
+)}
+<style>
+  .shot { margin: 0; display: grid; gap: 12px; }
+  .frame { border: 1px solid var(--sb-border); border-radius: var(--sb-radius-lg); overflow: hidden; background: var(--sb-surface); }
+  .frame :global(img) { width: 100%; }
+  figcaption { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 15px; color: var(--sb-text-muted); }
+  .demo { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; background: var(--sb-chip); color: var(--sb-text); padding: 3px 8px; border-radius: var(--sb-radius-pill); }
+  .cap { flex-basis: 100%; color: var(--sb-text); }
+</style>

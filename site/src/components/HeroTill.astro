@@ -1,0 +1,118 @@
+---
+/**
+ * Hero illustration: the till's connection state cycling every ~2.4 s
+ * online → sem internet (2 vendas por enviar) → a sincronizar → online,
+ * with the owner's view underneath (WEBSITE_SPEC §7).
+ * - Visible pause/play button (WCAG 2.2.2).
+ * - Stops off-screen (IntersectionObserver) and when the tab is hidden.
+ * - prefers-reduced-motion: static "sem internet" frame, no cycling.
+ * Decorative; a text equivalent is provided for screen readers.
+ */
+import StatusDiamond from './StatusDiamond.astro';
+const frames = [
+  { state: 'online', till: 'Online', count: '', owner: 'Loja Central · vendas actualizadas às 13:50' },
+  { state: 'offline', till: 'Sem internet · a vender', count: '2 vendas por enviar', owner: 'Loja Central · sem ligação desde 13:52' },
+  { state: 'syncing', till: 'A sincronizar', count: '2 vendas a enviar', owner: 'Loja Central · a receber vendas guardadas' },
+  { state: 'online', till: 'Online', count: '', owner: 'Loja Central · vendas actualizadas às 14:09' },
+];
+const start = frames[1];
+---
+<figure class="hero-till" data-hero-till data-frames={JSON.stringify(frames)}>
+  <p class="visually-hidden">
+    Ilustração: quando a internet falha, a caixa mostra "Sem internet · a vender" e o número de vendas por enviar.
+    Quando a ligação volta, mostra "A sincronizar" e depois "Online". Na Gestão, o dono vê desde quando a loja está sem ligação.
+  </p>
+  <div class="panels" aria-hidden="true">
+    <div class="panel till">
+      <div class="panel-head">
+        <span class="label">STORBIT Caixa</span>
+        <span class="who">Caixa 1 · Mercearia Central</span>
+      </div>
+      <div class="state" data-state={start.state}>
+        <span class="d d-online"><StatusDiamond state="online" size={16} /></span>
+        <span class="d d-offline"><StatusDiamond state="offline" size={16} /></span>
+        <span class="d d-syncing"><StatusDiamond state="syncing" size={16} /></span>
+        <span class="state-text" data-till-text>{start.till}</span>
+      </div>
+      <p class="count tnum" data-till-count>{start.count}</p>
+      <div class="lines">
+        <div><span>Arroz 1 kg</span><span class="tnum">2 × 1 250,00 Kz</span></div>
+        <div><span>Óleo alimentar 1 L</span><span class="tnum">1 × 2 100,00 Kz</span></div>
+        <div class="total"><span>Total</span><span class="tnum">4 600,00 Kz</span></div>
+      </div>
+    </div>
+    <div class="panel owner">
+      <span class="label">STORBIT Gestão</span>
+      <p class="owner-line" data-owner-text>{start.owner}</p>
+    </div>
+  </div>
+  <figcaption>
+    <span class="cap">Ilustração · dados de demonstração</span>
+    <button type="button" class="pause" data-hero-pause aria-pressed="false" hidden>
+      <span data-pause-label>Pausar animação</span>
+    </button>
+  </figcaption>
+</figure>
+<style>
+  .hero-till { margin: 0; display: grid; gap: 10px; }
+  .panels { display: grid; gap: 12px; }
+  .panel { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius-lg); padding: 20px; }
+  .panel-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .label { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sb-text-muted); }
+  .who { font-size: 13px; color: var(--sb-text-muted); }
+  .state { display: inline-flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--sb-radius-pill); font-weight: 700; border: 1px solid var(--sb-border); background: var(--sb-surface-sunken); transition: background 200ms ease, border-color 200ms ease; }
+  .state[data-state='offline'] { background: var(--sb-offline-bg); border-color: var(--sb-offline-border); color: var(--sb-offline-text); }
+  .state[data-state='online'] { background: var(--sb-nav-active-bg); border-color: #cfe6d8; color: var(--sb-nav-active-text); }
+  .state[data-state='syncing'] { background: var(--sb-surface); border-color: #cfe6d8; color: var(--sb-nav-active-text); }
+  .d { display: none; line-height: 0; }
+  .state[data-state='online'] .d-online, .state[data-state='offline'] .d-offline, .state[data-state='syncing'] .d-syncing { display: inline-flex; }
+  .count { min-height: 1.6em; margin: 10px 0 6px; font-size: 15px; color: var(--sb-text-muted); }
+  .lines { display: grid; gap: 6px; font-size: 15px; border-top: 1px solid var(--sb-border); padding-top: 12px; }
+  .lines div { display: flex; justify-content: space-between; gap: 12px; }
+  .total { font-weight: 800; font-size: 17px; padding-top: 6px; border-top: 1px dashed var(--sb-border); }
+  .owner { display: flex; flex-direction: column; gap: 6px; }
+  .owner-line { margin: 0; font-weight: 600; }
+  figcaption { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .cap { font-size: 13px; color: var(--sb-text-muted); }
+  .pause { min-height: 44px; padding: 0 14px; border-radius: var(--sb-radius-md); border: 1.5px solid var(--sb-text); background: transparent; color: var(--sb-text); font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; }
+</style>
+<script>
+  const root = document.querySelector<HTMLElement>('[data-hero-till]');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (root && !reduce.matches) {
+    const frames = JSON.parse(root.dataset.frames || '[]') as { state: string; till: string; count: string; owner: string }[];
+    const state = root.querySelector<HTMLElement>('.state')!;
+    const tillText = root.querySelector<HTMLElement>('[data-till-text]')!;
+    const tillCount = root.querySelector<HTMLElement>('[data-till-count]')!;
+    const owner = root.querySelector<HTMLElement>('[data-owner-text]')!;
+    const btn = root.querySelector<HTMLButtonElement>('[data-hero-pause]')!;
+    const btnLabel = root.querySelector<HTMLElement>('[data-pause-label]')!;
+    let i = 1;
+    let timer: number | undefined;
+    let paused = false;
+    let onScreen = true;
+    const show = (n: number) => {
+      const f = frames[n];
+      state.dataset.state = f.state;
+      tillText.textContent = f.till;
+      tillCount.textContent = f.count;
+      owner.textContent = f.owner;
+    };
+    const stop = () => { if (timer) window.clearInterval(timer); timer = undefined; };
+    const run = () => {
+      stop();
+      if (paused || !onScreen || document.hidden) return;
+      timer = window.setInterval(() => { i = (i + 1) % frames.length; show(i); }, 2400);
+    };
+    btn.hidden = false;
+    btn.addEventListener('click', () => {
+      paused = !paused;
+      btn.setAttribute('aria-pressed', String(paused));
+      btnLabel.textContent = paused ? 'Retomar animação' : 'Pausar animação';
+      run();
+    });
+    new IntersectionObserver((entries) => { onScreen = entries[0].isIntersecting; run(); }).observe(root);
+    document.addEventListener('visibilitychange', run);
+    run();
+  }
+</script>

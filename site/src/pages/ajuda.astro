@@ -1,0 +1,140 @@
+---
+import Base from '../layouts/Base.astro';
+import StatusDiamond from '../components/StatusDiamond.astro';
+import FaqList from '../components/FaqList.astro';
+import VideoSlot from '../components/VideoSlot.astro';
+import WhatsAppButton from '../components/WhatsAppButton.astro';
+import PreviewTag from '../components/PreviewTag.astro';
+import { faqs, glossary, type FaqCategory } from '../data/help';
+import { faqJsonLd } from '../lib/faq';
+import { CONTACT_EMAIL, PREVIEW, SUPPORT_HOURS, WHATSAPP_NUMBER } from '../config';
+
+const categories: FaqCategory[] = ['Começar', 'Caixa', 'Gestão', 'Equipamento', 'Estado e AGT'];
+const slug = (c: string) => c.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-');
+const hasContacts = Boolean(WHATSAPP_NUMBER || CONTACT_EMAIL);
+---
+<Base
+  title="Ajuda"
+  description="Perguntas frequentes e glossário da STORBIT: a Caixa, a Gestão, o que acontece sem internet, equipamento e o estado actual."
+  path="/ajuda"
+  message="ajuda"
+  jsonLd={[faqJsonLd(faqs)]}
+>
+  <section class="section section--cream hero">
+    <div class="container narrow">
+      <p class="eyebrow"><StatusDiamond size={10} /> Ajuda</p>
+      <h1>Como podemos ajudar?</h1>
+      <div class="search" role="search">
+        <label for="q" class="visually-hidden">Pesquisar na ajuda</label>
+        <input id="q" type="search" placeholder="Pesquisar: internet, impressora, stock…" autocomplete="off" data-help-search />
+        <p class="small muted" aria-live="polite" data-help-count></p>
+      </div>
+      <nav aria-label="Categorias" class="cats">
+        {categories.map((c) => <a href={`#cat-${slug(c)}`} class="chip">{c}</a>)}
+        <a href="#glossario" class="chip">Glossário</a>
+        <a href="#contactos" class="chip">Contactos</a>
+      </nav>
+    </div>
+  </section>
+
+  <section class="section section--white" aria-label="Perguntas frequentes">
+    <div class="container narrow">
+      {categories.map((c) => {
+        const items = faqs.filter((f) => f.category === c);
+        return (
+          <div class="cat" id={`cat-${slug(c)}`} data-help-group>
+            <h2 class="h3">{c}</h2>
+            <FaqList items={items} />
+          </div>
+        );
+      })}
+      <p class="none" hidden data-help-none>Não encontrámos nada com essa pesquisa. Experimente outra palavra ou fale connosco.</p>
+      <div class="videos">
+        <VideoSlot video="VIDEO_HARDWARE_SETUP" />
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--cream" aria-labelledby="glossario">
+    <div class="container narrow">
+      <h2 id="glossario">Glossário</h2>
+      <dl class="glossary">
+        {glossary.map((g) => (
+          <div data-help-term data-search={`${g.term} ${g.def}`.toLowerCase()}>
+            <dt>{g.term}</dt>
+            <dd>{g.def}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </section>
+
+  {(hasContacts || PREVIEW) && (
+    <section class="section section--white" aria-labelledby="contactos">
+      <div class="container narrow">
+        <h2 id="contactos">Não encontrou a resposta?</h2>
+        {hasContacts ? (
+          <div class="actions">
+            <WhatsAppButton message="ajuda" />
+            {CONTACT_EMAIL && <a class="btn btn--secondary" href={`mailto:${CONTACT_EMAIL}`}>Escrever para {CONTACT_EMAIL}</a>}
+          </div>
+        ) : (
+          <PreviewTag>Contactos por configurar · secção oculta no público sem contactos</PreviewTag>
+        )}
+        {SUPPORT_HOURS && <p class="muted hours">Horário de atendimento: {SUPPORT_HOURS}</p>}
+      </div>
+    </section>
+  )}
+</Base>
+
+<script>
+  const input = document.querySelector<HTMLInputElement>('[data-help-search]');
+  const count = document.querySelector<HTMLElement>('[data-help-count]');
+  const none = document.querySelector<HTMLElement>('[data-help-none]');
+  const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  if (input) {
+    input.addEventListener('input', () => {
+      const q = norm(input.value.trim());
+      let hits = 0;
+      document.querySelectorAll<HTMLElement>('[data-help-group]').forEach((g) => {
+        let groupHits = 0;
+        g.querySelectorAll<HTMLDetailsElement>('[data-faq]').forEach((d) => {
+          const ok = !q || norm(d.dataset.search || '').includes(q);
+          d.hidden = !ok;
+          d.open = Boolean(q) && ok;
+          if (ok) groupHits++;
+        });
+        g.hidden = groupHits === 0;
+        hits += groupHits;
+      });
+      document.querySelectorAll<HTMLElement>('[data-help-term]').forEach((t) => {
+        const ok = !q || norm(t.dataset.search || '').includes(q);
+        t.hidden = !ok;
+        if (ok && q) hits++;
+      });
+      if (none) none.hidden = !q || hits > 0;
+      if (count) count.textContent = q ? `${hits} resultado${hits === 1 ? '' : 's'}` : '';
+    });
+  }
+</script>
+
+<style>
+  .hero { padding-top: clamp(32px, 6vw, 72px); }
+  .narrow { max-width: 860px; }
+  .search input { width: 100%; min-height: 56px; font: inherit; font-size: 17px; padding: 0 18px; border: 1.5px solid var(--sb-border-strong); border-radius: var(--sb-radius-md); background: var(--sb-surface); }
+  .search p { min-height: 1.5em; margin: 8px 0 0; }
+  .cats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .chip { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: var(--sb-radius-pill); background: var(--sb-chip); color: var(--sb-text); text-decoration: none; font-weight: 600; font-size: 15px; }
+  .chip:hover { background: var(--sb-border); color: var(--sb-text); }
+  .cat { margin-bottom: 36px; scroll-margin-top: 96px; }
+  .h3 { font-size: var(--sb-text-lg); }
+  .none { font-weight: 600; }
+  .videos { margin-top: 12px; }
+  .glossary { margin: 0; display: grid; gap: 0; background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius-lg); padding: 4px 20px; }
+  .glossary div { display: grid; gap: 4px 20px; padding: 14px 0; border-top: 1px solid var(--sb-border); }
+  .glossary div:first-child { border-top: none; }
+  dt { font-weight: 700; }
+  dd { margin: 0; color: var(--sb-text-muted); }
+  .hours { margin-top: 16px; }
+  @media (min-width: 720px) { .glossary div { grid-template-columns: 200px 1fr; } }
+</style>

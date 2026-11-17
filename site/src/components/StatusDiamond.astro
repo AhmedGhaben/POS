@@ -1,0 +1,40 @@
+---
+/**
+ * StatusDiamond (BRAND_HANDOFF §5): the rounded diamond of the logo's i-dot.
+ * Colour has meaning: emerald = done / online / brand accent,
+ * amber = "not yet" (and, in product UI, offline but still selling),
+ * outline = syncing, muted = inactive. Always pair with text.
+ */
+interface Props {
+  state?: 'online' | 'offline' | 'syncing' | 'inactive' | 'brand' | 'pending';
+  size?: 8 | 10 | 12 | 16;
+  label?: string;
+  class?: string;
+}
+const { state = 'brand', size = 10, label, class: cls = '' } = Astro.props;
+---
+<svg
+  class:list={['diamond', `diamond--${state}`, cls]}
+  width={size * 1.42}
+  height={size * 1.42}
+  viewBox="0 0 20 20"
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+  focusable="false"
+  data-diamond
+><path d="M11.6 2.6 17.4 8.4Q19 10 17.4 11.6L11.6 17.4Q10 19 8.4 17.4L2.6 11.6Q1 10 2.6 8.4L8.4 2.6Q10 1 11.6 2.6Z" /></svg>
+<style>
+  .diamond { flex: none; display: inline-block; vertical-align: -0.1em; }
+  .diamond path { transition: fill 200ms ease, stroke 200ms ease, opacity 200ms ease; }
+  .diamond--brand path { fill: var(--sb-logo-diamond); }
+  .diamond--online path { fill: var(--sb-status-online); }
+  .diamond--offline path,
+  .diamond--pending path { fill: var(--sb-status-offline); }
+  .diamond--inactive path { fill: var(--sb-text-muted); opacity: 0.5; }
+  .diamond--syncing path { fill: transparent; stroke: var(--sb-status-online); stroke-width: 2.4; }
+  @media (prefers-reduced-motion: no-preference) {
+    .diamond--syncing path { animation: sb-pulse 1.2s ease-in-out infinite alternate; }
+  }
+  @keyframes sb-pulse { from { opacity: 1; } to { opacity: 0.5; } }
+</style>

@@ -1,0 +1,19 @@
+---
+import Base from '../layouts/Base.astro';
+import StatusDiamond from '../components/StatusDiamond.astro';
+import WhatsAppButton from '../components/WhatsAppButton.astro';
+---
+<Base title="Página não encontrada" description="Esta página não existe." path="/404" message="naoEncontrada" noindex>
+  <section class="section section--cream nf">
+    <div class="container">
+      <p class="eyebrow"><StatusDiamond state="inactive" size={10} /> Erro 404</p>
+      <h1>Esta página não existe.</h1>
+      <p class="lead">O endereço pode estar errado ou a página mudou de sítio.</p>
+      <div class="actions">
+        <a class="btn btn--primary" href="/">Voltar ao início</a>
+        <WhatsAppButton message="naoEncontrada" showPending={false} />
+      </div>
+    </div>
+  </section>
+</Base>
+<style>.nf { min-height: 55vh; }</style>

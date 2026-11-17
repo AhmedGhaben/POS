@@ -1,0 +1,37 @@
+---
+/**
+ * Phone bottom bar (WEBSITE_SPEC §3): primary CTA + labelled WhatsApp button.
+ * Hidden while a field has focus, while a form or the footer is on screen,
+ * and on /demonstracao. Respects the safe area.
+ */
+import CtaButton from './CtaButton.astro';
+import { primaryCta, whatsappCta, type WaMessage } from '../lib/cta';
+interface Props { message: WaMessage }
+const { message } = Astro.props;
+const primary = primaryCta();
+const wa = primary?.kind === 'whatsapp' ? null : whatsappCta(message);
+const show = Boolean(primary || wa);
+---
+{show && (
+  <div class="mobile-bar" data-mobile-bar aria-label="Acções rápidas" role="region">
+    <CtaButton source="mobile-bar" class="mb-primary" />
+    {wa && (
+      <a class="btn btn--secondary mb-wa" href={wa.href} target="_blank" rel="noopener" data-event="whatsapp_click" data-event-source="mobile-bar">
+        WhatsApp<span class="visually-hidden"> (abre o WhatsApp)</span>
+      </a>
+    )}
+  </div>
+)}
+<style>
+  .mobile-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    display: flex; gap: 10px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: var(--sb-surface); border-top: 1px solid var(--sb-border);
+    transition: transform 180ms ease;
+  }
+  .mobile-bar.is-hidden { transform: translateY(110%); }
+  .mobile-bar :global(.mb-primary) { flex: 1; }
+  .mobile-bar :global(.btn) { min-height: 48px; font-size: 15px; padding: 0 14px; }
+  @media (min-width: 960px) { .mobile-bar { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .mobile-bar { transition: none; } }
+</style>

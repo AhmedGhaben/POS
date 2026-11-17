@@ -1,0 +1,7 @@
+---
+/** Visible ONLY in private preview builds. Never reaches production HTML. */
+import { PREVIEW } from '../config';
+interface Props { class?: string }
+const { class: cls = '' } = Astro.props;
+---
+{PREVIEW && <span class:list={['pv-tag', cls]} data-preview-only><slot /></span>}

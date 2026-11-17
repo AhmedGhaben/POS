@@ -1,0 +1,162 @@
+---
+import '../styles/global.css';
+import PreviewBar from '../components/PreviewBar.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import MobileBar from '../components/MobileBar.astro';
+import { COMPANY, COMPANY_PUBLISHABLE, CONTACT_EMAIL, INDEXABLE, PLAUSIBLE_DOMAIN, PLAUSIBLE_SRC, PREVIEW, SITE_URL, WHATSAPP_NUMBER } from '../config';
+import type { WaMessage } from '../lib/cta';
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  /** Page-specific WhatsApp message for the mobile bar. */
+  message: WaMessage;
+  /** Extra JSON-LD objects for this page. */
+  jsonLd?: object[];
+  /** Hide the phone bottom bar (e.g. /demonstracao). */
+  hideMobileBar?: boolean;
+  /** Force noindex for this page (e.g. unreviewed legal drafts). */
+  noindex?: boolean;
+}
+const { title, description, path, message, jsonLd = [], hideMobileBar = false, noindex = false } = Astro.props;
+const canonical = new URL(path, SITE_URL).href;
+const fullTitle = path === '/' ? title : `${title} · STORBIT`;
+const robots = INDEXABLE && !noindex ? 'index, follow' : 'noindex, nofollow';
+
+const org: Record<string, unknown> = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'STORBIT',
+  url: SITE_URL,
+  logo: new URL('/icons/storbit-icon-512.png', SITE_URL).href,
+};
+if (COMPANY_PUBLISHABLE) org.legalName = COMPANY.legalName;
+const contacts = [];
+if (WHATSAPP_NUMBER) contacts.push({ '@type': 'ContactPoint', contactType: 'sales', telephone: `+${WHATSAPP_NUMBER}`, availableLanguage: 'pt-AO' });
+if (CONTACT_EMAIL) contacts.push({ '@type': 'ContactPoint', contactType: 'customer support', email: CONTACT_EMAIL, availableLanguage: 'pt-AO' });
+if (contacts.length) org.contactPoint = contacts;
+const app = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'STORBIT',
+  operatingSystem: 'Windows',
+  applicationCategory: 'BusinessApplication',
+  description: 'Software de caixa para lojas em Angola: STORBIT Caixa para Windows e STORBIT Gestão no navegador.',
+};
+const ld = [org, app, ...jsonLd];
+---
+<!doctype html>
+<html lang="pt-AO" data-preview={PREVIEW ? 'true' : undefined}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="robots" content={robots} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="pt-AO" href={canonical} />
+    <link rel="alternate" hreflang="x-default" href={canonical} />
+    <meta name="theme-color" content="#15171B" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/icons/storbit-app-icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_AO" />
+    <meta property="og:site_name" content="STORBIT" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL('/og.png', SITE_URL).href} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    {ld.map((o) => <script type="application/ld+json" set:html={JSON.stringify(o)} />)}
+    {PLAUSIBLE_DOMAIN && <script defer data-domain={PLAUSIBLE_DOMAIN} src={PLAUSIBLE_SRC}></script>}
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body>
+    <a class="skip-link" href="#conteudo">Saltar para o conteúdo</a>
+    <PreviewBar />
+    <Header current={path} />
+    <main id="conteudo" tabindex="-1">
+      <slot />
+    </main>
+    <Footer />
+    {!hideMobileBar && <MobileBar message={message} />}
+    <script>
+      // Mobile menu: real button, aria-expanded, focus in and back, Esc closes.
+      const btn = document.querySelector<HTMLButtonElement>('[data-menu-button]');
+      const menu = document.querySelector<HTMLElement>('[data-menu]');
+      const closeBtn = document.querySelector<HTMLButtonElement>('[data-menu-close]');
+      if (btn && menu) {
+        const open = () => {
+          menu.hidden = false;
+          btn.setAttribute('aria-expanded', 'true');
+          menu.querySelector<HTMLElement>('a, button')?.focus();
+        };
+        const close = (returnFocus = true) => {
+          menu.hidden = true;
+          btn.setAttribute('aria-expanded', 'false');
+          if (returnFocus) btn.focus();
+        };
+        btn.addEventListener('click', () => (menu.hidden ? open() : close()));
+        closeBtn?.addEventListener('click', () => close());
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.hidden) close(); });
+        window.matchMedia('(min-width: 960px)').addEventListener('change', (e) => { if (e.matches) close(false); });
+      }
+
+      // Phone bottom bar: hide while a field has focus, a form or the footer is visible.
+      const bar = document.querySelector<HTMLElement>('[data-mobile-bar]');
+      if (bar) {
+        const setPad = () => document.body.style.setProperty('--site-mobilebar-h', window.innerWidth < 960 ? `${bar.offsetHeight}px` : '0px');
+        setPad();
+        window.addEventListener('resize', setPad);
+        const blockers = new Set<Element>();
+        let focused = false;
+        const update = () => bar.classList.toggle('is-hidden', focused || blockers.size > 0);
+        const io = new IntersectionObserver((entries) => {
+          entries.forEach((e) => (e.isIntersecting ? blockers.add(e.target) : blockers.delete(e.target)));
+          update();
+        });
+        document.querySelectorAll('[data-footer], form, [data-hide-mobile-bar]').forEach((el) => io.observe(el));
+        document.addEventListener('focusin', (e) => {
+          focused = (e.target as Element).matches('input, select, textarea');
+          update();
+        });
+        document.addEventListener('focusout', () => { focused = false; update(); });
+      }
+
+      // Scroll reveal (CSS disables it under reduced motion).
+      const reveals = document.querySelectorAll('.reveal');
+      if ('IntersectionObserver' in window && reveals.length) {
+        const ro = new IntersectionObserver((entries) => {
+          entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-visible'); ro.unobserve(e.target); } });
+        }, { rootMargin: '0px 0px -40px 0px' });
+        reveals.forEach((el) => ro.observe(el));
+      } else reveals.forEach((el) => el.classList.add('is-visible'));
+
+      // Video dialogs: load the player only on click.
+      document.querySelectorAll<HTMLButtonElement>('[data-video-open]').forEach((b) => {
+        b.addEventListener('click', () => {
+          const dlg = document.getElementById(b.dataset.videoOpen!) as HTMLDialogElement | null;
+          if (!dlg) return;
+          const tpl = dlg.querySelector<HTMLTemplateElement>('template[data-video-template]');
+          if (tpl && !dlg.querySelector('video')) dlg.append(tpl.content.cloneNode(true));
+          dlg.showModal();
+          dlg.addEventListener('close', () => dlg.querySelector('video')?.pause(), { once: true });
+        });
+      });
+
+      // Cookieless analytics events (only if a provider script is configured).
+      document.addEventListener('click', (e) => {
+        const el = (e.target as Element).closest<HTMLElement>('[data-event]');
+        const w = window as unknown as { plausible?: (n: string, o?: object) => void };
+        if (el && w.plausible) w.plausible(el.dataset.event!, { props: { page: location.pathname, source: el.dataset.eventSource || '' } });
+      });
+    </script>
+  </body>
+</html>

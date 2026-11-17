@@ -1,0 +1,40 @@
+---
+/**
+ * Legal pages (WEBSITE_SPEC §3, handoff §3). No convincing fake legal text:
+ * preview shows an outline labelled as a draft; public shows a short notice
+ * until approved texts exist in src/legal/<slug>.md and LEGAL_APPROVED=true.
+ */
+import Base from '../layouts/Base.astro';
+import StatusDiamond from './StatusDiamond.astro';
+import { FLAGS, PREVIEW } from '../config';
+interface Props { slug: 'termos' | 'privacidade' | 'cookies'; title: string; description: string; outline: string[] }
+const { slug, title, description, outline } = Astro.props;
+const files = import.meta.glob<{ Content: any }>('../legal/*.md', { eager: true });
+const approved = FLAGS.LEGAL_APPROVED ? files[`../legal/${slug}.md`] : undefined;
+if (FLAGS.LEGAL_APPROVED && !approved) console.warn(`[legal] LEGAL_APPROVED=true but src/legal/${slug}.md is missing`);
+const Content = approved?.Content;
+---
+<Base title={title} description={description} path={`/${slug}`} message="inicio" noindex={!approved}>
+  <section class="section section--cream">
+    <div class="container narrow">
+      <p class="eyebrow"><StatusDiamond size={10} /> Legal</p>
+      <h1>{title}</h1>
+      {Content ? (
+        <div class="legal"><Content /></div>
+      ) : PREVIEW ? (
+        <div class="pv-block" data-preview-only>
+          <span class="pv-tag">Rascunho — conteúdo jurídico por rever</span>
+          <p>O texto final é escrito e revisto por um jurista em Angola. Esta pré-visualização mostra apenas os temas previstos, sem texto jurídico.</p>
+          <ol class="outline">{outline.map((o) => <li>{o}</li>)}</ol>
+        </div>
+      ) : (
+        <p class="lead">O texto desta página será publicado depois de revisto juridicamente.</p>
+      )}
+    </div>
+  </section>
+</Base>
+<style>
+  .narrow { max-width: 820px; }
+  .outline { display: grid; gap: 8px; color: var(--sb-text-muted); }
+  .legal :global(h2) { font-size: 24px; margin-top: 1.5em; }
+</style>

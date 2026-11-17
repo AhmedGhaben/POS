@@ -1,0 +1,82 @@
+---
+import Logo from './Logo.astro';
+import CtaButton from './CtaButton.astro';
+import { FLAGS, LOGIN_URL, PREVIEW } from '../config';
+interface Props { current?: string }
+const { current = '' } = Astro.props;
+const links = [
+  { href: '/como-funciona', label: 'Como funciona' },
+  ...(FLAGS.PRICING_PUBLISHED ? [{ href: '/planos', label: 'Planos' }] : []),
+  { href: '/ajuda', label: 'Ajuda' },
+];
+---
+<header class="site-header">
+  <div class="container bar">
+    <a href="/" class="brand" aria-label="STORBIT — Início"><Logo width={112} /></a>
+    <nav class="nav-desktop" aria-label="Principal">
+      <ul>
+        {links.map((l) => (
+          <li><a href={l.href} aria-current={current === l.href ? 'page' : undefined}>{l.label}</a></li>
+        ))}
+        {LOGIN_URL && <li><a href={LOGIN_URL} data-event="login_click">Entrar</a></li>}
+      </ul>
+      <CtaButton size="sm" source="header" />
+    </nav>
+    <button
+      class="menu-btn"
+      type="button"
+      aria-expanded="false"
+      aria-controls="mobile-menu"
+      data-menu-button
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+      <span>Menu</span>
+    </button>
+  </div>
+  <div id="mobile-menu" class="mobile-menu" hidden data-menu>
+    <nav class="container" aria-label="Principal (telemóvel)">
+      <ul>
+        <li><a href="/">Início</a></li>
+        {links.map((l) => (
+          <li><a href={l.href} aria-current={current === l.href ? 'page' : undefined}>{l.label}</a></li>
+        ))}
+        <li><a href="/sobre" aria-current={current === '/sobre' ? 'page' : undefined}>Sobre</a></li>
+        {LOGIN_URL && <li><a href={LOGIN_URL} data-event="login_click">Entrar</a></li>}
+      </ul>
+      <div class="mobile-cta"><CtaButton source="mobile-menu" /></div>
+      <button type="button" class="btn btn--secondary btn--sm close" data-menu-close>Fechar menu</button>
+    </nav>
+  </div>
+</header>
+<style>
+  .site-header {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in srgb, var(--sb-bg) 96%, transparent);
+    border-bottom: 1px solid var(--sb-border);
+  }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 72px; }
+  .brand { display: inline-flex; padding: 8px 0; }
+  .nav-desktop { display: none; align-items: center; gap: 28px; }
+  .nav-desktop ul, .mobile-menu ul { list-style: none; margin: 0; padding: 0; }
+  .nav-desktop ul { display: flex; gap: 24px; }
+  .nav-desktop a:not(.btn), .mobile-menu a:not(.btn) {
+    color: var(--sb-text); text-decoration: none; font-weight: 600; font-size: 15px;
+  }
+  .nav-desktop a:not(.btn):hover { color: var(--sb-link); }
+  .nav-desktop a[aria-current='page'] { color: var(--sb-nav-active-text); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
+  .menu-btn {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px;
+    border: 1.5px solid var(--sb-text); border-radius: var(--sb-radius-md); background: transparent;
+    color: var(--sb-text); font: inherit; font-weight: 700; font-size: 15px; cursor: pointer;
+  }
+  .mobile-menu { border-top: 1px solid var(--sb-border); background: var(--sb-bg); padding: 8px 0 20px; }
+  .mobile-menu li a { display: flex; align-items: center; min-height: 48px; font-size: 18px; border-bottom: 1px solid var(--sb-border); }
+  .mobile-menu a[aria-current='page'] { color: var(--sb-nav-active-text); }
+  .mobile-cta { margin: 20px 0 12px; }
+  .mobile-cta :global(.btn) { width: 100%; }
+  .close { width: 100%; }
+  @media (min-width: 960px) {
+    .nav-desktop { display: flex; }
+    .menu-btn, .mobile-menu { display: none !important; }
+  }
+</style>

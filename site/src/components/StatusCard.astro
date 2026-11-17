@@ -1,0 +1,44 @@
+---
+/** "Estado actual" — the honest status card (About brief §3.5). */
+import StatusDiamond from './StatusDiamond.astro';
+import PreviewTag from './PreviewTag.astro';
+import { AGT_COMMITMENT, AGT_STATUS, LAUNCH_STATUS } from '../data/status';
+import { FLAGS, PREVIEW } from '../config';
+import { primaryCta } from '../lib/cta';
+interface Props { headingLevel?: 2 | 3; id?: string; compact?: boolean }
+const { headingLevel = 2, id = 'estado-actual', compact = false } = Astro.props;
+const H = `h${headingLevel}` as 'h2' | 'h3';
+const demoRoute = primaryCta();
+const showDemos = FLAGS.DEMOS_AVAILABLE && demoRoute && demoRoute.kind !== 'pending';
+---
+<section class="status-card" aria-labelledby={`${id}-h`} id={id}>
+  <p class="eyebrow"><StatusDiamond state="pending" size={10} /> Estado actual</p>
+  <H id={`${id}-h`}>Onde está a STORBIT hoje.</H>
+  <ul class="rows">
+    <li><StatusDiamond state="pending" size={12} /><span><strong>Lançamento comercial:</strong> {LAUNCH_STATUS}.</span></li>
+    <li><StatusDiamond state="pending" size={12} /><span><strong>Validação AGT:</strong> {AGT_STATUS}.</span></li>
+    {showDemos ? (
+      <li><StatusDiamond state="brand" size={12} /><span><strong>Demonstrações:</strong> Disponíveis mediante pedido.</span></li>
+    ) : PREVIEW ? (
+      <li class="pv-row" data-preview-only><StatusDiamond state="brand" size={12} /><span><strong>Demonstrações:</strong> Disponíveis mediante pedido. <PreviewTag>Só se as demonstrações estiverem a ser feitas (DEMOS_AVAILABLE)</PreviewTag></span></li>
+    ) : null}
+  </ul>
+  {!compact && (FLAGS.AGT_SENTENCE_APPROVED ? (
+    <p class="body">{AGT_COMMITMENT}</p>
+  ) : PREVIEW ? (
+    <div class="pv-block" data-preview-only>
+      <span class="pv-tag">[LEGAL] Frase por rever juridicamente · oculta no público até aprovação</span>
+      <p class="body">{AGT_COMMITMENT}</p>
+    </div>
+  ) : null)}
+</section>
+<style>
+  .status-card { background: var(--sb-surface); border: 1px solid var(--sb-border-strong); border-radius: var(--sb-radius-lg); padding: clamp(20px, 3.5vw, 36px); max-width: 820px; }
+  .status-card :global(h2), .status-card :global(h3) { font-size: clamp(24px, 3vw, 32px); }
+  .rows { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+  .rows li { display: flex; gap: 12px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--sb-border); }
+  .rows li:first-child { border-top: none; }
+  .body { margin: 16px 0 0; color: var(--sb-text-muted); max-width: 64ch; }
+  .pv-block { margin-top: 16px; }
+  .pv-block .body { margin-top: 8px; }
+</style>

@@ -1,0 +1,18 @@
+---
+import { PREVIEW } from '../config';
+---
+{PREVIEW && (
+  <div class="preview-bar" role="note" data-preview-only>
+    <div class="container inner">
+      <strong>Pré-visualização privada</strong>
+      <span>Rascunho para revisão interna · não publicar · conteúdo e textos pt-AO por rever</span>
+      <a href="/pre-visualizacao">Estado da configuração →</a>
+    </div>
+  </div>
+)}
+<style>
+  .preview-bar { background: #000; color: #fff; font-size: 13px; }
+  .inner { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; min-height: 36px; padding-top: 6px; padding-bottom: 6px; }
+  .preview-bar a { color: #fff; font-weight: 700; margin-left: auto; }
+  .preview-bar :global(:focus-visible) { outline-color: #fff; }
+</style>
