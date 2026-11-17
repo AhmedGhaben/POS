@@ -130,11 +130,11 @@ export type PinSignInResult =
       mode: "offline";
       user: TillStaffMember & { language?: string | null; displaySize?: number | null; permissions: Record<string, boolean> };
     }
-  | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user" | "not-registered"; error: string };
+  | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user" | "not-registered" | "unavailable"; error: string };
 
 export type ApprovalCheckResult =
   | { ok: true }
-  | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user"; error: string };
+  | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user" | "unavailable"; error: string };
 
 export type PinResumeResult =
   | { ok: true; session: unknown }

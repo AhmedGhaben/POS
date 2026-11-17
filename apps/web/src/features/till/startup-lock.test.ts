@@ -349,3 +349,33 @@ describe("unchanged elsewhere (11)", () => {
     expect(app.render("/dashboard")).not.toMatch(PROTECTED);
   });
 });
+
+describe("signing out while an offline session is being resumed", () => {
+  it("the sign-out stands: a resume that finishes afterwards doesn't bring the session back", async () => {
+    savedSession({ accessToken: null, offline: true });
+    let answer!: (r: unknown) => void;
+    const { api } = fakeDesktop();
+    (api.pin as unknown as { resume: () => Promise<unknown> }).resume = () => new Promise((resolve) => (answer = resolve));
+    const app = await start(api);
+    await app.load();
+    const resuming = app.session.resumeOfflineSession();
+    // "Sign in with email instead" on the lock screen while the server answers.
+    app.auth.useAuthStore.getState().clearSession();
+    answer({ ok: true, session: { accessToken: "late-token", user: MANAGER, stores: [STORE], business: BUSINESS } });
+    expect(await resuming).toBe("rejected");
+    expect(app.auth.useAuthStore.getState()).toMatchObject({ accessToken: null, user: null });
+  });
+
+  it("without a sign-out, the resume goes through as before", async () => {
+    savedSession({ accessToken: null, offline: true });
+    const { api } = fakeDesktop();
+    (api.pin as unknown as { resume: () => Promise<unknown> }).resume = async () => ({
+      ok: true,
+      session: { accessToken: "fresh-token", user: MANAGER, stores: [STORE], business: BUSINESS },
+    });
+    const app = await start(api);
+    await app.load();
+    expect(await app.session.resumeOfflineSession()).toBe("resumed");
+    expect(app.auth.useAuthStore.getState()).toMatchObject({ accessToken: "fresh-token", offline: false, user: { id: MANAGER.id } });
+  });
+});

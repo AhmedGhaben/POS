@@ -68,6 +68,9 @@ export function resumeOfflineSession(): Promise<"resumed" | "unreachable" | "rej
       if (!offline || !user) return "resumed" as const;
       if (!desktop?.pin) return "unreachable" as const;
       const result = await desktop.pin.resume(user.id);
+      // Signed out (or someone else signed in) while it was asking: that stands.
+      const now = useAuthStore.getState();
+      if (!now.offline || now.user?.id !== user.id) return "rejected" as const;
       if (result.ok) {
         applySession(result.session);
         return "resumed" as const;

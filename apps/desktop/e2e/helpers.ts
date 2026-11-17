@@ -99,26 +99,62 @@ export function tempUserData() {
 export const SEED_PINS: Record<string, string> = { OWNER: "8642", CASHIER: "2468" };
 
 /**
+ * Records, from the first moment of every page load, any text that only
+ * shows behind sign-in (the shells' buttons, the POS's Charge button).
+ * Added to the app's window by launch(); read with protectedSeen().
+ */
+export const WATCH_PROTECTED = () => {
+  const w = window as unknown as { __protectedSeen: string[] };
+  w.__protectedSeen = [];
+  const check = () => {
+    const text = document.body?.innerText ?? "";
+    const hit = /Log out|Lock till|Charge|Back to dashboard|Dashboard/.exec(text);
+    if (hit) w.__protectedSeen.push(hit[0]);
+  };
+  new MutationObserver(check).observe(document, { subtree: true, childList: true, characterData: true });
+};
+
+export const protectedSeen = (page: Page) => page.evaluate(() => (window as unknown as { __protectedSeen?: string[] }).__protectedSeen ?? []);
+
+/**
  * A registered till comes up locked after every page load: a restart, a
  * reload, or a page.goto, which loads the page again. Specs that use those
  * as shortcuts to get somewhere are then unlocked the way the person at the
  * till would: the signed-in person taps their name and types their PIN.
- * Nothing happens on a till that isn't locked.
+ *
+ * It never hides a broken lock: before unlocking it checks the startup
+ * rules, and fails the spec if a registered till with a saved session
+ * loaded unlocked, if anything behind sign-in showed before the PIN, or if
+ * the app never got past its starting screen.
  */
 export async function unlockAfterLoad(page: Page) {
   // The app has rendered and knows which till it is.
   await page
     .waitForFunction(
-      () => (document.getElementById("root")?.childElementCount ?? 0) > 0 && !document.querySelector('[data-testid="till-starting"]'),
+      () => {
+        const root = document.getElementById("root");
+        // Not the web app (the desktop's own server setup page): nothing to check.
+        if (!root) return true;
+        return root.childElementCount > 0 && !document.querySelector('[data-testid="till-starting"]');
+      },
       null,
       { timeout: 15_000 },
     )
-    .catch(() => {});
+    .catch(() => {
+      throw new Error("Startup lock: the app never got past its starting screen");
+    });
+  const { registered, user } = await page.evaluate(async () => {
+    const state = JSON.parse(localStorage.getItem("pos-auth") ?? "{}")?.state;
+    const signedIn = !!state?.user && (!!state.accessToken || !!state.offline);
+    const terminal = await (window as unknown as { posDesktop?: { terminal: { get(): Promise<unknown> } } }).posDesktop?.terminal.get();
+    return { registered: !!terminal, user: signedIn ? (state.user as { firstName: string; lastName: string; role: string }) : null };
+  });
   const overlay = page.getByRole("dialog", { name: "Till locked" });
-  if (!(await overlay.isVisible())) return;
-  const user = await page.evaluate(
-    () => JSON.parse(localStorage.getItem("pos-auth") ?? "{}")?.state?.user as { firstName: string; lastName: string; role: string } | null,
-  );
+  const locked = await overlay.isVisible();
+  if (registered && user && !locked) throw new Error("Startup lock regression: a registered till with a saved session loaded unlocked");
+  if (!locked) return;
+  const seen = await protectedSeen(page);
+  if (seen.length) throw new Error(`Startup lock regression: shown before the PIN: ${seen.join(", ")}`);
   if (!user) return;
   await overlay.getByRole("button", { name: `${user.firstName} ${user.lastName}` }).click();
   for (const digit of SEED_PINS[user.role] ?? SEED_PINS.OWNER) await page.keyboard.press(digit);
@@ -146,6 +182,8 @@ export async function launch(
     // Tests never let the updater install anything on this PC.
     env: { ...process.env, POS_DESKTOP_USER_DATA: userData, POS_DESKTOP_UPDATE_INSTALL_ON_QUIT: "0", ...extraEnv } as Record<string, string>,
   });
+  // Watches every later page load for anything shown before the PIN.
+  await app.context().addInitScript(WATCH_PROTECTED);
   const page = await app.firstWindow();
   if (!keepLock) {
     const goto = page.goto.bind(page);

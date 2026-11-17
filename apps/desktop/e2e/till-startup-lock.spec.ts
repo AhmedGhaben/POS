@@ -1,6 +1,8 @@
 import { randomUUID } from "crypto";
+import fs from "node:fs";
+import path from "node:path";
 import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
-import { API_URL, connect, launch, login, outbox, SwitchableProxy, tempUserData } from "./helpers";
+import { API_URL, connect, launch, login, outbox, protectedSeen, SwitchableProxy, tempUserData } from "./helpers";
 
 /**
  * PR #15: a registered till starts locked. The session is kept between runs
@@ -49,22 +51,6 @@ async function typePin(page: Page, pin: string) {
   await page.keyboard.press("Enter");
 }
 
-/**
- * Records, from the first moment of every page load, any text that only
- * shows behind sign-in (the shells' buttons, the POS's Charge button).
- */
-const WATCH_PROTECTED = () => {
-  const w = window as unknown as { __protectedSeen: string[] };
-  w.__protectedSeen = [];
-  const check = () => {
-    const text = document.body?.innerText ?? "";
-    const hit = /Log out|Lock till|Charge|Back to dashboard|Dashboard/.exec(text);
-    if (hit) w.__protectedSeen.push(hit[0]);
-  };
-  new MutationObserver(check).observe(document, { subtree: true, childList: true, characterData: true });
-};
-const protectedSeen = (page: Page) => page.evaluate(() => (window as unknown as { __protectedSeen?: string[] }).__protectedSeen ?? []);
-
 test.describe.serial("Till: locked at every start", () => {
   const proxy = new SwitchableProxy(new URL(API_URL));
   const userData = tempUserData();
@@ -80,7 +66,6 @@ test.describe.serial("Till: locked at every start", () => {
   async function restart() {
     await app.close();
     ({ app, page } = await launch(userData, {}, "en", { keepLock: true }));
-    await app.context().addInitScript(WATCH_PROTECTED);
     await page.reload();
     await page.waitForLoadState("domcontentloaded");
   }
@@ -241,11 +226,48 @@ test.describe.serial("Till: locked at every start", () => {
     expect((await authState(page)).user?.id).toBe(owner.user.id);
   });
 
+  test("6: a corrupt lockout file locks offline PINs for everyone; settings, till and saved work are untouched", async () => {
+    // Still offline from the test before.
+    const configBefore = JSON.parse(fs.readFileSync(path.join(userData, "config.json"), "utf8"));
+    const queueBefore = await outbox(page);
+    fs.writeFileSync(path.join(userData, "pin-lockout.json"), "{ corrupt");
+    await restart();
+    await overlay().getByRole("button", { name: `${owner.user.firstName} ${owner.user.lastName}` }).click();
+    await typePin(page, OWNER_PIN);
+    await expect(overlay()).toContainText("Too many wrong PINs");
+    await expect(overlay()).toBeVisible();
+    // The lock is kept in its own file, and nothing else changed.
+    expect(JSON.parse(fs.readFileSync(path.join(userData, "pin-lockout.json"), "utf8"))).toMatchObject({ lockedAllUntil: expect.any(Number) });
+    const configAfter = JSON.parse(fs.readFileSync(path.join(userData, "config.json"), "utf8"));
+    expect(configAfter).toEqual(configBefore);
+    expect(configAfter).toMatchObject({ serverUrl: expect.any(String), terminal: { id: terminalId } });
+    expect(await outbox(page)).toEqual(queueBefore);
+  });
+
   test("12: a forgotten PIN: sign in with email and password from the lock screen", async () => {
     await proxy.up();
     await overlay().getByRole("button", { name: "Sign in with email instead" }).click();
     await page.waitForURL(/\/login/);
     await expect(page.getByLabel("Email")).toBeVisible();
+
+    // An account of another business is refused on this till, and nothing is signed in.
+    const other = { email: `other-business-${Date.now()}@e2e.test`, password: "OtherPass123!" };
+    const reg = await fetch(`${API_URL}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ businessName: "Outra Empresa Lda", storeName: "Outra Loja", firstName: "Otto", lastName: "Outro", ...other }),
+    });
+    expect(reg.status).toBe(201);
+    await page.getByLabel("Email").fill(other.email);
+    await page.getByLabel("Password").fill(other.password);
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await expect(page.getByText("This till belongs to another business")).toBeVisible();
+    await expect(page).toHaveURL(/\/login/);
+    expect((await authState(page)).user).toBeNull();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("pos-auth")!).state.tillCache.business.name)).not.toBe("Outra Empresa Lda");
+    await page.getByLabel("Email").fill("");
+    await page.getByLabel("Password").fill("");
+
     await login(page);
     await expect(overlay()).toHaveCount(0);
     expect((await authState(page)).user?.id).toBe(owner.user.id);

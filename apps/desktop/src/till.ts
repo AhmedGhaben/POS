@@ -4,7 +4,7 @@ import path from "node:path";
 import { z } from "zod";
 import { getConfig, updateConfig } from "./config";
 import { log } from "./logging";
-import { PinLockout, verifyPin } from "./pin-check";
+import { fileLockoutStore, PinLockout, verifyPin } from "./pin-check";
 
 /**
  * The till's key and its PIN sign-in (docs/plans/TILL_ESSENTIALS.md, part 3).
@@ -36,7 +36,7 @@ export type PublicStaffMember = Pick<StaffMember, "id" | "firstName" | "lastName
 export type PinSignInResult =
   | { ok: true; mode: "online"; session: unknown }
   | { ok: true; mode: "offline"; user: Omit<StaffMember, "pin"> }
-  | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user" | "not-registered"; error: string };
+  | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user" | "not-registered" | "unavailable"; error: string };
 
 const TERMINAL_KEY_HEADER = "X-Terminal-Key";
 const RESUME_WINDOW_MS = 12 * 60 * 60 * 1000;
@@ -174,11 +174,12 @@ export async function refreshStaff(): Promise<{ ok: boolean; count: number }> {
 
 // ---------------------------------------------------------------- PIN sign-in
 
-// Kept in config.json, so closing and reopening the app doesn't reset it.
-const lockout = new PinLockout(Date.now, {
-  load: () => getConfig().pinLockout ?? {},
-  save: (entries) => updateConfig({ pinLockout: entries }),
-});
+// Kept in its own file, so closing and reopening the app doesn't reset it
+// (and a failure there can't touch config.json). Fail-closed: pin-check.ts.
+const lockout = new PinLockout(Date.now, fileLockoutStore(() => path.join(app.getPath("userData"), "pin-lockout.json")));
+
+/** The offline PIN check can't keep its count of wrong tries: it doesn't check PINs then. */
+const UNAVAILABLE = "PINs can't be checked offline on this till right now. Connect to the server, or sign in with email.";
 
 /** The refresh cookie belongs to whoever signed in last: drop it when someone else takes over offline. */
 async function forgetRefreshCookie() {
@@ -224,10 +225,12 @@ export async function pinSignIn(userId: string, pin: string): Promise<PinSignInR
   const member = readStaff().find((s) => s.id === userId);
   if (!member) return { ok: false, code: "unknown-user", error: "Unknown person" };
   if (lockout.isLocked(userId)) return { ok: false, code: "locked", error: "Too many wrong PINs. Try again in a few minutes." };
-  if (!(await verifyPin(pin, member.pin))) {
-    lockout.failed(userId);
-    return { ok: false, code: "wrong", error: "Wrong PIN" };
+  // The try is counted (and kept) before the PIN is checked; if it can't be kept, no check.
+  if (!lockout.begin(userId)) {
+    log.warn("[till] offline PIN check refused: the wrong-PIN count can't be saved");
+    return { ok: false, code: "unavailable", error: UNAVAILABLE };
   }
+  if (!(await verifyPin(pin, member.pin))) return { ok: false, code: "wrong", error: "Wrong PIN" };
   lockout.succeeded(userId);
   await forgetRefreshCookie();
   updateConfig({ pinResume: { userId, verifiedAt: new Date().toISOString() } });
@@ -240,7 +243,7 @@ export async function pinSignIn(userId: string, pin: string): Promise<PinSignInR
 
 export type ApprovalCheckResult =
   | { ok: true }
-  | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user"; error: string };
+  | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user" | "unavailable"; error: string };
 
 /** People on this till's saved list who may approve `permission` (for the approval popup while offline). */
 export function listApprovers(permission: string, exceptUserId?: string): PublicStaffMember[] {
@@ -258,10 +261,12 @@ export async function checkApproval(userId: string, pin: string, permission: str
   const member = readStaff().find((s) => s.id === userId);
   if (!member) return { ok: false, code: "unknown-user", error: "Unknown person" };
   if (lockout.isLocked(userId)) return { ok: false, code: "locked", error: "Too many wrong PINs. Try again in a few minutes." };
-  if (!(await verifyPin(pin, member.pin))) {
-    lockout.failed(userId);
-    return { ok: false, code: "wrong", error: "Wrong PIN" };
+  // The try is counted (and kept) before the PIN is checked; if it can't be kept, no check.
+  if (!lockout.begin(userId)) {
+    log.warn("[till] offline PIN check refused: the wrong-PIN count can't be saved");
+    return { ok: false, code: "unavailable", error: UNAVAILABLE };
   }
+  if (!(await verifyPin(pin, member.pin))) return { ok: false, code: "wrong", error: "Wrong PIN" };
   lockout.succeeded(userId);
   if (member.permissions[permission] !== true) return { ok: false, code: "no-access", error: "This person can't approve it" };
   log.info(`[till] offline approval of ${permission} by ${userId}`);

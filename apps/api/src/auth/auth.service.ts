@@ -21,7 +21,7 @@ import { RegisterDto } from "./dto/register.dto";
 import { BusinessSettings, toBusinessSettings } from "../businesses/businesses.service";
 import { checkPinAttempt } from "../common/utils/pin-attempts";
 import { finalConsumerData } from "../customers/final-consumer";
-import { TillAuthService, type TillTerminal } from "../till/till-auth.service";
+import { keyWasSent, TillAuthService, type TillTerminal } from "../till/till-auth.service";
 
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
@@ -55,6 +55,9 @@ interface LoginResult {
   business: BusinessSettings;
 }
 
+/** Shown on a till registered to another business. */
+export const TILL_OF_ANOTHER_BUSINESS = "This till belongs to another business. Sign in with an account of that business.";
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -66,6 +69,19 @@ export class AuthService {
     private readonly mail: MailService,
     private readonly till: TillAuthService,
   ) {}
+
+  /**
+   * On a registered till (its key came with the request), only a session in
+   * the till's own business: someone from another business can't sign in
+   * there, by email, sign-up, switching company or refreshing a session,
+   * and so can't unlock or work the till. No key, or one that doesn't count
+   * (browsers, unregistered or withdrawn tills): as before.
+   */
+  private async checkTillBusiness(tillKey: unknown, businessId: string | null, refuse: (message: string) => Error) {
+    if (!keyWasSent(tillKey)) return;
+    const till = await this.till.terminalForKey(tillKey);
+    if (till && till.businessId !== businessId) throw refuse(TILL_OF_ANOTHER_BUSINESS);
+  }
 
   private signAccessToken(user: { id: string; businessId: string; role: Role }, businessId = user.businessId): string {
     return this.jwt.sign(
@@ -91,7 +107,7 @@ export class AuthService {
     return rawToken;
   }
 
-  async login(email: string, password: string): Promise<LoginResult> {
+  async login(email: string, password: string, tillKey?: unknown): Promise<LoginResult> {
     const user = await this.prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
     if (!user || !user.isActive) {
       throw new UnauthorizedException("Invalid credentials");
@@ -102,8 +118,9 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    if (user.role === Role.ACCOUNTANT) return this.buildSession(user, await this.accountantBusiness(user.id, user.businessId));
-    return this.buildSession(user);
+    const businessId = user.role === Role.ACCOUNTANT ? await this.accountantBusiness(user.id, user.businessId) : user.businessId;
+    await this.checkTillBusiness(tillKey, businessId, (m) => new ForbiddenException(m));
+    return this.buildSession(user, businessId);
   }
 
   /**
@@ -120,12 +137,13 @@ export class AuthService {
   }
 
   /** An accountant moves to another of their clients: a new session there. */
-  async switchBusiness(userId: string, businessId: string): Promise<LoginResult> {
+  async switchBusiness(userId: string, businessId: string, tillKey?: unknown): Promise<LoginResult> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || !user.isActive || user.role !== Role.ACCOUNTANT) throw new UnauthorizedException("Only accountants switch between companies");
     const access = await this.prisma.accountantAccess.findFirst({ where: { userId, businessId, revokedAt: null } });
     if (!access) throw new UnauthorizedException("No company has given you access");
     if (!access.acceptedAt) throw new UnauthorizedException("Accept this company's invitation first");
+    await this.checkTillBusiness(tillKey, businessId, (m) => new ForbiddenException(m));
     return this.buildSession(user, businessId);
   }
 
@@ -168,7 +186,9 @@ export class AuthService {
    * then logs the owner straight in. Owners see every store in their business,
    * so no StoreUser row is needed (same as login).
    */
-  async register(dto: RegisterDto): Promise<LoginResult> {
+  async register(dto: RegisterDto, tillKey?: unknown): Promise<LoginResult> {
+    // A new business never owns a till that's already registered.
+    await this.checkTillBusiness(tillKey, null, (m) => new ForbiddenException(m));
     const email = normalizeEmail(dto.email);
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -281,7 +301,7 @@ export class AuthService {
    * token instead (only hashes are stored, so it can't be the same one),
    * unless the session was ended since (logout, password change).
    */
-  async refresh(rawRefreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+  async refresh(rawRefreshToken: string, tillKey?: unknown): Promise<{ accessToken: string; refreshToken: string }> {
     const tokenHash = hashToken(rawRefreshToken);
     const stored = await this.prisma.refreshToken.findUnique({ where: { tokenHash } });
     if (!stored) {
@@ -309,6 +329,8 @@ export class AuthService {
 
     // An accountant stays in the client they were in (while it still gives them access).
     const businessId = user.role === Role.ACCOUNTANT ? await this.accountantBusiness(user.id, stored.businessId) : user.businessId;
+    // A session from another business (e.g. kept from before this check) ends on this till: sign in again.
+    await this.checkTillBusiness(tillKey, businessId, (m) => new UnauthorizedException(m));
     const newRawToken = await this.issueRefreshToken(user.id, user.role === Role.ACCOUNTANT ? businessId : null);
     if (!inGrace) {
       const newRecord = await this.prisma.refreshToken.findUnique({
