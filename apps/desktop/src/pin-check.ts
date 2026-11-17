@@ -22,26 +22,68 @@ export async function verifyPin(pin: string, stored: string): Promise<boolean> {
 export const MAX_TRIES = 5;
 export const LOCK_MS = 5 * 60 * 1000;
 
-export class PinLockout {
-  private readonly tries = new Map<string, { failed: number; lockedUntil: number }>();
+export interface LockoutEntry {
+  failed: number;
+  lockedUntil: number;
+}
 
-  constructor(private readonly now: () => number = Date.now) {}
+/** Where the counts are kept between runs of the app (no PINs, only counts and times). */
+export interface LockoutStore {
+  load(): Record<string, LockoutEntry>;
+  save(entries: Record<string, LockoutEntry>): void;
+}
+
+export class PinLockout {
+  private tries: Map<string, LockoutEntry> | null = null;
+
+  /**
+   * With a store, the counts survive a restart of the app: closing and
+   * reopening it neither clears a lockout nor the wrong tries so far.
+   */
+  constructor(
+    private readonly now: () => number = Date.now,
+    private readonly store?: LockoutStore,
+  ) {}
+
+  private entries(): Map<string, LockoutEntry> {
+    if (!this.tries) {
+      this.tries = new Map();
+      try {
+        for (const [id, e] of Object.entries(this.store?.load() ?? {})) {
+          if (Number.isFinite(e?.failed) && Number.isFinite(e?.lockedUntil)) this.tries.set(id, { failed: e.failed, lockedUntil: e.lockedUntil });
+        }
+      } catch {
+        // Unreadable: start counting again (the server keeps its own count online).
+      }
+    }
+    return this.tries;
+  }
+
+  private persist() {
+    if (!this.store) return;
+    try {
+      this.store.save(Object.fromEntries(this.entries()));
+    } catch {
+      // Saving the count must never stop a PIN check.
+    }
+  }
 
   isLocked(userId: string): boolean {
-    return (this.tries.get(userId)?.lockedUntil ?? 0) > this.now();
+    return (this.entries().get(userId)?.lockedUntil ?? 0) > this.now();
   }
 
   failed(userId: string) {
-    const entry = this.tries.get(userId) ?? { failed: 0, lockedUntil: 0 };
+    const entry = this.entries().get(userId) ?? { failed: 0, lockedUntil: 0 };
     entry.failed++;
     if (entry.failed >= MAX_TRIES) {
       entry.failed = 0;
       entry.lockedUntil = this.now() + LOCK_MS;
     }
-    this.tries.set(userId, entry);
+    this.entries().set(userId, entry);
+    this.persist();
   }
 
   succeeded(userId: string) {
-    this.tries.delete(userId);
+    if (this.entries().delete(userId)) this.persist();
   }
 }

@@ -1,4 +1,4 @@
-import { BrowserWindow, screen } from "electron";
+import { app, BrowserWindow, screen } from "electron";
 import { z } from "zod";
 import { getDisplay, type DisplaySettings } from "./config";
 import type { HardwareResult } from "./hardware/drawer";
@@ -141,7 +141,8 @@ export function openCustomerWindow() {
     skipTaskbar: true,
     title: "Customer display",
     backgroundColor: "#000000",
-    webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false },
+    // Same origin as the till (its saved session): no DevTools in the installed app.
+    webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, devTools: !app.isPackaged },
   });
   customerWindow.on("closed", () => {
     customerWindow = null;

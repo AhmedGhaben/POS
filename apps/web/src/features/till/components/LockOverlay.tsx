@@ -1,13 +1,20 @@
 import { Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { logout } from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/store";
 import { useLockStore } from "../lock-store";
 import { PinSignIn } from "./PinSignIn";
 
 /**
- * Covers the till while it's locked. The page underneath (and its cart)
- * stays as it was; whoever unlocks becomes the signed-in person.
+ * The till while it's locked (ProtectedRoute shows only this). The cart is
+ * kept; whoever unlocks becomes the signed-in person. Also shown when the
+ * Windows app starts on a registered till, so a restart never skips it.
+ *
+ * Someone who can't use a PIN here (forgotten, not set, not on this till's
+ * list yet) signs out and in again with their email and password: the
+ * session ends, nothing else changes (shifts, saved sales and the cart stay).
  */
 export function LockOverlay() {
   const { t } = useTranslation("auth");
@@ -16,6 +23,13 @@ export function LockOverlay() {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
   if (!locked) return null;
+
+  /** Ends the session (nothing else); sign-in then opens on the email form. */
+  async function signOutForEmail() {
+    useLockStore.getState().setEmailSignIn(true);
+    await logout().catch(() => {});
+    useAuthStore.getState().clearSession();
+  }
 
   return (
     <div
@@ -38,6 +52,14 @@ export function LockOverlay() {
             if (someoneElse && signedIn.role === "CASHIER") navigate("/pos");
           }}
         />
+        <Button
+          type="button"
+          variant="link"
+          className="w-full"
+          onClick={() => void signOutForEmail()}
+        >
+          {t("pin.useEmail")}
+        </Button>
       </div>
     </div>
   );

@@ -174,7 +174,11 @@ export async function refreshStaff(): Promise<{ ok: boolean; count: number }> {
 
 // ---------------------------------------------------------------- PIN sign-in
 
-const lockout = new PinLockout();
+// Kept in config.json, so closing and reopening the app doesn't reset it.
+const lockout = new PinLockout(Date.now, {
+  load: () => getConfig().pinLockout ?? {},
+  save: (entries) => updateConfig({ pinLockout: entries }),
+});
 
 /** The refresh cookie belongs to whoever signed in last: drop it when someone else takes over offline. */
 async function forgetRefreshCookie() {

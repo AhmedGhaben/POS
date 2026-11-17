@@ -90,6 +90,9 @@ function createWindow() {
       nodeIntegration: false,
       webSecurity: true,
       spellcheck: false,
+      // No DevTools in the installed app: from its console the PIN lock (and
+      // the saved session) could be bypassed. Development builds keep them.
+      devTools: !app.isPackaged,
     },
   });
   mainWindow.once("ready-to-show", () => mainWindow?.show());

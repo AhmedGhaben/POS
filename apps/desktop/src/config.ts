@@ -154,6 +154,14 @@ const configSchema = z.object({
     .nullable()
     .optional()
     .catch(undefined),
+  /**
+   * Wrong offline PINs per person, so a restart doesn't reset the lockout
+   * (pin-check.ts). Counts and times only, never a PIN.
+   */
+  pinLockout: z
+    .record(z.string().max(64), z.object({ failed: z.number().int().min(0).max(100), lockedUntil: z.number().min(0) }))
+    .optional()
+    .catch(undefined),
   /** Lock the till after this many idle minutes (0 = never). */
   autoLockMinutes: z.number().int().min(0).max(120).optional().catch(undefined),
   /** Fullscreen till mode with no window frame. */

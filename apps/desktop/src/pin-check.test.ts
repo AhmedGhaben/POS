@@ -43,3 +43,63 @@ describe("offline PIN check", () => {
     assert.equal(lockout.isLocked("u1"), false);
   });
 });
+
+describe("offline PIN lockout across restarts", () => {
+  /** What config.json would hold between two runs of the app. */
+  function memoryStore() {
+    let saved: Record<string, { failed: number; lockedUntil: number }> = {};
+    return {
+      load: () => JSON.parse(JSON.stringify(saved)),
+      save: (e: Record<string, { failed: number; lockedUntil: number }>) => {
+        saved = JSON.parse(JSON.stringify(e));
+      },
+      get saved() {
+        return saved;
+      },
+    };
+  }
+
+  it("a lockout survives closing and reopening the app", () => {
+    let now = 1_000_000;
+    const store = memoryStore();
+    const first = new PinLockout(() => now, store);
+    for (let i = 0; i < MAX_TRIES; i++) first.failed("u1");
+    assert.equal(first.isLocked("u1"), true);
+    const restarted = new PinLockout(() => now, store);
+    assert.equal(restarted.isLocked("u1"), true);
+    now += LOCK_MS + 1;
+    assert.equal(restarted.isLocked("u1"), false);
+  });
+
+  it("wrong tries so far survive a restart (no fresh five tries per restart)", () => {
+    const store = memoryStore();
+    const first = new PinLockout(Date.now, store);
+    for (let i = 0; i < MAX_TRIES - 1; i++) first.failed("u1");
+    const restarted = new PinLockout(Date.now, store);
+    assert.equal(restarted.isLocked("u1"), false);
+    restarted.failed("u1");
+    assert.equal(restarted.isLocked("u1"), true);
+  });
+
+  it("stores only counts and times, never a PIN; a right PIN clears it", () => {
+    const store = memoryStore();
+    const lockout = new PinLockout(Date.now, store);
+    lockout.failed("u1");
+    assert.deepEqual(Object.keys(store.saved.u1).sort(), ["failed", "lockedUntil"]);
+    lockout.succeeded("u1");
+    assert.deepEqual(store.saved, {});
+  });
+
+  it("an unreadable or failing store never stops the check", () => {
+    const lockout = new PinLockout(Date.now, {
+      load: () => {
+        throw new Error("corrupt");
+      },
+      save: () => {
+        throw new Error("disk full");
+      },
+    });
+    for (let i = 0; i < MAX_TRIES; i++) lockout.failed("u1");
+    assert.equal(lockout.isLocked("u1"), true);
+  });
+});

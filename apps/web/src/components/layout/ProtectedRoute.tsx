@@ -3,7 +3,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/features/auth/store";
 import { BUSINESS_QUERY_KEY, fetchBusiness } from "@/features/business/api";
-import { useDeviceStore } from "@/features/desktop/bridge";
+import { isDesktop, useDeviceStore } from "@/features/desktop/bridge";
 import { fetchMyPermissions, myPermissionsQueryKey } from "@/features/users/api";
 import { startSyncEngine } from "@/features/pos/sync";
 import { setSyncEngineRunning } from "@/features/pos/heartbeat";
@@ -12,6 +12,7 @@ import { CommandPalette } from "./CommandPalette";
 import { LockOverlay } from "@/features/till/components/LockOverlay";
 import { ManagerApprovalDialog } from "@/features/overrides/components/ManagerApprovalDialog";
 import { useTillUpkeep } from "@/features/till/use-till";
+import { useLockStore } from "@/features/till/lock-store";
 
 export function ProtectedRoute() {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -65,15 +66,28 @@ export function ProtectedRoute() {
     };
   }, [signedIn]);
 
+  // Fail-closed: until the Windows app knows which till it is, and while
+  // the till is locked, nothing behind sign-in is rendered (no page, no
+  // shortcuts, no dialogs). The effects above keep running, so saved sales
+  // keep uploading and the till keeps reporting while it's locked.
+  const deviceLoaded = useDeviceStore((s) => s.loaded);
+  const locked = useLockStore((s) => s.locked);
+
   if (!signedIn) {
     return <Navigate to="/login" replace />;
   }
+  if (isDesktop && !deviceLoaded) return <StartingScreen />;
+  if (locked) return <LockOverlay />;
   return (
     <>
       <CommandPalette />
       <Outlet />
       <ManagerApprovalDialog />
-      <LockOverlay />
     </>
   );
+}
+
+/** While the Windows app finds out which till it is: a blank screen, nothing behind sign-in. */
+function StartingScreen() {
+  return <div data-testid="till-starting" aria-busy="true" className="fixed inset-0 bg-background" />;
 }

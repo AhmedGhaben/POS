@@ -10,7 +10,7 @@ import { useAuthStore } from "@/features/auth/store";
 import { login } from "@/features/auth/api";
 import { ApiError } from "@/lib/api-client";
 import { useDeviceStore } from "@/features/desktop/bridge";
-import { useTillMode } from "@/features/till/lock-store";
+import { useLockStore, useTillMode } from "@/features/till/lock-store";
 import { PinSignIn } from "@/features/till/components/PinSignIn";
 
 export function LoginPage() {
@@ -28,7 +28,14 @@ export function LoginPage() {
   const [loading, setLoading] = React.useState(false);
   // On a till with PINs, the name buttons come first.
   const tillMode = useTillMode();
-  const [useEmail, setUseEmail] = React.useState(false);
+  // The lock screen's "Sign in with email instead" lands here with the form open.
+  const askedForEmail = useLockStore((s) => s.emailSignIn);
+  const [useEmail, setUseEmail] = React.useState(askedForEmail);
+  React.useEffect(() => {
+    if (!askedForEmail) return;
+    setUseEmail(true);
+    useLockStore.getState().setEmailSignIn(false);
+  }, [askedForEmail]);
   React.useEffect(() => {
     void useDeviceStore.getState().load();
   }, []);
@@ -40,6 +47,8 @@ export function LoginPage() {
     try {
       const { accessToken, user, stores, business } = await login(email, password);
       setSession(accessToken, user, stores, business);
+      // Signed in with email and password: that unlocks the till too.
+      useLockStore.getState().unlock();
       navigate(homePathFor(user.role));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("login.failed"));
@@ -63,7 +72,13 @@ export function LoginPage() {
     >
       {tillMode && !useEmail ? (
         <div className="space-y-4">
-          <PinSignIn onSignedIn={(user) => navigate(user.role === "CASHIER" ? "/pos" : "/dashboard")} />
+          <PinSignIn
+            onSignedIn={(user) => {
+              // Signed in with a PIN: that unlocks the till too.
+              useLockStore.getState().unlock();
+              navigate(user.role === "CASHIER" ? "/pos" : "/dashboard");
+            }}
+          />
           <Button type="button" variant="link" className="w-full" onClick={() => setUseEmail(true)}>
             {t("pin.useEmail")}
           </Button>
