@@ -256,32 +256,37 @@ export class ShiftsService {
       }
       // Cash in or out on a till, in a shift that isn't that till's: recorded, flagged.
       // (Or sent with a till key that no longer counts: kept, never silently as a browser's.)
-      if ((till && tillMismatch(shift.terminalId, till.id)) || invalidKey) {
-        await recordTerminalMismatch(this.prisma, {
-          businessId: user.businessId,
-          userId: user.userId,
-          shiftId: shift.id,
-          operation: "cash-movement",
-          requestTerminalId: till?.id ?? null,
-          shiftTerminalId: shift.terminalId,
-          offline: !!dto.offline,
-          clientId: dto.clientId,
-          invalidKey,
+      // Flagged together with the movement: of copies uploaded at the same
+      // time, only the one that's kept leaves an exception.
+      const mismatch = (!!till && tillMismatch(shift.terminalId, till.id)) || invalidKey;
+      await this.prisma.$transaction(async (tx) => {
+        if (mismatch) {
+          await recordTerminalMismatch(tx, {
+            businessId: user.businessId,
+            userId: user.userId,
+            shiftId: shift.id,
+            operation: "cash-movement",
+            requestTerminalId: till?.id ?? null,
+            shiftTerminalId: shift.terminalId,
+            offline: !!dto.offline,
+            clientId: dto.clientId,
+            invalidKey,
+          });
+        }
+        await tx.cashMovement.create({
+          data: {
+            shiftId: shift.id,
+            type: dto.type,
+            amount: new Prisma.Decimal(dto.amount),
+            reason: dto.reason,
+            note: dto.note?.trim() || null,
+            userId: user.userId,
+            approvedById,
+            occurredAt: tillTime(dto.occurredAt),
+            clientId: dto.clientId,
+            createdOffline: !!dto.offline,
+          },
         });
-      }
-      await this.prisma.cashMovement.create({
-        data: {
-          shiftId: shift.id,
-          type: dto.type,
-          amount: new Prisma.Decimal(dto.amount),
-          reason: dto.reason,
-          note: dto.note?.trim() || null,
-          userId: user.userId,
-          approvedById,
-          occurredAt: tillTime(dto.occurredAt),
-          clientId: dto.clientId,
-          createdOffline: !!dto.offline,
-        },
       });
     }
     return this.report(shift);
@@ -295,21 +300,6 @@ export class ShiftsService {
   async close(user: AuthenticatedUser, dto: CloseShiftDto, till: TillTerminal | null = null, invalidKey = false) {
     const shift = await this.byClientOrThrow(dto.storeId, dto.shiftClientId);
     if (shift.status === ShiftStatus.CLOSED) return this.report(shift);
-    // Closing is never refused for this: the count must not be lost, and a
-    // till has to be able to close a shift it picked up by mistake. Flagged.
-    if ((till && tillMismatch(shift.terminalId, till.id)) || invalidKey) {
-      await recordTerminalMismatch(this.prisma, {
-        businessId: user.businessId,
-        userId: user.userId,
-        shiftId: shift.id,
-        operation: "shift-close",
-        requestTerminalId: till?.id ?? null,
-        shiftTerminalId: shift.terminalId,
-        offline: !!dto.offline,
-        invalidKey,
-      });
-    }
-
     // The cashier closes their own shift; an owner or manager can close an
     // abandoned one for them (they enter the count; it's marked forced).
     const forced = shift.openedById !== user.userId;
@@ -325,22 +315,41 @@ export class ShiftsService {
     });
     const difference = counted.sub(summary.expectedCash);
     const closedAt = tillTime(dto.closedAt);
-    const closed = await this.prisma.shift.update({
-      where: { id: shift.id },
-      data: {
-        status: ShiftStatus.CLOSED,
-        closedById: user.userId,
-        closedAt: closedAt < shift.openedAt ? shift.openedAt : closedAt,
-        countedCash: counted,
-        expectedCash: new Prisma.Decimal(summary.expectedCash),
-        tillExpectedCash: dto.tillExpectedCash !== undefined ? new Prisma.Decimal(dto.tillExpectedCash) : null,
-        difference,
-        countedDenominations: denominations ?? undefined,
-        forcedClose: forced,
-        flagged: isFlagged(difference, business.shiftDifferenceThreshold),
-        note: dto.note?.trim() || null,
-      },
-      include: SHIFT_INCLUDE,
+    // Closing is never refused for this: the count must not be lost, and a
+    // till has to be able to close a shift it picked up by mistake. Flagged
+    // together with the close itself: a close that is refused or fails
+    // leaves no exception behind, however often it's retried.
+    const mismatch = (!!till && tillMismatch(shift.terminalId, till.id)) || invalidKey;
+    const closed = await this.prisma.$transaction(async (tx) => {
+      if (mismatch) {
+        await recordTerminalMismatch(tx, {
+          businessId: user.businessId,
+          userId: user.userId,
+          shiftId: shift.id,
+          operation: "shift-close",
+          requestTerminalId: till?.id ?? null,
+          shiftTerminalId: shift.terminalId,
+          offline: !!dto.offline,
+          invalidKey,
+        });
+      }
+      return tx.shift.update({
+        where: { id: shift.id },
+        data: {
+          status: ShiftStatus.CLOSED,
+          closedById: user.userId,
+          closedAt: closedAt < shift.openedAt ? shift.openedAt : closedAt,
+          countedCash: counted,
+          expectedCash: new Prisma.Decimal(summary.expectedCash),
+          tillExpectedCash: dto.tillExpectedCash !== undefined ? new Prisma.Decimal(dto.tillExpectedCash) : null,
+          difference,
+          countedDenominations: denominations ?? undefined,
+          forcedClose: forced,
+          flagged: isFlagged(difference, business.shiftDifferenceThreshold),
+          note: dto.note?.trim() || null,
+        },
+        include: SHIFT_INCLUDE,
+      });
     });
     if (forced) {
       await this.prisma.auditLog.create({
