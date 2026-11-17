@@ -7,20 +7,25 @@ import { RolesGuard } from "../common/guards/roles.guard";
 import { StoreAccessGuard } from "../common/guards/store-access.guard";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { TillUpload } from "../till/terminal-key.guard";
+import { TillKey } from "../till/till-key.decorator";
+import { TillAuthService } from "../till/till-auth.service";
 import { CashMovementDto, CloseShiftDto, ListShiftsQuery, OpenShiftDto } from "./dto/shift.dto";
 import { ShiftsService } from "./shifts.service";
 
 /** Till shifts: opening float, cash in/out, cash count at close, report. */
 @Controller("shifts")
 export class ShiftsController {
-  constructor(private readonly shifts: ShiftsService) {}
+  constructor(
+    private readonly shifts: ShiftsService,
+    private readonly tillAuth: TillAuthService,
+  ) {}
 
   @Post("open")
   @TillUpload()
   @HttpCode(HttpStatus.OK)
   @UseGuards(StoreAccessGuard)
-  open(@CurrentUser() user: AuthenticatedUser, @Body() dto: OpenShiftDto) {
-    return this.shifts.open(user, dto);
+  async open(@CurrentUser() user: AuthenticatedUser, @Body() dto: OpenShiftDto, @TillKey() key: unknown) {
+    return this.shifts.open(user, dto, await this.tillAuth.tillFor(key, user.businessId));
   }
 
   /** Cash in or out with a reason; cash out needs CASH_OUT or a manager's approval (checked in the service). */
@@ -28,20 +33,21 @@ export class ShiftsController {
   @TillUpload()
   @HttpCode(HttpStatus.OK)
   @UseGuards(StoreAccessGuard)
-  addMovement(
+  async addMovement(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CashMovementDto,
     @Headers(OVERRIDE_HEADER) overrideToken?: string,
+    @TillKey() key?: unknown,
   ) {
-    return this.shifts.addMovement(user, dto, overrideToken);
+    return this.shifts.addMovement(user, dto, overrideToken, await this.tillAuth.tillFor(key, user.businessId));
   }
 
   @Post("close")
   @TillUpload()
   @HttpCode(HttpStatus.OK)
   @UseGuards(StoreAccessGuard)
-  close(@CurrentUser() user: AuthenticatedUser, @Body() dto: CloseShiftDto) {
-    return this.shifts.close(user, dto);
+  async close(@CurrentUser() user: AuthenticatedUser, @Body() dto: CloseShiftDto, @TillKey() key: unknown) {
+    return this.shifts.close(user, dto, await this.tillAuth.tillFor(key, user.businessId));
   }
 
   /** The open shift on a till (terminalId) or, without one, the caller's own: `{ shift }`, null when none. */
@@ -51,8 +57,9 @@ export class ShiftsController {
     @CurrentUser() user: AuthenticatedUser,
     @Query("storeId") storeId: string,
     @Query("terminalId") terminalId?: string,
+    @TillKey() key?: unknown,
   ) {
-    return { shift: await this.shifts.current(user, storeId, terminalId) };
+    return { shift: await this.shifts.current(user, storeId, terminalId, await this.tillAuth.tillFor(key, user.businessId)) };
   }
 
   /** A shift by the till's own id (the till prints the server's report after closing). */

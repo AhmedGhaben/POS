@@ -1324,6 +1324,26 @@ export interface ShiftDto {
   store: { id: string; name: string };
   /** On single-shift answers (open, close, current, report). */
   summary?: ShiftSummaryDto;
+  /**
+   * On single-shift answers: work from a till that landed in a shift that
+   * isn't that till's (a browser shift, or another till's), kept and
+   * flagged for a manager. Nothing in the shift's figures is changed.
+   */
+  terminalExceptions?: ShiftTerminalExceptionDto[];
+  /** On the Shifts list: how many of those this shift has. */
+  terminalExceptionCount?: number;
+}
+
+export interface ShiftTerminalExceptionDto {
+  id: string;
+  at: string;
+  operation: "sale" | "shift-open" | "cash-movement" | "shift-close" | string;
+  /** The till the work came from. */
+  tillCode: string | null;
+  /** The till the shift belongs to; null for a browser shift. */
+  shiftTillCode: string | null;
+  offline: boolean;
+  clientId: string | null;
 }
 
 // ---- Fiscal documents (docs/plans/ANGOLA.md, phase 8) ----

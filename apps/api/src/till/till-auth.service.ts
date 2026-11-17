@@ -29,6 +29,16 @@ export class TillAuthService {
   }
 
   /**
+   * The till a request came from: its key's till, if that till is active and
+   * belongs to the signed-in person's business; otherwise null (a browser, or
+   * a key that doesn't count here). Shift operations and sales are bound to it.
+   */
+  async tillFor(key: unknown, businessId: string): Promise<TillTerminal | null> {
+    const terminal = await this.terminalForKey(key);
+    return terminal && terminal.businessId === businessId ? terminal : null;
+  }
+
+  /**
    * Work a till queued (offline, or before switching cashier) is recorded
    * under the person who did it. The till checked their PIN; the server
    * checks they're an active member of the till's business.
