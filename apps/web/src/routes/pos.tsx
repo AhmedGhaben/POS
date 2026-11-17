@@ -4,6 +4,7 @@ import { ArrowDownUp, FileText, History, LockKeyhole, Pause, Percent, ShoppingCa
 import { toast } from "sonner";
 import { useCurrentShift, useShiftStore } from "@/features/shifts/shift-store";
 import { adoptShift, fetchCurrentShift } from "@/features/shifts/api";
+import { canAdopt, shiftsReady } from "@/features/shifts/till-binding";
 import type { LocalShift } from "@/features/shifts/ledger";
 import { OpenShiftPanel } from "@/features/shifts/components/OpenShiftPanel";
 import { OthersShiftPanel } from "@/features/shifts/components/OthersShiftPanel";
@@ -50,7 +51,7 @@ import { ApiError, apiClient } from "@/lib/api-client";
 import { printDocument } from "@/features/desktop/printing";
 import { PrintButton } from "@/components/print/PrintButton";
 import { logSlipPrint } from "@/features/fiscal/print-log";
-import { useDeviceStore } from "@/features/desktop/bridge";
+import { isDesktop, useDeviceStore } from "@/features/desktop/bridge";
 import { syncTillSeries } from "@/features/fiscal/numbering";
 import { fetchFiscalDocument } from "@/features/fiscal/api";
 import { posFetchProducts } from "@/features/pos/catalog";
@@ -184,16 +185,19 @@ export function PosPage() {
   // A copy, so the close dialog keeps it after the shift is cleared.
   const [closing, setClosing] = React.useState<LocalShift | null>(null);
   const terminalId = useDeviceStore((s) => s.terminal?.id ?? null);
+  const deviceLoaded = useDeviceStore((s) => s.loaded);
   React.useEffect(() => {
-    if (!isTill || shift || !currentStoreId || isWorkingOffline()) return;
+    // A Windows till first finds out which till it is: asking before that
+    // would get a browser shift back.
+    if (!isTill || shift || !currentStoreId || isWorkingOffline() || !shiftsReady(isDesktop, deviceLoaded)) return;
     // Opened on another device, or this one lost its record (app closed
-    // or crashed): carry on with it.
+    // or crashed): carry on with it, if it's this till's own.
     fetchCurrentShift(currentStoreId, terminalId)
       .then((open) => {
-        if (open && !useShiftStore.getState().current) adoptShift(open);
+        if (open && canAdopt(open, terminalId) && !useShiftStore.getState().current) adoptShift(open);
       })
       .catch(() => undefined);
-  }, [isTill, shift, currentStoreId, terminalId]);
+  }, [isTill, shift, currentStoreId, terminalId, deviceLoaded]);
   // Where this till's document series are, so it can number its own (offline too).
   // Its signing key too: fetched, rotated, or dropped if the till's access was withdrawn.
   React.useEffect(() => {

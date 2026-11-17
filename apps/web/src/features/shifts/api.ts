@@ -1,6 +1,5 @@
 import type { CashMovementReason, PagedDto, ShiftDto } from "@pos/shared";
 import { useAuthStore } from "@/features/auth/store";
-import { useDeviceStore } from "@/features/desktop/bridge";
 import { deviceRole } from "@/features/desktop/device-role";
 import { isWorkingOffline, useOfflineStore } from "@/features/pos/offline-store";
 import { syncOutbox } from "@/features/pos/sync";
@@ -9,6 +8,7 @@ import { addToOutbox } from "@/lib/offline-db";
 import { localSummary, type LocalShift } from "./ledger";
 import { offlineOverride, type Approval } from "@/features/overrides/approval";
 import { useShiftStore } from "./shift-store";
+import { tillIdForShift } from "./till-binding";
 
 /**
  * Shift events go through the outbox, like drawer openings: recorded on the
@@ -28,9 +28,10 @@ function me() {
 export async function openShift(storeId: string, openingFloat: number): Promise<LocalShift> {
   // Only a till opens shifts; a back-office device never does.
   if (deviceRole() !== "TILL") throw new Error("This device is set up for back office: it doesn't open shifts");
+  // Which till this is, before anything is recorded (see till-binding.ts).
+  const terminalId = await tillIdForShift();
   const clientId = crypto.randomUUID();
   const openedAt = new Date().toISOString();
-  const terminalId = useDeviceStore.getState().terminal?.id ?? null;
   const shift: LocalShift = { clientId, storeId, terminalId, openedAt, openingFloat, openedBy: me(), sales: [], movements: [] };
   useShiftStore.getState().setCurrent(shift);
   await queue({

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { openCashDrawer, useHasDrawer } from "@/features/desktop/drawer";
 import { openShift } from "../api";
+import { TillNotReadyError } from "../till-binding";
+import { toast } from "sonner";
 import { NumericField } from "@/components/ui/numeric-field";
 
 /** Before the first sale: how much cash is in the drawer to start with. */
@@ -20,9 +22,17 @@ export function OpenShiftPanel({ storeId }: { storeId: string }) {
     e.preventDefault();
     if (!valid || busy) return;
     setBusy(true);
-    await openShift(storeId, Math.round(amount * 100) / 100);
+    try {
+      await openShift(storeId, Math.round(amount * 100) / 100);
+    } catch (err) {
+      // The till couldn't tell which till it is: no shift is opened.
+      if (err instanceof TillNotReadyError) toast.error(t("open.notReady"));
+      else throw err;
+      return;
+    } finally {
+      setBusy(false);
+    }
     if (hasDrawer) void openCashDrawer({ reason: DrawerOpenReason.SHIFT_OPEN });
-    setBusy(false);
   }
 
   return (

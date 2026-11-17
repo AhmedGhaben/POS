@@ -40,7 +40,21 @@
     "saftAccounting": "SAF-T accounting file for {{covers}}: due by {{due}}.",
     "saftPurchases": "SAF-T purchases file (Aquisição de Bens e Serviços) for {{covers}}: due by {{due}}.",
     "overdue": "Overdue.",
-    "makeIt": "Generate it"
+    "makeIt": "Generate it",
+    "groupDue": "Due by {{due}}",
+    "groupPassed": "Deadline passed on {{due}}",
+    "passedNote": "If you've already submitted it, you can ignore this reminder.",
+    "daysLeft_one": "{{count}} day left",
+    "daysLeft_other": "{{count}} days left",
+    "dueToday": "Due today",
+    "makeItFor": "Generate it: {{file}}",
+    "files": "Files to submit",
+    "file": {
+      "saftInvoicing": "SAF-T invoicing file for {{covers}}",
+      "saftInventory": "SAF-T inventory file (stock at {{covers}})",
+      "saftAccounting": "SAF-T accounting file for {{covers}}",
+      "saftPurchases": "SAF-T purchases file (Aquisição de Bens e Serviços) for {{covers}}"
+    }
   },
   "noStore": "No store selected.",
   "store": "store",
@@ -185,5 +199,74 @@
     "total": "Total",
     "noCategory": "No category",
     "generatedAt": "Generated {{at}}"
+  },
+  "storesNow": {
+    "title": "Stores now",
+    "description": "Each store's Windows tills, as of their last contact with the server.",
+    "at": {
+      "today": "at {{time}}",
+      "yesterday": "yesterday at {{time}}",
+      "other": "{{date}} at {{time}}"
+    },
+    "since": {
+      "today": "{{time}}",
+      "yesterday": "yesterday at {{time}}",
+      "other": "{{date}} at {{time}}"
+    },
+    "sinceAt": {
+      "today": "{{time}}",
+      "yesterday": "yesterday at {{time}}",
+      "other": "{{date}} at {{time}}"
+    },
+    "line": {
+      "online": "Online · synced {{at}}",
+      "onlineNoSync": "Online",
+      "syncing": "Uploading saved sales · last {{at}}",
+      "syncingNoSync": "Uploading saved sales",
+      "waiting_one": "{{count}} sale saved on the till · it uploads when someone signs in",
+      "waiting_other": "{{count}} sales saved on the till · they upload when someone signs in",
+      "offline": "No connection since {{since}} · sales made meanwhile arrive when it's back",
+      "inactive": "Off · last contact {{at}}",
+      "never": "No contact yet",
+      "setUp": "set up a till",
+      "browser": "Selling in a browser · connection status only on Windows tills",
+      "noTill": "No Windows till set up"
+    },
+    "device": {
+      "online": "Online",
+      "syncing": "Syncing",
+      "waiting": "Waiting for sign-in",
+      "offline": "No connection",
+      "inactive": "Off",
+      "never": "No contact yet"
+    },
+    "details": {
+      "title": "Tills · {{store}}",
+      "description": "What each Windows till reported last time.",
+      "lastSeen": "Last contact",
+      "lastSync": "Last sync",
+      "pending": "Sales to upload (when it reported)",
+      "version": "App version",
+      "shift": "Shift",
+      "shiftOpen": "Shift open",
+      "noShift": "No shift open",
+      "never": "—",
+      "empty": "No tills connected to this store yet.",
+      "browserNote": "Browser sales have no till: connection status is only shown for Windows tills."
+    },
+    "open": "See {{store}}'s tills",
+    "banner": {
+      "one": "{{store}} has had no connection since {{since}}.",
+      "many": "{{count}} stores have no connection.",
+      "body": "Sales made meanwhile arrive when the connection is back.",
+      "viewOne": "See {{store}}",
+      "viewMany": "See stores"
+    },
+    "logo": {
+      "thisDevice": "This till has no internet",
+      "stores": "{{offline}} of {{total}} stores offline"
+    },
+    "loading": "Loading…",
+    "error": "Couldn't get the stores' status."
   }
 }

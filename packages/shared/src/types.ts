@@ -1324,6 +1324,28 @@ export interface ShiftDto {
   store: { id: string; name: string };
   /** On single-shift answers (open, close, current, report). */
   summary?: ShiftSummaryDto;
+  /**
+   * On single-shift answers: work from a till that landed in a shift that
+   * isn't that till's (a browser shift, or another till's), kept and
+   * flagged for a manager. Nothing in the shift's figures is changed.
+   */
+  terminalExceptions?: ShiftTerminalExceptionDto[];
+  /** On the Shifts list: how many of those this shift has. */
+  terminalExceptionCount?: number;
+}
+
+export interface ShiftTerminalExceptionDto {
+  id: string;
+  at: string;
+  operation: "sale" | "shift-open" | "cash-movement" | "shift-close" | string;
+  /** The till the work came from. */
+  tillCode: string | null;
+  /** The till the shift belongs to; null for a browser shift. */
+  shiftTillCode: string | null;
+  offline: boolean;
+  clientId: string | null;
+  /** Sent with a till key that no longer counts (revoked or unknown). */
+  invalidKey?: boolean;
 }
 
 // ---- Fiscal documents (docs/plans/ANGOLA.md, phase 8) ----
@@ -1528,4 +1550,50 @@ export interface DocumentPrintResultDto {
   /** Printed before: mark it "2ª Via". */
   reprint: boolean;
   printCount: number;
+}
+
+/* ---------- "Lojas agora": store and till connection status ---------- */
+
+/** A registered Windows till, as the server last heard from it. */
+/**
+ * "waiting": it has sales saved but nobody is signed in, so they upload when
+ * someone does. Never an alarm, never offline.
+ */
+export type TillSyncStatus = "online" | "syncing" | "waiting" | "offline" | "inactive" | "never";
+
+/**
+ * A store: the worst of its tills, or, with no Windows till, whether someone
+ * is selling in a browser there ("browser") or nothing is set up ("noTill").
+ * Neither of those two is ever an alarm.
+ */
+export type StoreSyncStatus = TillSyncStatus | "browser" | "noTill";
+
+export interface TillStatusDto {
+  terminalId: string;
+  name: string;
+  code: string;
+  status: TillSyncStatus;
+  /** Server time it was last heard from (heartbeat or upload), or null if never. */
+  lastSeenAt: string | null;
+  /** Server time it last reported nothing left to upload. */
+  lastSyncSuccessAt: string | null;
+  /** Entries waiting on the till when it last reported: unknown since then. */
+  pendingCountReported: number;
+  appVersion: string | null;
+  /** Its sync engine was running (someone signed in) when it last reported. */
+  syncActive: boolean;
+  hasOpenShift: boolean;
+}
+
+export interface StoreStatusDto {
+  storeId: string;
+  name: string;
+  /** For showing times on the store's clock. */
+  timezone: string;
+  country: string;
+  status: StoreSyncStatus;
+  /** Of the tills that decide the store's status. */
+  lastSeenAt: string | null;
+  lastSyncSuccessAt: string | null;
+  devices: TillStatusDto[];
 }

@@ -24,6 +24,7 @@
     "online": "Online",
     "offline": "Sem internet · vendendo",
     "syncing": "Sincronizando",
+    "waiting": "Aguardando um operador",
     "inactive": "Desligado",
     "error": "Erro de sincronização"
   },

@@ -35,8 +35,9 @@
     "connected": "Connected",
     "checking": "Checking…",
     "allSynced": "All sales synced",
-    "refused": "Sales the server refused",
-    "refusedHint": "Kept here until they're fixed and retried. Nothing is deleted."
+    "refused": "Refused by the server",
+    "refusedHint": "Kept here until they're fixed and retried. Nothing is deleted.",
+    "refusedEntry": "{{what}} from {{when}} — reason: {{reason}}"
   },
   "updates": {
     "title": "Updates",

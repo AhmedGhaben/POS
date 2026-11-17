@@ -20,6 +20,10 @@ import { InsightsPanel } from "@/features/reports/components/InsightsPanel";
 import { StoreComparisonChart } from "@/features/reports/components/StoreComparisonChart";
 import { DateRangeSelect } from "@/features/reports/components/DateRangeSelect";
 import { SaftDeadlines } from "@/features/reports/components/SaftDeadlines";
+import { OfflineStoresBanner } from "@/features/stores/OfflineStoresBanner";
+import { StoresNowPanel } from "@/features/stores/StoresNowPanel";
+import { StoreDevicesSheet } from "@/features/stores/StoreDevicesSheet";
+import { canSeeStoresStatus } from "@/features/stores/api";
 import {
   fetchLowStock,
   fetchSalesTrend,
@@ -42,6 +46,7 @@ export function DashboardPage() {
   const stores = useAuthStore((s) => s.stores);
   const currentStoreId = useAuthStore((s) => s.currentStoreId);
   const role = useAuthStore((s) => s.user?.role);
+  const canSeeStores = canSeeStoresStatus(role);
   const [days, setDays] = React.useState(30);
 
   const businessQuery = useQuery({ queryKey: BUSINESS_QUERY_KEY, queryFn: fetchBusiness });
@@ -133,7 +138,7 @@ export function DashboardPage() {
             {businessQuery.data?.name ?? t("common:actions.loading")}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {businessQuery.data && (
             <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium">
               {t("plan", { plan: businessQuery.data.plan })}
@@ -149,6 +154,7 @@ export function DashboardPage() {
         </div>
       </div>
 
+      {canSeeStores && <OfflineStoresBanner />}
       <SaftDeadlines />
 
       <Tabs defaultValue="overview">
@@ -190,6 +196,8 @@ export function DashboardPage() {
             <TopProductsChart data={topProductsQuery.data ?? []} />
           </div>
 
+          {canSeeStores && <StoresNowPanel />}
+
           <LowStockPanel items={lowStockQuery.data ?? []} />
 
           {/* Off until the server enables AI insights (AI_INSIGHTS_ENABLED). */}
@@ -202,6 +210,7 @@ export function DashboardPage() {
           </TabsContent>
         )}
       </Tabs>
+      {canSeeStores && <StoreDevicesSheet />}
     </div>
   );
 }

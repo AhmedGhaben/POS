@@ -111,8 +111,8 @@
   "sync": {
     "synced_one": "{{count}} venda sincronizada",
     "synced_other": "{{count}} vendas sincronizadas",
-    "failedReview_one": "{{count}} venda não sincronizou — precisa de revisão",
-    "failedReview_other": "{{count}} vendas não sincronizaram — precisam de revisão",
+    "failedReview_one": "{{count}} operação recusada pelo servidor — precisa de revisão",
+    "failedReview_other": "{{count}} operações recusadas pelo servidor — precisam de revisão",
     "unreachable": "Não foi possível contactar o servidor — vamos continuar a tentar",
     "serverDown": "Não é possível contactar o servidor STORBIT",
     "noInternet": "Sem ligação à internet",
@@ -123,7 +123,31 @@
     "syncing_other": "A sincronizar {{count}} vendas…",
     "failed_one": "{{count}} venda não sincronizou",
     "failed_other": "{{count}} vendas não sincronizaram",
-    "retry": "Sincronizar agora"
+    "retry": "Sincronizar agora",
+    "failedKind": {
+      "sale_one": "{{count}} venda não sincronizou",
+      "sale_other": "{{count}} vendas não sincronizaram",
+      "voidSale_one": "{{count}} anulação de venda não sincronizou",
+      "voidSale_other": "{{count}} anulações de venda não sincronizaram",
+      "drawerEvent_one": "{{count}} abertura de gaveta não sincronizou",
+      "drawerEvent_other": "{{count}} aberturas de gaveta não sincronizaram",
+      "shiftOpen_one": "{{count}} abertura de turno não sincronizou",
+      "shiftOpen_other": "{{count}} aberturas de turno não sincronizaram",
+      "cashMovement_one": "{{count}} movimento de caixa não sincronizou",
+      "cashMovement_other": "{{count}} movimentos de caixa não sincronizaram",
+      "shiftClose_one": "{{count}} fecho de turno não sincronizou",
+      "shiftClose_other": "{{count}} fechos de turno não sincronizaram",
+      "mixed_one": "{{count}} operação não sincronizou",
+      "mixed_other": "{{count}} operações não sincronizaram"
+    },
+    "kindName": {
+      "sale": "Venda",
+      "voidSale": "Anulação de venda",
+      "drawerEvent": "Abertura de gaveta",
+      "shiftOpen": "Abertura de turno",
+      "cashMovement": "Movimento de caixa",
+      "shiftClose": "Fecho de turno"
+    }
   },
   "recent": {
     "title": "Vendas recentes",

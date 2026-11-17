@@ -98,10 +98,22 @@ function uploadEntry(entry: OutboxEntry): Promise<{ id: string }> {
 
 let running: Promise<SyncResult> | null = null;
 
+/** Told when a sync pass has finished and the counts are fresh (null: it threw). */
+export type SyncPassListener = (result: SyncResult | null, pendingBefore: number) => void;
+const passListeners = new Set<SyncPassListener>();
+
+/** Listen for finished sync passes (the till's heartbeat reports the new count). Read only. */
+export function onSyncPassEnd(listener: SyncPassListener): () => void {
+  passListeners.add(listener);
+  return () => passListeners.delete(listener);
+}
+
 /** Runs one sync pass; concurrent callers share the same run. */
 export function syncOutbox(): Promise<SyncResult> {
   if (!running) {
     const store = useOfflineStore.getState();
+    const pendingBefore = store.pendingCount;
+    let outcome: SyncResult | null = null;
     store.setSyncing(true);
     running = (async () => {
       await tidyOutbox();
@@ -113,11 +125,20 @@ export function syncOutbox(): Promise<SyncResult> {
         );
       }
       if (!result.interrupted) useOfflineStore.getState().setLastSyncAt(new Date().toISOString());
+      outcome = result;
       return result;
     })().finally(async () => {
       running = null;
       useOfflineStore.getState().setSyncing(false);
       await useOfflineStore.getState().refreshPendingCount();
+      // Status reporting only: a listener can never hold up or break a pass.
+      for (const listener of passListeners) {
+        try {
+          listener(outcome, pendingBefore);
+        } catch {
+          // ignore
+        }
+      }
     });
   }
   return running;

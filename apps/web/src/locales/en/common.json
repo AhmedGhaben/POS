@@ -24,6 +24,7 @@
     "online": "Online",
     "offline": "Offline · still selling",
     "syncing": "Syncing",
+    "waiting": "Waiting for sign-in",
     "inactive": "Off",
     "error": "Sync error"
   },

@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
@@ -13,6 +13,11 @@ export interface TillTerminal {
 
 export const TERMINAL_KEY_HEADER = "x-terminal-key";
 
+/** A till key header was sent (anything non-empty), valid or not. */
+export function keyWasSent(key: unknown): boolean {
+  return (typeof key === "string" && key.trim() !== "") || (Array.isArray(key) && key.length > 0);
+}
+
 @Injectable()
 export class TillAuthService {
   constructor(private readonly prisma: PrismaService) {}
@@ -26,6 +31,28 @@ export class TillAuthService {
     });
     if (!terminal?.isActive) return null;
     return { id: terminal.id, businessId: terminal.businessId, storeId: terminal.storeId };
+  }
+
+  /**
+   * The till a request came from: its key's till, if that till is active and
+   * belongs to the signed-in person's business; otherwise null (a browser, or
+   * a key that doesn't count here). Shift operations and sales are bound to it.
+   */
+  async tillFor(key: unknown, businessId: string, { rejectInvalid = false } = {}): Promise<TillTerminal | null> {
+    const { till, invalidKey } = await this.resolveTill(key, businessId);
+    if (till) return till;
+    // A key that was sent but doesn't count (revoked, deactivated, another
+    // business's) is not a browser: where binding matters, it's refused.
+    // No key at all (browsers, older apps) keeps the browser rules.
+    if (rejectInvalid && invalidKey) throw new ForbiddenException("This till isn't registered any more");
+    return null;
+  }
+
+  /** The request's till, and whether a key was sent that doesn't count (revoked, unknown, another business's). */
+  async resolveTill(key: unknown, businessId: string): Promise<{ till: TillTerminal | null; invalidKey: boolean }> {
+    const terminal = await this.terminalForKey(key);
+    if (terminal && terminal.businessId === businessId) return { till: terminal, invalidKey: false };
+    return { till: null, invalidKey: keyWasSent(key) };
   }
 
   /**

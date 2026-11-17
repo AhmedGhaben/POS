@@ -1,6 +1,6 @@
 import * as React from "react";
 import { StatusDiamond } from "@/components/ui/status-diamond";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Download, FolderOpen, RefreshCw, Wand2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -28,6 +28,8 @@ import { LanguagePicker } from "@/components/layout/LanguagePicker";
 import { formatDateTime } from "@/lib/format";
 import { TillSignInSection } from "@/features/till/components/TillSignInSection";
 import { TouchModeSection } from "@/features/touch/TouchModeSection";
+import { RefusedList } from "@/features/pos/components/RefusedEntries";
+import { useRefusedDeepLink } from "@/features/pos/use-refused-deep-link";
 
 function formatTime(iso: string | null | undefined, t: TFunction<"device">) {
   if (!iso) return t("never");
@@ -168,7 +170,12 @@ function SyncSection() {
   const failed = useQuery({
     queryKey: ["outbox-failed", failedCount, isSyncing],
     queryFn: () => listOutbox(["failed"]),
+    // Keep the list on screen while it re-reads, so an entry the deep link
+    // focused isn't swapped for a new element (and the focus lost).
+    placeholderData: keepPreviousData,
   }).data;
+  // From the red sync-error indicator: scroll to, focus and outline the refused sale.
+  const highlightedId = useRefusedDeepLink(failed);
 
   async function runSync() {
     const result = await syncOutbox();
@@ -211,25 +218,7 @@ function SyncSection() {
         </Button>
 
         {failed && failed.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium">{t("sync.refused")}</p>
-            <p className="text-sm text-muted-foreground">
-              {t("sync.refusedHint")}
-            </p>
-            <ul className="divide-y rounded-md border">
-              {failed.map((entry) => (
-                <li key={entry.clientId} className="flex items-center justify-between gap-3 p-3 text-sm">
-                  <div className="min-w-0">
-                    <p className="font-medium">{formatTime(entry.createdAt, t)}</p>
-                    <p className="text-muted-foreground [overflow-wrap:anywhere]">{entry.lastError}</p>
-                  </div>
-                  <Button size="sm" variant="outline" onClick={() => void retryFailed(entry.clientId)}>
-                    {t("common:actions.retry")}
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <RefusedList entries={failed} highlightedId={highlightedId} onRetry={(id) => void retryFailed(id)} />
         )}
       </CardContent>
     </Card>

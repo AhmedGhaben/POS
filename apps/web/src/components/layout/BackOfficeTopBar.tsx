@@ -24,7 +24,7 @@ import { logOutOrCloseShift } from "@/features/shifts/close-request";
 import { LanguagePicker } from "./LanguagePicker";
 import { ShortcutHint } from "./ShortcutHint";
 import { StorbitLogo } from "@/components/brand/StorbitLogo";
-import { useConnectionLogoStatus } from "@/components/brand/use-logo-status";
+import { useOverallStatus } from "@/features/stores/use-overall-status";
 
 export function BackOfficeTopBar() {
   const { t } = useTranslation();
@@ -35,7 +35,7 @@ export function BackOfficeTopBar() {
   const [pinOpen, setPinOpen] = React.useState(false);
   const tillMode = useTillMode();
   const lock = useLockStore((s) => s.lock);
-  const logoStatus = useConnectionLogoStatus();
+  const logoStatus = useOverallStatus().status;
 
   // With a shift open, Log out closes it first (on the POS page).
   function handleLogout() {

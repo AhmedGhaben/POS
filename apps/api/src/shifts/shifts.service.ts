@@ -5,6 +5,8 @@ import { OverridesService } from "../overrides/overrides.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
 import { CashMovementDto, CloseShiftDto, ListShiftsQuery, OpenShiftDto } from "./dto/shift.dto";
+import type { TillTerminal } from "../till/till-auth.service";
+import { SHIFT_TERMINAL_MISMATCH, recordTerminalMismatch, tillMismatch } from "./terminal-exceptions";
 
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
@@ -155,12 +157,31 @@ export class ShiftsService {
    * store). A till has one open shift at a time. Repeating it (the till
    * retrying an upload) returns the same shift.
    */
-  async open(user: AuthenticatedUser, dto: OpenShiftDto) {
+  async open(user: AuthenticatedUser, dto: OpenShiftDto, till: TillTerminal | null = null) {
     const existing = await this.findByClientId(dto.storeId, dto.clientId);
-    if (existing) return this.report(existing);
+    if (existing) {
+      // A retry gets the shift back only on the till it belongs to (a browser
+      // or older app: a browser shift, or the till it named when opening).
+      // An authenticated till: only its own shift (never a browser shift).
+      if (till ? existing.terminalId !== till.id : existing.terminalId && existing.terminalId !== (dto.terminalId ?? null)) {
+        throw new ForbiddenException("This shift belongs to another till");
+      }
+      return this.report(existing);
+    }
+
+    // A till opens shifts in its own store. Online that's checked; offline it
+    // already happened (the till may have been moved since): recorded, flagged.
+    const otherStore = !!till && till.storeId !== dto.storeId;
+    if (otherStore && !dto.offline) throw new BadRequestException("This till belongs to another store");
 
     let terminalId: string | null = null;
-    if (dto.terminalId) {
+    // A till opens shifts for itself: its key decides, whatever id the app sent
+    // (or didn't, if it opened before it knew its own id).
+    const sentOther = !!till && !!dto.terminalId && dto.terminalId !== till.id;
+    if (sentOther && !dto.offline) throw new BadRequestException("This shift is for another till");
+    if (till) {
+      terminalId = till.id;
+    } else if (dto.terminalId) {
       const terminal = await this.prisma.terminal.findFirst({
         where: { id: dto.terminalId, businessId: user.businessId },
         select: { id: true },
@@ -190,6 +211,21 @@ export class ShiftsService {
         include: SHIFT_INCLUDE,
       });
     });
+    // Opened offline on this till, but the app named another till or store: recorded on this till, flagged.
+    if (sentOther || otherStore) {
+      await recordTerminalMismatch(this.prisma, {
+        businessId: user.businessId,
+        userId: user.userId,
+        shiftId: shift.id,
+        operation: "shift-open",
+        requestTerminalId: till!.id,
+        shiftTerminalId: till!.id,
+        sentTerminalId: sentOther ? dto.terminalId : null,
+        offline: true,
+        clientId: dto.clientId,
+        otherStore,
+      });
+    }
     return this.report(shift);
   }
 
@@ -198,7 +234,7 @@ export class ShiftsService {
    * reason. Taking cash out needs CASH_OUT or a manager's approval (online:
    * the X-Override-Token; offline: the approver the till checked).
    */
-  async addMovement(user: AuthenticatedUser, dto: CashMovementDto, overrideToken?: string) {
+  async addMovement(user: AuthenticatedUser, dto: CashMovementDto, overrideToken?: string, till: TillTerminal | null = null, invalidKey = false) {
     const shift = await this.byClientOrThrow(dto.storeId, dto.shiftClientId);
     const existing = await this.prisma.cashMovement.findUnique({
       where: { shiftId_clientId: { shiftId: shift.id, clientId: dto.clientId } },
@@ -218,19 +254,39 @@ export class ShiftsService {
           throw new ForbiddenException("Taking cash out needs a manager's approval");
         }
       }
-      await this.prisma.cashMovement.create({
-        data: {
-          shiftId: shift.id,
-          type: dto.type,
-          amount: new Prisma.Decimal(dto.amount),
-          reason: dto.reason,
-          note: dto.note?.trim() || null,
-          userId: user.userId,
-          approvedById,
-          occurredAt: tillTime(dto.occurredAt),
-          clientId: dto.clientId,
-          createdOffline: !!dto.offline,
-        },
+      // Cash in or out on a till, in a shift that isn't that till's: recorded, flagged.
+      // (Or sent with a till key that no longer counts: kept, never silently as a browser's.)
+      // Flagged together with the movement: of copies uploaded at the same
+      // time, only the one that's kept leaves an exception.
+      const mismatch = (!!till && tillMismatch(shift.terminalId, till.id)) || invalidKey;
+      await this.prisma.$transaction(async (tx) => {
+        if (mismatch) {
+          await recordTerminalMismatch(tx, {
+            businessId: user.businessId,
+            userId: user.userId,
+            shiftId: shift.id,
+            operation: "cash-movement",
+            requestTerminalId: till?.id ?? null,
+            shiftTerminalId: shift.terminalId,
+            offline: !!dto.offline,
+            clientId: dto.clientId,
+            invalidKey,
+          });
+        }
+        await tx.cashMovement.create({
+          data: {
+            shiftId: shift.id,
+            type: dto.type,
+            amount: new Prisma.Decimal(dto.amount),
+            reason: dto.reason,
+            note: dto.note?.trim() || null,
+            userId: user.userId,
+            approvedById,
+            occurredAt: tillTime(dto.occurredAt),
+            clientId: dto.clientId,
+            createdOffline: !!dto.offline,
+          },
+        });
       });
     }
     return this.report(shift);
@@ -241,10 +297,9 @@ export class ShiftsService {
    * the server's own records; the till's figure is kept beside it, since the
    * till may know about sales that haven't uploaded yet.
    */
-  async close(user: AuthenticatedUser, dto: CloseShiftDto) {
+  async close(user: AuthenticatedUser, dto: CloseShiftDto, till: TillTerminal | null = null, invalidKey = false) {
     const shift = await this.byClientOrThrow(dto.storeId, dto.shiftClientId);
     if (shift.status === ShiftStatus.CLOSED) return this.report(shift);
-
     // The cashier closes their own shift; an owner or manager can close an
     // abandoned one for them (they enter the count; it's marked forced).
     const forced = shift.openedById !== user.userId;
@@ -260,22 +315,41 @@ export class ShiftsService {
     });
     const difference = counted.sub(summary.expectedCash);
     const closedAt = tillTime(dto.closedAt);
-    const closed = await this.prisma.shift.update({
-      where: { id: shift.id },
-      data: {
-        status: ShiftStatus.CLOSED,
-        closedById: user.userId,
-        closedAt: closedAt < shift.openedAt ? shift.openedAt : closedAt,
-        countedCash: counted,
-        expectedCash: new Prisma.Decimal(summary.expectedCash),
-        tillExpectedCash: dto.tillExpectedCash !== undefined ? new Prisma.Decimal(dto.tillExpectedCash) : null,
-        difference,
-        countedDenominations: denominations ?? undefined,
-        forcedClose: forced,
-        flagged: isFlagged(difference, business.shiftDifferenceThreshold),
-        note: dto.note?.trim() || null,
-      },
-      include: SHIFT_INCLUDE,
+    // Closing is never refused for this: the count must not be lost, and a
+    // till has to be able to close a shift it picked up by mistake. Flagged
+    // together with the close itself: a close that is refused or fails
+    // leaves no exception behind, however often it's retried.
+    const mismatch = (!!till && tillMismatch(shift.terminalId, till.id)) || invalidKey;
+    const closed = await this.prisma.$transaction(async (tx) => {
+      if (mismatch) {
+        await recordTerminalMismatch(tx, {
+          businessId: user.businessId,
+          userId: user.userId,
+          shiftId: shift.id,
+          operation: "shift-close",
+          requestTerminalId: till?.id ?? null,
+          shiftTerminalId: shift.terminalId,
+          offline: !!dto.offline,
+          invalidKey,
+        });
+      }
+      return tx.shift.update({
+        where: { id: shift.id },
+        data: {
+          status: ShiftStatus.CLOSED,
+          closedById: user.userId,
+          closedAt: closedAt < shift.openedAt ? shift.openedAt : closedAt,
+          countedCash: counted,
+          expectedCash: new Prisma.Decimal(summary.expectedCash),
+          tillExpectedCash: dto.tillExpectedCash !== undefined ? new Prisma.Decimal(dto.tillExpectedCash) : null,
+          difference,
+          countedDenominations: denominations ?? undefined,
+          forcedClose: forced,
+          flagged: isFlagged(difference, business.shiftDifferenceThreshold),
+          note: dto.note?.trim() || null,
+        },
+        include: SHIFT_INCLUDE,
+      });
     });
     if (forced) {
       await this.prisma.auditLog.create({
@@ -293,7 +367,13 @@ export class ShiftsService {
   }
 
   /** The open shift on this till (or this person's, in a browser), if any. */
-  async current(user: AuthenticatedUser, storeId: string, terminalId?: string) {
+  async current(user: AuthenticatedUser, storeId: string, terminalId?: string, till: TillTerminal | null = null) {
+    // A till only ever gets its own shift (never a browser shift), whatever it
+    // asked for, and only in its own store.
+    if (till) {
+      if (till.storeId !== storeId) return null;
+      terminalId = till.id;
+    }
     const shift = await this.prisma.shift.findFirst({
       where: terminalId
         ? { terminalId, storeId, status: ShiftStatus.OPEN, store: { businessId: user.businessId } }
@@ -328,7 +408,16 @@ export class ShiftsService {
       }),
       this.prisma.shift.count({ where }),
     ]);
-    return { items, total, page, pageSize };
+    // How many till mismatches each shift has (shown as a badge for managers).
+    const counts = items.length
+      ? await this.prisma.auditLog.groupBy({
+          by: ["entityId"],
+          where: { action: SHIFT_TERMINAL_MISMATCH, entityType: "shift", entityId: { in: items.map((i) => i.id) } },
+          _count: { _all: true },
+        })
+      : [];
+    const byShift = new Map(counts.map((c) => [c.entityId, c._count._all]));
+    return { items: items.map((i) => ({ ...i, terminalExceptionCount: byShift.get(i.id) ?? 0 })), total, page, pageSize };
   }
 
   async findOne(user: AuthenticatedUser, id: string) {
@@ -344,7 +433,40 @@ export class ShiftsService {
   }
 
   private async report(shift: ShiftWithPeople) {
-    return { ...shift, summary: await this.summarize(shift) };
+    const [summary, terminalExceptions] = await Promise.all([this.summarize(shift), this.terminalExceptions(shift.id)]);
+    return { ...shift, summary, terminalExceptions };
+  }
+
+  /** Till mismatches flagged on this shift (see terminal-exceptions.ts), oldest first. */
+  private async terminalExceptions(shiftId: string) {
+    const rows = await this.prisma.auditLog.findMany({
+      where: { action: SHIFT_TERMINAL_MISMATCH, entityType: "shift", entityId: shiftId },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, createdAt: true, metadata: true },
+    });
+    const ids = new Set<string>();
+    for (const r of rows) {
+      const m = r.metadata as { requestTerminalId?: string | null; shiftTerminalId?: string | null };
+      if (m?.requestTerminalId) ids.add(m.requestTerminalId);
+      if (m?.shiftTerminalId) ids.add(m.shiftTerminalId);
+    }
+    const codes = new Map(
+      (await this.prisma.terminal.findMany({ where: { id: { in: [...ids] } }, select: { id: true, code: true } })).map((t) => [t.id, t.code]),
+    );
+    return rows.map((r) => {
+      const m = (r.metadata ?? {}) as Record<string, unknown>;
+      const code = (id: unknown) => (typeof id === "string" ? (codes.get(id) ?? id) : null);
+      return {
+        id: r.id,
+        at: r.createdAt,
+        operation: String(m.operation ?? ""),
+        tillCode: code(m.requestTerminalId),
+        shiftTillCode: code(m.shiftTerminalId),
+        offline: !!m.offline,
+        clientId: typeof m.clientId === "string" ? m.clientId : null,
+        invalidKey: !!m.invalidKey,
+      };
+    });
   }
 
   /** The end-of-shift report: sales, payments, discounts, cancels, returns, cash. */

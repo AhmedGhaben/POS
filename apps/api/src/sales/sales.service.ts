@@ -1,4 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import type { TillTerminal } from "../till/till-auth.service";
+import { recordTerminalMismatch, shiftIsElsewhere } from "../shifts/terminal-exceptions";
 import { Permission, Prisma, PaymentMethod, Role, SaleStatus, ShiftStatus } from "@prisma/client";
 import { OverridesService } from "../overrides/overrides.service";
 import { finalConsumerData } from "../customers/final-consumer";
@@ -136,7 +138,8 @@ export class SalesService {
     return { items: items.map(withSoldNames), total };
   }
 
-  async create(businessId: string, cashierId: string, dto: CreateSaleDto, role: Role = Role.CASHIER) {
+  /** `till`: the till the request came from (its key), or null from a browser. */
+  async create(businessId: string, cashierId: string, dto: CreateSaleDto, role: Role = Role.CASHIER, till: TillTerminal | null = null) {
     const offline = dto.offline;
     if (offline && !dto.clientId) {
       throw new BadRequestException("Offline sales need a clientId");
@@ -308,8 +311,17 @@ export class SalesService {
     if (dto.fiscal?.hash && terminal && !terminal.isActive) {
       throw new ForbiddenException("This till's access was withdrawn; it can't issue documents");
     }
+    // The till ringing it up is the one its key says. Online, a sale naming
+    // another till is refused; offline it already happened: recorded, flagged.
+    const sentOther = !!till && !!terminalId && terminalId !== till.id;
+    if (sentOther && !offline) throw new BadRequestException("This sale is from another till");
+    // A till sells in its own store; offline it already happened (it may have been moved since).
+    const otherStore = !!till && till.storeId !== dto.storeId;
+    if (otherStore && !offline) throw new BadRequestException("This till belongs to another store");
+    const requestTerminalId = till?.id ?? terminalId;
     // The shift was opened before this sale (the till uploads in order).
-    const shift = await this.saleShift(dto, cashierId, terminalId);
+    const shift = await this.saleShift(dto, cashierId, requestTerminalId, !!till);
+    const shiftMismatch = !!offline && !!shift && shiftIsElsewhere(shift.terminalId, requestTerminalId, !!till);
     const customerId = dto.customerId || (await this.finalConsumerId(businessId));
     // The buyer and seller frozen on the sale's Factura-Recibo.
     const buyer = await this.prisma.customer.findFirst({ where: { id: customerId, businessId } });
@@ -414,6 +426,22 @@ export class SalesService {
             });
           }
         }
+        // Exactly once: a retried upload returns the existing sale before getting here.
+        if (shift && (shiftMismatch || sentOther || otherStore)) {
+          await recordTerminalMismatch(tx, {
+            businessId,
+            userId: cashierId,
+            shiftId: shift.id,
+            operation: "sale",
+            requestTerminalId,
+            shiftTerminalId: shift.terminalId,
+            sentTerminalId: sentOther ? terminalId : null,
+            offline: !!offline,
+            clientId: dto.clientId ?? null,
+            saleId: created.id,
+            otherStore,
+          });
+        }
         return tx.sale.findUniqueOrThrow({ where: { id: created.id }, include: SALE_INCLUDE });
       });
     } catch (error) {
@@ -490,7 +518,7 @@ export class SalesService {
    * shift may have closed since, and sales queued by older apps may have
    * none; if it hasn't uploaded yet, the till tries again later.
    */
-  private async saleShift(dto: CreateSaleDto, cashierId: string, terminalId: string | null) {
+  private async saleShift(dto: CreateSaleDto, cashierId: string, terminalId: string | null, authenticatedTill = false) {
     const offline = !!dto.offline;
     if (!dto.shiftClientId) {
       if (offline) return null;
@@ -509,8 +537,10 @@ export class SalesService {
       if (shift.openedById !== cashierId) {
         throw new ForbiddenException("This shift belongs to someone else. They have to close it before you can sell.");
       }
-      if (shift.terminalId && terminalId && shift.terminalId !== terminalId) {
-        throw new BadRequestException("This shift is open on another till");
+      // A till (authenticated by its key) sells only in its own shift. Without
+      // a key (browsers, older apps) only a clash between two named tills counts.
+      if (shiftIsElsewhere(shift.terminalId, terminalId, authenticatedTill)) {
+        throw new BadRequestException(shift.terminalId ? "This shift is open on another till" : "This shift isn't open on this till. Close it and open a new one here.");
       }
     }
     return shift;

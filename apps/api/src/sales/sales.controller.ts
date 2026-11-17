@@ -1,4 +1,6 @@
 import { BadRequestException, Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query, UseGuards } from "@nestjs/common";
+import { TillKey } from "../till/till-key.decorator";
+import { TillAuthService } from "../till/till-auth.service";
 import { Permission, Role } from "@prisma/client";
 import { Roles } from "../common/decorators/roles.decorator";
 import { RolesGuard } from "../common/guards/roles.guard";
@@ -14,7 +16,10 @@ import { SalesService } from "./sales.service";
 
 @Controller("sales")
 export class SalesController {
-  constructor(private readonly salesService: SalesService) {}
+  constructor(
+    private readonly salesService: SalesService,
+    private readonly tillAuth: TillAuthService,
+  ) {}
 
   @Get("store/:storeId")
   @UseGuards(StoreAccessGuard)
@@ -52,8 +57,9 @@ export class SalesController {
   @Post()
   @TillUpload()
   @UseGuards(StoreAccessGuard)
-  create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateSaleDto) {
-    return this.salesService.create(user.businessId, user.userId, dto, user.role);
+  async create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateSaleDto, @TillKey() key: unknown) {
+    // Online, a key that doesn't count is refused; an offline sale already happened (fiscal document included).
+    return this.salesService.create(user.businessId, user.userId, dto, user.role, await this.tillAuth.tillFor(key, user.businessId, { rejectInvalid: !dto.offline }));
   }
 
   /** Cancels a sale; repeating it returns the cancelled sale. */

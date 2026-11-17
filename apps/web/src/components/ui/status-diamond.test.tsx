@@ -28,6 +28,15 @@ describe("StatusDiamond", () => {
     expect(html).toContain("A sincronizar");
   });
 
+  it("waiting is a muted outline with no pulse (never amber)", () => {
+    const html = renderToStaticMarkup(<StatusDiamond state="waiting" />);
+    expect(html).toContain('fill="transparent"');
+    expect(html).toContain('stroke="var(--sb-text-muted)"');
+    expect(html).not.toContain("sb-diamond-pulse");
+    expect(html).not.toContain("--sb-status-offline");
+    expect(html).toContain("À espera de um operador");
+  });
+
   it("sizes are the side of the square before rotation", () => {
     const html = renderToStaticMarkup(<StatusDiamond state="error" size={16} />);
     expect(html).toContain('width="23"'); // 16 × √2, rounded up

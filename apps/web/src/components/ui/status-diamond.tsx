@@ -9,19 +9,21 @@ import { cn } from "@/lib/utils";
  *   online   filled green       connected and up to date
  *   offline  filled amber       no connection; sales are kept locally
  *   syncing  green outline      uploading saved sales (gentle pulse)
+ *   waiting  muted outline      sales saved, upload when someone signs in
  *   inactive muted, 50%         device off or no open shift (no alarm)
  *   error    filled red         a real sync failure that needs action
  *
  * Never colour alone: a text label is shown next to it, or, with
  * `hideLabel`, given as its accessible name and tooltip.
  */
-export type DiamondState = "online" | "offline" | "syncing" | "inactive" | "error";
+export type DiamondState = "online" | "offline" | "syncing" | "waiting" | "inactive" | "error";
 export type DiamondSize = 8 | 10 | 12 | 16;
 
 const FILL: Record<DiamondState, string> = {
   online: "var(--sb-status-online)",
   offline: "var(--sb-status-offline)",
   syncing: "transparent",
+  waiting: "transparent",
   inactive: "var(--sb-text-muted)",
   error: "var(--sb-status-error)",
 };
@@ -43,7 +45,8 @@ export function StatusDiamond({ state, size = 10, label, hideLabel = false, clas
   const box = Math.ceil(size * Math.SQRT2);
   const c = box / 2;
   // The outline (syncing) is drawn inside the shape, so both look the same size.
-  const stroke = state === "syncing" ? 2 : 0;
+  const outlined = state === "syncing" || state === "waiting";
+  const stroke = outlined ? 2 : 0;
   const side = size - stroke;
   const accessibleName = typeof text === "string" ? text : undefined;
   return (
@@ -71,7 +74,7 @@ export function StatusDiamond({ state, size = 10, label, hideLabel = false, clas
           transform={`rotate(45 ${c} ${c})`}
           fill={FILL[state]}
           fillOpacity={state === "inactive" ? 0.5 : 1}
-          stroke={state === "syncing" ? "var(--sb-status-online)" : undefined}
+          stroke={state === "syncing" ? "var(--sb-status-online)" : state === "waiting" ? "var(--sb-text-muted)" : undefined}
           strokeWidth={stroke || undefined}
         />
       </svg>
