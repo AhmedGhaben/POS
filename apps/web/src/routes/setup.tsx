@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { LanguagePicker } from "@/components/layout/LanguagePicker";
 import { pairTerminal } from "@/features/desktop/api";
 import { isDesktop, useDeviceStore } from "@/features/desktop/bridge";
+import { useLockStore } from "@/features/till/lock-store";
 import { PrintersSection } from "@/features/desktop/components/PrintersSection";
 import { DrawerSection } from "@/features/desktop/components/DrawerSection";
 import { DisplaySection } from "@/features/desktop/components/DisplaySection";
@@ -28,6 +29,7 @@ export function SetupPage() {
   const navigate = useNavigate();
   const terminal = useDeviceStore((s) => s.terminal);
   const loaded = useDeviceStore((s) => s.loaded);
+  const locked = useLockStore((s) => s.locked);
   const [step, setStep] = React.useState<Step>("till");
 
   React.useEffect(() => {
@@ -35,6 +37,11 @@ export function SetupPage() {
   }, []);
 
   if (!isDesktop) return <Navigate to="/login" replace />;
+  // A registered till that's locked (it starts locked) can't be set up again
+  // with the session saved from last time: unlock first. Blank until the
+  // app knows which till it is.
+  if (locked && !loaded) return null;
+  if (locked && terminal) return <Navigate to="/" replace />;
 
   const index = STEPS.indexOf(step);
   const next = () => setStep(STEPS[Math.min(index + 1, STEPS.length - 1)]);

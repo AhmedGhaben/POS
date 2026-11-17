@@ -14,6 +14,7 @@ import { PinLoginDto, PinResumeDto } from "./dto/pin-login.dto";
 import { SwitchBusinessDto } from "./dto/switch-business.dto";
 import { CurrentTerminal, TerminalKeyGuard } from "../till/terminal-key.guard";
 import type { TillTerminal } from "../till/till-auth.service";
+import { TillKey } from "../till/till-key.decorator";
 
 const REFRESH_COOKIE = "refresh_token";
 const REFRESH_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -35,8 +36,9 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post("login")
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    const { refreshToken, ...session } = await this.authService.login(dto.email, dto.password);
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response, @TillKey() tillKey: unknown) {
+    // On a registered till, only accounts of the till's business (auth.service.ts).
+    const { refreshToken, ...session } = await this.authService.login(dto.email, dto.password, tillKey);
 
     this.setRefreshCookie(res, refreshToken);
 
@@ -78,8 +80,8 @@ export class AuthController {
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post("register")
-  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
-    const { refreshToken, ...session } = await this.authService.register(dto);
+  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response, @TillKey() tillKey: unknown) {
+    const { refreshToken, ...session } = await this.authService.register(dto, tillKey);
 
     this.setRefreshCookie(res, refreshToken);
 
@@ -89,8 +91,13 @@ export class AuthController {
   /** An accountant moves to another client company: a new session (and refresh cookie) there. */
   @Post("switch-business")
   @HttpCode(HttpStatus.OK)
-  async switchBusiness(@CurrentUser() user: AuthenticatedUser, @Body() dto: SwitchBusinessDto, @Res({ passthrough: true }) res: Response) {
-    const { refreshToken, ...session } = await this.authService.switchBusiness(user.userId, dto.businessId);
+  async switchBusiness(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: SwitchBusinessDto,
+    @Res({ passthrough: true }) res: Response,
+    @TillKey() tillKey: unknown,
+  ) {
+    const { refreshToken, ...session } = await this.authService.switchBusiness(user.userId, dto.businessId, tillKey);
     this.setRefreshCookie(res, refreshToken);
     return session;
   }
@@ -106,7 +113,7 @@ export class AuthController {
     if (!refreshToken) {
       throw new UnauthorizedException("Missing refresh token");
     }
-    const result = await this.authService.refresh(refreshToken);
+    const result = await this.authService.refresh(refreshToken, req.headers?.["x-terminal-key"]);
     this.setRefreshCookie(res, result.refreshToken);
     return { accessToken: result.accessToken };
   }

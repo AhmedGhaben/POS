@@ -95,15 +95,86 @@ export function tempUserData() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "pos-desktop-test-"));
 }
 
+/** The till PINs the seed gives (apps/api/prisma/seed.ts). */
+export const SEED_PINS: Record<string, string> = { OWNER: "8642", CASHIER: "2468" };
+
+/**
+ * Records, from the first moment of every page load, any text that only
+ * shows behind sign-in (the shells' buttons, the POS's Charge button).
+ * Added to the app's window by launch(); read with protectedSeen().
+ */
+export const WATCH_PROTECTED = () => {
+  const w = window as unknown as { __protectedSeen: string[] };
+  w.__protectedSeen = [];
+  const check = () => {
+    const text = document.body?.innerText ?? "";
+    const hit = /Log out|Lock till|Charge|Back to dashboard|Dashboard/.exec(text);
+    if (hit) w.__protectedSeen.push(hit[0]);
+  };
+  new MutationObserver(check).observe(document, { subtree: true, childList: true, characterData: true });
+};
+
+export const protectedSeen = (page: Page) => page.evaluate(() => (window as unknown as { __protectedSeen?: string[] }).__protectedSeen ?? []);
+
+/**
+ * A registered till comes up locked after every page load: a restart, a
+ * reload, or a page.goto, which loads the page again. Specs that use those
+ * as shortcuts to get somewhere are then unlocked the way the person at the
+ * till would: the signed-in person taps their name and types their PIN.
+ *
+ * It never hides a broken lock: before unlocking it checks the startup
+ * rules, and fails the spec if a registered till with a saved session
+ * loaded unlocked, if anything behind sign-in showed before the PIN, or if
+ * the app never got past its starting screen.
+ */
+export async function unlockAfterLoad(page: Page) {
+  // The app has rendered and knows which till it is.
+  await page
+    .waitForFunction(
+      () => {
+        const root = document.getElementById("root");
+        // Not the web app (the desktop's own server setup page): nothing to check.
+        if (!root) return true;
+        return root.childElementCount > 0 && !document.querySelector('[data-testid="till-starting"]');
+      },
+      null,
+      { timeout: 15_000 },
+    )
+    .catch(() => {
+      throw new Error("Startup lock: the app never got past its starting screen");
+    });
+  const { registered, user } = await page.evaluate(async () => {
+    const state = JSON.parse(localStorage.getItem("pos-auth") ?? "{}")?.state;
+    const signedIn = !!state?.user && (!!state.accessToken || !!state.offline);
+    const terminal = await (window as unknown as { posDesktop?: { terminal: { get(): Promise<unknown> } } }).posDesktop?.terminal.get();
+    return { registered: !!terminal, user: signedIn ? (state.user as { firstName: string; lastName: string; role: string }) : null };
+  });
+  const overlay = page.getByRole("dialog", { name: "Till locked" });
+  const locked = await overlay.isVisible();
+  if (registered && user && !locked) throw new Error("Startup lock regression: a registered till with a saved session loaded unlocked");
+  if (!locked) return;
+  const seen = await protectedSeen(page);
+  if (seen.length) throw new Error(`Startup lock regression: shown before the PIN: ${seen.join(", ")}`);
+  if (!user) return;
+  await overlay.getByRole("button", { name: `${user.firstName} ${user.lastName}` }).click();
+  for (const digit of SEED_PINS[user.role] ?? SEED_PINS.OWNER) await page.keyboard.press(digit);
+  await page.keyboard.press("Enter");
+  await overlay.waitFor({ state: "hidden" });
+}
+
 /**
  * Launches the dev build, or the packaged app when POS_DESKTOP_EXECUTABLE
  * points at it (e.g. release/win-unpacked/STORBIT.exe).
+ *
+ * page.goto and page.reload unlock the till afterwards (unlockAfterLoad),
+ * unless `keepLock`: the specs about the lock itself see it as it is.
  */
 export async function launch(
   userData: string,
   extraEnv: Record<string, string> = {},
   /** A first run opens in pt-AO; the tests read English unless they pass null. */
   language: string | null = "en",
+  { keepLock = false }: { keepLock?: boolean } = {},
 ): Promise<{ app: ElectronApplication; page: Page }> {
   const executablePath = process.env.POS_DESKTOP_EXECUTABLE;
   const app = await electron.launch({
@@ -111,10 +182,27 @@ export async function launch(
     // Tests never let the updater install anything on this PC.
     env: { ...process.env, POS_DESKTOP_USER_DATA: userData, POS_DESKTOP_UPDATE_INSTALL_ON_QUIT: "0", ...extraEnv } as Record<string, string>,
   });
+  // Watches every later page load for anything shown before the PIN.
+  await app.context().addInitScript(WATCH_PROTECTED);
   const page = await app.firstWindow();
+  if (!keepLock) {
+    const goto = page.goto.bind(page);
+    const reload = page.reload.bind(page);
+    page.goto = async (...args: Parameters<Page["goto"]>) => {
+      const response = await goto(...args);
+      await unlockAfterLoad(page);
+      return response;
+    };
+    page.reload = async (...args: Parameters<Page["reload"]>) => {
+      const response = await reload(...args);
+      await unlockAfterLoad(page);
+      return response;
+    };
+  }
   await page.waitForLoadState("domcontentloaded");
   const chosen = language && (await page.evaluate((l) => !localStorage.getItem("pos-language") && (localStorage.setItem("pos-language", l), true), language));
   if (chosen) await page.reload();
+  if (!keepLock) await unlockAfterLoad(page);
   return { app, page };
 }
 

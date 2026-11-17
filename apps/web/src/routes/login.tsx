@@ -9,9 +9,10 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { useAuthStore } from "@/features/auth/store";
 import { login } from "@/features/auth/api";
 import { ApiError } from "@/lib/api-client";
-import { useDeviceStore } from "@/features/desktop/bridge";
-import { useTillMode } from "@/features/till/lock-store";
+import { desktop, useDeviceStore } from "@/features/desktop/bridge";
+import { useLockStore, useTillMode } from "@/features/till/lock-store";
 import { PinSignIn } from "@/features/till/components/PinSignIn";
+import { WithdrawnTillNotice } from "@/features/till/components/WithdrawnTillNotice";
 
 export function LoginPage() {
   const { t } = useTranslation("auth");
@@ -28,7 +29,14 @@ export function LoginPage() {
   const [loading, setLoading] = React.useState(false);
   // On a till with PINs, the name buttons come first.
   const tillMode = useTillMode();
-  const [useEmail, setUseEmail] = React.useState(false);
+  // The lock screen's "Sign in with email instead" lands here with the form open.
+  const askedForEmail = useLockStore((s) => s.emailSignIn);
+  const [useEmail, setUseEmail] = React.useState(askedForEmail);
+  React.useEffect(() => {
+    if (!askedForEmail) return;
+    setUseEmail(true);
+    useLockStore.getState().setEmailSignIn(false);
+  }, [askedForEmail]);
   React.useEffect(() => {
     void useDeviceStore.getState().load();
   }, []);
@@ -40,9 +48,16 @@ export function LoginPage() {
     try {
       const { accessToken, user, stores, business } = await login(email, password);
       setSession(accessToken, user, stores, business);
+      // Signed in with email and password: that unlocks the till too.
+      useLockStore.getState().unlock();
       navigate(homePathFor(user.role));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("login.failed"));
+      // Refused on a registered till: if the server withdrew it, offer to set it up again.
+      if (err instanceof ApiError && err.status === 403 && useDeviceStore.getState().terminal) {
+        const status = await desktop?.terminal.keyStatus?.().catch(() => null);
+        if (status === "withdrawn") useLockStore.getState().setTillWithdrawn(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -61,9 +76,16 @@ export function LoginPage() {
         </>
       }
     >
+      <WithdrawnTillNotice />
       {tillMode && !useEmail ? (
         <div className="space-y-4">
-          <PinSignIn onSignedIn={(user) => navigate(user.role === "CASHIER" ? "/pos" : "/dashboard")} />
+          <PinSignIn
+            onSignedIn={(user) => {
+              // Signed in with a PIN: that unlocks the till too.
+              useLockStore.getState().unlock();
+              navigate(user.role === "CASHIER" ? "/pos" : "/dashboard");
+            }}
+          />
           <Button type="button" variant="link" className="w-full" onClick={() => setUseEmail(true)}>
             {t("pin.useEmail")}
           </Button>

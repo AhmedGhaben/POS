@@ -88,11 +88,11 @@ type PinSignInResult =
       mode: "offline";
       user: StaffMember & { language?: string | null; displaySize?: number | null; permissions: Record<string, boolean> };
     }
-  | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user" | "not-registered"; error: string };
+  | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user" | "not-registered" | "unavailable"; error: string };
 
 type ResumeResult = { ok: true; session: unknown } | { ok: false; code: "unreachable" | "rejected" | "nothing"; error?: string };
 
-type ApprovalCheckResult = { ok: true } | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user"; error: string };
+type ApprovalCheckResult = { ok: true } | { ok: false; code: "wrong" | "locked" | "no-access" | "unknown-user" | "unavailable"; error: string };
 
 /**
  * The only bridge between the page and the desktop layer. Each operation is
@@ -119,6 +119,11 @@ const posDesktop = {
     set: (terminal: Terminal | null): Promise<void> => ipcRenderer.invoke("terminal:set", terminal),
     /** Whether this till has its key (kept in the main process, never shown). */
     hasKey: (): Promise<boolean> => ipcRenderer.invoke("till:has-key"),
+    /** Whether the server still accepts this till's key (read-only). */
+    keyStatus: (): Promise<"valid" | "withdrawn" | "unreachable" | "none"> => ipcRenderer.invoke("terminal:key-status"),
+    /** Only if the server says this till was withdrawn: forget its registration, to set it up again. */
+    forgetWithdrawn: (): Promise<{ ok: true } | { ok: false; reason: "valid" | "unreachable" | "none" }> =>
+      ipcRenderer.invoke("terminal:forget-withdrawn"),
   },
   signing: {
     /** Whether this till holds its signing key (kept by Windows' protection, never shown). */

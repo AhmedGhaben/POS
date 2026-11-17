@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { Public } from "../common/decorators/public.decorator";
 import { CurrentTerminal, TerminalKeyGuard } from "../till/terminal-key.guard";
+import { RejectInvalidTillKeyGuard } from "../till/reject-invalid-till-key.guard";
 import type { TillTerminal } from "../till/till-auth.service";
 import { Role } from "@prisma/client";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -22,7 +23,7 @@ export class TerminalsController {
   ) {}
 
   @Post()
-  @UseGuards(RolesGuard, StoreAccessGuard)
+  @UseGuards(RejectInvalidTillKeyGuard, RolesGuard, StoreAccessGuard)
   @Roles(Role.OWNER, Role.MANAGER)
   create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateTerminalDto) {
     return this.terminalsService.create(user.businessId, dto);
@@ -30,7 +31,7 @@ export class TerminalsController {
 
   /** A code for setting up a new till without a password (10 minutes, single use). */
   @Post("pairing-codes")
-  @UseGuards(RolesGuard, StoreAccessGuard)
+  @UseGuards(RejectInvalidTillKeyGuard, RolesGuard, StoreAccessGuard)
   @Roles(Role.OWNER, Role.MANAGER)
   createPairingCode(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreatePairingCodeDto) {
     return this.terminalsService.createPairingCode(user, dto);
@@ -74,7 +75,7 @@ export class TerminalsController {
 
   /** A new key for the till (the old one stops working). */
   @Post(":terminalId/key")
-  @UseGuards(RolesGuard)
+  @UseGuards(RejectInvalidTillKeyGuard, RolesGuard)
   @Roles(Role.OWNER, Role.MANAGER)
   rotateKey(@CurrentUser() user: AuthenticatedUser, @Param("terminalId") id: string) {
     return this.terminalsService.rotateKey(user, id);
@@ -87,7 +88,7 @@ export class TerminalsController {
   }
 
   @Patch(":terminalId")
-  @UseGuards(RolesGuard, StoreAccessGuard)
+  @UseGuards(RejectInvalidTillKeyGuard, RolesGuard, StoreAccessGuard)
   @Roles(Role.OWNER, Role.MANAGER)
   update(
     @CurrentUser() user: AuthenticatedUser,

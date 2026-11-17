@@ -31,6 +31,7 @@ import { APP_ORIGIN, handleAppScheme, registerAppScheme } from "./protocol";
 import {
   checkApproval,
   hasTerminalKey,
+  keyStatus,
   listApprovers,
   listStaff,
   pinSignIn,
@@ -90,6 +91,9 @@ function createWindow() {
       nodeIntegration: false,
       webSecurity: true,
       spellcheck: false,
+      // No DevTools in the installed app: from its console the PIN lock (and
+      // the saved session) could be bypassed. Development builds keep them.
+      devTools: !app.isPackaged,
     },
   });
   mainWindow.once("ready-to-show", () => mainWindow?.show());
@@ -215,6 +219,28 @@ function registerIpc() {
   });
 
   handle("terminal:get", z.tuple([]), () => getConfig().terminal ?? null);
+
+  /**
+   * A till the server withdrew (its key no longer counts) forgets that it
+   * was registered, so it can be set up again (a till code, or a manager
+   * registering it). Only when the server itself says the key is withdrawn:
+   * a working or unreachable till is left alone. Only the registration goes
+   * (till, key, staff list, signing key); the server address, printers,
+   * saved sales and everything else on the till stay.
+   */
+  /** Read-only: whether the server still accepts this till's key. */
+  handle("terminal:key-status", z.tuple([]), () => keyStatus());
+
+  handle("terminal:forget-withdrawn", z.tuple([]), async () => {
+    const status = await keyStatus();
+    if (status !== "withdrawn") return { ok: false as const, reason: status };
+    const was = getConfig().terminal;
+    updateConfig({ terminal: null });
+    setTerminalKey(null);
+    clearSigningKey("the server withdrew this till");
+    log.warn(`[terminal] withdrawn by the server: ${was ? `${was.code} "${was.name}"` : "this till"} forgotten here, to be set up again`);
+    return { ok: true as const };
+  });
 
   handle("terminal:set", z.tuple([terminalSchema.nullable()]), (terminal) => {
     updateConfig({ terminal });

@@ -60,7 +60,7 @@ export async function fetchApprovers(permission: Permission): Promise<ApproverDt
   return apiClient.get<ApproverDto[]>(`/overrides/approvers?${query}`);
 }
 
-export type ApproveError = "wrong" | "locked" | "no-access" | "unknown-user" | "failed";
+export type ApproveError = "wrong" | "locked" | "no-access" | "unknown-user" | "unavailable" | "failed";
 
 /** Checks the approver's PIN: online on the server, offline on the till. */
 export async function approve(

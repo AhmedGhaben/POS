@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { AuthLayout } from "@/components/layout/AuthLayout";
+import { useLockStore } from "@/features/till/lock-store";
 import { useAuthStore } from "@/features/auth/store";
 import { register } from "@/features/auth/api";
 import { currentLanguage } from "@/i18n";
@@ -53,6 +54,8 @@ export function SignupPage() {
     mutationFn: (values: SignupValues) => register({ ...values, timezone: browserTimezone(), language: currentLanguage() }),
     onSuccess: ({ accessToken, user, stores, business }) => {
       setSession(accessToken, user, stores, business);
+      // A new account signed in with its password: nothing to unlock with a PIN.
+      useLockStore.getState().unlock();
       navigate("/welcome", { replace: true });
     },
   });

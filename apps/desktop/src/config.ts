@@ -154,6 +154,12 @@ const configSchema = z.object({
     .nullable()
     .optional()
     .catch(undefined),
+  /**
+   * pin-lockout.json (the offline wrong-PIN count) has been created on this
+   * till, so if it goes missing it disappeared: the count is treated as
+   * unreadable (pin-check.ts). Set once; never cleared.
+   */
+  pinLockoutKept: z.boolean().optional().catch(undefined),
   /** Lock the till after this many idle minutes (0 = never). */
   autoLockMinutes: z.number().int().min(0).max(120).optional().catch(undefined),
   /** Fullscreen till mode with no window frame. */

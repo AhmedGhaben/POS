@@ -27,6 +27,10 @@ const EXACT: Record<string, Translations> = {
   "Invalid credentials": { "pt-PT": "Email ou palavra-passe incorretos", "pt-BR": "E-mail ou senha incorretos" },
   "Account is deactivated": { "pt-PT": "Esta conta está desativada", "pt-BR": "Esta conta está desativada" },
   "Email already in use": { "pt-PT": "Este email já está a ser usado", "pt-BR": "Este e-mail já está em uso" },
+  "This till belongs to another business. Sign in with an account of that business.": {
+    "pt-PT": "Esta caixa pertence a outra empresa. Inicie sessão com uma conta dessa empresa.",
+    "pt-BR": "Este caixa pertence a outra empresa. Entre com uma conta dessa empresa.",
+  },
   "Missing refresh token": { "pt-PT": "Sessão expirada. Inicie sessão novamente.", "pt-BR": "Sessão expirada. Entre novamente." },
   "Invalid or expired refresh token": {
     "pt-PT": "Sessão expirada. Inicie sessão novamente.",
