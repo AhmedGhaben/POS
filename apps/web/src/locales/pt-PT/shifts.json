@@ -158,6 +158,7 @@
     "browserShift": "num turno do navegador",
     "tillShift": "no turno da caixa {{till}}",
     "offline": "sem internet",
-    "online": "com internet"
+    "online": "com internet",
+    "invalidKey": "chave de caixa inválida"
   }
 }

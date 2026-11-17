@@ -1344,6 +1344,8 @@ export interface ShiftTerminalExceptionDto {
   shiftTillCode: string | null;
   offline: boolean;
   clientId: string | null;
+  /** Sent with a till key that no longer counts (revoked or unknown). */
+  invalidKey?: boolean;
 }
 
 // ---- Fiscal documents (docs/plans/ANGOLA.md, phase 8) ----

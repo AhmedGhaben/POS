@@ -45,6 +45,8 @@ export interface TerminalMismatch {
   saleId?: string | null;
   /** The work was for another store than the till's. */
   otherStore?: boolean;
+  /** Sent with a till key that doesn't count (revoked, unknown): the till is unknown. */
+  invalidKey?: boolean;
 }
 
 type Db = Pick<PrismaClient, "auditLog"> | Prisma.TransactionClient;
@@ -67,6 +69,7 @@ export function recordTerminalMismatch(db: Db, m: TerminalMismatch) {
         clientId: m.clientId ?? null,
         saleId: m.saleId ?? null,
         otherStore: !!m.otherStore,
+        invalidKey: !!m.invalidKey,
       },
     },
   });

@@ -158,6 +158,7 @@
     "browserShift": "in a browser shift",
     "tillShift": "in the shift of till {{till}}",
     "offline": "offline",
-    "online": "online"
+    "online": "online",
+    "invalidKey": "invalid till key"
   }
 }

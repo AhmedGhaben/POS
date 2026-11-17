@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Param, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, ForbiddenException, Get, Headers, HttpCode, HttpStatus, Param, Post, Query, UseGuards } from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { OVERRIDE_HEADER } from "../overrides/overrides.service";
@@ -40,7 +40,10 @@ export class ShiftsController {
     @Headers(OVERRIDE_HEADER) overrideToken?: string,
     @TillKey() key?: unknown,
   ) {
-    return this.shifts.addMovement(user, dto, overrideToken, await this.tillAuth.tillFor(key, user.businessId));
+    // Online, a till key that doesn't count is refused; an offline cash movement already happened: kept, flagged.
+    const { till, invalidKey } = await this.tillAuth.resolveTill(key, user.businessId);
+    if (invalidKey && !dto.offline) throw new ForbiddenException("This till isn't registered any more");
+    return this.shifts.addMovement(user, dto, overrideToken, till, invalidKey);
   }
 
   @Post("close")
@@ -48,7 +51,10 @@ export class ShiftsController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(StoreAccessGuard)
   async close(@CurrentUser() user: AuthenticatedUser, @Body() dto: CloseShiftDto, @TillKey() key: unknown) {
-    return this.shifts.close(user, dto, await this.tillAuth.tillFor(key, user.businessId));
+    // Same for a close: online refused, offline (the count already happened) kept and flagged.
+    const { till, invalidKey } = await this.tillAuth.resolveTill(key, user.businessId);
+    if (invalidKey && !dto.offline) throw new ForbiddenException("This till isn't registered any more");
+    return this.shifts.close(user, dto, till, invalidKey);
   }
 
   /** The open shift on a till (terminalId) or, without one, the caller's own: `{ shift }`, null when none. */

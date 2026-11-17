@@ -272,6 +272,49 @@ describe("Shift and till binding (e2e)", () => {
       await closeShift(browser);
     });
 
+    it("online, closing or moving cash with a key that doesn't count is refused; the shift is untouched", async () => {
+      const browser = await browserShift();
+      const shiftId = (await shiftByClient(browser)).id;
+      await http().post("/shifts/cash-movements").set(auth()).set(bad(revoked))
+        .send({ storeId, shiftClientId: browser, clientId: randomUUID(), type: "IN", amount: 5, reason: "CHANGE_TOPUP" }).expect(403);
+      await http().post("/shifts/close").set(auth()).set(bad("y".repeat(40))).send({ storeId, shiftClientId: browser, countedCash: 0 }).expect(403);
+      expect((await shiftByClient(browser)).status).toBe("OPEN");
+      expect(await prisma.cashMovement.count({ where: { shiftId } })).toBe(0);
+      // Without a key, the browser closes its own shift, with no exception.
+      await closeShift(browser);
+      expect(await exceptions(shiftId)).toHaveLength(0);
+    });
+
+    it("offline (already happened), a cash movement and a close under a key that doesn't count are kept, and flagged as such", async () => {
+      const browser = await browserShift();
+      const shiftId = (await shiftByClient(browser)).id;
+      const movementId = randomUUID();
+      const movement = { storeId, shiftClientId: browser, clientId: movementId, type: "IN", amount: 5, reason: "CHANGE_TOPUP", offline: true };
+      await http().post("/shifts/cash-movements").set(auth()).set(bad(revoked)).send(movement).expect(200);
+      // A retry of the same movement: still one movement, one flag.
+      await http().post("/shifts/cash-movements").set(auth()).set(bad(revoked)).send(movement).expect(200);
+      await http().post("/shifts/close").set(auth()).set(bad(revoked)).send({ storeId, shiftClientId: browser, countedCash: 5, offline: true }).expect(200);
+      const shift = await shiftByClient(browser);
+      expect(shift.status).toBe("CLOSED");
+      expect(shift.countedCash?.toString()).toBe("5");
+      expect(await prisma.cashMovement.count({ where: { shiftId, clientId: movementId } })).toBe(1);
+      const flagged = (await exceptions(shiftId)).map((e) => e.metadata as { operation: string; invalidKey: boolean; requestTerminalId: string | null });
+      expect(flagged.map((f) => f.operation).sort()).toEqual(["cash-movement", "shift-close"]);
+      expect(flagged.every((f) => f.invalidKey && f.requestTerminalId === null)).toBe(true);
+      // Managers see it on the shift.
+      const report = (await http().get(`/shifts/${shiftId}`).set(auth()).expect(200)).body;
+      expect(report.terminalExceptions).toEqual(expect.arrayContaining([expect.objectContaining({ operation: "shift-close", invalidKey: true, tillCode: null })]));
+    });
+
+    it("queued till uploads (close, cash movement) under a revoked key wait (401), as before", async () => {
+      const browser = await browserShift();
+      await http().post("/shifts/cash-movements").set(bad(revoked))
+        .send({ storeId, shiftClientId: browser, clientId: randomUUID(), type: "IN", amount: 5, reason: "CHANGE_TOPUP", offline: true, actingUserId: ownerId }).expect(401);
+      await http().post("/shifts/close").set(bad(revoked)).send({ storeId, shiftClientId: browser, countedCash: 0, offline: true, actingUserId: ownerId }).expect(401);
+      expect((await shiftByClient(browser)).status).toBe("OPEN");
+      await closeShift(browser);
+    });
+
     it("a queued upload under a revoked key waits (401), as before", async () => {
       await http().post("/sales").set(bad(revoked)).send(sale(undefined, offline())).expect(401);
     });
@@ -290,6 +333,16 @@ describe("Shift and till binding (e2e)", () => {
       await http().post("/shifts/open").set(auth()).send({ storeId, clientId, openingFloat: 0 }).expect(403);
       expect((await shiftByClient(clientId)).terminalId).toBe(till1.id);
       await closeShift(clientId, key());
+    });
+
+    it("an authenticated till can't get a browser shift back by retrying its id", async () => {
+      const browser = await browserShift();
+      const res = await http().post("/shifts/open").set(auth()).set(key()).send({ storeId, clientId: browser, openingFloat: 0 }).expect(403);
+      expect(res.body.clientId).toBeUndefined();
+      // Offline-flagged retries too.
+      await http().post("/shifts/open").set(key()).send({ storeId, clientId: browser, openingFloat: 0, offline: true, actingUserId: ownerId }).expect(403);
+      expect((await shiftByClient(browser)).terminalId).toBeNull();
+      await closeShift(browser);
     });
 
     it("a browser retrying its own browser shift, and an older app naming its till, still get theirs", async () => {

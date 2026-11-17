@@ -30,7 +30,8 @@ export function ShiftTerminalExceptions({ items }: { items: ShiftTerminalExcepti
                 shift: e.shiftTillCode ? t("exceptions.tillShift", { till: e.shiftTillCode }) : t("exceptions.browserShift"),
               })}{" "}
               <span className="text-muted-foreground">
-                · {e.offline ? t("exceptions.offline") : t("exceptions.online")} · {formatDateTime(e.at)}
+                {e.invalidKey && <> · {t("exceptions.invalidKey")}</>} · {e.offline ? t("exceptions.offline") : t("exceptions.online")} ·{" "}
+                {formatDateTime(e.at)}
               </span>
             </li>
           );

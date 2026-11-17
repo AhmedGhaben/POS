@@ -39,13 +39,20 @@ export class TillAuthService {
    * a key that doesn't count here). Shift operations and sales are bound to it.
    */
   async tillFor(key: unknown, businessId: string, { rejectInvalid = false } = {}): Promise<TillTerminal | null> {
-    const terminal = await this.terminalForKey(key);
-    if (terminal && terminal.businessId === businessId) return terminal;
+    const { till, invalidKey } = await this.resolveTill(key, businessId);
+    if (till) return till;
     // A key that was sent but doesn't count (revoked, deactivated, another
     // business's) is not a browser: where binding matters, it's refused.
     // No key at all (browsers, older apps) keeps the browser rules.
-    if (rejectInvalid && keyWasSent(key)) throw new ForbiddenException("This till isn't registered any more");
+    if (rejectInvalid && invalidKey) throw new ForbiddenException("This till isn't registered any more");
     return null;
+  }
+
+  /** The request's till, and whether a key was sent that doesn't count (revoked, unknown, another business's). */
+  async resolveTill(key: unknown, businessId: string): Promise<{ till: TillTerminal | null; invalidKey: boolean }> {
+    const terminal = await this.terminalForKey(key);
+    if (terminal && terminal.businessId === businessId) return { till: terminal, invalidKey: false };
+    return { till: null, invalidKey: keyWasSent(key) };
   }
 
   /**

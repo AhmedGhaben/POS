@@ -14,6 +14,7 @@ describe("ShiftTerminalExceptions (Shifts page, for managers)", () => {
         items={[
           { id: "a", at: "2026-11-17T10:00:00.000Z", operation: "sale", tillCode: "POS-001", shiftTillCode: null, offline: true, clientId: "c1" },
           { id: "b", at: "2026-11-17T11:00:00.000Z", operation: "shift-close", tillCode: "POS-001", shiftTillCode: "POS-002", offline: false, clientId: null },
+          { id: "c", at: "2026-11-17T12:00:00.000Z", operation: "cash-movement", tillCode: null, shiftTillCode: null, offline: true, clientId: "c3", invalidKey: true },
         ]}
       />,
     );
@@ -21,6 +22,9 @@ describe("ShiftTerminalExceptions (Shifts page, for managers)", () => {
     expect(html).toContain("Venda da caixa POS-001 num turno do navegador");
     expect(html).toContain("Fecho de turno da caixa POS-001 no turno da caixa POS-002");
     expect(html).toContain("nada nos valores deste turno foi alterado");
+    // Sent with a till key that no longer counts: said so, not shown as a browser's.
+    expect(html).toContain("Movimento de caixa da caixa — num turno do navegador");
+    expect(html).toContain("chave de caixa inválida");
   });
 
   it("nothing flagged: nothing shown", () => {
