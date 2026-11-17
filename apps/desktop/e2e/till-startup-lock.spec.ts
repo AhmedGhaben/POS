@@ -79,7 +79,7 @@ test.describe.serial("Till: locked at every start", () => {
   /** Closes the app and opens it again on the same computer (same saved data). */
   async function restart() {
     await app.close();
-    ({ app, page } = await launch(userData));
+    ({ app, page } = await launch(userData, {}, "en", { keepLock: true }));
     await app.context().addInitScript(WATCH_PROTECTED);
     await page.reload();
     await page.waitForLoadState("domcontentloaded");
@@ -93,7 +93,7 @@ test.describe.serial("Till: locked at every start", () => {
     await owner.call("/users/me/pin", "PUT", { pin: OWNER_PIN, password: "OwnerPass123!" });
 
     await proxy.up();
-    ({ app, page } = await launch(userData));
+    ({ app, page } = await launch(userData, {}, "en", { keepLock: true }));
     await connect(page, proxy.url);
     await login(page);
     await page.goto("app://pos/device");
