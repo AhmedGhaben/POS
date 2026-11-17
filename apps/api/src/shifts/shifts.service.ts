@@ -159,7 +159,18 @@ export class ShiftsService {
    */
   async open(user: AuthenticatedUser, dto: OpenShiftDto, till: TillTerminal | null = null) {
     const existing = await this.findByClientId(dto.storeId, dto.clientId);
-    if (existing) return this.report(existing);
+    if (existing) {
+      // A retry gets the shift back only on the till it belongs to (a browser
+      // or older app: a browser shift, or the till it named when opening).
+      const caller = till ? till.id : (dto.terminalId ?? null);
+      if (existing.terminalId && existing.terminalId !== caller) throw new ForbiddenException("This shift belongs to another till");
+      return this.report(existing);
+    }
+
+    // A till opens shifts in its own store. Online that's checked; offline it
+    // already happened (the till may have been moved since): recorded, flagged.
+    const otherStore = !!till && till.storeId !== dto.storeId;
+    if (otherStore && !dto.offline) throw new BadRequestException("This till belongs to another store");
 
     let terminalId: string | null = null;
     // A till opens shifts for itself: its key decides, whatever id the app sent
@@ -198,8 +209,8 @@ export class ShiftsService {
         include: SHIFT_INCLUDE,
       });
     });
-    // Opened offline on this till, but the app named another one: recorded on this till, flagged.
-    if (sentOther) {
+    // Opened offline on this till, but the app named another till or store: recorded on this till, flagged.
+    if (sentOther || otherStore) {
       await recordTerminalMismatch(this.prisma, {
         businessId: user.businessId,
         userId: user.userId,
@@ -207,9 +218,10 @@ export class ShiftsService {
         operation: "shift-open",
         requestTerminalId: till!.id,
         shiftTerminalId: till!.id,
-        sentTerminalId: dto.terminalId,
+        sentTerminalId: sentOther ? dto.terminalId : null,
         offline: true,
         clientId: dto.clientId,
+        otherStore,
       });
     }
     return this.report(shift);
@@ -342,8 +354,12 @@ export class ShiftsService {
 
   /** The open shift on this till (or this person's, in a browser), if any. */
   async current(user: AuthenticatedUser, storeId: string, terminalId?: string, till: TillTerminal | null = null) {
-    // A till only ever gets its own shift (never a browser shift), whatever it asked for.
-    if (till) terminalId = till.id;
+    // A till only ever gets its own shift (never a browser shift), whatever it
+    // asked for, and only in its own store.
+    if (till) {
+      if (till.storeId !== storeId) return null;
+      terminalId = till.id;
+    }
     const shift = await this.prisma.shift.findFirst({
       where: terminalId
         ? { terminalId, storeId, status: ShiftStatus.OPEN, store: { businessId: user.businessId } }

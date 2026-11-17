@@ -43,6 +43,8 @@ export interface TerminalMismatch {
   /** The sale's or movement's own id, for finding it. */
   clientId?: string | null;
   saleId?: string | null;
+  /** The work was for another store than the till's. */
+  otherStore?: boolean;
 }
 
 type Db = Pick<PrismaClient, "auditLog"> | Prisma.TransactionClient;
@@ -64,6 +66,7 @@ export function recordTerminalMismatch(db: Db, m: TerminalMismatch) {
         offline: m.offline,
         clientId: m.clientId ?? null,
         saleId: m.saleId ?? null,
+        otherStore: !!m.otherStore,
       },
     },
   });

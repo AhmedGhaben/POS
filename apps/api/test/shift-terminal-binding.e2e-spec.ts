@@ -41,7 +41,9 @@ describe("Shift and till binding (e2e)", () => {
     ...extra,
   });
   const offline = () => ({ offline: { createdAt: new Date(Date.now() - 60_000).toISOString() }, actingUserId: ownerId });
-  const exceptions = (shiftId: string) => prisma.auditLog.findMany({ where: { action: SHIFT_TERMINAL_MISMATCH, entityId: shiftId } });
+  const exceptions = (shiftId: string) =>
+    prisma.auditLog.findMany({ where: { action: SHIFT_TERMINAL_MISMATCH, entityId: shiftId }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] });
+  const operations = async (shiftId: string) => (await exceptions(shiftId)).map((e) => (e.metadata as { operation: string }).operation).sort();
   const shiftByClient = (clientId: string) => prisma.shift.findUniqueOrThrow({ where: { storeId_clientId: { storeId, clientId } } });
 
   /** A shift opened in a browser (no till key): a browser shift, terminalId null. */
@@ -180,7 +182,7 @@ describe("Shift and till binding (e2e)", () => {
       await closeShift(browser, key());
       const shift = await shiftByClient(browser);
       expect(shift.status).toBe("CLOSED");
-      expect((await exceptions(shift.id)).map((e) => (e.metadata as { operation: string }).operation)).toEqual(["cash-movement", "shift-close"]);
+      expect(await operations(shift.id)).toEqual(["cash-movement", "shift-close"]);
     });
   });
 
@@ -201,6 +203,103 @@ describe("Shift and till binding (e2e)", () => {
     it("an old offline sale with no shift is accepted; one whose shift hasn't arrived waits (409)", async () => {
       await http().post("/sales").set(key()).send(sale(undefined, { terminalId: till1.id, ...offline() })).expect(201);
       await http().post("/sales").set(key()).send(sale(randomUUID(), { terminalId: till1.id, ...offline() })).expect(409);
+    });
+  });
+
+  describe("a till belongs to its store", () => {
+    let storeB: string;
+    beforeAll(async () => {
+      storeB = (await http().post("/stores").set(auth()).send({ name: "Loja B" }).expect(201)).body.id;
+      await http().put(`/stores/${storeB}/inventory/${productId}`).set(auth()).send({ quantity: 20 }).expect(200);
+    });
+
+    it("online, a till of store A can't open a shift in store B (the owner has both)", async () => {
+      const res = await http().post("/shifts/open").set(auth()).set(key()).send({ storeId: storeB, clientId: randomUUID(), openingFloat: 0 }).expect(400);
+      expect(res.body.message).toMatch(/another store/);
+      expect(await prisma.shift.count({ where: { storeId: storeB, terminalId: till1.id } })).toBe(0);
+    });
+
+    it("its current-shift lookup in store B finds nothing, even with a browser shift there", async () => {
+      const browserB = randomUUID();
+      await http().post("/shifts/open").set(auth()).send({ storeId: storeB, clientId: browserB, openingFloat: 0 }).expect(200);
+      expect((await http().get(`/shifts/current?storeId=${storeB}`).set(auth()).set(key()).expect(200)).body.shift).toBeNull();
+      // Online, it can't sell in store B at all.
+      const res = await http().post("/sales").set(auth()).set(key()).send({ ...sale(browserB, { terminalId: till1.id }), storeId: storeB }).expect(400);
+      expect(res.body.message).toMatch(/another store/);
+      await http().post("/shifts/close").set(auth()).send({ storeId: storeB, shiftClientId: browserB, countedCash: 0 }).expect(200);
+    });
+
+    it("offline (it may have been moved since), its work in store B is kept and flagged", async () => {
+      const shiftClientId = randomUUID();
+      await http().post("/shifts/open").set(key()).send({ storeId: storeB, clientId: shiftClientId, openingFloat: 0, offline: true, actingUserId: ownerId }).expect(200);
+      const shift = await prisma.shift.findUniqueOrThrow({ where: { storeId_clientId: { storeId: storeB, clientId: shiftClientId } } });
+      expect(shift.terminalId).toBe(till1.id);
+      const body = { ...sale(shiftClientId, { terminalId: till1.id, ...offline() }), storeId: storeB };
+      const first = (await http().post("/sales").set(key()).send(body).expect(201)).body;
+      expect((await http().post("/sales").set(key()).send(body).expect(201)).body.id).toBe(first.id);
+      const flagged = (await exceptions(shift.id)).map((e) => e.metadata as { operation: string; otherStore: boolean });
+      expect(flagged).toEqual([expect.objectContaining({ operation: "shift-open", otherStore: true }), expect.objectContaining({ operation: "sale", otherStore: true })]);
+      await http().post("/shifts/close").set(key()).send({ storeId: storeB, shiftClientId, countedCash: 0, offline: true, actingUserId: ownerId }).expect(200);
+    });
+  });
+
+  describe("a key that doesn't count is not a browser", () => {
+    let revoked: string;
+    beforeAll(async () => {
+      const till3 = (await http().post("/terminals").set(auth()).send({ storeId, name: "Caixa 3" }).expect(201)).body;
+      revoked = till3.key;
+      await http().post(`/terminals/${till3.id}/key`).set(auth()).expect(201); // a new key: the old one stops working
+    });
+    const bad = (k: string) => ({ "X-Terminal-Key": k });
+
+    it("online, a revoked or unknown key is refused (403), not treated as a browser", async () => {
+      const browser = await browserShift();
+      for (const k of [revoked, "x".repeat(40)]) {
+        await http().get(`/shifts/current?storeId=${storeId}`).set(auth()).set(bad(k)).expect(403);
+        await http().post("/shifts/open").set(auth()).set(bad(k)).send({ storeId, clientId: randomUUID(), openingFloat: 0 }).expect(403);
+        await http().post("/sales").set(auth()).set(bad(k)).send(sale(browser)).expect(403);
+      }
+      // No key at all: the browser rules, as before.
+      expect((await http().get(`/shifts/current?storeId=${storeId}`).set(auth()).expect(200)).body.shift.clientId).toBe(browser);
+      await http().post("/sales").set(auth()).send(sale(browser)).expect(201);
+      await closeShift(browser);
+    });
+
+    it("an offline sale already made is still accepted with a session (nothing already issued is lost)", async () => {
+      const browser = await browserShift();
+      // A session upload (no actingUserId): the key doesn't count, the sale already happened.
+      await http().post("/sales").set(auth()).set(bad(revoked)).send(sale(browser, { offline: offline().offline })).expect(201);
+      await closeShift(browser);
+    });
+
+    it("a queued upload under a revoked key waits (401), as before", async () => {
+      await http().post("/sales").set(bad(revoked)).send(sale(undefined, offline())).expect(401);
+    });
+  });
+
+  describe("retrying a shift opening", () => {
+    it("returns the shift only to the till it belongs to", async () => {
+      const clientId = randomUUID();
+      await http().post("/shifts/open").set(auth()).set(key()).send({ storeId, clientId, openingFloat: 0 }).expect(200);
+      // The same till retrying: the same shift.
+      const again = (await http().post("/shifts/open").set(auth()).set(key()).send({ storeId, clientId, openingFloat: 0 }).expect(200)).body;
+      expect(again.terminalId).toBe(till1.id);
+      // Another till, or a browser, with the same id: refused, nothing returned.
+      const other = await http().post("/shifts/open").set(auth()).set(key(till2)).send({ storeId, clientId, openingFloat: 0 }).expect(403);
+      expect(other.body.clientId).toBeUndefined();
+      await http().post("/shifts/open").set(auth()).send({ storeId, clientId, openingFloat: 0 }).expect(403);
+      expect((await shiftByClient(clientId)).terminalId).toBe(till1.id);
+      await closeShift(clientId, key());
+    });
+
+    it("a browser retrying its own browser shift, and an older app naming its till, still get theirs", async () => {
+      const browser = await browserShift();
+      await http().post("/shifts/open").set(auth()).send({ storeId, clientId: browser, openingFloat: 0 }).expect(200);
+      await closeShift(browser);
+      const legacy = randomUUID();
+      await http().post("/shifts/open").set(auth()).send({ storeId, clientId: legacy, terminalId: till2.id, openingFloat: 0 }).expect(200);
+      await http().post("/shifts/open").set(auth()).send({ storeId, clientId: legacy, terminalId: till2.id, openingFloat: 0 }).expect(200);
+      await closeShift(legacy);
     });
   });
 

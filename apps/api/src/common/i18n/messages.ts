@@ -294,6 +294,14 @@ const EXACT: Record<string, Translations> = {
   },
   "Shift not found": { "pt-PT": "Turno não encontrado", "pt-BR": "Turno não encontrado" },
   "This shift is closed": { "pt-PT": "Este turno está fechado", "pt-BR": "Este turno está fechado" },
+  "This till belongs to another store": {
+    "pt-PT": "Esta caixa é de outra loja",
+    "pt-BR": "Este caixa é de outra loja",
+  },
+  "This shift belongs to another till": {
+    "pt-PT": "Este turno pertence a outra caixa",
+    "pt-BR": "Este turno pertence a outro caixa",
+  },
   "This shift is for another till": {
     "pt-PT": "Este turno é de outra caixa",
     "pt-BR": "Este turno é de outro caixa",

@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthenticatedUser } from "../common/types/authenticated-user";
@@ -12,6 +12,11 @@ export interface TillTerminal {
 }
 
 export const TERMINAL_KEY_HEADER = "x-terminal-key";
+
+/** A till key header was sent (anything non-empty), valid or not. */
+export function keyWasSent(key: unknown): boolean {
+  return (typeof key === "string" && key.trim() !== "") || (Array.isArray(key) && key.length > 0);
+}
 
 @Injectable()
 export class TillAuthService {
@@ -33,9 +38,14 @@ export class TillAuthService {
    * belongs to the signed-in person's business; otherwise null (a browser, or
    * a key that doesn't count here). Shift operations and sales are bound to it.
    */
-  async tillFor(key: unknown, businessId: string): Promise<TillTerminal | null> {
+  async tillFor(key: unknown, businessId: string, { rejectInvalid = false } = {}): Promise<TillTerminal | null> {
     const terminal = await this.terminalForKey(key);
-    return terminal && terminal.businessId === businessId ? terminal : null;
+    if (terminal && terminal.businessId === businessId) return terminal;
+    // A key that was sent but doesn't count (revoked, deactivated, another
+    // business's) is not a browser: where binding matters, it's refused.
+    // No key at all (browsers, older apps) keeps the browser rules.
+    if (rejectInvalid && keyWasSent(key)) throw new ForbiddenException("This till isn't registered any more");
+    return null;
   }
 
   /**

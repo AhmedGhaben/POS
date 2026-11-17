@@ -58,7 +58,8 @@ export class SalesController {
   @TillUpload()
   @UseGuards(StoreAccessGuard)
   async create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateSaleDto, @TillKey() key: unknown) {
-    return this.salesService.create(user.businessId, user.userId, dto, user.role, await this.tillAuth.tillFor(key, user.businessId));
+    // Online, a key that doesn't count is refused; an offline sale already happened (fiscal document included).
+    return this.salesService.create(user.businessId, user.userId, dto, user.role, await this.tillAuth.tillFor(key, user.businessId, { rejectInvalid: !dto.offline }));
   }
 
   /** Cancels a sale; repeating it returns the cancelled sale. */

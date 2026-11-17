@@ -25,7 +25,8 @@ export class ShiftsController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(StoreAccessGuard)
   async open(@CurrentUser() user: AuthenticatedUser, @Body() dto: OpenShiftDto, @TillKey() key: unknown) {
-    return this.shifts.open(user, dto, await this.tillAuth.tillFor(key, user.businessId));
+    // Online, a key that doesn't count is refused; an offline upload already happened.
+    return this.shifts.open(user, dto, await this.tillAuth.tillFor(key, user.businessId, { rejectInvalid: !dto.offline }));
   }
 
   /** Cash in or out with a reason; cash out needs CASH_OUT or a manager's approval (checked in the service). */
@@ -59,7 +60,7 @@ export class ShiftsController {
     @Query("terminalId") terminalId?: string,
     @TillKey() key?: unknown,
   ) {
-    return { shift: await this.shifts.current(user, storeId, terminalId, await this.tillAuth.tillFor(key, user.businessId)) };
+    return { shift: await this.shifts.current(user, storeId, terminalId, await this.tillAuth.tillFor(key, user.businessId, { rejectInvalid: true })) };
   }
 
   /** A shift by the till's own id (the till prints the server's report after closing). */

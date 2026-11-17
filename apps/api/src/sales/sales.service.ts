@@ -315,6 +315,9 @@ export class SalesService {
     // another till is refused; offline it already happened: recorded, flagged.
     const sentOther = !!till && !!terminalId && terminalId !== till.id;
     if (sentOther && !offline) throw new BadRequestException("This sale is from another till");
+    // A till sells in its own store; offline it already happened (it may have been moved since).
+    const otherStore = !!till && till.storeId !== dto.storeId;
+    if (otherStore && !offline) throw new BadRequestException("This till belongs to another store");
     const requestTerminalId = till?.id ?? terminalId;
     // The shift was opened before this sale (the till uploads in order).
     const shift = await this.saleShift(dto, cashierId, requestTerminalId, !!till);
@@ -424,7 +427,7 @@ export class SalesService {
           }
         }
         // Exactly once: a retried upload returns the existing sale before getting here.
-        if (shift && (shiftMismatch || sentOther)) {
+        if (shift && (shiftMismatch || sentOther || otherStore)) {
           await recordTerminalMismatch(tx, {
             businessId,
             userId: cashierId,
@@ -436,6 +439,7 @@ export class SalesService {
             offline: !!offline,
             clientId: dto.clientId ?? null,
             saleId: created.id,
+            otherStore,
           });
         }
         return tx.sale.findUniqueOrThrow({ where: { id: created.id }, include: SALE_INCLUDE });
