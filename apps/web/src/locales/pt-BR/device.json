@@ -28,16 +28,16 @@
     "mode": "Modo do PDV",
     "online": "Online",
     "pending": "Vendas aguardando sincronização",
-    "failed": "Não sincronizadas",
+    "failed": "Operações não sincronizadas",
     "lastSync": "Última sincronização",
     "catalogSaved": "Produtos salvos para uso sem internet",
     "unreachable": "Inacessível",
     "connected": "Conectado",
     "checking": "Verificando…",
     "allSynced": "Todas as vendas sincronizadas",
-    "refused": "Vendas recusadas pelo servidor",
+    "refused": "Operações recusadas pelo servidor",
     "refusedHint": "Ficam aqui até serem corrigidas e reenviadas. Nada é apagado.",
-    "refusedEntry": "Venda recusada de {{when}}: {{reason}}"
+    "refusedEntry": "{{what}} de {{when}} — motivo: {{reason}}"
   },
   "updates": {
     "title": "Atualizações",

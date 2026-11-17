@@ -111,8 +111,8 @@
   "sync": {
     "synced_one": "Synced {{count}} sale",
     "synced_other": "Synced {{count}} sales",
-    "failedReview_one": "{{count}} sale failed to sync — needs review",
-    "failedReview_other": "{{count}} sales failed to sync — needs review",
+    "failedReview_one": "{{count}} item refused by the server — needs review",
+    "failedReview_other": "{{count}} items refused by the server — need review",
     "unreachable": "Couldn't reach the server — will keep trying",
     "serverDown": "The STORBIT server can't be reached",
     "noInternet": "No internet connection",
@@ -123,7 +123,31 @@
     "syncing_other": "Syncing {{count}} sales…",
     "failed_one": "{{count}} sale failed to sync",
     "failed_other": "{{count}} sales failed to sync",
-    "retry": "Retry sync"
+    "retry": "Retry sync",
+    "failedKind": {
+      "sale_one": "{{count}} sale failed to sync",
+      "sale_other": "{{count}} sales failed to sync",
+      "voidSale_one": "{{count}} sale cancellation failed to sync",
+      "voidSale_other": "{{count}} sale cancellations failed to sync",
+      "drawerEvent_one": "{{count}} cash drawer opening failed to sync",
+      "drawerEvent_other": "{{count}} cash drawer openings failed to sync",
+      "shiftOpen_one": "{{count}} shift opening failed to sync",
+      "shiftOpen_other": "{{count}} shift openings failed to sync",
+      "cashMovement_one": "{{count}} cash movement failed to sync",
+      "cashMovement_other": "{{count}} cash movements failed to sync",
+      "shiftClose_one": "{{count}} shift close failed to sync",
+      "shiftClose_other": "{{count}} shift closes failed to sync",
+      "mixed_one": "{{count}} item failed to sync",
+      "mixed_other": "{{count}} items failed to sync"
+    },
+    "kindName": {
+      "sale": "Sale",
+      "voidSale": "Sale cancellation",
+      "drawerEvent": "Cash drawer opening",
+      "shiftOpen": "Shift opening",
+      "cashMovement": "Cash movement",
+      "shiftClose": "Shift close"
+    }
   },
   "recent": {
     "title": "Recent sales",

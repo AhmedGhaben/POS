@@ -4,6 +4,7 @@ import { formatDateTime } from "@/lib/format";
 import type { OutboxEntry } from "@/lib/offline-db";
 import { cn } from "@/lib/utils";
 import { REFUSED_ANCHOR } from "../refused-link";
+import { KIND_KEY } from "../failed-summary";
 
 interface RefusedListProps {
   entries: OutboxEntry[];
@@ -19,7 +20,7 @@ interface RefusedListProps {
  * keyboard there.
  */
 export function RefusedList({ entries, highlightedId, onRetry }: RefusedListProps) {
-  const { t } = useTranslation(["device", "common"]);
+  const { t } = useTranslation(["device", "common", "pos"]);
   return (
     <section id={REFUSED_ANCHOR} className="scroll-mt-20 space-y-2" aria-labelledby={`${REFUSED_ANCHOR}-title`}>
       <h3 id={`${REFUSED_ANCHOR}-title`} className="text-sm font-semibold">
@@ -29,6 +30,8 @@ export function RefusedList({ entries, highlightedId, onRetry }: RefusedListProp
       <ul className="space-y-2">
         {entries.map((entry) => {
           const when = formatDateTime(entry.createdAt);
+          // What was refused: a sale, a shift close, a cash movement…
+          const what = t(`pos:sync.kindName.${KIND_KEY[entry.kind]}`);
           const highlighted = entry.clientId === highlightedId;
           return (
             <li
@@ -36,7 +39,7 @@ export function RefusedList({ entries, highlightedId, onRetry }: RefusedListProp
               data-outbox-entry={entry.clientId}
               data-highlighted={highlighted || undefined}
               tabIndex={-1}
-              aria-label={t("sync.refusedEntry", { when, reason: entry.lastError ?? "" })}
+              aria-label={t("sync.refusedEntry", { what, when, reason: entry.lastError ?? "" })}
               aria-current={highlighted ? "true" : undefined}
               className={cn(
                 "flex items-center justify-between gap-3 rounded-xl border p-3 text-sm outline-none",
@@ -47,7 +50,9 @@ export function RefusedList({ entries, highlightedId, onRetry }: RefusedListProp
               )}
             >
               <div className="min-w-0">
-                <p className="font-medium">{when}</p>
+                <p className="font-medium">
+                  {what} <span className="font-normal text-muted-foreground">· {when}</span>
+                </p>
                 <p className="text-muted-foreground [overflow-wrap:anywhere]">{entry.lastError}</p>
               </div>
               <Button size="sm" variant="outline" onClick={() => onRetry(entry.clientId)}>

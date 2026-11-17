@@ -50,7 +50,9 @@ describe("RefusedList", () => {
     expect(html.match(/tabindex="-1"/g)).toHaveLength(2);
     expect(html).toContain('data-outbox-entry="e1"');
     expect(html).toContain('data-outbox-entry="e2"');
-    expect(html).toMatch(/aria-label="Refused sale from [^"]+: Shift not found"/);
+    // Each entry says what it was (here a sale) and why it was refused.
+    expect(html).toMatch(/aria-label="Sale from [^"]+ — reason: Shift not found"/);
+    expect(html).toContain("Refused by the server");
     expect(html).not.toContain("data-highlighted");
   });
 

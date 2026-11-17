@@ -5,6 +5,9 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { StatusDiamond } from "@/components/ui/status-diamond";
 import { refusedEntriesPath } from "@/features/pos/refused-link";
+import { useQuery } from "@tanstack/react-query";
+import { listOutbox } from "@/lib/offline-db";
+import { failedLabel } from "@/features/pos/failed-summary";
 import { isWorkingOffline, useOfflineStore } from "@/features/pos/offline-store";
 import { syncOutbox } from "@/features/pos/sync";
 
@@ -22,6 +25,13 @@ export function OfflineIndicator() {
   const offline = isWorkingOffline({ internet, server });
   const { t } = useTranslation("pos");
   const { t: tc } = useTranslation();
+  // Name what was refused (a shift close isn't a sale). Reads the queue only.
+  const failedKinds = useQuery({
+    queryKey: ["outbox-failed-kinds", failedCount, isSyncing],
+    queryFn: async () => (await listOutbox(["failed"])).map((e) => e.kind),
+    enabled: failedCount > 0,
+  }).data;
+  const refusedLabel = failedLabel(t, failedKinds, failedCount);
 
   async function retry() {
     const { synced, failed, interrupted } = await syncOutbox();
@@ -55,7 +65,7 @@ export function OfflineIndicator() {
       )}
       {failedCount > 0 && (
         <Link to={refusedEntriesPath()} className="sb-error inline-flex h-8 items-center px-2.5 text-xs font-semibold hover:underline">
-          <StatusDiamond state="error" label={`${tc("connection.error")} · ${t("sync.failed", { count: failedCount })}`} />
+          <StatusDiamond state="error" label={`${tc("connection.error")} · ${refusedLabel}`} />
         </Link>
       )}
       {pendingCount > 0 && (

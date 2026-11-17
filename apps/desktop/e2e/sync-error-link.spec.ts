@@ -20,9 +20,10 @@ async function addRefused(page: Page) {
         open.onsuccess = () => {
           const tx = open.result.transaction("outbox", "readwrite");
           const store = tx.objectStore("outbox");
-          const base = { kind: "drawer-event", state: "failed", attempts: 3, payload: {} };
-          store.put({ ...base, clientId: oldId, createdAt: "2026-11-17T09:00:00.000Z", lastError: "Shift not found" });
-          store.put({ ...base, clientId: newId, createdAt: "2026-11-17T10:00:00.000Z", lastError: "Product archived" });
+          const base = { state: "failed", attempts: 3, payload: {} };
+          // A shift close refused with "Shift not found" (as seen on a real till), and a drawer opening.
+          store.put({ ...base, kind: "shift-close", clientId: oldId, createdAt: "2026-11-17T09:00:00.000Z", lastError: "Shift not found" });
+          store.put({ ...base, kind: "drawer-event", clientId: newId, createdAt: "2026-11-17T10:00:00.000Z", lastError: "Product archived" });
           tx.oncomplete = () => resolve();
           tx.onerror = () => reject(tx.error);
         };
@@ -75,12 +76,15 @@ test.describe.serial("Sync error → the refused sales", () => {
 
   test("the red indicator goes to the refused sales and outlines the oldest", async () => {
     const before = await stored(page);
-    const indicator = page.getByRole("link", { name: /Sync error · 2 sales failed to sync/ });
+    // Not "sales": a shift close and a drawer opening are two different operations.
+    const indicator = page.getByRole("link", { name: /Sync error · 2 items failed to sync/ });
     await expect(indicator).toBeVisible();
     await indicator.click();
 
     await expect(page).toHaveURL(/\/device#sync-refused$/);
-    await expect(page.getByRole("heading", { name: /Sales the server refused/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Refused by the server/ })).toBeVisible();
+    await expect(page.locator(`[data-outbox-entry="${OLD}"]`)).toContainText("Shift close");
+    await expect(page.locator(`[data-outbox-entry="${NEW}"]`)).toContainText("Cash drawer opening");
     await expect.poll(() => focusedEntry(page)).toBe(OLD);
     const old = page.locator(`[data-outbox-entry="${OLD}"]`);
     await expect(old).toHaveAttribute("data-highlighted", "true");
