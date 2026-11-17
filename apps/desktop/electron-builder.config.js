@@ -1,16 +1,17 @@
 /**
  * electron-builder config (Windows installer + auto-update feed).
  *
- * - Release builds (GitHub Actions on a `v*` tag) embed the icon and
- *   version info in STORBIT.exe and lock the binary down with Electron fuses.
- * - POS_TEST_BUILD=1: same app, but the fuses that stop Playwright from
- *   driving it (inspect flags) stay off. Never ship a test build.
- * - Editing STORBIT.exe needs electron-builder's Windows tools, which only
- *   unpack where symlinks are allowed (CI, or Windows Developer Mode):
- *   set POS_EDIT_EXE=1 locally to try.
+ * - ALL Windows installer builds must edit STORBIT.exe resources so its taskbar
+ *   icon and version details are branded. Disabling this silently leaves the
+ *   generic Electron icon even when win.icon is correctly set.
+ * - Release builds (GitHub Actions on a `v*` tag) also lock the executable
+ *   down with Electron fuses. POS_TEST_BUILD=1 keeps inspection flags available
+ *   for Playwright; never ship a test build.
+ * - Resource editing needs electron-builder's Windows tools. If a LOCAL build
+ *   cannot extract them, enable Windows Developer Mode for symlink support
+ *   rather than bypassing icon embedding.
  */
 const testBuild = process.env.POS_TEST_BUILD === "1" || process.env.npm_lifecycle_event === "dist:test";
-const editExe = process.env.CI === "true" || process.env.POS_EDIT_EXE === "1";
 
 /** @type {import("electron-builder").Configuration} */
 module.exports = {
@@ -27,7 +28,7 @@ module.exports = {
   win: {
     target: "nsis",
     icon: "build/icon.ico",
-    signAndEditExecutable: editExe,
+    signAndEditExecutable: true,
     artifactName: "STORBIT-Setup-${version}.${ext}",
   },
   nsis: {
@@ -57,7 +58,7 @@ module.exports = {
         enableNodeCliInspectArguments: false,
         onlyLoadAppFromAsar: true,
         enableCookieEncryption: true,
-        // Needs the integrity hash written into STORBIT.exe (exe editing).
-        enableEmbeddedAsarIntegrityValidation: editExe,
+        // The executable is always resource-edited, including on developer machines.
+        enableEmbeddedAsarIntegrityValidation: true,
       },
 };
