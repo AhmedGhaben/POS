@@ -153,6 +153,26 @@ export async function serverFetch(apiPath: string, init: { method?: string; body
   });
 }
 
+/**
+ * Whether the server still accepts this till's key: "valid", "withdrawn"
+ * (it answers that the till isn't registered any more), "unreachable", or
+ * "none" (no key here).
+ */
+export async function keyStatus(): Promise<"valid" | "withdrawn" | "unreachable" | "none"> {
+  if (!hasTerminalKey()) return "none";
+  try {
+    const res = await serverFetch("/terminals/me/staff");
+    if (res.ok) return "valid";
+    if (res.status === 401) {
+      const body = (await res.json().catch(() => ({}))) as { message?: string };
+      if (/registered/i.test(body.message ?? "")) return "withdrawn";
+    }
+    return "unreachable";
+  } catch {
+    return "unreachable";
+  }
+}
+
 /** Fetches who may sign in on this till and keeps it for offline use. */
 export async function refreshStaff(): Promise<{ ok: boolean; count: number }> {
   if (!hasTerminalKey()) return { ok: false, count: listStaff().length };
@@ -176,7 +196,18 @@ export async function refreshStaff(): Promise<{ ok: boolean; count: number }> {
 
 // Kept in its own file, so closing and reopening the app doesn't reset it
 // (and a failure there can't touch config.json). Fail-closed: pin-check.ts.
-const lockout = new PinLockout(Date.now, fileLockoutStore(() => path.join(app.getPath("userData"), "pin-lockout.json")));
+const lockout = new PinLockout(
+  Date.now,
+  fileLockoutStore(() => path.join(app.getPath("userData"), "pin-lockout.json"), {
+    // Once created on this till, the file going missing locks offline PINs for LOCK_MS.
+    expected: () => getConfig().pinLockoutKept === true,
+    // Recorded in config.json only when it was read fine (it has the till's key), once.
+    onSaved: () => {
+      const config = getConfig();
+      if (!config.pinLockoutKept && config.terminalKey) updateConfig({ pinLockoutKept: true });
+    },
+  }),
+);
 
 /** The offline PIN check can't keep its count of wrong tries: it doesn't check PINs then. */
 const UNAVAILABLE = "PINs can't be checked offline on this till right now. Connect to the server, or sign in with email.";

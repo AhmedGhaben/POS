@@ -55,6 +55,9 @@ interface LoginResult {
   business: BusinessSettings;
 }
 
+/** A till whose key no longer counts (the same words as the rest of the till API). */
+export const TILL_NOT_REGISTERED = "This till isn't registered any more";
+
 /** Shown on a till registered to another business. */
 export const TILL_OF_ANOTHER_BUSINESS = "This till belongs to another business. Sign in with an account of that business.";
 
@@ -74,13 +77,18 @@ export class AuthService {
    * On a registered till (its key came with the request), only a session in
    * the till's own business: someone from another business can't sign in
    * there, by email, sign-up, switching company or refreshing a session,
-   * and so can't unlock or work the till. No key, or one that doesn't count
-   * (browsers, unregistered or withdrawn tills): as before.
+   * and so can't unlock or work the till.
+   *
+   * A key that was sent but doesn't count (malformed, revoked, the till
+   * withdrawn) is refused too: it's a till, not a browser. Browsers send no
+   * key and are unchanged. A withdrawn till recovers by being switched back
+   * on by a manager, or by setting it up again (docs/security/TILL_PIN_LOCK.md).
    */
   private async checkTillBusiness(tillKey: unknown, businessId: string | null, refuse: (message: string) => Error) {
     if (!keyWasSent(tillKey)) return;
     const till = await this.till.terminalForKey(tillKey);
-    if (till && till.businessId !== businessId) throw refuse(TILL_OF_ANOTHER_BUSINESS);
+    if (!till) throw refuse(TILL_NOT_REGISTERED);
+    if (till.businessId !== businessId) throw refuse(TILL_OF_ANOTHER_BUSINESS);
   }
 
   private signAccessToken(user: { id: string; businessId: string; role: Role }, businessId = user.businessId): string {

@@ -6,6 +6,7 @@ import { logout } from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/store";
 import { useLockStore } from "../lock-store";
 import { PinSignIn } from "./PinSignIn";
+import { WithdrawnTillNotice } from "./WithdrawnTillNotice";
 
 /**
  * The till while it's locked (ProtectedRoute shows only this). The cart is
@@ -52,6 +53,7 @@ export function LockOverlay() {
             if (someoneElse && signedIn.role === "CASHIER") navigate("/pos");
           }}
         />
+        <WithdrawnTillNotice />
         <Button
           type="button"
           variant="link"

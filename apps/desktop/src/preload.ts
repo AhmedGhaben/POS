@@ -119,6 +119,11 @@ const posDesktop = {
     set: (terminal: Terminal | null): Promise<void> => ipcRenderer.invoke("terminal:set", terminal),
     /** Whether this till has its key (kept in the main process, never shown). */
     hasKey: (): Promise<boolean> => ipcRenderer.invoke("till:has-key"),
+    /** Whether the server still accepts this till's key (read-only). */
+    keyStatus: (): Promise<"valid" | "withdrawn" | "unreachable" | "none"> => ipcRenderer.invoke("terminal:key-status"),
+    /** Only if the server says this till was withdrawn: forget its registration, to set it up again. */
+    forgetWithdrawn: (): Promise<{ ok: true } | { ok: false; reason: "valid" | "unreachable" | "none" }> =>
+      ipcRenderer.invoke("terminal:forget-withdrawn"),
   },
   signing: {
     /** Whether this till holds its signing key (kept by Windows' protection, never shown). */

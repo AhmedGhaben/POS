@@ -9,9 +9,10 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { useAuthStore } from "@/features/auth/store";
 import { login } from "@/features/auth/api";
 import { ApiError } from "@/lib/api-client";
-import { useDeviceStore } from "@/features/desktop/bridge";
+import { desktop, useDeviceStore } from "@/features/desktop/bridge";
 import { useLockStore, useTillMode } from "@/features/till/lock-store";
 import { PinSignIn } from "@/features/till/components/PinSignIn";
+import { WithdrawnTillNotice } from "@/features/till/components/WithdrawnTillNotice";
 
 export function LoginPage() {
   const { t } = useTranslation("auth");
@@ -52,6 +53,11 @@ export function LoginPage() {
       navigate(homePathFor(user.role));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("login.failed"));
+      // Refused on a registered till: if the server withdrew it, offer to set it up again.
+      if (err instanceof ApiError && err.status === 403 && useDeviceStore.getState().terminal) {
+        const status = await desktop?.terminal.keyStatus?.().catch(() => null);
+        if (status === "withdrawn") useLockStore.getState().setTillWithdrawn(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -70,6 +76,7 @@ export function LoginPage() {
         </>
       }
     >
+      <WithdrawnTillNotice />
       {tillMode && !useEmail ? (
         <div className="space-y-4">
           <PinSignIn

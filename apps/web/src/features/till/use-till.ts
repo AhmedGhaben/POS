@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useAuthStore } from "@/features/auth/store";
-import { useDeviceStore } from "@/features/desktop/bridge";
+import { desktop, useDeviceStore } from "@/features/desktop/bridge";
 import { rotateTerminalKey } from "@/features/desktop/api";
 import { useOfflineStore } from "@/features/pos/offline-store";
 import { useLockStore, useTillMode } from "./lock-store";
@@ -20,18 +20,25 @@ export function useTillUpkeep() {
   const loaded = useDeviceStore((s) => s.loaded);
   const server = useOfflineStore((s) => s.server);
 
-  // Tills registered before keys existed get one from a signed-in manager.
+  // Tills registered before keys existed get one from a signed-in manager:
+  // only once someone has unlocked the till (never with a session saved from
+  // last time), and only if the till really has no key. `hasKey` is still
+  // false for a moment after start-up, and a till whose key was withdrawn
+  // does have one: it must not quietly get a new one.
+  const locked = useLockStore((s) => s.locked);
   const keyRequested = React.useRef(false);
   React.useEffect(() => {
-    if (!loaded || !terminal || hasKey || !accessToken || keyRequested.current) return;
+    if (!loaded || !terminal || hasKey || !accessToken || locked || keyRequested.current) return;
     if (role !== "OWNER" && role !== "MANAGER") return;
     keyRequested.current = true;
-    void rotateTerminalKey(terminal.id)
-      .then(() => useDeviceStore.getState().refreshTill(true))
-      .catch(() => {
-        keyRequested.current = false;
-      });
-  }, [loaded, terminal, hasKey, accessToken, role]);
+    void (async () => {
+      if (!desktop?.terminal.hasKey || (await desktop.terminal.hasKey())) return;
+      await rotateTerminalKey(terminal.id);
+      await useDeviceStore.getState().refreshTill(true);
+    })().catch(() => {
+      keyRequested.current = false;
+    });
+  }, [loaded, terminal, hasKey, accessToken, role, locked]);
 
   // A fresh staff list whenever the server is reachable with a session.
   React.useEffect(() => {

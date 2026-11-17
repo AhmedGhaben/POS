@@ -4,7 +4,7 @@ import * as bcrypt from "bcrypt";
 import cookieParser from "cookie-parser";
 import request from "supertest";
 import { AppModule } from "../src/app.module";
-import { TILL_OF_ANOTHER_BUSINESS } from "../src/auth/auth.service";
+import { TILL_NOT_REGISTERED, TILL_OF_ANOTHER_BUSINESS } from "../src/auth/auth.service";
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
 import { PrismaService } from "../src/prisma/prisma.service";
 import { deleteBusiness } from "./cleanup";
@@ -96,9 +96,25 @@ describe("A registered till only signs in its own business (e2e)", () => {
       expect(refreshCookie(res)).toBeDefined();
     });
 
-    it("a browser (no key) and a key that doesn't count are unchanged", async () => {
+    it("a browser (no key, or an empty header) is unchanged", async () => {
       await http().post("/auth/login").send({ email: ownerB.email, password: PASSWORD }).expect(200);
-      await http().post("/auth/login").set(till("x".repeat(64))).send({ email: ownerB.email, password: PASSWORD }).expect(200);
+      await http().post("/auth/login").set(till("")).send({ email: ownerB.email, password: PASSWORD }).expect(200);
+    });
+
+    it("a malformed or unknown key is a till, not a browser: refused, with no session", async () => {
+      for (const key of ["abc", "x".repeat(64), "y".repeat(500)]) {
+        const res = await http().post("/auth/login").set(till(key)).send({ email: ownerA.email, password: PASSWORD }).expect(403);
+        expect(res.body.message).toBe(TILL_NOT_REGISTERED);
+        expect(refreshCookie(res)).toBeUndefined();
+      }
+      // Sign-up from it creates nothing either.
+      const email = `till-own-bad-${RUN}@e2e.test`;
+      await http()
+        .post("/auth/register")
+        .set(till("x".repeat(64)))
+        .send({ businessName: "Bad Key Lda", storeName: "Loja", firstName: "B", lastName: "K", email, password: PASSWORD })
+        .expect(403);
+      expect(await prisma.user.count({ where: { email } })).toBe(0);
     });
   });
 
@@ -140,8 +156,61 @@ describe("A registered till only signs in its own business (e2e)", () => {
     await http().post("/auth/switch-business").set(auth(token)).set(till()).send({ businessId: businesses[0] }).expect(200);
   });
 
-  it("once the till is withdrawn (its key no longer counts), sign-in is as in a browser", async () => {
-    await http().patch(`/terminals/${tillIdA}`).set(auth(ownerA.token)).send({ isActive: false }).expect(200);
-    await http().post("/auth/login").set(till()).send({ email: ownerB.email, password: PASSWORD }).expect(200);
+  describe("a till whose key no longer counts", () => {
+    let session: string;
+    beforeAll(async () => {
+      // Signed in on the till before it was withdrawn.
+      session = refreshCookie(await http().post("/auth/login").set(till()).send({ email: ownerA.email, password: PASSWORD }).expect(200))!;
+    });
+
+    it("withdrawn (switched off): no sign-in, and the session kept there ends (401)", async () => {
+      await http().patch(`/terminals/${tillIdA}`).set(auth(ownerA.token)).send({ isActive: false }).expect(200);
+      const res = await http().post("/auth/login").set(till()).send({ email: ownerA.email, password: PASSWORD }).expect(403);
+      expect(res.body.message).toBe(TILL_NOT_REGISTERED);
+      const refresh = await http().post("/auth/refresh").set("Cookie", session).set(till()).expect(401);
+      expect(refresh.body.message).toBe(TILL_NOT_REGISTERED);
+      await http().post("/auth/login").set(till()).send({ email: ownerB.email, password: PASSWORD }).expect(403);
+    });
+
+    it("recovery: a manager switches it back on (from another device) and the same key works again", async () => {
+      await http().patch(`/terminals/${tillIdA}`).set(auth(ownerA.token)).send({ isActive: true }).expect(200);
+      await http().post("/auth/login").set(till()).send({ email: ownerA.email, password: PASSWORD }).expect(200);
+    });
+
+    it("revoked (a new key issued elsewhere): the old key is refused; the new one works", async () => {
+      const rotated = (await http().post(`/terminals/${tillIdA}/key`).set(auth(ownerA.token)).expect(201)).body as { key: string };
+      const res = await http().post("/auth/login").set(till()).send({ email: ownerA.email, password: PASSWORD }).expect(403);
+      expect(res.body.message).toBe(TILL_NOT_REGISTERED);
+      await http().post("/auth/login").set(till(rotated.key)).send({ email: ownerA.email, password: PASSWORD }).expect(200);
+      tillKeyA = rotated.key;
+    });
+
+    it("a session saved on a withdrawn till can't give it a new key, switch it back on, or register or pair tills", async () => {
+      const withdrawnKey = tillKeyA;
+      await http().patch(`/terminals/${tillIdA}`).set(auth(ownerA.token)).send({ isActive: false }).expect(200);
+      const store = (await prisma.terminal.findUniqueOrThrow({ where: { id: tillIdA } })).storeId;
+      const from = { ...auth(ownerA.token), ...till(withdrawnKey) };
+      for (const [method, path, body] of [
+        ["post", `/terminals/${tillIdA}/key`, undefined],
+        ["patch", `/terminals/${tillIdA}`, { isActive: true }],
+        ["post", "/terminals", { storeId: store, name: "Self-heal" }],
+        ["post", "/terminals/pairing-codes", { storeId: store, name: "Self-heal" }],
+      ] as const) {
+        const res = await http()[method](path).set(from).send(body ?? {}).expect(403);
+        expect(res.body.message).toBe(TILL_NOT_REGISTERED);
+      }
+      // Still withdrawn, still the same key, no new till.
+      const after = await prisma.terminal.findUniqueOrThrow({ where: { id: tillIdA } });
+      expect(after.isActive).toBe(false);
+      expect(await prisma.terminal.count({ where: { name: "Self-heal" } })).toBe(0);
+      // From a browser (no key) the manager manages tills as before: switching it back on.
+      await http().patch(`/terminals/${tillIdA}`).set(auth(ownerA.token)).send({ isActive: true }).expect(200);
+      await http().post("/auth/login").set(till(withdrawnKey)).send({ email: ownerA.email, password: PASSWORD }).expect(200);
+    });
+
+    it("the refusal is translated for Angola", async () => {
+      const res = await http().post("/auth/login").set(till("x".repeat(64))).set("X-Language", "pt-AO").send({ email: ownerA.email, password: PASSWORD }).expect(403);
+      expect(res.body.message).not.toBe(TILL_NOT_REGISTERED);
+    });
   });
 });

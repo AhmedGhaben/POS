@@ -5,6 +5,7 @@ import type { UserDto } from "@pos/shared";
 import { Button } from "@/components/ui/button";
 import { useDeviceStore, type TillStaffMember } from "@/features/desktop/bridge";
 import { signInWithPin } from "../session";
+import { useLockStore } from "../lock-store";
 import { PinPad } from "./PinPad";
 
 interface PinSignInProps {
@@ -39,7 +40,11 @@ export function PinSignIn({ onSignedIn, preferredUserId }: PinSignInProps) {
     setBusy(false);
     setPin("");
     if (result.ok) onSignedIn(result.user);
-    else setError(t(`pin.errors.${result.code}`));
+    else {
+      setError(t(`pin.errors.${result.code}`));
+      // The server no longer knows this till: offer to set it up again (WithdrawnTillNotice).
+      if (result.code === "not-registered") useLockStore.getState().setTillWithdrawn(true);
+    }
   }
 
   if (!selected) {

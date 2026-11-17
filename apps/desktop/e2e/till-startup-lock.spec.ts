@@ -244,6 +244,19 @@ test.describe.serial("Till: locked at every start", () => {
     expect(await outbox(page)).toEqual(queueBefore);
   });
 
+  test("6: deleting the lockout file after wrong tries doesn't give fresh tries (locked 5 minutes)", async () => {
+    // Still offline. The file has existed on this till, and config.json says so.
+    const file = path.join(userData, "pin-lockout.json");
+    expect(JSON.parse(fs.readFileSync(path.join(userData, "config.json"), "utf8")).pinLockoutKept).toBe(true);
+    fs.rmSync(file);
+    await restart();
+    await overlay().getByRole("button", { name: `${owner.user.firstName} ${owner.user.lastName}` }).click();
+    await typePin(page, OWNER_PIN);
+    await expect(overlay()).toContainText("Too many wrong PINs");
+    expect((await authState(page)).user?.id).toBe(owner.user.id);
+    expect(JSON.parse(fs.readFileSync(file, "utf8"))).toMatchObject({ lockedAllUntil: expect.any(Number) });
+  });
+
   test("12: a forgotten PIN: sign in with email and password from the lock screen", async () => {
     await proxy.up();
     await overlay().getByRole("button", { name: "Sign in with email instead" }).click();
@@ -262,6 +275,8 @@ test.describe.serial("Till: locked at every start", () => {
     await page.getByLabel("Password").fill(other.password);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(page.getByText("This till belongs to another business")).toBeVisible();
+    // Another business, not a withdrawn till: nothing offered to forget.
+    await expect(page.getByRole("button", { name: "Set up this till again" })).toHaveCount(0);
     await expect(page).toHaveURL(/\/login/);
     expect((await authState(page)).user).toBeNull();
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("pos-auth")!).state.tillCache.business.name)).not.toBe("Outra Empresa Lda");
@@ -272,5 +287,43 @@ test.describe.serial("Till: locked at every start", () => {
     await expect(overlay()).toHaveCount(0);
     expect((await authState(page)).user?.id).toBe(owner.user.id);
     expect((await authState(page)).accessToken).not.toBeNull();
+  });
+
+  test("a withdrawn till (its key replaced elsewhere) can't be signed in on, and is set up again without losing saved work", async () => {
+    // A manager gives this till a new key from another device: the key on this till stops counting.
+    await owner.call(`/terminals/${terminalId}/key`, "POST");
+    const configBefore = JSON.parse(fs.readFileSync(path.join(userData, "config.json"), "utf8"));
+    const queueBefore = await outbox(page);
+    const lockoutBefore = fs.readFileSync(path.join(userData, "pin-lockout.json"), "utf8");
+
+    await restart();
+    // Locked; or, once the saved session is refused (the key no longer counts), the sign-in page. Never the till.
+    expect(await protectedSeen(page)).toEqual([]);
+    // PIN: the server no longer knows the till.
+    await page.getByRole("button", { name: `${owner.user.firstName} ${owner.user.lastName}` }).click();
+    await typePin(page, OWNER_PIN);
+    await expect(page.getByText("This till isn't registered any more").first()).toBeVisible();
+    expect(await protectedSeen(page)).toEqual([]);
+    // Email: refused too (the till's key is sent and doesn't count).
+    await page.getByRole("button", { name: "Sign in with email instead" }).click();
+    await page.getByLabel("Email").fill("owner@demo-store.test");
+    await page.getByLabel("Password").fill("OwnerPass123!");
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await expect(page.getByText("This till isn't registered any more").first()).toBeVisible();
+    expect((await authState(page)).user).toBeNull();
+
+    // Set it up again: the app checks with the server, forgets only the registration, opens setup.
+    await page.getByRole("button", { name: "Set up this till again" }).click();
+    await page.waitForURL(/\/setup/);
+    await expect(page.getByLabel("Till code")).toBeVisible();
+    const configAfter = JSON.parse(fs.readFileSync(path.join(userData, "config.json"), "utf8"));
+    expect(configAfter.terminal ?? null).toBeNull();
+    expect(configAfter.terminalKey ?? null).toBeNull();
+    expect(configAfter.serverUrl).toBe(configBefore.serverUrl);
+    expect(configAfter.printing).toEqual(configBefore.printing);
+    expect(configAfter.drawer).toEqual(configBefore.drawer);
+    expect(await outbox(page)).toEqual(queueBefore);
+    expect(fs.readFileSync(path.join(userData, "pin-lockout.json"), "utf8")).toBe(lockoutBefore);
+    expect((await authState(page)).user).toBeNull();
   });
 });

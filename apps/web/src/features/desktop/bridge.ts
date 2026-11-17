@@ -161,6 +161,10 @@ export interface PosDesktopApi {
     set(terminal: DesktopTerminal | null): Promise<void>;
     /** Absent before 0.2.3. */
     hasKey?(): Promise<boolean>;
+    /** Whether the server still accepts this till's key (absent before 0.2.7). */
+    keyStatus?(): Promise<"valid" | "withdrawn" | "unreachable" | "none">;
+    /** Forgets the registration only if the server says the till was withdrawn (absent before 0.2.7). */
+    forgetWithdrawn?(): Promise<{ ok: true } | { ok: false; reason: "valid" | "unreachable" | "none" }>;
   };
   /** Fiscal signing on the till (absent before 0.2.4): the key stays in the main process. */
   signing?: {

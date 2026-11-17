@@ -169,3 +169,78 @@ describe("offline PIN lockout across restarts (pin-lockout.json)", () => {
     for (const e of Object.values(saved.entries)) assert.deepEqual(Object.keys(e).sort(), ["failed", "lockedUntil"]);
   });
 });
+
+describe("offline PIN lockout: a file that disappears", () => {
+  /** pin-check's file store as till.ts sets it up, with config.json's marker in memory. */
+  function store(file: string, marker: { kept: boolean }) {
+    return fileLockoutStore(() => file, { expected: () => marker.kept, onSaved: () => (marker.kept = true) });
+  }
+
+  it("a new till, or one upgraded from a version without the file, starts with no count", () => {
+    const { file } = tillFolder();
+    const marker = { kept: false };
+    const lockout = new PinLockout(Date.now, store(file, marker));
+    assert.equal(lockout.isLocked("u1"), false);
+    // Nothing written just by looking.
+    assert.equal(fs.existsSync(file), false);
+    assert.equal(marker.kept, false);
+    // The first try creates the file and records that it exists.
+    assert.equal(lockout.begin("u1"), true);
+    assert.equal(fs.existsSync(file), true);
+    assert.equal(marker.kept, true);
+  });
+
+  it("an existing file from before the marker is read as usual, and the marker is set on the next save", () => {
+    const { file } = tillFolder();
+    fs.writeFileSync(file, JSON.stringify({ entries: { u1: { failed: 2, lockedUntil: 0 } } }));
+    const marker = { kept: false };
+    const lockout = new PinLockout(Date.now, store(file, marker));
+    assert.equal(lockout.isLocked("u1"), false);
+    lockout.begin("u1");
+    assert.equal((JSON.parse(fs.readFileSync(file, "utf8")) as LockoutState).entries.u1.failed, 3);
+    assert.equal(marker.kept, true);
+  });
+
+  it("deleting the file after wrong tries doesn't give fresh tries: everyone is locked for five minutes", () => {
+    let now = 1_000_000;
+    const { file } = tillFolder();
+    const marker = { kept: false };
+    const first = new PinLockout(() => now, store(file, marker));
+    for (let i = 0; i < MAX_TRIES - 1; i++) first.begin("u1");
+    fs.rmSync(file);
+    const restarted = new PinLockout(() => now, store(file, marker));
+    assert.equal(restarted.isLocked("u1"), true);
+    assert.equal(restarted.isLocked("someone-else"), true);
+    // The lock is written back, so deleting again and restarting doesn't help either.
+    assert.equal((JSON.parse(fs.readFileSync(file, "utf8")) as LockoutState).lockedAllUntil, now + LOCK_MS);
+    fs.rmSync(file);
+    assert.equal(new PinLockout(() => now, store(file, marker)).isLocked("u1"), true);
+  });
+
+  it("never a permanent lockout: five minutes later PINs work again", () => {
+    let now = 1_000_000;
+    const { file } = tillFolder();
+    const marker = { kept: true };
+    const lockout = new PinLockout(() => now, store(file, marker));
+    assert.equal(lockout.isLocked("u1"), true);
+    now += LOCK_MS + 1;
+    assert.equal(lockout.isLocked("u1"), false);
+    assert.equal(lockout.begin("u1"), true);
+    lockout.succeeded("u1");
+    assert.equal(new PinLockout(() => now, store(file, marker)).isLocked("u1"), false);
+  });
+
+  it("if recording the marker fails, the counts are still saved", () => {
+    const { file } = tillFolder();
+    const lockout = new PinLockout(
+      Date.now,
+      fileLockoutStore(() => file, {
+        onSaved: () => {
+          throw new Error("config.json not writable");
+        },
+      }),
+    );
+    assert.equal(lockout.begin("u1"), true);
+    assert.equal((JSON.parse(fs.readFileSync(file, "utf8")) as LockoutState).entries.u1.failed, 1);
+  });
+});

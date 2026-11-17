@@ -15,17 +15,22 @@ interface LockState {
   locked: boolean;
   /** The lock screen's "Sign in with email instead": the sign-in page opens on the email form. */
   emailSignIn: boolean;
+  /** The server said this till isn't registered any more (PIN or email sign-in): offer to set it up again. */
+  tillWithdrawn: boolean;
   lock: () => void;
   unlock: () => void;
   setEmailSignIn: (on: boolean) => void;
+  setTillWithdrawn: (on: boolean) => void;
 }
 
 export const useLockStore = create<LockState>((set) => ({
   locked: isDesktop,
   emailSignIn: false,
+  tillWithdrawn: false,
   lock: () => set({ locked: true }),
   unlock: () => set({ locked: false }),
   setEmailSignIn: (on) => set({ emailSignIn: on }),
+  setTillWithdrawn: (on) => set({ tillWithdrawn: on }),
 }));
 
 let settled = false;

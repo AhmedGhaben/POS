@@ -151,20 +151,32 @@ export class PinLockout {
   }
 }
 
+export interface FileLockoutOptions {
+  /**
+   * The file should exist (it was created before on this till). Then a
+   * missing file isn't a new till: it disappeared, and counts as unreadable.
+   */
+  expected?: () => boolean;
+  /** After each save: record that the file exists now (see expected). */
+  onSaved?: () => void;
+}
+
 /**
  * The counts in their own file (pin-lockout.json beside config.json), never
  * in config.json: a failure here can't touch the server address, the till
  * or its key. Written to a temporary file, then renamed into place.
  */
-export function fileLockoutStore(file: () => string): LockoutStore {
+export function fileLockoutStore(file: () => string, options: FileLockoutOptions = {}): LockoutStore {
   return {
     load() {
       let text: string;
       try {
         text = fs.readFileSync(file(), "utf8");
       } catch (err) {
-        if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
-        throw err;
+        if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+        // Missing: a new (or just upgraded) till, unless it was there before.
+        if (options.expected?.()) throw new Error("PIN lockout file disappeared");
+        return null;
       }
       const parsed = JSON.parse(text) as unknown;
       // Only a missing file means "nothing saved"; anything else unreadable is corrupt.
@@ -177,6 +189,11 @@ export function fileLockoutStore(file: () => string): LockoutStore {
       const tmp = `${target}.tmp`;
       fs.writeFileSync(tmp, JSON.stringify(state));
       fs.renameSync(tmp, target);
+      try {
+        options.onSaved?.();
+      } catch {
+        // The marker is extra protection; the counts are saved either way.
+      }
     },
   };
 }
