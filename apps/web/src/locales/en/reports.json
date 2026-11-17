@@ -40,7 +40,21 @@
     "saftAccounting": "SAF-T accounting file for {{covers}}: due by {{due}}.",
     "saftPurchases": "SAF-T purchases file (Aquisição de Bens e Serviços) for {{covers}}: due by {{due}}.",
     "overdue": "Overdue.",
-    "makeIt": "Generate it"
+    "makeIt": "Generate it",
+    "groupDue": "Due by {{due}}",
+    "groupPassed": "Deadline passed on {{due}}",
+    "passedNote": "If you've already submitted it, you can ignore this reminder.",
+    "daysLeft_one": "{{count}} day left",
+    "daysLeft_other": "{{count}} days left",
+    "dueToday": "Due today",
+    "makeItFor": "Generate it: {{file}}",
+    "files": "Files to submit",
+    "file": {
+      "saftInvoicing": "SAF-T invoicing file for {{covers}}",
+      "saftInventory": "SAF-T inventory file (stock at {{covers}})",
+      "saftAccounting": "SAF-T accounting file for {{covers}}",
+      "saftPurchases": "SAF-T purchases file (Aquisição de Bens e Serviços) for {{covers}}"
+    }
   },
   "noStore": "No store selected.",
   "store": "store",

@@ -138,7 +138,7 @@ export function DashboardPage() {
             {businessQuery.data?.name ?? t("common:actions.loading")}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {businessQuery.data && (
             <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium">
               {t("plan", { plan: businessQuery.data.plan })}

@@ -40,7 +40,21 @@
     "saftAccounting": "Ficheiro SAF-T de contabilidade de {{covers}}: entregar até {{due}}.",
     "saftPurchases": "Ficheiro SAF-T de aquisição de bens e serviços de {{covers}}: entregar até {{due}}.",
     "overdue": "Em atraso.",
-    "makeIt": "Gerar agora"
+    "makeIt": "Gerar agora",
+    "groupDue": "Entregar até {{due}}",
+    "groupPassed": "Prazo terminado a {{due}}",
+    "passedNote": "Se já entregou, pode ignorar este aviso.",
+    "daysLeft_one": "Falta {{count}} dia",
+    "daysLeft_other": "Faltam {{count}} dias",
+    "dueToday": "Termina hoje",
+    "makeItFor": "Gerar agora: {{file}}",
+    "files": "Ficheiros a entregar",
+    "file": {
+      "saftInvoicing": "Ficheiro SAF-T de faturação de {{covers}}",
+      "saftInventory": "Ficheiro SAF-T de inventário (stock a {{covers}})",
+      "saftAccounting": "Ficheiro SAF-T de contabilidade de {{covers}}",
+      "saftPurchases": "Ficheiro SAF-T de aquisição de bens e serviços de {{covers}}"
+    }
   },
   "noStore": "Nenhuma loja selecionada.",
   "store": "loja",
