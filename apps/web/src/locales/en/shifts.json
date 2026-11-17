@@ -7,7 +7,8 @@
     "title": "Open the till",
     "description": "Count the cash in the drawer to start the shift.",
     "float": "Opening float",
-    "submit": "Open the till"
+    "submit": "Open the till",
+    "notReady": "This till hasn't finished reading its settings. Try again in a moment."
   },
   "movement": {
     "title": "Cash in / out",
@@ -141,5 +142,22 @@
     "till": "Till (sells)",
     "backOffice": "Back office",
     "askManager": "Ask a manager to set this device up as a till."
+  },
+  "exceptions": {
+    "title": "Till exceptions",
+    "badge_one": "{{count}} till exception",
+    "badge_other": "{{count}} till exceptions",
+    "description": "Work from a till that landed in a shift that isn't that till's. It was kept as it happened; nothing in this shift's figures was changed.",
+    "operation": {
+      "sale": "Sale",
+      "shift-open": "Shift opening",
+      "cash-movement": "Cash in/out",
+      "shift-close": "Shift close"
+    },
+    "line": "{{what}} from till {{till}} {{shift}}",
+    "browserShift": "in a browser shift",
+    "tillShift": "in the shift of till {{till}}",
+    "offline": "offline",
+    "online": "online"
   }
 }

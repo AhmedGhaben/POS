@@ -7,7 +7,8 @@
     "title": "Abrir caixa",
     "description": "Conte o dinheiro da gaveta para começar o turno.",
     "float": "Fundo de troco",
-    "submit": "Abrir caixa"
+    "submit": "Abrir caixa",
+    "notReady": "Este caixa ainda não terminou de ler as configurações. Tente de novo em instantes."
   },
   "movement": {
     "title": "Suprimento / sangria",
@@ -141,5 +142,22 @@
     "till": "Caixa (vende)",
     "backOffice": "Retaguarda",
     "askManager": "Peça a um gerente para configurar este dispositivo como caixa."
+  },
+  "exceptions": {
+    "title": "Exceções de caixa",
+    "badge_one": "{{count}} exceção de caixa",
+    "badge_other": "{{count}} exceções de caixa",
+    "description": "Operações de um caixa que ficaram em um turno que não é desse caixa. Foram guardadas como aconteceram; nada nos valores deste turno foi alterado.",
+    "operation": {
+      "sale": "Venda",
+      "shift-open": "Abertura de turno",
+      "cash-movement": "Movimentação de caixa",
+      "shift-close": "Fechamento de turno"
+    },
+    "line": "{{what}} do caixa {{till}} {{shift}}",
+    "browserShift": "em um turno do navegador",
+    "tillShift": "no turno do caixa {{till}}",
+    "offline": "sem internet",
+    "online": "com internet"
   }
 }

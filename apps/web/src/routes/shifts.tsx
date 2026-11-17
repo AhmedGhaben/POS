@@ -15,6 +15,7 @@ import { fetchShift, fetchShiftPeople, fetchShifts, type ShiftFilters } from "@/
 import { fetchTerminals } from "@/features/desktop/api";
 import { Combobox } from "@/components/ui/combobox";
 import { ShiftReport } from "@/features/shifts/components/ShiftReport";
+import { ShiftTerminalExceptions } from "@/features/shifts/components/ShiftTerminalExceptions";
 import { reportFromServer } from "@/features/shifts/report-data";
 import { formatDateTime } from "@/lib/format";
 
@@ -134,6 +135,11 @@ export function ShiftsPage() {
                         {t("page.flagged")}
                       </Badge>
                     )}
+                    {!!s.terminalExceptionCount && (
+                      <Badge variant="outline" className="ml-2" data-testid="shift-exception-badge">
+                        {t("exceptions.badge", { count: s.terminalExceptionCount })}
+                      </Badge>
+                    )}
                     {s.forcedClose && (
                       <Badge variant="outline" className="ml-2" title={t("page.forcedHint", { name: person(s.closedBy) })}>
                         {t("page.forced")}
@@ -165,6 +171,7 @@ export function ShiftsPage() {
           </DialogHeader>
           {detail.data && (
             <>
+              <ShiftTerminalExceptions items={detail.data.terminalExceptions ?? []} />
               <div className="max-h-[60vh] overflow-y-auto rounded-md border bg-white py-3 text-black">
                 <ShiftReport data={reportFromServer(detail.data)} store={store} />
               </div>
