@@ -17,12 +17,12 @@ const sizes = [
 const scale = Number(process.env.SCALE || 1);
 mkdirSync(outDir, { recursive: true });
 // Use a local playwright if installed, otherwise the globally installed one.
+// Prefer the global Playwright (its browsers are installed), else a local one.
 let pw;
 try {
-  pw = await import('playwright');
+  pw = await import(`${execSync('npm root -g').toString().trim()}/playwright/index.mjs`);
 } catch {
-  const root = execSync('npm root -g').toString().trim();
-  pw = await import(`${root}/playwright/index.mjs`);
+  pw = await import('playwright');
 }
 const browser = await pw.chromium.launch();
 for (const s of sizes) {
@@ -31,6 +31,12 @@ for (const s of sizes) {
   for (const p of pages) {
     const res = await page.goto(BASE + p, { waitUntil: 'networkidle' });
     if (!res || (res.status() >= 400 && p !== '/404')) { console.warn('skip', p, res?.status()); continue; }
+    // Scroll through the page so lazy images load at the right size.
+    await page.evaluate(async () => {
+      for (let y = 0; y < document.body.scrollHeight; y += 600) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 60)); }
+      window.scrollTo(0, 0);
+    });
+    await page.waitForLoadState('networkidle');
     await page.evaluate(async () => {
       document.querySelectorAll('.reveal').forEach((e) => e.classList.add('is-visible'));
       const imgs = [...document.querySelectorAll('img')];

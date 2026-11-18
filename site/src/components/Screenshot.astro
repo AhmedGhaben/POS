@@ -19,7 +19,7 @@ const show = approved || PREVIEW;
   <figure class:list={['shot', cls]}>
     <div class="frame">
       <Image
-        src={s.image}
+        src={s.image[lang]}
         alt={s.alt[lang]}
         widths={[480, 720, 960, 1440]}
         sizes="(min-width: 1000px) 560px, 92vw"

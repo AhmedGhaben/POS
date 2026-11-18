@@ -6,8 +6,10 @@
  * To publish a video: produce it, set `src`, `poster` and `captionsSrc`
  * (pt-AO subtitles, WebVTT), then switch `status` to 'ready'.
  */
-import caixaSemInternet from '../assets/screens/caixa-sem-internet.png';
-import gestaoPainel from '../assets/screens/gestao-painel.png';
+import caixaOfflinePt from '../assets/screens/caixa-offline-pt.png';
+import caixaOfflineEn from '../assets/screens/caixa-offline-en.png';
+import gestaoPainelPt from '../assets/screens/gestao-painel-pt.png';
+import gestaoPainelEn from '../assets/screens/gestao-painel-en.png';
 import type { ImageMetadata } from 'astro';
 import type { L } from '../i18n';
 
@@ -102,14 +104,15 @@ export type ScreenKey = 'CAIXA' | 'GESTAO';
 export type ScreenAsset = {
   title: string;
   alt: L;
-  image: ImageMetadata;
+  /** One capture per site language: the app shown in that language. */
+  image: { 'pt-AO': ImageMetadata; en: ImageMetadata };
   /**
-   * 'preview'  = real capture with demo data, from the rebrand build
-   *              (docs/brand/screenshots). Not yet from a reviewed release
-   *              build, so it is shown in preview mode only.
+   * 'preview'  = real capture with demo data, not yet from a reviewed release
+   *              build: shown in preview mode only.
    * 'approved' = captured from a reviewed build with demo data; may go public.
    */
   status: 'preview' | 'approved';
+  /** How the capture was made (see scripts/app-captures/README.md). */
   source: string;
 };
 
@@ -117,21 +120,24 @@ export const screens: Record<ScreenKey, ScreenAsset> = {
   CAIXA: {
     title: 'STORBIT Caixa',
     alt: {
-      'pt-AO': 'Ecrã da STORBIT Caixa a vender sem internet: indicador âmbar "Sem internet · a vender" no topo e campo para ler o código de barras.',
-      en: 'STORBIT Caixa screen selling offline: amber "Sem internet · a vender" (offline, still selling) indicator at the top and the barcode field.',
+      'pt-AO':
+        'Ecrã da STORBIT Caixa para Windows sem internet: indicador âmbar "Sem internet · a vender · 2 vendas por enviar" no topo e uma venda em curso com três produtos.',
+      en: 'STORBIT Caixa for Windows screen while offline: amber "Offline · still selling · 2 sales waiting to sync" indicator at the top and a sale in progress with three products.',
     },
-    image: caixaSemInternet,
+    image: { 'pt-AO': caixaOfflinePt, en: caixaOfflineEn },
     status: 'preview',
-    source: 'docs/brand/screenshots/after-till-offline.png',
+    source:
+      'Windows Caixa (Electron build of main @ c8f4e00), demo seed data; two sales made with the server unreachable ("Saved offline"), both synced afterwards. scripts/app-captures/',
   },
   GESTAO: {
     title: 'STORBIT Gestão',
     alt: {
-      'pt-AO': 'Painel da STORBIT Gestão com dados de demonstração da loja fictícia Mercearia Central: receita, vendas e produtos mais vendidos.',
-      en: 'STORBIT Gestão dashboard with demo data from the fictional shop Mercearia Central: revenue, sales and best-selling products.',
+      'pt-AO':
+        'Painel da STORBIT Gestão com dados de demonstração da loja fictícia Mercearia Central: receita, vendas e produtos mais vendidos.',
+      en: 'STORBIT Gestão dashboard with demo data from the fictional shop Mercearia Central: revenue, orders and best-selling products.',
     },
-    image: gestaoPainel,
+    image: { 'pt-AO': gestaoPainelPt, en: gestaoPainelEn },
     status: 'preview',
-    source: 'docs/brand/screenshots/after-dashboard.png',
+    source: 'Gestão in the browser (web build of main @ c8f4e00), same demo data after the offline sales synced. scripts/app-captures/',
   },
 };

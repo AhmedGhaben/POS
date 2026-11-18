@@ -170,6 +170,44 @@ photos, the former supplier.
   2. Can the team answer WhatsApp and email in English? The English pages
      don't promise it; WhatsApp messages are prefilled in English.
   3. English legal texts, and which language prevails.
-  4. The product screenshots show the app in Portuguese. Decide whether the
-     English pages need English-UI captures.
+  4. ~~English product screenshots~~: done, see section 8.
   5. English video subtitles (the video map only has a pt-AO captions slot).
+
+## 8. Product screenshots per language (added 18 November 2026)
+
+- **What changed:** each language now shows the app in its own language.
+  English pages show the English app, Portuguese pages the Portuguese app.
+  The app's English translation is complete (2,451 of 2,451 text keys), so
+  the English screenshots are real, not mock-ups.
+- **New captures (all real, demo seed data, from the current `main`, c8f4e00):**
+  - **Caixa:** the Windows app (Electron build), registered as a till.
+    - Four sales made online, then the connection was cut.
+    - Two more sales made offline; both receipts read "Saved offline".
+    - The till then showed "Offline · still selling · 2 sales waiting to sync" /
+      "Sem internet · a vender · 2 vendas por enviar", with a sale in progress.
+    - After reconnecting, both sales synced.
+  - **Gestão:** the browser dashboard in each language, showing those six sales.
+- **Old captures removed:** the rebrand-build screenshots. They came from the
+  browser till, which cannot sell offline in Angola.
+- **Still preview-only:** the captures keep `status: 'preview'` and stay out of
+  public builds until they're taken from a reviewed release build and approved.
+- **Redoing them:** `scripts/app-captures/` (with a README) reproduces them; run it on the reviewed build.
+- **What this run verified:** the internet-outage path of the core claim ("the
+  till keeps selling without internet and sends the saved sales when the
+  connection comes back") works on this build.
+  - It ran on Linux, with gnome-keyring standing in for Windows DPAPI. Repeat
+    it on a real Windows PC before release.
+  - It is not a power-cut test.
+- **Findings for the team:**
+  1. **The browser till can't sell offline in Angola.** It holds no signing
+     key, so it refuses with "Unable to complete sale". This is correct fiscal
+     behaviour, and the site only claims offline selling for the Windows Caixa.
+  2. **The repo's offline e2e specs can't pass on Linux.** That includes A0
+     "server goes down mid-session". Playwright's Electron launcher forces
+     `--password-store=basic`, which turns off secure storage, so the till
+     never gets its signing key. Run these specs on Windows, or launch Electron
+     outside Playwright as `scripts/app-captures/capture-caixa.mjs` does.
+  3. **The demo seed's products and categories are in English** ("Bakery",
+     "Orange Juice 1L"), so they also appear in the Portuguese captures.
+     Portuguese demo products would suit the pt-AO pages better. Changing them
+     touches the app's seed, so it needs a separate decision.

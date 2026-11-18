@@ -112,10 +112,12 @@ shows as a poster marked "Em produção" in preview, with no play control, and
 is hidden in public builds. A ready video opens on click in a dialog, with
 `preload="none"` and pt-AO captions. It never autoplays.
 
-The two screenshots are real captures with demo data, copied from
-`docs/brand/screenshots/` (rebrand build). They aren't yet from a reviewed
-release build, so they're marked `status: 'preview'`: visible in preview,
-hidden publicly. Replace them, then set `status: 'approved'`.
+Product screenshots are real captures with demo data, one set per language:
+the Windows Caixa selling offline and the Gestão dashboard. They are made
+with `scripts/app-captures/` (see its README). They aren't from a reviewed
+release build yet, so they're marked `status: 'preview'`: visible in preview,
+hidden publicly. Recapture them from the reviewed build, then set
+`status: 'approved'`.
 
 ## Brand
 

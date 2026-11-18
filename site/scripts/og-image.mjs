@@ -2,8 +2,9 @@
 // a brand change: node scripts/og-image.mjs
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+// Prefer the global Playwright (its browsers are installed), else a local one.
 let pw;
-try { pw = await import('playwright'); } catch { pw = await import(`${execSync('npm root -g').toString().trim()}/playwright/index.mjs`); }
+try { pw = await import(`${execSync('npm root -g').toString().trim()}/playwright/index.mjs`); } catch { pw = await import('playwright'); }
 const logo = readFileSync(new URL('../../docs/brand/logo/storbit-logo-on-dark.svg', import.meta.url), 'utf8');
 const font = readFileSync(new URL('../public/fonts/inter-latin-wght-normal.woff2', import.meta.url)).toString('base64');
 const html = `<!doctype html><html><head><style>
