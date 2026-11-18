@@ -1,0 +1,33 @@
+---
+/**
+ * Language switcher: one segmented PT | EN control (BRAND_HANDOFF §6).
+ * Links to the same page in the other language; no automatic redirects.
+ */
+import { LANGS, LANG_LABEL, ROUTES, type Lang, type RouteKey } from '../i18n';
+interface Props { lang: Lang; route: RouteKey; class?: string }
+const { lang, route, class: cls = '' } = Astro.props;
+---
+<nav class:list={['lang', cls]} aria-label={lang === 'en' ? 'Language' : 'Idioma'}>
+  {LANGS.map((l) => (
+    <a
+      href={ROUTES[route][l]}
+      hreflang={l}
+      lang={l}
+      aria-current={l === lang ? 'true' : undefined}
+      data-lang-link={l}
+      title={LANG_LABEL[l].name}
+    ><span aria-hidden="true">{LANG_LABEL[l].short}</span><span class="visually-hidden">{LANG_LABEL[l].name}</span></a>
+  ))}
+</nav>
+<style>
+  .lang { display: inline-flex; padding: 3px; border-radius: var(--sb-radius-pill); background: var(--sb-chip); }
+  .lang a { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 38px; padding: 0 10px; border-radius: var(--sb-radius-pill); color: var(--sb-text-muted); text-decoration: none; font-weight: 700; font-size: 14px; }
+  .lang a:hover { color: var(--sb-text); }
+  .lang a[aria-current='true'] { background: var(--sb-surface); color: var(--sb-text); box-shadow: 0 0 0 1px var(--sb-border); }
+</style>
+<script>
+  // Remember the choice for next time (used only to label, never to redirect).
+  document.querySelectorAll<HTMLAnchorElement>('[data-lang-link]').forEach((a) =>
+    a.addEventListener('click', () => { try { localStorage.setItem('storbit-lang', a.dataset.langLink!); } catch {} }),
+  );
+</script>

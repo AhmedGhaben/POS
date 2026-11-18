@@ -1,12 +1,15 @@
 ---
 import { PREVIEW } from '../config';
+import { tr, type Lang } from '../i18n';
+interface Props { lang: Lang }
+const t = tr(Astro.props.lang);
 ---
 {PREVIEW && (
   <div class="preview-bar" role="note" data-preview-only>
     <div class="container inner">
-      <strong>Pré-visualização privada</strong>
-      <span>Rascunho para revisão interna · não publicar · conteúdo e textos pt-AO por rever</span>
-      <a href="/pre-visualizacao">Estado da configuração →</a>
+      <strong>{t('Pré-visualização privada', 'Private preview')}</strong>
+      <span>{t('Rascunho para revisão interna · não publicar · conteúdo e textos pt-AO por rever', 'Draft for internal review · do not publish · content and English copy to be reviewed')}</span>
+      <a href="/pre-visualizacao">{t('Estado da configuração', 'Configuration status')} →</a>
     </div>
   </div>
 )}

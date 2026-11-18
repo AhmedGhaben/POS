@@ -4,6 +4,7 @@ import CtaButton from './CtaButton.astro';
 import WhatsAppButton from './WhatsAppButton.astro';
 import StatusDiamond from './StatusDiamond.astro';
 import { primaryCta, primaryIsWhatsapp, type WaMessage } from '../lib/cta';
+import { tr, type Lang } from '../i18n';
 interface Props {
   eyebrow?: string;
   heading?: string;
@@ -12,17 +13,15 @@ interface Props {
   source: string;
   /** Show the WhatsApp button even when the primary CTA already opens WhatsApp (different prefilled message). */
   alwaysWhatsapp?: boolean;
+  lang: Lang;
 }
-const {
-  eyebrow = 'Conheça a STORBIT',
-  heading = 'Quer ver a STORBIT a funcionar na sua loja?',
-  body = 'Peça uma demonstração e conheça a Caixa e a Gestão antes de decidir.',
-  message,
-  source,
-  alwaysWhatsapp = false,
-} = Astro.props;
-const cta = primaryCta();
-const micro = cta?.kind === 'signup' ? '' : 'Sem criar conta. Entramos em contacto consigo para combinar os próximos passos.';
+const { lang, message, source, alwaysWhatsapp = false } = Astro.props;
+const t = tr(lang);
+const eyebrow = Astro.props.eyebrow ?? t('Conheça a STORBIT', 'Meet STORBIT');
+const heading = Astro.props.heading ?? t('Quer ver a STORBIT a funcionar na sua loja?', 'Would you like to see STORBIT working in your shop?');
+const body = Astro.props.body ?? t('Peça uma demonstração e conheça a Caixa e a Gestão antes de decidir.', 'Request a demo and see the Caixa and Gestão before you decide.');
+const cta = primaryCta(lang);
+const micro = cta?.kind === 'signup' ? '' : t('Sem criar conta. Entramos em contacto consigo para combinar os próximos passos.', "No account needed. We'll get in touch to arrange the next steps.");
 ---
 {cta && (
   <section class="section section--charcoal band" aria-labelledby={`band-${source}`}>
@@ -31,8 +30,8 @@ const micro = cta?.kind === 'signup' ? '' : 'Sem criar conta. Entramos em contac
       <h2 id={`band-${source}`}>{heading}</h2>
       <p class="band-body">{body}</p>
       <div class="actions">
-        <CtaButton source={source} />
-        {(alwaysWhatsapp || !primaryIsWhatsapp()) && <WhatsAppButton message={message} />}
+        <CtaButton source={source} lang={lang} />
+        {(alwaysWhatsapp || !primaryIsWhatsapp(lang)) && <WhatsAppButton message={message} lang={lang} />}
       </div>
       {micro && cta.kind !== 'pending' && <p class="micro">{micro}</p>}
     </div>

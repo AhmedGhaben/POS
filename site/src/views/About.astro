@@ -1,0 +1,243 @@
+---
+/**
+ * About page — STORBIT_ABOUT_PAGE_BRIEF_v2 §2 structure:
+ * B hero + story → C principles → D product proof → E status → F company
+ * and contacts → G charcoal CTA. Founder story and any founder identity
+ * live only in B. Faceless: no names, no portraits (handoff §3).
+ */
+import Base from '../layouts/Base.astro';
+import StatusDiamond from '../components/StatusDiamond.astro';
+import Screenshot from '../components/Screenshot.astro';
+import StatusCard from '../components/StatusCard.astro';
+import CtaBand from '../components/CtaBand.astro';
+import Claim from '../components/Claim.astro';
+import PreviewTag from '../components/PreviewTag.astro';
+import VideoSlot from '../components/VideoSlot.astro';
+import { COMPANY, COMPANY_PUBLISHABLE, CONTACT_EMAIL, FLAGS, PREVIEW, SUPPORT_HOURS } from '../config';
+import { whatsappHref } from '../lib/cta';
+import { screens } from '../data/marketingAssets';
+import { AGT_STATUS } from '../data/status';
+import { href, tr, type Lang } from '../i18n';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = tr(lang);
+const showStory = FLAGS.FOUNDER_STORY_APPROVED || PREVIEW;
+const showProof = PREVIEW || Object.values(screens).every((s) => s.status === 'approved');
+const wa = whatsappHref('sobre', lang);
+const hasContacts = Boolean(wa || CONTACT_EMAIL);
+const showDetails = COMPANY_PUBLISHABLE || PREVIEW;
+const showContacts = hasContacts || PREVIEW;
+const showCompanyBlock = showDetails || showContacts;
+const statusId = t('estado-actual', 'current-status');
+const tbc = t('Por confirmar', 'To be confirmed');
+---
+<Base
+  title={t('Sobre a STORBIT', 'About STORBIT')}
+  description={t(
+    'Quem está por detrás da STORBIT, porque a construímos para as lojas de Angola e em que ponto está hoje: ainda não lançada e ainda não validada pela AGT.',
+    "Who is behind STORBIT, why we built it for Angola's shops and where it stands today: not yet launched and not yet validated by the AGT.",
+  )}
+  route="about"
+  lang={lang}
+  message="sobre"
+>
+  <!-- B · Hero + story -->
+  <section class="section section--cream hero">
+    <div class="container">
+      <p class="eyebrow"><StatusDiamond size={10} /> {t('Sobre a STORBIT', 'About STORBIT')}</p>
+      <h1>{t('Software de caixa feito para as lojas de Angola.', "Point-of-sale software made for Angola's shops.")}</h1>
+      <p class="lead readable">{t(
+        'Uma caixa para Windows que continua a registar vendas quando a internet falha, e uma plataforma de Gestão no navegador para acompanhar produtos, stock e várias lojas.',
+        'A till for Windows that keeps recording sales when the internet fails, and a Gestão platform in the browser to follow products, stock and several shops.',
+      )}</p>
+
+      <div class="story-grid">
+        <article class="story card" aria-labelledby="historia">
+          {showStory && (
+            <>
+              {!FLAGS.FOUNDER_STORY_APPROVED && (
+                <PreviewTag>{t('História dos fundadores · proposta, não aprovada · no público usa-se o texto neutro abaixo', 'Founder story · proposed, not signed off · the public site uses the neutral text below')}</PreviewTag>
+              )}
+              <h2 id="historia">{t('A STORBIT nasceu de uma decisão: fazer diferente.', 'STORBIT started with a decision: to do things differently.')}</h2>
+              <p>{t(
+                'Antes de criarmos a STORBIT, trabalhávamos na venda de software de ponto de venda. O contacto directo com comerciantes mostrou-nos dificuldades que se repetiam: sistemas complicados, equipamentos difíceis de configurar e lojas sem uma visão conjunta da sua actividade.',
+                'Before we created STORBIT, we worked selling point-of-sale software. Talking directly to shopkeepers showed us the same problems again and again: complicated systems, equipment that was hard to set up, and shops with no joined-up view of their business.',
+              )}</p>
+              <p>{t(
+                'Quando os clientes pediam ajuda ou melhorias, muitas vezes não recebiam a resposta que esperavam. Percebemos que queríamos mais do que vender software: queríamos ter a capacidade de o melhorar.',
+                "When customers asked for help or improvements, they often didn't get the answer they hoped for. We realised we wanted more than to sell software: we wanted to be able to improve it.",
+              )}</p>
+              <p>{t(
+                'Foi assim que decidimos criar a STORBIT, inicialmente para mercearias, minimercados e supermercados em Angola. O nosso objectivo é desenvolver uma solução prática e continuar a ouvir quem a utiliza.',
+                'That is how we decided to create STORBIT, starting with grocery shops, minimarkets and supermarkets in Angola. Our aim is to build a practical solution and keep listening to the people who use it.',
+              )}</p>
+              <p class="sign">{t('Porque um bom software começa por ouvir os comerciantes.', 'Because good software starts by listening to shopkeepers.')}</p>
+            </>
+          )}
+          {!FLAGS.FOUNDER_STORY_APPROVED && (
+            <div class:list={[PREVIEW && 'pv-block neutral']}>
+              <PreviewTag>{t('Texto neutro · versão pública até a história ser aprovada', 'Neutral text · public version until the story is signed off')}</PreviewTag>
+              {!PREVIEW && <h2 id="historia" class="visually-hidden">{t('Quem somos', 'Who we are')}</h2>}
+              <p>{t(
+                'A STORBIT é um projecto de software de ponto de venda pensado para o comércio em Angola. Junta uma caixa para Windows, que continua a registar vendas sem ligação à internet, e uma plataforma de Gestão acessível no navegador. Estamos a preparar o lançamento e a concluir os passos técnicos e fiscais necessários antes de receber os primeiros clientes.',
+                'STORBIT is a point-of-sale software project designed for retail in Angola. It combines a till for Windows, which keeps recording sales without an internet connection, and a Gestão platform available in the browser. We are preparing the launch and completing the technical and tax steps needed before taking on our first customers.',
+              )}</p>
+            </div>
+          )}
+        </article>
+        <div class="story-side">
+          <VideoSlot video="VIDEO_BRAND_STORY" lang={lang} />
+        </div>
+      </div>
+
+      <!-- C · Three principles -->
+      <h2 class="visually-hidden">{t('Os nossos princípios', 'Our principles')}</h2>
+      <div class="grid grid--3 principles">
+        <article class="card reveal">
+          <h3><StatusDiamond size={12} /> {t('Vender mesmo sem internet', 'Selling even without internet')}</h3>
+          <p>{t(
+            'Quando a ligação falha, a STORBIT Caixa continua a registar vendas no computador da loja. Quando a ligação regressa, envia as vendas guardadas para a Gestão e mostra as que ainda faltam enviar.',
+            "When the connection fails, STORBIT Caixa keeps recording sales on the shop's computer. When the connection returns, it sends the saved sales to Gestão and shows any still waiting to be sent.",
+          )}</p>
+          <Claim id="power-cut" note={t('teste de corte de energia', 'power-cut test')} lang={lang}>
+            <p class="small">{t(
+              'Se faltar a energia, as vendas já concluídas ficam guardadas no computador e são sincronizadas quando o equipamento volta a ligar.',
+              'If the power goes out, sales already completed stay saved on the computer and are synced when the equipment is switched back on.',
+            )}</p>
+          </Claim>
+        </article>
+        <article class="card reveal">
+          <h3><StatusDiamond size={12} /> {t('Dizemos o que ainda não está pronto', "We tell you what isn't ready yet")}</h3>
+          <p>{lang === 'en'
+            ? <>This page shows STORBIT's <a href={`#${statusId}`}>current status</a>: what already works, what is still being tested and what is awaiting AGT validation.</>
+            : <>Nesta página mostramos o <a href={`#${statusId}`}>estado actual</a> da STORBIT: o que já funciona, o que ainda está em testes e o que aguarda validação da AGT.</>}</p>
+        </article>
+        <article class="card reveal">
+          <h3><StatusDiamond size={12} /> {t('Várias lojas, uma só visão', 'Several shops, one view')}</h3>
+          <p>{t(
+            'Acompanhe as vendas, os produtos e o stock de todas as suas lojas a partir de qualquer navegador.',
+            'Follow the sales, products and stock of all your shops from any browser.',
+          )}</p>
+        </article>
+      </div>
+      <Claim id="export" note={t('4.º cartão · teste de exportação', '4th card · export test')} lang={lang}>
+        <article class="card fourth">
+          <h3><StatusDiamond size={12} /> {t('Os seus dados são seus', 'Your data is yours')}</h3>
+          <p>{t(
+            'Pode exportar os seus produtos, vendas e clientes a qualquer momento, em formatos que pode abrir noutros programas.',
+            'You can export your products, sales and customers at any time, in formats you can open in other programs.',
+          )}</p>
+        </article>
+      </Claim>
+    </div>
+  </section>
+
+  <!-- D · Product proof -->
+  {showProof && (
+    <section class="section section--white" aria-labelledby="construir">
+      <div class="container">
+        <p class="eyebrow"><StatusDiamond size={10} /> {t('O que estamos a construir', "What we're building")}</p>
+        <h2 id="construir">{t('Uma caixa na loja. A Gestão no navegador.', 'A till in the shop. Gestão in the browser.')}</h2>
+        <div class="grid grid--2 proof">
+          <Screenshot screen="CAIXA" lang={lang} caption={t('STORBIT Caixa: registe vendas no computador Windows da loja, mesmo durante falhas de ligação à internet.', "STORBIT Caixa: record sales on the shop's Windows computer, even during internet outages.")} />
+          <Screenshot screen="GESTAO" lang={lang} caption={t('STORBIT Gestão: acompanhe vendas, produtos, stock e lojas a partir do navegador, com os dados actualizados após a sincronização.', 'STORBIT Gestão: follow sales, products, stock and shops from the browser, with data updated after syncing.')} />
+        </div>
+        <p class="proof-link"><a href={href('how', lang)}>{t('Ver como funciona', 'See how it works')} <span aria-hidden="true">→</span></a></p>
+      </div>
+    </section>
+  )}
+
+  <!-- E · Status -->
+  <section class="section section--white status-section">
+    <div class="container">
+      <StatusCard lang={lang} />
+    </div>
+  </section>
+
+  <!-- F · Company details + contacts -->
+  {showCompanyBlock && (
+    <section class="section section--white company" aria-label={t('Dados da empresa e contactos', 'Company details and contacts')}>
+      <div class="container grid grid--2">
+        {showDetails && (
+          <div>
+            <h2 class="h3">{t('Dados da empresa', 'Company details')}</h2>
+            {COMPANY_PUBLISHABLE ? (
+              <dl class="details">
+                <div><dt>{t('Denominação social', 'Registered name')}</dt><dd>{COMPANY.legalName}</dd></div>
+                <div><dt>{t('NIF', 'NIF (tax number)')}</dt><dd class="tnum">{COMPANY.nif}</dd></div>
+                <div><dt>{t('Sede', 'Registered office')}</dt><dd>{COMPANY.address}</dd></div>
+                <div><dt>{t('Validação AGT', 'AGT validation')}</dt><dd>{AGT_STATUS[lang]}</dd></div>
+              </dl>
+            ) : (
+              <div class="pv-block" data-preview-only>
+                <span class="pv-tag">{t('Por confirmar · omitido no público até verificação e autorização', 'To be confirmed · omitted in public until verified and cleared')}</span>
+                <dl class="details details--pv">
+                  <div><dt>{t('Denominação social', 'Registered name')}</dt><dd>{tbc}</dd></div>
+                  <div><dt>{t('NIF', 'NIF (tax number)')}</dt><dd>{tbc}</dd></div>
+                  <div><dt>{t('Sede', 'Registered office')}</dt><dd>{tbc}</dd></div>
+                  <div><dt>{t('Validação AGT', 'AGT validation')}</dt><dd>{AGT_STATUS[lang]}</dd></div>
+                </dl>
+              </div>
+            )}
+          </div>
+        )}
+        {showContacts && (
+          <div>
+            <h2 id="contactos" class="h3">{t('Contactos', 'Contact')}</h2>
+            {hasContacts ? (
+              <ul class="contact-list">
+                {wa && <li><a class="contact" href={wa} target="_blank" rel="noopener" data-event="whatsapp_click" data-event-source="sobre-contactos"><span class="k">WhatsApp</span><span>{t('Enviar mensagem', 'Send a message')} <span aria-hidden="true">→</span></span></a></li>}
+                {CONTACT_EMAIL && <li><a class="contact" href={`mailto:${CONTACT_EMAIL}`}><span class="k">Email</span><span>{CONTACT_EMAIL}</span></a></li>}
+                {SUPPORT_HOURS && <li class="contact contact--static"><span class="k">{t('Horário de atendimento', 'Opening hours')}</span><span>{SUPPORT_HOURS}</span></li>}
+              </ul>
+            ) : (
+              <div class="pv-block" data-preview-only>
+                <span class="pv-tag">{t('Contactos por configurar', 'Contacts to be configured')} · WHATSAPP_NUMBER, CONTACT_EMAIL, SUPPORT_HOURS</span>
+                <ul class="contact-list">
+                  <li class="contact contact--static"><span class="k">WhatsApp</span><span>{t('Por configurar', 'To be configured')}</span></li>
+                  <li class="contact contact--static"><span class="k">Email</span><span>{t('Por configurar', 'To be configured')}</span></li>
+                  <li class="contact contact--static"><span class="k">{t('Horário de atendimento', 'Opening hours')}</span><span>{t('Só se aprovado', 'Only if signed off')}</span></li>
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  )}
+
+  <!-- G · CTA -->
+  <CtaBand message="sobre" source="sobre" alwaysWhatsapp lang={lang} />
+</Base>
+
+<style>
+  .hero { padding-top: clamp(32px, 6vw, 80px); }
+  .hero h1 { max-width: 16ch; }
+  .story-grid { display: grid; gap: 24px; margin: 40px 0; align-items: start; }
+  .story { max-width: 70ch; }
+  .story h2 { font-size: clamp(24px, 3vw, 30px); margin-top: 12px; }
+  .story :global(.pv-tag) { margin-bottom: 8px; }
+  .sign { font-weight: 700; margin-bottom: 0; }
+  .neutral { margin-top: 24px; }
+  .story-side:empty { display: none; }
+  .principles { margin-top: 8px; }
+  .fourth { margin-top: 12px; }
+  .proof { margin-top: 24px; }
+  .proof-link { margin-top: 24px; }
+  .section--white + .status-section { padding-top: 0; border-top: none; }
+  .h3 { font-size: var(--sb-text-lg); }
+  .details { margin: 0; display: grid; }
+  .details div { display: grid; grid-template-columns: minmax(140px, 1fr) 2fr; gap: 12px; padding: 12px 0; border-top: 1px solid var(--sb-border); }
+  .details div:first-child { border-top: none; }
+  dt { color: var(--sb-text-muted); font-weight: 600; }
+  dd { margin: 0; font-weight: 600; }
+  .details--pv dd { color: var(--sb-text-muted); font-style: italic; }
+  .contact-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .contact { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; min-height: 56px; padding: 12px 18px; border: 1px solid var(--sb-border); border-radius: var(--sb-radius-lg); background: var(--sb-surface); text-decoration: none; color: var(--sb-text); font-weight: 600; }
+  a.contact:hover { border-color: var(--sb-link); color: var(--sb-link); }
+  .k { color: var(--sb-text-muted); font-weight: 600; font-size: 14px; }
+  @media (min-width: 1000px) {
+    .story-grid:has(.story-side:not(:empty)) { grid-template-columns: 1.3fr 1fr; }
+  }
+</style>

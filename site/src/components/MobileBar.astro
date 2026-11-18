@@ -2,22 +2,24 @@
 /**
  * Phone bottom bar (WEBSITE_SPEC §3): primary CTA + labelled WhatsApp button.
  * Hidden while a field has focus, while a form or the footer is on screen,
- * and on /demonstracao. Respects the safe area.
+ * and on the demo page. Respects the safe area.
  */
 import CtaButton from './CtaButton.astro';
 import { primaryCta, whatsappCta, type WaMessage } from '../lib/cta';
-interface Props { message: WaMessage }
-const { message } = Astro.props;
-const primary = primaryCta();
-const wa = primary?.kind === 'whatsapp' ? null : whatsappCta(message);
+import { tr, type Lang } from '../i18n';
+interface Props { message: WaMessage; lang: Lang }
+const { message, lang } = Astro.props;
+const t = tr(lang);
+const primary = primaryCta(lang);
+const wa = primary?.kind === 'whatsapp' ? null : whatsappCta(message, lang);
 const show = Boolean(primary || wa);
 ---
 {show && (
-  <div class="mobile-bar" data-mobile-bar aria-label="Acções rápidas" role="region">
-    <CtaButton source="mobile-bar" class="mb-primary" />
+  <div class="mobile-bar" data-mobile-bar aria-label={t('Acções rápidas', 'Quick actions')} role="region">
+    <CtaButton source="mobile-bar" class="mb-primary" lang={lang} />
     {wa && (
       <a class="btn btn--secondary mb-wa" href={wa.href} target="_blank" rel="noopener" data-event="whatsapp_click" data-event-source="mobile-bar">
-        WhatsApp<span class="visually-hidden"> (abre o WhatsApp)</span>
+        WhatsApp<span class="visually-hidden">{t(' (abre o WhatsApp)', ' (opens WhatsApp)')}</span>
       </a>
     )}
   </div>

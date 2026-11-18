@@ -4,34 +4,39 @@ import PreviewTag from './PreviewTag.astro';
 import { COMPANY, COMPANY_PUBLISHABLE, CONTACT_EMAIL, FLAGS, LOGIN_URL, PREVIEW, SUPPORT_HOURS } from '../config';
 import { whatsappHref } from '../lib/cta';
 import { AGT_STATUS } from '../data/status';
-const wa = whatsappHref('inicio');
+import { href, tr, type Lang } from '../i18n';
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = tr(lang);
+const wa = whatsappHref('inicio', lang);
 const showLegal = FLAGS.LEGAL_APPROVED || PREVIEW;
 const year = new Date().getFullYear();
+const hidden = t('oculto no público', 'hidden in public');
 ---
 <footer class="site-footer" data-footer>
   <div class="container">
     <div class="cols">
       <div class="about">
         <Logo tone="dark" width={108} />
-        <p>Software de caixa para as lojas de Angola: a STORBIT Caixa para Windows e a Gestão no navegador.</p>
-        <p class="agt">Validação AGT: {AGT_STATUS}.</p>
+        <p>{t('Software de caixa para as lojas de Angola: a STORBIT Caixa para Windows e a Gestão no navegador.', "Point-of-sale software for Angola's shops: STORBIT Caixa for Windows and Gestão in the browser.")}</p>
+        <p class="agt">{t('Validação AGT', 'AGT validation')}: {AGT_STATUS[lang]}.</p>
       </div>
-      <nav aria-label="Produto">
-        <h2>Produto</h2>
+      <nav aria-label={t('Produto', 'Product')}>
+        <h2>{t('Produto', 'Product')}</h2>
         <ul>
-          <li><a href="/como-funciona">Como funciona</a></li>
-          {(FLAGS.PRICING_PUBLISHED || PREVIEW) && <li><a href="/planos">Planos</a>{!FLAGS.PRICING_PUBLISHED && <> <PreviewTag>oculto no público</PreviewTag></>}</li>}
-          {(FLAGS.DOWNLOAD_PUBLIC || PREVIEW) && <li><a href="/transferir">Transferir</a>{!FLAGS.DOWNLOAD_PUBLIC && <> <PreviewTag>oculto no público</PreviewTag></>}</li>}
-          <li><a href="/demonstracao">Pedir demonstração</a></li>
-          {LOGIN_URL && <li><a href={LOGIN_URL} data-event="login_click">Entrar</a></li>}
+          <li><a href={href('how', lang)}>{t('Como funciona', 'How it works')}</a></li>
+          {(FLAGS.PRICING_PUBLISHED || PREVIEW) && <li><a href={href('pricing', lang)}>{t('Planos', 'Pricing')}</a>{!FLAGS.PRICING_PUBLISHED && <> <PreviewTag>{hidden}</PreviewTag></>}</li>}
+          {(FLAGS.DOWNLOAD_PUBLIC || PREVIEW) && <li><a href={href('download', lang)}>{t('Transferir', 'Download')}</a>{!FLAGS.DOWNLOAD_PUBLIC && <> <PreviewTag>{hidden}</PreviewTag></>}</li>}
+          <li><a href={href('demo', lang)}>{t('Pedir demonstração', 'Request a demo')}</a></li>
+          {LOGIN_URL && <li><a href={LOGIN_URL} data-event="login_click">{t('Entrar', 'Sign in')}</a></li>}
         </ul>
       </nav>
-      <nav aria-label="Ajuda">
-        <h2>Ajuda</h2>
+      <nav aria-label={t('Ajuda', 'Help')}>
+        <h2>{t('Ajuda', 'Help')}</h2>
         <ul>
-          <li><a href="/ajuda">Perguntas frequentes</a></li>
-          <li><a href="/ajuda#glossario">Glossário</a></li>
-          <li><a href="/sobre">Sobre a STORBIT</a></li>
+          <li><a href={href('help', lang)}>{t('Perguntas frequentes', 'Frequently asked questions')}</a></li>
+          <li><a href={href('help', lang, t('#glossario', '#glossary'))}>{t('Glossário', 'Glossary')}</a></li>
+          <li><a href={href('about', lang)}>{t('Sobre a STORBIT', 'About STORBIT')}</a></li>
           {wa && <li><a href={wa} target="_blank" rel="noopener" data-event="whatsapp_click" data-event-source="footer">WhatsApp</a></li>}
           {CONTACT_EMAIL && <li><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></li>}
           {SUPPORT_HOURS && <li class="muted-d">{SUPPORT_HOURS}</li>}
@@ -41,11 +46,11 @@ const year = new Date().getFullYear();
         <nav aria-label="Legal">
           <h2>Legal</h2>
           <ul>
-            <li><a href="/termos">Termos</a></li>
-            <li><a href="/privacidade">Privacidade</a></li>
-            <li><a href="/cookies">Cookies</a></li>
+            <li><a href={href('terms', lang)}>{t('Termos', 'Terms')}</a></li>
+            <li><a href={href('privacy', lang)}>{t('Privacidade', 'Privacy')}</a></li>
+            <li><a href={href('cookies', lang)}>Cookies</a></li>
           </ul>
-          {!FLAGS.LEGAL_APPROVED && <PreviewTag>Rascunhos · ocultos no público</PreviewTag>}
+          {!FLAGS.LEGAL_APPROVED && <PreviewTag>{t('Rascunhos · ocultos no público', 'Drafts · hidden in public')}</PreviewTag>}
         </nav>
       )}
     </div>
@@ -53,7 +58,7 @@ const year = new Date().getFullYear();
       {COMPANY_PUBLISHABLE ? (
         <p>{COMPANY.legalName} · NIF {COMPANY.nif} · {COMPANY.address}</p>
       ) : PREVIEW ? (
-        <p><PreviewTag>Dados da empresa por confirmar</PreviewTag> <span>Nome legal · NIF · Morada — só aparecem quando verificados e aprovados para publicação.</span></p>
+        <p><PreviewTag>{t('Dados da empresa por confirmar', 'Company details to be confirmed')}</PreviewTag> <span>{t('Nome legal · NIF · Morada — só aparecem quando verificados e aprovados para publicação.', 'Legal name · NIF (tax number) · Address — shown only once verified and cleared for publication.')}</span></p>
       ) : null}
       <p>© {year} STORBIT</p>
     </div>

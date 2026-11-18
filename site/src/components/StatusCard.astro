@@ -1,34 +1,38 @@
 ---
-/** "Estado actual" — the honest status card (About brief §3.5). */
+/** "Estado actual" / "Current status" — the honest status card (About brief §3.5). */
 import StatusDiamond from './StatusDiamond.astro';
 import PreviewTag from './PreviewTag.astro';
 import { AGT_COMMITMENT, AGT_STATUS, LAUNCH_STATUS } from '../data/status';
 import { FLAGS, PREVIEW } from '../config';
 import { primaryCta } from '../lib/cta';
-interface Props { headingLevel?: 2 | 3; id?: string; compact?: boolean }
-const { headingLevel = 2, id = 'estado-actual', compact = false } = Astro.props;
+import { tr, type Lang } from '../i18n';
+interface Props { headingLevel?: 2 | 3; id?: string; compact?: boolean; lang: Lang }
+const { headingLevel = 2, id, compact = false, lang } = Astro.props;
+const t = tr(lang);
+const sid = id ?? t('estado-actual', 'current-status');
 const H = `h${headingLevel}` as 'h2' | 'h3';
-const demoRoute = primaryCta();
+const demoRoute = primaryCta(lang);
 const showDemos = FLAGS.DEMOS_AVAILABLE && demoRoute && demoRoute.kind !== 'pending';
+const demosRow = t('Disponíveis mediante pedido.', 'Available on request.');
 ---
-<section class="status-card" aria-labelledby={`${id}-h`} id={id}>
-  <p class="eyebrow"><StatusDiamond state="pending" size={10} /> Estado actual</p>
-  <H id={`${id}-h`}>Onde está a STORBIT hoje.</H>
+<section class="status-card" aria-labelledby={`${sid}-h`} id={sid}>
+  <p class="eyebrow"><StatusDiamond state="pending" size={10} /> {t('Estado actual', 'Current status')}</p>
+  <H id={`${sid}-h`}>{t('Onde está a STORBIT hoje.', 'Where STORBIT stands today.')}</H>
   <ul class="rows">
-    <li><StatusDiamond state="pending" size={12} /><span><strong>Lançamento comercial:</strong> {LAUNCH_STATUS}.</span></li>
-    <li><StatusDiamond state="pending" size={12} /><span><strong>Validação AGT:</strong> {AGT_STATUS}.</span></li>
+    <li><StatusDiamond state="pending" size={12} /><span><strong>{t('Lançamento comercial', 'Commercial launch')}:</strong> {LAUNCH_STATUS[lang]}.</span></li>
+    <li><StatusDiamond state="pending" size={12} /><span><strong>{t('Validação AGT', 'AGT validation')}:</strong> {AGT_STATUS[lang]}.</span></li>
     {showDemos ? (
-      <li><StatusDiamond state="brand" size={12} /><span><strong>Demonstrações:</strong> Disponíveis mediante pedido.</span></li>
+      <li><StatusDiamond state="brand" size={12} /><span><strong>{t('Demonstrações', 'Demos')}:</strong> {demosRow}</span></li>
     ) : PREVIEW ? (
-      <li class="pv-row" data-preview-only><StatusDiamond state="brand" size={12} /><span><strong>Demonstrações:</strong> Disponíveis mediante pedido. <PreviewTag>Só se as demonstrações estiverem a ser feitas (DEMOS_AVAILABLE)</PreviewTag></span></li>
+      <li class="pv-row" data-preview-only><StatusDiamond state="brand" size={12} /><span><strong>{t('Demonstrações', 'Demos')}:</strong> {demosRow} <PreviewTag>{t('Só se as demonstrações estiverem a ser feitas (DEMOS_AVAILABLE)', 'Only if demos are actually being given (DEMOS_AVAILABLE)')}</PreviewTag></span></li>
     ) : null}
   </ul>
   {!compact && (FLAGS.AGT_SENTENCE_APPROVED ? (
-    <p class="body">{AGT_COMMITMENT}</p>
+    <p class="body">{AGT_COMMITMENT[lang]}</p>
   ) : PREVIEW ? (
     <div class="pv-block" data-preview-only>
-      <span class="pv-tag">[LEGAL] Frase por rever juridicamente · oculta no público até aprovação</span>
-      <p class="body">{AGT_COMMITMENT}</p>
+      <span class="pv-tag">{t('[LEGAL] Frase por rever juridicamente · oculta no público até aprovação', '[LEGAL] Sentence pending legal review · hidden in public until cleared')}</span>
+      <p class="body">{AGT_COMMITMENT[lang]}</p>
     </div>
   ) : null)}
 </section>

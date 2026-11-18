@@ -1,0 +1,271 @@
+---
+import Base from '../layouts/Base.astro';
+import HeroTill from '../components/HeroTill.astro';
+import CtaButton from '../components/CtaButton.astro';
+import StatusDiamond from '../components/StatusDiamond.astro';
+import Screenshot from '../components/Screenshot.astro';
+import VideoSlot from '../components/VideoSlot.astro';
+import StatusCard from '../components/StatusCard.astro';
+import CtaBand from '../components/CtaBand.astro';
+import FaqList from '../components/FaqList.astro';
+import PreviewTag from '../components/PreviewTag.astro';
+import Claim from '../components/Claim.astro';
+import { getFaqs } from '../data/help';
+import { faqJsonLd } from '../lib/faq';
+import { primaryCta } from '../lib/cta';
+import { videos, isVideoReady } from '../data/marketingAssets';
+import { PREVIEW } from '../config';
+import { href, tr, type Lang } from '../i18n';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = tr(lang);
+const homeFaqs = getFaqs(lang).filter((f) => f.home);
+const cta = primaryCta(lang);
+const formFlow = cta?.kind === 'form';
+const overviewReady = isVideoReady(videos.VIDEO_PRODUCT_OVERVIEW);
+const showVideoRow = PREVIEW || overviewReady || isVideoReady(videos.VIDEO_STOCK_REPORTS);
+const how = href('how', lang);
+---
+<Base
+  title={t('STORBIT · Software de caixa feito para as lojas de Angola', "STORBIT · Point-of-sale software made for Angola's shops")}
+  description={t(
+    'Caixa para Windows que continua a vender quando a internet falha, e Gestão no navegador para acompanhar produtos, stock e várias lojas. Para mercearias, minimercados e supermercados em Angola.',
+    'A Windows till that keeps selling when the internet fails, and Gestão in the browser to follow products, stock and several shops. For grocery shops, minimarkets and supermarkets in Angola.',
+  )}
+  route="home"
+  lang={lang}
+  message="inicio"
+  jsonLd={[faqJsonLd(homeFaqs)]}
+>
+  <!-- Hero -->
+  <section class="section section--cream hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow"><StatusDiamond size={10} /> {t('Para mercearias, minimercados e supermercados', 'For grocery shops, minimarkets and supermarkets')}</p>
+        <h1>{t('Software de caixa feito para as lojas de Angola.', "Point-of-sale software made for Angola's shops.")}</h1>
+        <p class="lead">
+          {t(
+            'Registe vendas na Caixa para Windows, mesmo quando falha a internet, e acompanhe produtos, stock e lojas na Gestão.',
+            'Record sales on the Caixa (till) for Windows, even when the internet fails, and follow products, stock and shops in Gestão.',
+          )}
+        </p>
+
+        {formFlow ? (
+          <form class="capture" action={href('demo', lang)} method="get">
+            <p class="capture-title">{t('Peça uma demonstração — deixe o seu WhatsApp', 'Request a demo — leave your WhatsApp number')}</p>
+            <div class="capture-row">
+              <label class="visually-hidden" for="hero-tel">{t('Número de WhatsApp', 'WhatsApp number')}</label>
+              <span class="prefix" aria-hidden="true">+244</span>
+              <input id="hero-tel" name="telefone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="9XX XXX XXX" />
+              <button class="btn btn--primary" type="submit" data-event="demo_click" data-event-source="hero">{t('Pedir demonstração', 'Request a demo')} <span aria-hidden="true">→</span></button>
+            </div>
+            <p class="hint">{t('Não cria conta agora. Respondemos por WhatsApp para marcar a demonstração.', "You don't create an account now. We reply on WhatsApp to arrange the demo.")}</p>
+          </form>
+        ) : (
+          <div class="actions">
+            <CtaButton source="hero" lang={lang} />
+            <a class="btn btn--secondary" href={how}>{t('Ver como funciona', 'See how it works')}</a>
+          </div>
+        )}
+        <p class="small muted reassure">
+          {t('Sem compromisso.', 'No commitment.')}
+          {overviewReady && <> · <a href="#visao-geral">{t('Ver em 1 minuto', 'Watch in 1 minute')}</a></>}
+        </p>
+      </div>
+      <div class="hero-visual">
+        <HeroTill lang={lang} />
+      </div>
+    </div>
+  </section>
+
+  <!-- Three merchant problems -->
+  <section class="section section--white" aria-labelledby="ouvimos">
+    <div class="container">
+      <p class="eyebrow"><StatusDiamond size={10} /> {t('O que os comerciantes nos pediram', 'What shopkeepers asked us for')}</p>
+      <h2 id="ouvimos">{t('Ouvimos quem está atrás do balcão. Construímos a pensar neles.', 'We listened to the people behind the counter. We built it for them.')}</h2>
+      <PreviewTag>{t('Linha de posicionamento · rascunho por aprovar', 'Positioning line · draft awaiting sign-off')}</PreviewTag>
+      <div class="grid grid--3 cards-top">
+        <article class="card reveal">
+          <h3>{t('Uma caixa simples de seguir', 'A till that is easy to follow')}</h3>
+          <p>{t(
+            'Ler o código de barras ou procurar o produto, ver o total e receber. O estado da ligação está sempre à vista no topo do ecrã.',
+            'Scan the barcode or search for the product, see the total and take the payment. The connection status is always visible at the top of the screen.',
+          )}</p>
+        </article>
+        <article class="card reveal">
+          <h3>{t('Impressora e gaveta na própria caixa', 'Printer and cash drawer set up on the till')}</h3>
+          <p>{t(
+            'Escolha a impressora de talões e a ligação da gaveta de dinheiro nas definições da caixa, e acerte o talão com uma impressão de calibração.',
+            "Choose the receipt printer and the cash drawer connection in the till's settings, and adjust the receipt with a calibration print.",
+          )}</p>
+          <Claim id="hardware-models" note={t('lista de modelos testados', 'list of tested models')} lang={lang}>
+            <p class="small">{t('Veja os modelos testados na', 'See the tested models on the')} <a href={href('help', lang, '#faq-impressoras')}>{t('página de ajuda', 'help page')}</a>.</p>
+            <p slot="fallback" class="small muted">{t('Antes de comprar equipamento, confirme connosco o modelo.', 'Before buying equipment, check the model with us.')}</p>
+          </Claim>
+        </article>
+        <article class="card reveal">
+          <h3>{t('Várias lojas, uma só Gestão', 'Several shops, one Gestão')}</h3>
+          <p>{t(
+            'Cada loja vende na sua caixa. Na Gestão acompanha as vendas, os produtos e o stock de todas, com os dados actualizados depois da sincronização.',
+            'Each shop sells on its own till. In Gestão you follow sales, products and stock across all of them, with data updated after syncing.',
+          )}</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Product -->
+  <section class="section section--cream" aria-labelledby="produto" id="visao-geral">
+    <div class="container">
+      <p class="eyebrow"><StatusDiamond size={10} /> {t('O produto', 'The product')}</p>
+      <h2 id="produto">{t('Uma caixa na loja. A Gestão no navegador.', 'A till in the shop. Gestão in the browser.')}</h2>
+      <div class="grid grid--2 product">
+        <div class="product-col">
+          <h3>STORBIT Caixa</h3>
+          <p class="muted">{t('Registe vendas no computador Windows da loja, mesmo durante falhas de ligação à internet.', "Record sales on the shop's Windows computer, even during internet outages.")}</p>
+          <Screenshot screen="CAIXA" lang={lang} />
+        </div>
+        <div class="product-col">
+          <h3>STORBIT Gestão</h3>
+          <p class="muted">{t('Acompanhe vendas, produtos, stock e lojas a partir do navegador, com os dados actualizados após a sincronização.', 'Follow sales, products, stock and shops from the browser, with data updated after syncing.')}</p>
+          <Screenshot screen="GESTAO" lang={lang} />
+        </div>
+      </div>
+      {showVideoRow && (
+        <div class="video-row">
+          <VideoSlot video="VIDEO_PRODUCT_OVERVIEW" lang={lang} />
+          <VideoSlot video="VIDEO_STOCK_REPORTS" lang={lang} />
+        </div>
+      )}
+      <p><a href={how}>{t('Ver como funciona', 'See how it works')} <span aria-hidden="true">→</span></a></p>
+    </div>
+  </section>
+
+  <!-- Three states: the offline story, told once in depth -->
+  <section class="section section--white" aria-labelledby="estados">
+    <div class="container">
+      <p class="eyebrow"><StatusDiamond state="offline" size={10} /> {t('Quando a internet falha', 'When the internet fails')}</p>
+      <h2 id="estados">{t('A caixa continua a vender. E diz-lhe sempre em que estado está.', 'The till keeps selling. And always tells you what state it is in.')}</h2>
+      <p class="lead readable">{t(
+        'A caixa continua a vender sem internet e envia as vendas guardadas quando a ligação volta. O estado fica sempre à vista.',
+        'The till keeps selling without internet and sends the saved sales when the connection comes back. Its status is always visible.',
+      )}</p>
+      <ol class="grid grid--3 states">
+        <li class="card reveal">
+          <p class="state-pill state-pill--online"><StatusDiamond state="online" size={12} /> Online</p>
+          <h3>{t('Ligada e actualizada', 'Connected and up to date')}</h3>
+          <p>{t('As vendas chegam à Gestão à medida que são feitas.', 'Sales reach Gestão as they are made.')}</p>
+        </li>
+        <li class="card reveal">
+          <p class="state-pill state-pill--offline"><StatusDiamond state="offline" size={12} /> {t('Sem internet · a vender', 'Offline · still selling')}</p>
+          <h3>{t('A internet falhou', 'The internet is down')}</h3>
+          <p>{t('A caixa continua a registar vendas no computador da loja e mostra quantas estão por enviar.', "The till keeps recording sales on the shop's computer and shows how many are waiting to be sent.")}</p>
+        </li>
+        <li class="card reveal">
+          <p class="state-pill state-pill--syncing"><StatusDiamond state="syncing" size={12} /> {t('A sincronizar', 'Syncing')}</p>
+          <h3>{t('A ligação voltou', 'The connection is back')}</h3>
+          <p>{t(
+            'A caixa envia as vendas guardadas para a Gestão. Se alguma ainda não foi enviada, continua a aparecer como por enviar.',
+            'The till sends the saved sales to Gestão. Any sale not sent yet keeps showing as waiting to be sent.',
+          )}</p>
+        </li>
+      </ol>
+      <p class="small muted note">{t('Uma falha de energia é diferente de uma falha de internet.', 'A power cut is different from an internet outage.')} <a href={href('help', lang, '#faq-energia')}>{t('O que sabemos sobre cortes de energia', 'What we know about power cuts')}</a>.</p>
+    </div>
+  </section>
+
+  <!-- Green band -->
+  {cta && (
+    <section class="section section--green band" aria-labelledby="pratica">
+      <div class="container band-inner">
+        <h2 id="pratica">{t('Quer ver como funciona na prática?', 'Want to see how it works in practice?')}</h2>
+        <div class="actions">
+          <CtaButton source="green-band" lang={lang} />
+          <a class="btn btn--secondary" href={how}>{t('Ver como funciona', 'See how it works')}</a>
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- See first, decide later -->
+  <section class="section section--cream" aria-labelledby="passos">
+    <div class="container">
+      <p class="eyebrow"><StatusDiamond size={10} /> {t('Como começar', 'How to start')}</p>
+      <h2 id="passos">{t('Veja primeiro. Decida depois.', 'See it first. Decide later.')}</h2>
+      <ol class="grid grid--4 steps">
+        <li class="card reveal"><span class="num">1</span><h3>{t('Peça uma demonstração', 'Request a demo')}</h3><p>{
+          cta?.kind === 'whatsapp' ? t('Envie-nos uma mensagem pelo WhatsApp.', 'Send us a message on WhatsApp.')
+          : cta?.kind === 'form' ? t('Preencha o pedido com os dados da sua loja.', 'Fill in the request with your shop details.')
+          : t('Fale connosco pelos contactos indicados.', 'Contact us using the details provided.')
+        }</p></li>
+        <li class="card reveal"><span class="num">2</span><h3>{t('Combinamos consigo', 'We arrange it with you')}</h3><p>{t('Entramos em contacto para conhecer a sua loja e combinar a demonstração.', "We get in touch to learn about your shop and arrange the demo.")}</p></li>
+        <li class="card reveal"><span class="num">3</span><h3>{t('Veja a Caixa e a Gestão', 'See the Caixa and Gestão')}</h3><p>{t('Uma venda, uma falha de internet e o que aparece na Gestão depois.', 'A sale, an internet outage and what shows up in Gestão afterwards.')}</p></li>
+        <li class="card reveal"><span class="num">4</span><h3>{t('Decida com calma', 'Decide in your own time')}</h3><p>{t('Sem criar conta e sem compromisso.', 'No account and no commitment.')}</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Who it's for + honest status -->
+  <section class="section section--white" aria-labelledby="para-quem">
+    <div class="container grid grid--2 who">
+      <div>
+        <p class="eyebrow"><StatusDiamond size={10} /> {t('Para quem é', "Who it's for")}</p>
+        <h2 id="para-quem">{t('Para o comércio do dia a dia.', 'For everyday retail.')}</h2>
+        <ul class="check-list">
+          <li><StatusDiamond size={10} /> <span>{lang === 'en' ? <><strong>Grocery shops</strong> with one till and lots of products.</> : <><strong>Mercearias</strong> com uma caixa e muitos produtos.</>}</span></li>
+          <li><StatusDiamond size={10} /> <span>{lang === 'en' ? <><strong>Minimarkets</strong> that want to know what they sell and what's running low.</> : <><strong>Minimercados</strong> que querem saber o que vendem e o que falta em stock.</>}</span></li>
+          <li><StatusDiamond size={10} /> <span>{lang === 'en' ? <><strong>Supermarkets</strong> and anyone with more than one shop.</> : <><strong>Supermercados</strong> e quem tem mais do que uma loja.</>}</span></li>
+        </ul>
+      </div>
+      <StatusCard id={t('estado-inicio', 'status-home')} compact lang={lang} />
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section section--cream" aria-labelledby="perguntas">
+    <div class="container narrow">
+      <p class="eyebrow"><StatusDiamond size={10} /> {t('Perguntas frequentes', 'Frequently asked questions')}</p>
+      <h2 id="perguntas">{t('Perguntas frequentes', 'Frequently asked questions')}</h2>
+      <FaqList items={homeFaqs} lang={lang} />
+      <p class="more"><a href={href('help', lang)}>{t('Mais perguntas e glossário', 'More questions and glossary')} <span aria-hidden="true">→</span></a></p>
+    </div>
+  </section>
+
+  <CtaBand message="inicio" source="inicio" lang={lang} />
+</Base>
+
+<style>
+  .hero { padding-top: clamp(32px, 6vw, 80px); }
+  .hero-grid { display: grid; gap: clamp(32px, 5vw, 64px); align-items: center; }
+  .hero-copy h1 { max-width: 14ch; }
+  .hero-copy .lead { max-width: 52ch; margin-bottom: 28px; }
+  .reassure { margin-top: 16px; }
+  .capture { background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius-lg); padding: 20px; max-width: 560px; }
+  .capture-title { font-weight: 700; margin-bottom: 12px; }
+  .capture-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
+  .prefix { display: inline-flex; align-items: center; padding: 0 12px; border: 1.5px solid var(--sb-border-strong); border-radius: var(--sb-radius-md); background: var(--sb-chip); font-weight: 600; }
+  .capture-row input { flex: 1 1 160px; min-height: 52px; font: inherit; border: 1.5px solid var(--sb-border-strong); border-radius: var(--sb-radius-md); padding: 0 14px; }
+  .capture .hint { margin: 12px 0 0; }
+  .cards-top { margin-top: 32px; }
+  .product { margin-top: 24px; }
+  .product-col h3 { font-size: 24px; margin-bottom: 6px; }
+  .product-col > p { margin-bottom: 18px; }
+  .video-row { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); margin: 32px 0 16px; }
+  .states, .steps { list-style: none; padding: 0; margin: 32px 0 0; }
+  .state-pill { display: inline-flex; gap: 8px; align-items: center; font-weight: 700; font-size: 14px; padding: 6px 12px; border-radius: var(--sb-radius-pill); border: 1px solid var(--sb-border); margin-bottom: 14px; }
+  .state-pill--online { background: var(--sb-nav-active-bg); color: var(--sb-nav-active-text); }
+  .state-pill--offline { background: var(--sb-offline-bg); border-color: var(--sb-offline-border); color: var(--sb-offline-text); }
+  .state-pill--syncing { background: var(--sb-surface); color: var(--sb-nav-active-text); }
+  .note { margin-top: 24px; }
+  .band { padding: clamp(40px, 6vw, 64px) 0; }
+  .band-inner { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; }
+  .band h2 { margin: 0; color: #fff; max-width: 20ch; }
+  .num { display: inline-flex; width: 36px; height: 36px; align-items: center; justify-content: center; border-radius: 50%; background: var(--sb-chip); font-weight: 800; margin-bottom: 14px; }
+  .who { align-items: start; }
+  .narrow { max-width: 860px; }
+  .more { margin-top: 20px; }
+  @media (min-width: 1000px) {
+    .hero-grid { grid-template-columns: 1.15fr 0.85fr; }
+  }
+</style>

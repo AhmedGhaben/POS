@@ -136,3 +136,40 @@ photos, the former supplier.
 11. Who builds and hosts `LEADS_ENDPOINT` (it isn't in the API; the API was
     not touched).
 12. The seven videos (scripts, voice-over, pt-AO subtitles).
+
+## 7. English version (added 18 November 2026)
+
+- **Coverage:** every page exists in English under `/en/…`, with a PT | EN
+  switcher in the header (desktop and mobile). It links to the equivalent
+  page, with no automatic redirect.
+- **Structure:** one view per page renders both languages, so the structure,
+  gates and claims are identical. Copy pairs sit side by side in
+  `src/views/*.astro`.
+- **Same rules:** the English copy follows the same claims register. The
+  claims check now also rejects English absolutes ("never loses", "zero data
+  loss"…), AGT approval wording ("AGT-compliant", "certified"…) and, in
+  public builds, English preview wording. AGT reads "Not yet validated" in
+  English.
+- **App labels:** quoted in-app labels use the app's English locale:
+  "Offline · still selling · N sales waiting to sync" and "Stores now".
+- **Spelling:** British English (realised, behaviour).
+- **Tests:**
+  - Builds: preview (22 pages) and public (21 pages) both pass the claims check.
+  - Switcher: PT ↔ EN round-trips on all 10 page pairs.
+  - hreflang: alternates are correct.
+  - Overflow: none at 360 px on any English page.
+  - Lighthouse mobile, public build:
+
+    | Page | Performance | Accessibility | Best practices | SEO |
+    |---|---|---|---|---|
+    | `/en` | 97 | 100 | 100 | 66 (noindex) |
+    | `/en/about` | 100 | 100 | 100 | 66 (noindex) |
+
+- **Open questions for the English version:**
+  1. Native review of the English copy.
+  2. Can the team answer WhatsApp and email in English? The English pages
+     don't promise it; WhatsApp messages are prefilled in English.
+  3. English legal texts, and which language prevails.
+  4. The product screenshots show the app in Portuguese. Decide whether the
+     English pages need English-UI captures.
+  5. English video subtitles (the video map only has a pt-AO captions slot).

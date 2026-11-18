@@ -2,8 +2,10 @@
 import { CLAIM_VERIFIED, PREVIEW } from '../config';
 import type { Faq } from '../data/help';
 import { publicAnswer } from '../lib/faq';
-interface Props { items: Faq[] }
-const { items } = Astro.props;
+import { tr, type Lang } from '../i18n';
+interface Props { items: Faq[]; lang: Lang }
+const { items, lang } = Astro.props;
+const t = tr(lang);
 const rows = items
   .map((f) => {
     const verified = !f.claim || CLAIM_VERIFIED(f.claim);
@@ -21,15 +23,15 @@ const rows = items
       <div class="answer">
         {preview ? (
           <div class="pv-block" data-preview-only>
-            <span class="pv-tag">A verificar · {f.claim} · só publicado depois do teste</span>
+            <span class="pv-tag">{t('A verificar', 'To verify')} · {f.claim} · {t('só publicado depois do teste', 'published only after the test')}</span>
             <p>{answer}</p>
             {f.fallback ? (
               <>
-                <span class="pv-tag">Versão pública enquanto não verificado</span>
+                <span class="pv-tag">{t('Versão pública enquanto não verificado', 'Public version until verified')}</span>
                 <p>{f.fallback}</p>
               </>
             ) : (
-              <p class="small muted">Enquanto não for verificado, esta pergunta não aparece no site público.</p>
+              <p class="small muted">{t('Enquanto não for verificado, esta pergunta não aparece no site público.', 'Until verified, this question does not appear on the public site.')}</p>
             )}
           </div>
         ) : (

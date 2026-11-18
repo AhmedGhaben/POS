@@ -2,33 +2,80 @@
 /**
  * Legal pages (WEBSITE_SPEC §3, handoff §3). No convincing fake legal text:
  * preview shows an outline labelled as a draft; public shows a short notice
- * until approved texts exist in src/legal/<slug>.md and LEGAL_APPROVED=true.
+ * until approved texts exist and LEGAL_APPROVED=true.
+ * pt-AO texts: src/legal/<slug>.md · English: src/legal/en/<slug>.md
  */
 import Base from '../layouts/Base.astro';
 import StatusDiamond from './StatusDiamond.astro';
 import { FLAGS, PREVIEW } from '../config';
-interface Props { slug: 'termos' | 'privacidade' | 'cookies'; title: string; description: string; outline: string[] }
-const { slug, title, description, outline } = Astro.props;
-const files = import.meta.glob<{ Content: any }>('../legal/*.md', { eager: true });
-const approved = FLAGS.LEGAL_APPROVED ? files[`../legal/${slug}.md`] : undefined;
-if (FLAGS.LEGAL_APPROVED && !approved) console.warn(`[legal] LEGAL_APPROVED=true but src/legal/${slug}.md is missing`);
+import { tr, type L, type Lang, type RouteKey } from '../i18n';
+type Slug = 'termos' | 'privacidade' | 'cookies';
+interface Props { slug: Slug; lang: Lang }
+const { slug, lang } = Astro.props;
+const t = tr(lang);
+const PAGES: Record<Slug, { route: RouteKey; title: L; description: L; outline: L[] }> = {
+  termos: {
+    route: 'terms',
+    title: { 'pt-AO': 'Termos de utilização', en: 'Terms of use' },
+    description: { 'pt-AO': 'Termos de utilização do site e do serviço STORBIT.', en: 'Terms of use for the STORBIT website and service.' },
+    outline: [
+      { 'pt-AO': 'Quem somos e como nos contactar', en: 'Who we are and how to contact us' },
+      { 'pt-AO': 'Objecto do serviço', en: 'What the service covers' },
+      { 'pt-AO': 'Conta e utilizadores', en: 'Account and users' },
+      { 'pt-AO': 'Preços e pagamento (depois de decididos)', en: 'Prices and payment (once decided)' },
+      { 'pt-AO': 'Dados da loja e responsabilidades', en: 'Shop data and responsibilities' },
+      { 'pt-AO': 'Disponibilidade e funcionamento sem internet', en: 'Availability and offline operation' },
+      { 'pt-AO': 'Lei aplicável e resolução de litígios', en: 'Governing law and disputes' },
+    ],
+  },
+  privacidade: {
+    route: 'privacy',
+    title: { 'pt-AO': 'Política de privacidade', en: 'Privacy policy' },
+    description: { 'pt-AO': 'Como a STORBIT trata os dados pessoais.', en: 'How STORBIT handles personal data.' },
+    outline: [
+      { 'pt-AO': 'Responsável pelo tratamento', en: 'Data controller' },
+      { 'pt-AO': 'Dados recolhidos (pedido de demonstração, contactos)', en: 'Data collected (demo requests, contacts)' },
+      { 'pt-AO': 'Finalidades e fundamento', en: 'Purposes and legal basis' },
+      { 'pt-AO': 'Prazo de conservação', en: 'Retention period' },
+      { 'pt-AO': 'Partilha com terceiros (por exemplo, WhatsApp)', en: 'Sharing with third parties (for example, WhatsApp)' },
+      { 'pt-AO': 'Direitos dos titulares e como os exercer', en: 'Your rights and how to exercise them' },
+      { 'pt-AO': 'Contacto para questões de privacidade', en: 'Contact for privacy questions' },
+    ],
+  },
+  cookies: {
+    route: 'cookies',
+    title: { 'pt-AO': 'Cookies', en: 'Cookies' },
+    description: { 'pt-AO': 'Utilização de cookies no site STORBIT.', en: 'Use of cookies on the STORBIT website.' },
+    outline: [
+      { 'pt-AO': 'O que são cookies', en: 'What cookies are' },
+      { 'pt-AO': 'Cookies usados neste site (previsto: nenhum; estatísticas sem cookies, se activadas)', en: 'Cookies used on this site (planned: none; cookieless statistics, if enabled)' },
+      { 'pt-AO': 'Ligações para serviços externos', en: 'Links to external services' },
+      { 'pt-AO': 'Como gerir preferências', en: 'Managing preferences' },
+    ],
+  },
+};
+const page = PAGES[slug];
+const files = import.meta.glob<{ Content: any }>('../legal/**/*.md', { eager: true });
+const file = lang === 'en' ? `../legal/en/${slug}.md` : `../legal/${slug}.md`;
+const approved = FLAGS.LEGAL_APPROVED ? files[file] : undefined;
+if (FLAGS.LEGAL_APPROVED && !approved) console.warn(`[legal] LEGAL_APPROVED=true but ${file.replace('../', 'src/')} is missing`);
 const Content = approved?.Content;
 ---
-<Base title={title} description={description} path={`/${slug}`} message="inicio" noindex={!approved}>
+<Base title={page.title[lang]} description={page.description[lang]} route={page.route} lang={lang} message="inicio" noindex={!approved}>
   <section class="section section--cream">
     <div class="container narrow">
       <p class="eyebrow"><StatusDiamond size={10} /> Legal</p>
-      <h1>{title}</h1>
+      <h1>{page.title[lang]}</h1>
       {Content ? (
         <div class="legal"><Content /></div>
       ) : PREVIEW ? (
         <div class="pv-block" data-preview-only>
-          <span class="pv-tag">Rascunho — conteúdo jurídico por rever</span>
-          <p>O texto final é escrito e revisto por um jurista em Angola. Esta pré-visualização mostra apenas os temas previstos, sem texto jurídico.</p>
-          <ol class="outline">{outline.map((o) => <li>{o}</li>)}</ol>
+          <span class="pv-tag">{t('Rascunho — conteúdo jurídico por rever', 'Draft — legal content to be reviewed')}</span>
+          <p>{t('O texto final é escrito e revisto por um jurista em Angola. Esta pré-visualização mostra apenas os temas previstos, sem texto jurídico.', 'The final text is written and reviewed by a lawyer in Angola. This preview only lists the planned topics, without legal text.')}</p>
+          <ol class="outline">{page.outline.map((o) => <li>{o[lang]}</li>)}</ol>
         </div>
       ) : (
-        <p class="lead">O texto desta página será publicado depois de revisto juridicamente.</p>
+        <p class="lead">{t('O texto desta página será publicado depois de revisto juridicamente.', 'The text of this page will be published after legal review.')}</p>
       )}
     </div>
   </section>

@@ -31,6 +31,10 @@ const always = [
   [/Lorem ipsum/i, 'lorem ipsum'],
   [/Ilustração · substituir/i, 'mockup label'],
   [/\+\s?\d+\s?clientes/i, 'customer count'],
+  // English pages
+  [/never (stops|loses)|no (lost|missed) sales|zero data loss|all (your )?sales (always )?(arrive|get through)|you don'?t need to do anything|works? by itself/i, 'absolute promise (en)'],
+  [/AGT[- ](compliant|approved|certified|ready)|(approved|certified) by (the )?AGT|ready for (the )?AGT/i, 'AGT approval wording (en)'],
+  [/\+\s?\d+\s?customers/i, 'customer count (en)'],
 ];
 const publicOnly = [
   [/data-preview-only|class="pv-tag|class="pv-block/, 'preview-only marker in a public build', 'html'],
@@ -39,6 +43,8 @@ const publicOnly = [
   [/certificad|homologad/i, '"certificado"/"homologado"'],
   [/\baprovad[oa]s?\b/i, '"aprovado" in public copy'],
   [/Pré-visualização|PRÉ-VISUALIZAÇÃO|por configurar|por definir/, 'preview wording in a public build'],
+  [/Private preview|to be configured|to be defined|To verify|to be confirmed/, 'preview wording in a public build (en)'],
+  [/\b(certified|certification|approved)\b|in progress|\bpending\b/i, 'AGT status wording other than "Not yet validated" (en)'],
 ];
 
 let problems = 0;

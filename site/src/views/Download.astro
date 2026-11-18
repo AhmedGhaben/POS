@@ -1,0 +1,81 @@
+---
+/**
+ * Download — no public download until DOWNLOAD_PUBLIC=true and a
+ * verified installer URL exists (handoff §3).
+ */
+import Base from '../layouts/Base.astro';
+import StatusDiamond from '../components/StatusDiamond.astro';
+import CtaBand from '../components/CtaBand.astro';
+import { DOWNLOAD_URL, FLAGS, PREVIEW } from '../config';
+import { tr, type Lang } from '../i18n';
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = tr(lang);
+const live = FLAGS.DOWNLOAD_PUBLIC;
+---
+<Base
+  title={t('Transferir a STORBIT Caixa', 'Download STORBIT Caixa')}
+  description={t('A transferência pública da STORBIT Caixa para Windows ainda não está disponível.', 'The public download of STORBIT Caixa for Windows is not available yet.')}
+  route="download"
+  lang={lang}
+  message="transferir"
+  noindex={!live}
+>
+  <section class="section section--cream hero">
+    <div class="container">
+      <p class="eyebrow"><StatusDiamond size={10} /> {t('Transferir', 'Download')}</p>
+      {live ? (
+        <>
+          <h1>{t('STORBIT Caixa para Windows', 'STORBIT Caixa for Windows')}</h1>
+          <p class="lead readable">{t('Transfira o instalador, abra-o e inicie sessão com a sua conta.', 'Download the installer, open it and sign in with your account.')}</p>
+          <a class="btn btn--primary" href={DOWNLOAD_URL} data-event="download_click">{t('Transferir para Windows', 'Download for Windows')} <span aria-hidden="true">→</span></a>
+        </>
+      ) : (
+        <>
+          <h1>{t('Transferência ainda não disponível.', 'Download not available yet.')}</h1>
+          <p class="lead readable">{t('A STORBIT Caixa ainda não está disponível para transferência pública. Peça uma demonstração para a conhecer.', "STORBIT Caixa isn't available for public download yet. Request a demo to see it.")}</p>
+        </>
+      )}
+    </div>
+  </section>
+
+  {!live && PREVIEW && (
+    <section class="section section--white" data-preview-only aria-labelledby="pv-dl">
+      <div class="container">
+        <span class="pv-tag">{t('Pré-visualização da futura página · oculto no público', 'Preview of the future page · hidden in public')}</span>
+        <div class="card pv-block dl">
+          <h2 id="pv-dl" class="h3">{t('STORBIT Caixa para Windows', 'STORBIT Caixa for Windows')}</h2>
+          <span class="btn btn--primary" aria-disabled="true" role="link">{t('Transferir para Windows · ainda não disponível', 'Download for Windows · not available yet')}</span>
+          <ol class="steps">
+            {lang === 'en' ? (
+              <>
+                <li><strong>Download</strong> the installer.</li>
+                <li><strong>Open</strong> the file and follow the steps.</li>
+                <li><strong>Sign in</strong> and link the till to your shop.</li>
+              </>
+            ) : (
+              <>
+                <li><strong>Transferir</strong> o instalador.</li>
+                <li><strong>Abrir</strong> o ficheiro e seguir os passos.</li>
+                <li><strong>Iniciar sessão</strong> e ligar a caixa à sua loja.</li>
+              </>
+            )}
+          </ol>
+          <p class="muted small">{t(
+            'Requisitos (versões do Windows, impressora) por confirmar antes de publicar. O instalador precisa de um URL público aprovado (DOWNLOAD_URL): as releases de um repositório GitHub privado não são transferíveis publicamente.',
+            "Requirements (Windows versions, printer) to be confirmed before publishing. The installer needs an approved public URL (DOWNLOAD_URL): releases of a private GitHub repository can't be downloaded publicly.",
+          )}</p>
+        </div>
+      </div>
+    </section>
+  )}
+
+  <CtaBand message="transferir" source="transferir" lang={lang} />
+</Base>
+
+<style>
+  .hero { padding-top: clamp(32px, 6vw, 80px); }
+  .h3 { font-size: var(--sb-text-lg); }
+  .dl { margin-top: 16px; display: grid; gap: 16px; justify-items: start; background: var(--sb-surface); }
+  .steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+</style>

@@ -7,8 +7,10 @@
 import { Image } from 'astro:assets';
 import { screens, type ScreenKey } from '../data/marketingAssets';
 import { PREVIEW } from '../config';
-interface Props { screen: ScreenKey; caption?: string; eager?: boolean; class?: string }
-const { screen, caption, eager = false, class: cls = '' } = Astro.props;
+import { tr, type Lang } from '../i18n';
+interface Props { screen: ScreenKey; caption?: string; eager?: boolean; class?: string; lang: Lang }
+const { screen, caption, eager = false, class: cls = '', lang } = Astro.props;
+const t = tr(lang);
 const s = screens[screen];
 const approved = s.status === 'approved';
 const show = approved || PREVIEW;
@@ -18,7 +20,7 @@ const show = approved || PREVIEW;
     <div class="frame">
       <Image
         src={s.image}
-        alt={s.alt}
+        alt={s.alt[lang]}
         widths={[480, 720, 960, 1440]}
         sizes="(min-width: 1000px) 560px, 92vw"
         format="webp"
@@ -27,8 +29,8 @@ const show = approved || PREVIEW;
       />
     </div>
     <figcaption>
-      {!approved && <span class="pv-tag" data-preview-only>Captura de pré-visualização · dados de demonstração · substituir por captura de build revisto</span>}
-      <span class="demo">Dados de demonstração</span>
+      {!approved && <span class="pv-tag" data-preview-only>{t('Captura de pré-visualização · dados de demonstração · substituir por captura de build revisto', 'Preview capture · demo data · replace with a capture from a reviewed build')}</span>}
+      <span class="demo">{t('Dados de demonstração', 'Demo data')}</span>
       {caption && <span class="cap">{caption}</span>}
     </figcaption>
   </figure>

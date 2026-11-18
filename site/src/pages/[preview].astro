@@ -13,7 +13,7 @@ import { screens, videos } from '../data/marketingAssets';
 export function getStaticPaths() {
   return PREVIEW ? [{ params: { preview: 'pre-visualizacao' } }] : [];
 }
-const cta = primaryCta();
+const cta = primaryCta('pt-AO');
 const decisions = [
   ['1', 'História dos fundadores aprovada para publicação', 'FOUNDER_STORY_APPROVED', 'Texto neutro no público'],
   ['2', 'Fundadores identificados (nome, retrato)?', '—', 'Sem nomes nem fotografias (direcção "faceless")'],
@@ -28,6 +28,8 @@ const decisions = [
   ['11', '"factura/facturação" vs "fatura/faturação"', '—', 'factura (pré-AO90, como na app)'],
   ['12', 'Preços, IVA, experiência, métodos de pagamento', 'PRICING_PUBLISHED', '"Preços anunciados no lançamento"'],
   ['13', 'Instalador público e URL', 'DOWNLOAD_PUBLIC + DOWNLOAD_URL', 'Sem botão de transferência'],
+  ['14', 'Versão inglesa: revisão do texto e idioma de atendimento (a equipa responde em inglês?)', '—', 'EN publicado com o mesmo conteúdo; contactos sem promessa de idioma'],
+  ['15', 'Textos legais em inglês e qual versão prevalece', 'src/legal/en/*.md', 'Rascunho em ambas as línguas'],
 ];
 const claims = [
   ['store-status', 'Painel "Lojas agora" (PR #13 já está em main; confirmar num build revisto)'],
@@ -36,7 +38,7 @@ const claims = [
   ['hardware-models', 'Lista de impressoras e gavetas testadas'],
 ];
 ---
-<Base title="Estado da pré-visualização" description="Pré-visualização privada." path="/pre-visualizacao" message="inicio" noindex hideMobileBar>
+<Base title="Estado da pré-visualização" description="Pré-visualização privada." route="preview" lang="pt-AO" message="inicio" noindex hideMobileBar>
   <section class="section section--cream">
     <div class="container">
       <span class="pv-tag">Só existe em builds de pré-visualização</span>
@@ -52,7 +54,7 @@ const claims = [
       <h2 class="h3">Vídeos (7)</h2>
       <table>
         <thead><tr><th>Chave</th><th>Título</th><th>Duração</th><th>Página</th><th>Estado</th></tr></thead>
-        <tbody>{Object.entries(videos).map(([k, v]) => <tr><td><code>{k}</code></td><td>{v.title}</td><td>{v.length}</td><td>{v.placement}</td><td><StatusDiamond state={v.status === 'ready' ? 'online' : 'pending'} size={10} /> {v.status}</td></tr>)}</tbody>
+        <tbody>{Object.entries(videos).map(([k, v]) => <tr><td><code>{k}</code></td><td>{v.title['pt-AO']} / {v.title.en}</td><td>{v.length}</td><td>{v.placement['pt-AO']}</td><td><StatusDiamond state={v.status === 'ready' ? 'online' : 'pending'} size={10} /> {v.status}</td></tr>)}</tbody>
       </table>
 
       <h2 class="h3">Capturas</h2>

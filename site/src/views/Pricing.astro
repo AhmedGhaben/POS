@@ -1,0 +1,94 @@
+---
+/**
+ * Pricing — prices, billing, trial, IVA and payment methods are NOT decided
+ * (handoff §3). Public: "Preços a anunciar" + contact. Preview: design-only
+ * layout with neutral "Por definir" cards — no amounts, tiers, logos or checkout.
+ */
+import Base from '../layouts/Base.astro';
+import StatusDiamond from '../components/StatusDiamond.astro';
+import CtaBand from '../components/CtaBand.astro';
+import { FLAGS, PREVIEW } from '../config';
+import { tr, type Lang } from '../i18n';
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = tr(lang);
+const why = [
+  { t: t('Vende sem internet', 'Sells without internet'), d: t('A caixa continua a vender quando a ligação falha e envia as vendas guardadas quando volta.', 'The till keeps selling when the connection fails and sends the saved sales when it comes back.') },
+  { t: t('O estado fica sempre à vista', 'Status always visible'), d: t('Online, sem internet ou a sincronizar: a caixa mostra sempre em que estado está.', 'Online, offline or syncing: the till always shows what state it is in.') },
+  { t: t('Várias lojas, uma só Gestão', 'Several shops, one Gestão'), d: t('Vendas, produtos e stock de cada loja, e transferências de stock entre lojas.', 'Sales, products and stock for each shop, and stock transfers between shops.') },
+  { t: t('Traga os seus produtos', 'Bring your products'), d: t('Importe os produtos a partir de um ficheiro Excel (CSV ou XLSX).', 'Import products from an Excel file (CSV or XLSX).') },
+];
+const tbd = t('por definir', 'to be defined');
+---
+<Base
+  title={t('Planos', 'Pricing')}
+  description={t('Os preços da STORBIT serão anunciados no lançamento. Peça uma demonstração e falamos sobre a sua loja.', "STORBIT prices will be announced at launch. Request a demo and we'll talk about your shop.")}
+  route="pricing"
+  lang={lang}
+  message="planos"
+  noindex={!FLAGS.PRICING_PUBLISHED}
+>
+  <section class="section section--cream hero">
+    <div class="container">
+      <p class="eyebrow"><StatusDiamond size={10} /> {t('Planos', 'Pricing')}</p>
+      <h1>{t('Preços anunciados no lançamento.', 'Prices will be announced at launch.')}</h1>
+      <p class="lead readable">{t('Os preços da STORBIT ainda não estão publicados. Peça uma demonstração e falamos sobre a sua loja.', "STORBIT prices haven't been published yet. Request a demo and we'll talk about your shop.")}</p>
+    </div>
+  </section>
+
+  {PREVIEW && (
+    <section class="section section--white" aria-labelledby="pv-planos" data-preview-only>
+      <div class="container">
+        <span class="pv-tag">{t('Pré-visualização de layout · conteúdo por definir · oculto no público', 'Layout preview · content to be defined · hidden in public')}</span>
+        <h2 id="pv-planos">{t('Planos e preços — por definir', 'Plans and prices — to be defined')}</h2>
+        <div class="grid grid--3 plans">
+          {['A', 'B', 'C'].map((p) => (
+            <article class="card plan pv-block">
+              <p class="plan-name">{t('Plano', 'Plan')} {p} <span class="muted">({t('nome por definir', 'name to be defined')})</span></p>
+              <p class="price">— Kz</p>
+              <p class="muted small">{t('Periodicidade, IVA e período de experiência por definir.', 'Billing period, VAT (IVA) and trial period to be defined.')}</p>
+              <ul class="lines">
+                <li>{t('Lojas incluídas', 'Shops included')}: {tbd}</li>
+                <li>{t('Caixas incluídas', 'Tills included')}: {tbd}</li>
+                <li>{t('Funcionalidades', 'Features')}: {tbd}</li>
+              </ul>
+              <span class="btn btn--secondary" aria-disabled="true" role="link">{t('Sem selecção · pré-visualização', 'No selection · preview')}</span>
+            </article>
+          ))}
+        </div>
+        <div class="card pv-block methods">
+          <h3>{t('Métodos de pagamento — por confirmar', 'Payment methods — to be confirmed')}</h3>
+          <p class="muted">{t('Sem logótipos, fornecedores ou formulário de pagamento até haver decisão.', 'No logos, providers or payment form until a decision is made.')}</p>
+        </div>
+      </div>
+    </section>
+  )}
+
+  <section class="section section--white" aria-labelledby="porque">
+    <div class="container">
+      <h2 id="porque">{t('Porquê a STORBIT', 'Why STORBIT')}</h2>
+      <div class="grid grid--4">
+        {why.map((w) => (
+          <article class="card">
+            <h3><StatusDiamond size={12} /> {w.t}</h3>
+            <p>{w.d}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <CtaBand message="planos" source="planos" lang={lang}
+    heading={t('Quer saber quanto custaria para a sua loja?', 'Want to know what it would cost for your shop?')}
+    body={t('Peça uma demonstração e falamos sobre as suas lojas e caixas.', "Request a demo and we'll talk about your shops and tills.")} />
+</Base>
+
+<style>
+  .hero { padding-top: clamp(32px, 6vw, 80px); }
+  .plans { margin: 24px 0; }
+  .plan { display: grid; gap: 10px; }
+  .plan-name { font-weight: 800; font-size: 20px; margin: 0; }
+  .price { font-size: 36px; font-weight: 800; letter-spacing: -0.03em; margin: 0; color: var(--sb-text-muted); }
+  .lines { margin: 0; padding-left: 18px; color: var(--sb-text-muted); }
+  .methods { background: var(--sb-surface); }
+</style>

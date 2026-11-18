@@ -5,6 +5,11 @@ the Gestão web app (`apps/web`), the API (`apps/api`) and the Windows till
 (`apps/desktop`). It has its own `package.json` and lockfile, sits outside the
 npm workspaces, and changes nothing in the POS application.
 
+**Languages:** Portuguese (pt-AO, default, at the root) and English (under
+`/en/`, with English slugs). A PT | EN switcher in the header links to the same
+page in the other language. There is no automatic redirect by browser
+language.
+
 **Status:** first draft for internal review. Not approved, not deployed and
 not indexed. All pt-AO copy still needs review by a native Angolan speaker.
 
@@ -24,6 +29,28 @@ npm run build            # public-mode build (safe defaults), then the claims ch
 npm run preview          # serve dist/
 npm run screenshots -- out/   # desktop 1440 + mobile 390 captures of a served build
 ```
+
+## Languages
+
+| pt-AO | English |
+|---|---|
+| `/` | `/en` |
+| `/como-funciona` | `/en/how-it-works` |
+| `/sobre` | `/en/about` |
+| `/demonstracao` | `/en/demo` |
+| `/ajuda` | `/en/help` |
+| `/planos` | `/en/pricing` |
+| `/transferir` | `/en/download` |
+| `/termos`, `/privacidade`, `/cookies` | `/en/terms`, `/en/privacy`, `/en/cookies` |
+
+- The route map lives in `src/i18n/index.ts`.
+- Each page is one view in `src/views/`, rendered twice by thin wrappers in `src/pages/` and `src/pages/en/`.
+- Copy sits inline as pairs, `t('português', 'English')`, so the two versions stay side by side.
+- Shared data (FAQ, glossary, status wording, WhatsApp messages, video titles) carries both languages.
+- Every page has `hreflang` alternates (pt-AO, en, x-default → pt-AO), and the sitemap lists both versions.
+- `404.html` is shared and bilingual.
+- English uses the app's own English labels ("Offline · still selling", "Stores now").
+- Product names stay as they are: STORBIT Caixa, STORBIT Gestão.
 
 ## Two layers of gating
 
@@ -54,7 +81,7 @@ or pt-BR words.
 | `SUPPORT_HOURS` | — | Shown only if set (must be approved) |
 | `LEADS_ENDPOINT` | — | URL the demo form POSTs JSON to |
 | `LEADS_OPEN` | `false` | Demo form and hero phone capture. Needs `LEADS_ENDPOINT` **and** `LEGAL_APPROVED` |
-| `LEGAL_APPROVED` | `false` | Legal links in the footer; renders `src/legal/{termos,privacidade,cookies}.md` |
+| `LEGAL_APPROVED` | `false` | Legal links in the footer; renders `src/legal/{termos,privacidade,cookies}.md` (English: `src/legal/en/…`) |
 | `SIGNUP_OPEN` | `false` | CTA becomes "Começar →" `APP_URL/signup` (needs `APP_URL`) |
 | `PRICING_PUBLISHED` | `false` | **Planos** in the nav |
 | `DOWNLOAD_PUBLIC` + `DOWNLOAD_URL` | `false` | Download button on `/transferir` |
@@ -69,9 +96,9 @@ or pt-BR words.
 
 | Condition | Label | Goes to |
 |---|---|---|
-| `SIGNUP_OPEN` | Começar → | `APP_URL/signup` |
-| `LEADS_OPEN` | Pedir demonstração → | `/demonstracao` (consent form, WhatsApp fallback if the endpoint fails) |
-| WhatsApp number set | Pedir demonstração → | `wa.me` with the prefilled demo message |
+| `SIGNUP_OPEN` | Começar → / Get started → | `APP_URL/signup` |
+| `LEADS_OPEN` | Pedir demonstração → / Request a demo → | `/demonstracao` or `/en/demo` (consent form, WhatsApp fallback if the endpoint fails; the payload includes `idioma`) |
+| WhatsApp number set | Pedir demonstração → / Request a demo → | `wa.me` with the prefilled demo message, in the page's language |
 | Only email set | Pedir demonstração → | `mailto:` |
 | Nothing set | preview: disabled "· por configurar" · public: **no CTA** | — |
 
@@ -103,8 +130,9 @@ OFL licence in `public/fonts/`). `public/og.png` comes from
 - Any static host (Cloudflare Pages, Netlify, S3 + CDN, nginx). Build
   command `cd site && npm ci && npm run build`, output `site/dist/`.
 - Pages are emitted as `/sobre.html` and so on, with `trailingSlash: never`.
-  The host must serve `/sobre` → `sobre.html` (default on Cloudflare Pages
-  and Netlify; nginx needs `try_files $uri $uri.html =404;`) and use `404.html`.
+  The host must serve `/sobre` → `sobre.html` and `/en` → `en.html`
+  (default on Cloudflare Pages and Netlify; nginx needs
+  `try_files $uri $uri.html =404;`) and use `404.html`.
 - Set the environment variables above per environment. Staging uses
   `SITE_PREVIEW_MODE=true` behind access control.
 - `DOWNLOAD_URL` must be a public URL. Releases of a private GitHub

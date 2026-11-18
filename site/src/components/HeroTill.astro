@@ -9,24 +9,30 @@
  * Decorative; a text equivalent is provided for screen readers.
  */
 import StatusDiamond from './StatusDiamond.astro';
+import { tr, type Lang } from '../i18n';
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = tr(lang);
 const frames = [
-  { state: 'online', till: 'Online', count: '', owner: 'Loja Central · vendas actualizadas às 13:50' },
-  { state: 'offline', till: 'Sem internet · a vender', count: '2 vendas por enviar', owner: 'Loja Central · sem ligação desde 13:52' },
-  { state: 'syncing', till: 'A sincronizar', count: '2 vendas a enviar', owner: 'Loja Central · a receber vendas guardadas' },
-  { state: 'online', till: 'Online', count: '', owner: 'Loja Central · vendas actualizadas às 14:09' },
+  { state: 'online', till: 'Online', count: '', owner: t('Loja Central · vendas actualizadas às 13:50', 'Loja Central · sales up to date at 13:50') },
+  { state: 'offline', till: t('Sem internet · a vender', 'Offline · still selling'), count: t('2 vendas por enviar', '2 sales waiting to sync'), owner: t('Loja Central · sem ligação desde 13:52', 'Loja Central · offline since 13:52') },
+  { state: 'syncing', till: t('A sincronizar', 'Syncing'), count: t('2 vendas a enviar', 'Sending 2 sales'), owner: t('Loja Central · a receber vendas guardadas', 'Loja Central · receiving saved sales') },
+  { state: 'online', till: 'Online', count: '', owner: t('Loja Central · vendas actualizadas às 14:09', 'Loja Central · sales up to date at 14:09') },
 ];
 const start = frames[1];
 ---
 <figure class="hero-till" data-hero-till data-frames={JSON.stringify(frames)}>
   <p class="visually-hidden">
-    Ilustração: quando a internet falha, a caixa mostra "Sem internet · a vender" e o número de vendas por enviar.
-    Quando a ligação volta, mostra "A sincronizar" e depois "Online". Na Gestão, o dono vê desde quando a loja está sem ligação.
+    {t(
+      'Ilustração: quando a internet falha, a caixa mostra "Sem internet · a vender" e o número de vendas por enviar. Quando a ligação volta, mostra "A sincronizar" e depois "Online". Na Gestão, o dono vê desde quando a loja está sem ligação.',
+      'Illustration: when the internet fails, the till shows "Offline · still selling" and the number of sales to send. When the connection returns, it shows "Syncing" and then "Online". In Gestão, the owner sees since when the shop has been offline.',
+    )}
   </p>
   <div class="panels" aria-hidden="true">
     <div class="panel till">
       <div class="panel-head">
         <span class="label">STORBIT Caixa</span>
-        <span class="who">Caixa 1 · Mercearia Central</span>
+        <span class="who">{t('Caixa 1', 'Till 1')} · Mercearia Central</span>
       </div>
       <div class="state" data-state={start.state}>
         <span class="d d-online"><StatusDiamond state="online" size={16} /></span>
@@ -36,8 +42,8 @@ const start = frames[1];
       </div>
       <p class="count tnum" data-till-count>{start.count}</p>
       <div class="lines">
-        <div><span>Arroz 1 kg</span><span class="tnum">2 × 1 250,00 Kz</span></div>
-        <div><span>Óleo alimentar 1 L</span><span class="tnum">1 × 2 100,00 Kz</span></div>
+        <div><span>{t('Arroz 1 kg', 'Rice 1 kg')}</span><span class="tnum">2 × 1 250,00 Kz</span></div>
+        <div><span>{t('Óleo alimentar 1 L', 'Cooking oil 1 L')}</span><span class="tnum">1 × 2 100,00 Kz</span></div>
         <div class="total"><span>Total</span><span class="tnum">4 600,00 Kz</span></div>
       </div>
     </div>
@@ -47,9 +53,9 @@ const start = frames[1];
     </div>
   </div>
   <figcaption>
-    <span class="cap">Ilustração · dados de demonstração</span>
-    <button type="button" class="pause" data-hero-pause aria-pressed="false" hidden>
-      <span data-pause-label>Pausar animação</span>
+    <span class="cap">{t('Ilustração · dados de demonstração', 'Illustration · demo data')}</span>
+    <button type="button" class="pause" data-hero-pause aria-pressed="false" hidden data-label-pause={t('Pausar animação', 'Pause animation')} data-label-play={t('Retomar animação', 'Resume animation')}>
+      <span data-pause-label>{t('Pausar animação', 'Pause animation')}</span>
     </button>
   </figcaption>
 </figure>
@@ -108,7 +114,7 @@ const start = frames[1];
     btn.addEventListener('click', () => {
       paused = !paused;
       btn.setAttribute('aria-pressed', String(paused));
-      btnLabel.textContent = paused ? 'Retomar animação' : 'Pausar animação';
+      btnLabel.textContent = (paused ? btn.dataset.labelPlay : btn.dataset.labelPause) || '';
       run();
     });
     new IntersectionObserver((entries) => { onScreen = entries[0].isIntersecting; run(); }).observe(root);

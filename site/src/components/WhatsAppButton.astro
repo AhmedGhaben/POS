@@ -2,9 +2,11 @@
 /** Secondary WhatsApp action. Renders nothing without a configured number. */
 import { whatsappCta, type WaMessage } from '../lib/cta';
 import { PREVIEW } from '../config';
-interface Props { message: WaMessage; size?: 'sm' | 'md'; label?: string; class?: string; showPending?: boolean }
-const { message, size = 'md', label, class: cls = '', showPending = true } = Astro.props;
-const cta = whatsappCta(message);
+import { tr, type Lang } from '../i18n';
+interface Props { message: WaMessage; size?: 'sm' | 'md'; label?: string; class?: string; showPending?: boolean; lang: Lang }
+const { message, size = 'md', label, class: cls = '', showPending = true, lang } = Astro.props;
+const t = tr(lang);
+const cta = whatsappCta(message, lang);
 ---
 {cta ? (
   <a
@@ -14,9 +16,9 @@ const cta = whatsappCta(message);
     rel="noopener"
     data-event="whatsapp_click"
     data-event-source={message}
-  >{label ?? cta.label}<span class="visually-hidden"> (abre o WhatsApp)</span></a>
+  >{label ?? cta.label}<span class="visually-hidden">{t(' (abre o WhatsApp)', ' (opens WhatsApp)')}</span></a>
 ) : PREVIEW && showPending ? (
-  <span class:list={['btn btn--secondary', size === 'sm' && 'btn--sm', cls]} role="link" aria-disabled="true" data-preview-only title="Número de WhatsApp por configurar">
-    {label ?? 'Falar pelo WhatsApp'} · número por configurar
+  <span class:list={['btn btn--secondary', size === 'sm' && 'btn--sm', cls]} role="link" aria-disabled="true" data-preview-only title={t('Número de WhatsApp por configurar', 'WhatsApp number to be configured')}>
+    {label ?? t('Falar pelo WhatsApp', 'Chat on WhatsApp')} · {t('número por configurar', 'number to be configured')}
   </span>
 ) : null}

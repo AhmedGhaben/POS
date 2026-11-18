@@ -6,11 +6,14 @@ import Footer from '../components/Footer.astro';
 import MobileBar from '../components/MobileBar.astro';
 import { COMPANY, COMPANY_PUBLISHABLE, CONTACT_EMAIL, INDEXABLE, PLAUSIBLE_DOMAIN, PLAUSIBLE_SRC, PREVIEW, SITE_URL, WHATSAPP_NUMBER } from '../config';
 import type { WaMessage } from '../lib/cta';
+import { DEFAULT_LANG, LANGS, LANG_LABEL, ROUTES, tr, type Lang, type RouteKey } from '../i18n';
 
 interface Props {
   title: string;
   description: string;
-  path: string;
+  /** Which page this is; gives the URL in each language. */
+  route: RouteKey;
+  lang: Lang;
   /** Page-specific WhatsApp message for the mobile bar. */
   message: WaMessage;
   /** Extra JSON-LD objects for this page. */
@@ -20,9 +23,14 @@ interface Props {
   /** Force noindex for this page (e.g. unreviewed legal drafts). */
   noindex?: boolean;
 }
-const { title, description, path, message, jsonLd = [], hideMobileBar = false, noindex = false } = Astro.props;
+const { title, description, route, lang, message, jsonLd = [], hideMobileBar = false, noindex = false } = Astro.props;
+const t = tr(lang);
+const path = ROUTES[route][lang];
 const canonical = new URL(path, SITE_URL).href;
-const fullTitle = path === '/' ? title : `${title} · STORBIT`;
+const single = route === 'notFound' || route === 'preview';
+const alternates = single ? [] : LANGS.map((l) => ({ lang: l, href: new URL(ROUTES[route][l], SITE_URL).href }));
+const xDefault = single ? '' : new URL(ROUTES[route][DEFAULT_LANG], SITE_URL).href;
+const fullTitle = route === 'home' ? title : `${title} · STORBIT`;
 const robots = INDEXABLE && !noindex ? 'index, follow' : 'noindex, nofollow';
 
 const org: Record<string, unknown> = {
@@ -43,12 +51,12 @@ const app = {
   name: 'STORBIT',
   operatingSystem: 'Windows',
   applicationCategory: 'BusinessApplication',
-  description: 'Software de caixa para lojas em Angola: STORBIT Caixa para Windows e STORBIT Gestão no navegador.',
+  description: t('Software de caixa para lojas em Angola: STORBIT Caixa para Windows e STORBIT Gestão no navegador.', 'Point-of-sale software for shops in Angola: STORBIT Caixa for Windows and STORBIT Gestão in the browser.'),
 };
 const ld = [org, app, ...jsonLd];
 ---
 <!doctype html>
-<html lang="pt-AO" data-preview={PREVIEW ? 'true' : undefined}>
+<html lang={lang} data-preview={PREVIEW ? 'true' : undefined}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -56,8 +64,8 @@ const ld = [org, app, ...jsonLd];
     <meta name="description" content={description} />
     <meta name="robots" content={robots} />
     <link rel="canonical" href={canonical} />
-    <link rel="alternate" hreflang="pt-AO" href={canonical} />
-    <link rel="alternate" hreflang="x-default" href={canonical} />
+    {alternates.map((a) => <link rel="alternate" hreflang={a.lang} href={a.href} />)}
+    {xDefault && <link rel="alternate" hreflang="x-default" href={xDefault} />}
     <meta name="theme-color" content="#15171B" />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" href="/icons/storbit-app-icon.svg" type="image/svg+xml" />
@@ -65,7 +73,8 @@ const ld = [org, app, ...jsonLd];
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <meta property="og:type" content="website" />
-    <meta property="og:locale" content="pt_AO" />
+    <meta property="og:locale" content={LANG_LABEL[lang].ogLocale} />
+    {LANGS.filter((l) => l !== lang).map((l) => <meta property="og:locale:alternate" content={LANG_LABEL[l].ogLocale} />)}
     <meta property="og:site_name" content="STORBIT" />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
@@ -79,14 +88,14 @@ const ld = [org, app, ...jsonLd];
     <script is:inline>document.documentElement.classList.add('js');</script>
   </head>
   <body>
-    <a class="skip-link" href="#conteudo">Saltar para o conteúdo</a>
-    <PreviewBar />
-    <Header current={path} />
+    <a class="skip-link" href="#conteudo">{t('Saltar para o conteúdo', 'Skip to content')}</a>
+    <PreviewBar lang={lang} />
+    <Header route={route} lang={lang} />
     <main id="conteudo" tabindex="-1">
       <slot />
     </main>
-    <Footer />
-    {!hideMobileBar && <MobileBar message={message} />}
+    <Footer lang={lang} />
+    {!hideMobileBar && <MobileBar message={message} lang={lang} />}
     <script>
       // Mobile menu: real button, aria-expanded, focus in and back, Esc closes.
       const btn = document.querySelector<HTMLButtonElement>('[data-menu-button]');

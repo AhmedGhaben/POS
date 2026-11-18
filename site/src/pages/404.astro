@@ -1,9 +1,13 @@
 ---
+/**
+ * One 404 for both languages (static hosts serve a single 404.html):
+ * Portuguese first, English below, each with its own link home.
+ */
 import Base from '../layouts/Base.astro';
 import StatusDiamond from '../components/StatusDiamond.astro';
 import WhatsAppButton from '../components/WhatsAppButton.astro';
 ---
-<Base title="Página não encontrada" description="Esta página não existe." path="/404" message="naoEncontrada" noindex>
+<Base title="Página não encontrada · Page not found" description="Esta página não existe. This page doesn't exist." route="notFound" lang="pt-AO" message="naoEncontrada" noindex>
   <section class="section section--cream nf">
     <div class="container">
       <p class="eyebrow"><StatusDiamond state="inactive" size={10} /> Erro 404</p>
@@ -11,9 +15,17 @@ import WhatsAppButton from '../components/WhatsAppButton.astro';
       <p class="lead">O endereço pode estar errado ou a página mudou de sítio.</p>
       <div class="actions">
         <a class="btn btn--primary" href="/">Voltar ao início</a>
-        <WhatsAppButton message="naoEncontrada" showPending={false} />
+        <WhatsAppButton message="naoEncontrada" showPending={false} lang="pt-AO" />
+      </div>
+      <div class="en" lang="en">
+        <h2>This page doesn't exist.</h2>
+        <p>The address may be wrong or the page may have moved. <a href="/en">Go to the English home page</a>.</p>
       </div>
     </div>
   </section>
 </Base>
-<style>.nf { min-height: 55vh; }</style>
+<style>
+  .nf { min-height: 55vh; }
+  .en { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--sb-border); }
+  .en h2 { font-size: var(--sb-text-lg); }
+</style>

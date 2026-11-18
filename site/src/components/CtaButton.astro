@@ -1,10 +1,11 @@
 ---
 /** The primary CTA, following the state machine in src/lib/cta.ts. */
 import { primaryCta } from '../lib/cta';
-interface Props { size?: 'sm' | 'md'; class?: string; source?: string }
-const { size = 'md', class: cls = '', source = '' } = Astro.props;
-const cta = primaryCta();
-const arrow = cta && (cta.kind === 'signup' || cta.kind === 'form' || cta.kind === 'whatsapp' || cta.kind === 'email');
+import { tr, type Lang } from '../i18n';
+interface Props { size?: 'sm' | 'md'; class?: string; source?: string; lang: Lang }
+const { size = 'md', class: cls = '', source = '', lang } = Astro.props;
+const t = tr(lang);
+const cta = primaryCta(lang);
 ---
 {cta && cta.kind !== 'pending' && (
   <a
@@ -14,16 +15,16 @@ const arrow = cta && (cta.kind === 'signup' || cta.kind === 'form' || cta.kind =
     data-event-source={source}
     target={cta.kind === 'whatsapp' ? '_blank' : undefined}
     rel={cta.external ? 'noopener' : undefined}
-  >{cta.label}{arrow && <span aria-hidden="true">→</span>}{cta.kind === 'whatsapp' && <span class="visually-hidden"> (abre o WhatsApp)</span>}</a>
+  >{cta.label}<span aria-hidden="true">→</span>{cta.kind === 'whatsapp' && <span class="visually-hidden">{t(' (abre o WhatsApp)', ' (opens WhatsApp)')}</span>}</a>
 )}
 {cta && cta.kind === 'pending' && (
   <span
     class:list={['btn btn--primary', size === 'sm' && 'btn--sm', cls]}
     role="link"
     aria-disabled="true"
-    title="Pré-visualização: destino por configurar (WhatsApp, email ou formulário)"
+    title={t('Pré-visualização: destino por configurar (WhatsApp, email ou formulário)', 'Preview: destination to be configured (WhatsApp, email or form)')}
     data-preview-only
-  >{cta.label} <span class="cta-pending">· por configurar</span></span>
+  >{cta.label} <span class="cta-pending">· {t('por configurar', 'to be configured')}</span></span>
 )}
 <style>
   .cta-pending { font-weight: 600; font-size: 0.85em; }

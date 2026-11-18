@@ -1,0 +1,259 @@
+---
+/**
+ * Demo page (WEBSITE_SPEC §3, §6; handoff §3; About brief §4.5).
+ * - LEADS_OPEN (endpoint + approved legal pages): working consent-based form,
+ *   WhatsApp fallback if the endpoint fails.
+ * - Otherwise: no form publicly. Preview shows a disabled sample form.
+ *   Never a fake success message, never data sent to a disconnected form.
+ */
+import Base from '../layouts/Base.astro';
+import StatusDiamond from '../components/StatusDiamond.astro';
+import WhatsAppButton from '../components/WhatsAppButton.astro';
+import PreviewTag from '../components/PreviewTag.astro';
+import { CONTACT_EMAIL, FLAGS, LEADS_ENDPOINT, PREVIEW, WHATSAPP_NUMBER } from '../config';
+import { emailHref, whatsappHref, waMessage } from '../lib/cta';
+import { href, tr, type Lang } from '../i18n';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = tr(lang);
+const formLive = FLAGS.LEADS_OPEN;
+const showSample = !formLive && PREVIEW;
+const wa = whatsappHref('demo', lang);
+const mail = emailHref(lang);
+const choose = t('Escolha', 'Choose');
+const provincias = ['Bengo', 'Benguela', 'Bié', 'Cabinda', 'Cuando', 'Cubango', 'Cuanza Norte', 'Cuanza Sul', 'Cunene', 'Huambo', 'Huíla', 'Icolo e Bengo', 'Luanda', 'Lunda Norte', 'Lunda Sul', 'Malanje', 'Moxico', 'Moxico Leste', 'Namibe', 'Uíge', 'Zaire'];
+const lojas = [
+  { v: '1', l: '1' },
+  { v: '2', l: '2' },
+  { v: '3-5', l: '3–5' },
+  { v: '6+', l: t('Mais de 5', 'More than 5') },
+];
+const comoVende = [
+  { v: 'caderno-folha', l: t('Caderno ou folha de cálculo', 'Notebook or spreadsheet') },
+  { v: 'outro-software', l: t('Outro software de caixa', 'Another till software') },
+  { v: 'registadora', l: t('Só máquina registadora', 'Cash register only') },
+  { v: 'outro', l: t('Outro', 'Other') },
+];
+// Strings the client script needs, in the page language.
+const msgs = {
+  invalid: t('Preencha os campos obrigatórios e aceite o consentimento.', 'Fill in the required fields and tick the consent box.'),
+  failWa: t('Não foi possível enviar o pedido. Vamos abrir o WhatsApp com as suas respostas.', "We couldn't send your request. We'll open WhatsApp with your answers."),
+  fail: t('Não foi possível enviar o pedido. Tente novamente dentro de alguns minutos.', "We couldn't send your request. Please try again in a few minutes."),
+  waIntro: waMessage('demonstracao', lang),
+  labels: {
+    nome: t('Nome', 'Name'),
+    loja: t('Loja', 'Shop'),
+    provincia: t('Província', 'Province'),
+    lojas: t('Número de lojas', 'Number of shops'),
+    como_vende: t('Como vendo hoje', 'How I sell today'),
+  },
+};
+---
+<Base
+  title={t('Pedir demonstração', 'Request a demo')}
+  description={t(
+    'Peça uma demonstração da STORBIT e veja a Caixa e a Gestão a funcionar antes de decidir. Sem criar conta.',
+    'Request a STORBIT demo and see the Caixa and Gestão working before you decide. No account needed.',
+  )}
+  route="demo"
+  lang={lang}
+  message="demonstracao"
+  hideMobileBar
+>
+  <section class="section section--cream hero">
+    <div class="container layout">
+      <div class="intro">
+        <p class="eyebrow"><StatusDiamond size={10} /> {t('Pedir demonstração', 'Request a demo')}</p>
+        <h1>{t('Veja a STORBIT antes de decidir.', 'See STORBIT before you decide.')}</h1>
+        <p class="lead">{t(
+          'Mostramos-lhe a STORBIT Caixa e a Gestão: uma venda, o que acontece quando a internet falha e o que o dono vê depois.',
+          'We show you STORBIT Caixa and Gestão: a sale, what happens when the internet fails and what the owner sees afterwards.',
+        )}</p>
+        <h2 class="h3">{t('O que acontece a seguir', 'What happens next')}</h2>
+        <ol class="next">
+          <li><span class="n">1</span><span>{formLive ? t('Recebemos o seu pedido.', 'We receive your request.') : t('Recebemos a sua mensagem.', 'We receive your message.')}</span></li>
+          <li><span class="n">2</span><span>{t('Entramos em contacto consigo para conhecer a sua loja e combinar a demonstração.', 'We get in touch to learn about your shop and arrange the demo.')}</span></li>
+          <li><span class="n">3</span><span>{t('Vê a Caixa e a Gestão a funcionar e decide com calma. Sem criar conta.', 'You see the Caixa and Gestão working and decide in your own time. No account needed.')}</span></li>
+        </ol>
+      </div>
+
+      <div class="side">
+        {formLive && (
+          <form class="card form" id="lead-form" data-endpoint={LEADS_ENDPOINT} data-wa={WHATSAPP_NUMBER} data-lang={lang} data-msgs={JSON.stringify(msgs)} novalidate>
+            <h2 class="h3">{t('Os seus dados', 'Your details')}</h2>
+            <div class="field"><label for="f-nome">{t('Nome', 'Name')}</label><input id="f-nome" name="nome" autocomplete="name" required /></div>
+            <div class="field"><label for="f-loja">{t('Nome da loja', 'Shop name')}</label><input id="f-loja" name="loja" autocomplete="organization" required /></div>
+            <div class="field">
+              <label for="f-tel">{t('Telemóvel (WhatsApp)', 'Mobile number (WhatsApp)')}</label>
+              <div class="tel"><span aria-hidden="true">+244</span><input id="f-tel" name="telefone" type="tel" inputmode="tel" autocomplete="tel-national" required aria-describedby="f-tel-h" /></div>
+              <span class="hint" id="f-tel-h">{t('Respondemos por WhatsApp para marcar a demonstração.', 'We reply on WhatsApp to arrange the demo.')}</span>
+            </div>
+            <div class="row2">
+              <div class="field"><label for="f-lojas">{t('N.º de lojas', 'Number of shops')}</label>
+                <select id="f-lojas" name="lojas" required><option value="">{choose}</option>{lojas.map((o) => <option value={o.v}>{o.l}</option>)}</select></div>
+              <div class="field"><label for="f-prov">{t('Província', 'Province')}</label>
+                <select id="f-prov" name="provincia" required><option value="">{choose}</option>{provincias.map((p) => <option>{p}</option>)}</select></div>
+            </div>
+            <div class="field"><label for="f-hoje">{t('Como vende hoje', 'How do you sell today?')}</label>
+              <select id="f-hoje" name="como_vende" required><option value="">{choose}</option>{comoVende.map((o) => <option value={o.v}>{o.l}</option>)}</select></div>
+            <div class="field"><label for="f-msg">{t('Mensagem (opcional)', 'Message (optional)')}</label><textarea id="f-msg" name="mensagem"></textarea></div>
+            <div class="hp" aria-hidden="true"><label for="f-web">{t('Não preencher', 'Leave empty')}</label><input id="f-web" name="website" tabindex="-1" autocomplete="off" /></div>
+            <label class="consent"><input type="checkbox" name="consentimento" required /> <span>{lang === 'en'
+              ? <>I agree that STORBIT may use these details to contact me about the demo, in line with the <a href={href('privacy', lang)}>privacy policy</a>.</>
+              : <>Aceito que a STORBIT use estes dados para me contactar sobre a demonstração, de acordo com a <a href={href('privacy', lang)}>política de privacidade</a>.</>}</span></label>
+            <p class="form-error" role="alert" hidden data-form-error></p>
+            <button class="btn btn--primary" type="submit" data-event="demo_submit">{t('Pedir demonstração', 'Request a demo')} <span aria-hidden="true">→</span></button>
+            <p class="hint">{t('Não cria conta agora.', "You don't create an account now.")}</p>
+          </form>
+        )}
+        {formLive && (
+          <div class="card done" hidden data-form-done tabindex="-1">
+            <h2 class="h3"><StatusDiamond state="online" size={12} /> {t('Pedido recebido', 'Request received')}</h2>
+            <p>{t('Obrigado. Vamos entrar em contacto consigo para combinar a demonstração.', "Thank you. We'll get in touch to arrange the demo.")}</p>
+            <WhatsAppButton message="demonstracao" label={t('Falar já pelo WhatsApp', 'Chat on WhatsApp now')} showPending={false} lang={lang} />
+          </div>
+        )}
+
+        {showSample && (
+          <div class="pv-block sample" data-preview-only>
+            <span class="pv-tag">{t('Pré-visualização — formulário ainda não disponível', 'Preview — form not available yet')}</span>
+            <form class="card form" aria-label={t('Exemplo de formulário (desactivado)', 'Sample form (disabled)')} onsubmit="return false">
+              <fieldset disabled>
+                <legend class="h3">{t('Os seus dados', 'Your details')}</legend>
+                <div class="field"><label for="s-nome">{t('Nome', 'Name')}</label><input id="s-nome" /></div>
+                <div class="field"><label for="s-loja">{t('Nome da loja', 'Shop name')}</label><input id="s-loja" /></div>
+                <div class="field"><label for="s-tel">{t('Telemóvel (WhatsApp)', 'Mobile number (WhatsApp)')}</label><div class="tel"><span aria-hidden="true">+244</span><input id="s-tel" /></div></div>
+                <div class="row2">
+                  <div class="field"><label for="s-lojas">{t('N.º de lojas', 'Number of shops')}</label><select id="s-lojas"><option>{choose}</option></select></div>
+                  <div class="field"><label for="s-prov">{t('Província', 'Province')}</label><select id="s-prov"><option>{choose}</option></select></div>
+                </div>
+                <div class="field"><label for="s-hoje">{t('Como vende hoje', 'How do you sell today?')}</label><select id="s-hoje"><option>{choose}</option></select></div>
+                <div class="field"><label for="s-msg">{t('Mensagem (opcional)', 'Message (optional)')}</label><textarea id="s-msg"></textarea></div>
+                <label class="consent"><input type="checkbox" /> <span>{t('Consentimento com ligação à política de privacidade (por aprovar).', 'Consent with a link to the privacy policy (awaiting sign-off).')}</span></label>
+                <button class="btn btn--primary" type="submit">{t('Pedir demonstração', 'Request a demo')}</button>
+              </fieldset>
+            </form>
+            <p class="small muted">{t('Activa-se só com LEADS_OPEN=true, LEADS_ENDPOINT definido e páginas legais aprovadas (LEGAL_APPROVED=true).', 'Turns on only with LEADS_OPEN=true, LEADS_ENDPOINT set and the legal pages signed off (LEGAL_APPROVED=true).')}</p>
+          </div>
+        )}
+
+        <div class="card contact-card" data-hide-mobile-bar>
+          {wa ? (
+            <>
+              <h2 class="h3">{formLive ? t('Prefere o WhatsApp?', 'Prefer WhatsApp?') : t('Peça pelo WhatsApp', 'Request on WhatsApp')}</h2>
+              <p>{t(
+                'Abre o WhatsApp com uma mensagem pronta: só tem de indicar o nome da loja, a cidade e o número de lojas.',
+                'WhatsApp opens with a ready-made message: you only need to add your shop name, city and number of shops.',
+              )}</p>
+              <a class="btn btn--primary" href={wa} target="_blank" rel="noopener" data-event="whatsapp_click" data-event-source="demonstracao">{t('Pedir pelo WhatsApp', 'Request on WhatsApp')} <span aria-hidden="true">→</span><span class="visually-hidden">{t(' (abre o WhatsApp)', ' (opens WhatsApp)')}</span></a>
+            </>
+          ) : mail ? (
+            <>
+              <h2 class="h3">{t('Peça por email', 'Request by email')}</h2>
+              <p>{t('Envie-nos o nome da loja, a cidade e o número de lojas.', 'Send us your shop name, city and number of shops.')}</p>
+              <a class="btn btn--primary" href={mail}>{t('Escrever para', 'Write to')} {CONTACT_EMAIL}</a>
+            </>
+          ) : PREVIEW ? (
+            <>
+              <h2 class="h3">{t('Peça pelo WhatsApp', 'Request on WhatsApp')}</h2>
+              <PreviewTag>{t('Número de WhatsApp e email por configurar · no público este cartão não aparece', 'WhatsApp number and email to be configured · this card does not appear in public')}</PreviewTag>
+              <p class="muted">{t('Mensagem preparada', 'Prepared message')}: "{waMessage('demo', lang).replace(/\n/g, ' · ')}"</p>
+            </>
+          ) : (
+            <>
+              <h2 class="h3">{t('Pedidos ainda não abertos', 'Requests not open yet')}</h2>
+              <p>{t('Ainda não estamos a receber pedidos de demonstração por este site. Volte em breve.', "We're not taking demo requests through this website yet. Please check back soon.")}</p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+{formLive && (
+  <script>
+    const form = document.getElementById('lead-form') as HTMLFormElement | null;
+    if (form) {
+      const m = JSON.parse(form.dataset.msgs || '{}');
+      const params = new URLSearchParams(location.search);
+      const tel = params.get('telefone');
+      if (tel) (form.elements.namedItem('telefone') as HTMLInputElement).value = tel;
+      const err = form.querySelector<HTMLElement>('[data-form-error]')!;
+      const done = document.querySelector<HTMLElement>('[data-form-done]')!;
+      const optionText = (name: string, value: string) =>
+        (form.elements.namedItem(name) as HTMLSelectElement | null)?.selectedOptions[0]?.textContent || value;
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        err.hidden = true;
+        if (!form.checkValidity()) {
+          err.textContent = m.invalid;
+          err.hidden = false;
+          form.querySelector<HTMLElement>(':invalid')?.focus();
+          return;
+        }
+        const data = Object.fromEntries(new FormData(form).entries()) as Record<string, string>;
+        if (data.website) return; // honeypot
+        const payload = {
+          ...data,
+          telefone: `+244${(data.telefone || '').replace(/\D/g, '').replace(/^244/, '')}`,
+          consentimento_em: new Date().toISOString(),
+          idioma: form.dataset.lang,
+          utm: Object.fromEntries([...params].filter(([k]) => k.startsWith('utm_'))),
+          pagina: location.pathname,
+        };
+        const btn = form.querySelector<HTMLButtonElement>('button[type=submit]')!;
+        btn.disabled = true;
+        try {
+          const res = await fetch(form.dataset.endpoint!, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (!res.ok) throw new Error(String(res.status));
+          form.hidden = true;
+          done.hidden = false;
+          done.focus();
+        } catch {
+          btn.disabled = false;
+          const wa = form.dataset.wa;
+          if (wa) {
+            const L = m.labels;
+            const text = `${m.waIntro}\n${L.nome}: ${data.nome}\n${L.loja}: ${data.loja}\n${L.provincia}: ${data.provincia}\n${L.lojas}: ${optionText('lojas', data.lojas)}\n${L.como_vende}: ${optionText('como_vende', data.como_vende)}${data.mensagem ? `\n${data.mensagem}` : ''}`;
+            err.textContent = m.failWa;
+            err.hidden = false;
+            window.open(`https://wa.me/${wa}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+          } else {
+            err.textContent = m.fail;
+            err.hidden = false;
+          }
+        }
+      });
+    }
+  </script>
+)}
+
+<style>
+  .hero { padding-top: clamp(32px, 6vw, 80px); }
+  .layout { display: grid; gap: clamp(32px, 5vw, 64px); align-items: start; }
+  .intro h1 { max-width: 14ch; }
+  .h3 { font-size: var(--sb-text-lg); }
+  .next { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  .next li { display: flex; gap: 14px; align-items: baseline; }
+  .n { flex: none; display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: 50%; background: var(--sb-chip); font-weight: 800; }
+  .side { display: grid; gap: 20px; }
+  .form, .form fieldset { display: grid; gap: 16px; }
+  fieldset { border: none; padding: 0; margin: 0; min-width: 0; }
+  legend { padding: 0; margin-bottom: 4px; font-weight: 800; }
+  .row2 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+  .tel { display: flex; gap: 8px; }
+  .tel span { display: inline-flex; align-items: center; padding: 0 12px; background: var(--sb-chip); border-radius: var(--sb-radius-md); font-weight: 600; }
+  .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; }
+  .consent input { width: 22px; height: 22px; margin-top: 2px; flex: none; accent-color: var(--sb-action); }
+  .hp { position: absolute; left: -9999px; }
+  .form-error { color: var(--sb-error-text); background: var(--sb-error-bg); padding: 10px 14px; border-radius: var(--sb-radius-md); margin: 0; }
+  .sample > .pv-tag { margin-bottom: 12px; }
+  .contact-card .btn { margin-top: 4px; }
+  @media (min-width: 1000px) { .layout { grid-template-columns: 0.9fr 1.1fr; } }
+</style>

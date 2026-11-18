@@ -8,9 +8,12 @@
 import { videos, isVideoReady, type VideoKey } from '../data/marketingAssets';
 import { PREVIEW } from '../config';
 import StatusDiamond from './StatusDiamond.astro';
-interface Props { video: VideoKey; class?: string }
-const { video, class: cls = '' } = Astro.props;
+import { tr, type Lang } from '../i18n';
+interface Props { video: VideoKey; class?: string; lang: Lang }
+const { video, class: cls = '', lang } = Astro.props;
+const t = tr(lang);
 const v = videos[video];
+const title = v.title[lang];
 const ready = isVideoReady(v);
 const id = `video-${video.toLowerCase()}`;
 ---
@@ -18,26 +21,26 @@ const id = `video-${video.toLowerCase()}`;
   <div class:list={['video', cls]}>
     <button type="button" class="poster" data-video-open={id} data-event="video_play" data-event-source={video} aria-haspopup="dialog">
       {v.poster && <img src={v.poster} alt="" loading="lazy" decoding="async" />}
-      <span class="play"><span aria-hidden="true">▶</span> Ver vídeo: {v.title} ({v.length})</span>
+      <span class="play"><span aria-hidden="true">▶</span> {t('Ver vídeo', 'Watch video')}: {title} ({v.length})</span>
     </button>
-    <dialog id={id} class="video-dialog" aria-label={v.title}>
-      <form method="dialog"><button class="btn btn--secondary btn--sm">Fechar</button></form>
+    <dialog id={id} class="video-dialog" aria-label={title}>
+      <form method="dialog"><button class="btn btn--secondary btn--sm">{t('Fechar', 'Close')}</button></form>
       <template data-video-template>
         <video controls playsinline preload="none" poster={v.poster || undefined}>
           <source src={v.src} />
-          {v.captionsSrc && <track kind="subtitles" srclang="pt" label="Português" src={v.captionsSrc} default />}
+          {v.captionsSrc && <track kind="subtitles" srclang="pt" label="Português" src={v.captionsSrc} default={lang !== 'en'} />}
         </video>
       </template>
     </dialog>
   </div>
 ) : PREVIEW ? (
   <figure class:list={['video video--planned', cls]} data-preview-only>
-    <div class="poster poster--planned" role="img" aria-label={`Vídeo em produção: ${v.title}`}>
+    <div class="poster poster--planned" role="img" aria-label={`${t('Vídeo em produção', 'Video in production')}: ${title}`}>
       <StatusDiamond state="inactive" size={16} />
-      <span class="vt">{v.title}</span>
-      <span class="pv-tag">Vídeo · em produção · {v.length}</span>
+      <span class="vt">{title}</span>
+      <span class="pv-tag">{t('Vídeo · em produção', 'Video · in production')} · {v.length}</span>
     </div>
-    <figcaption class="small muted">{video} · sem reprodução até o vídeo existir</figcaption>
+    <figcaption class="small muted">{video} · {t('sem reprodução até o vídeo existir', 'no playback until the video exists')}</figcaption>
   </figure>
 ) : (
   <slot name="fallback" />

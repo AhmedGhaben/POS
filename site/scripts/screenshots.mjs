@@ -8,7 +8,8 @@ const BASE = process.env.BASE_URL || 'http://localhost:4321';
 const [outDir = 'screenshots', ...only] = process.argv.slice(2);
 const pages = only.length
   ? only
-  : ['/', '/como-funciona', '/sobre', '/demonstracao', '/ajuda', '/planos', '/transferir', '/privacidade', '/404', '/pre-visualizacao'];
+  : ['/', '/como-funciona', '/sobre', '/demonstracao', '/ajuda', '/planos', '/transferir', '/privacidade', '/404', '/pre-visualizacao',
+     '/en', '/en/how-it-works', '/en/about', '/en/demo', '/en/help', '/en/pricing', '/en/download', '/en/privacy'];
 const sizes = [
   { name: 'desktop', width: 1440, height: 900 },
   { name: 'mobile', width: 390, height: 844 },
